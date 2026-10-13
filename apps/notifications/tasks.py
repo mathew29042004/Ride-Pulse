@@ -26,3 +26,18 @@ def send_notification_email(notification_id: int) -> bool:
     )
     Notification.objects.filter(pk=notification_id).update(emailed_at=timezone.now())
     return True
+
+
+@shared_task(name="notifications.send_push")
+def send_push(
+    user_id: int,
+    title: str,
+    body: str = "",
+    url: str = "/",
+    tag: str = "",
+    ttl: int = 3600,
+    urgent: bool = False,
+) -> int:
+    from . import push
+
+    return push.send(user_id, title=title, body=body, url=url, tag=tag, ttl=ttl, urgent=urgent)

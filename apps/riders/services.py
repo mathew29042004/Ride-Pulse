@@ -41,6 +41,11 @@ def register_rider(
         referrer = RiderProfile.objects.filter(referral_code=referral_code.upper()).first()
         if referrer is None:
             raise BusinessRuleViolation("That referral code is not valid.", field="referral_code")
+    phone = _clean_phone(phone)
+    if phone and User.objects.filter(phone=phone).exists():
+        raise BusinessRuleViolation(
+            "An account with this phone number already exists.", field="phone"
+        )
     user = User.objects.create_user(
         email=email,
         password=password,
@@ -72,3 +77,15 @@ def set_blocked(
         actor=actor,
     )
     return rider
+
+
+def _clean_phone(phone: str) -> str:
+    """Store numbers in one format (10 digits) so phone login finds the account."""
+    from apps.core.validators import normalize_indian_mobile
+
+    if not phone:
+        return ""
+    try:
+        return normalize_indian_mobile(phone)
+    except ValueError as exc:
+        raise BusinessRuleViolation(str(exc), field="phone") from exc

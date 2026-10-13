@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, mixins, serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -13,6 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from apps.core.api import BaseViewSet, ContextBindingMixin
 from apps.geo.models import City
 
+from . import otp
 from .models import Role
 from .roles import Cap
 
@@ -217,3 +219,86 @@ class StaffUserViewSet(
     filterset_fields = ["role", "is_active"]
     search_fields = ["email", "first_name", "last_name"]
     http_method_names = ["get", "post", "patch"]
+
+
+# --- Phone (OTP) login -------------------------------------------------------------------
+
+
+class OtpRequestSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=20)
+
+
+class OtpVerifySerializer(OtpRequestSerializer):
+    code = serializers.CharField(max_length=6, min_length=6)
+
+
+class OtpSignupSerializer(serializers.Serializer):
+    signup_token = serializers.CharField()
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+
+
+class OtpRequestView(APIView):
+    """Text a 6-digit login code to an Indian mobile number."""
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+    throttle_scope = "otp"
+
+    @extend_schema(
+        request=OtpRequestSerializer, responses={200: OpenApiTypes.OBJECT}, tags=["auth"]
+    )
+    def post(self, request):
+        serializer = OtpRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        challenge = otp.request_code(
+            serializer.validated_data["phone"], ip=request.META.get("REMOTE_ADDR")
+        )
+        body = {
+            "phone": challenge.phone,
+            "expires_in": challenge.expires_in,
+            "resend_in": challenge.resend_in,
+        }
+        if challenge.debug_code:
+            body["debug_code"] = challenge.debug_code  # development only: no SMS is sent
+        return Response(body)
+
+
+class OtpVerifyView(APIView):
+    """Check the code. Known numbers get tokens; new numbers get a token to finish signing up."""
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+    throttle_scope = "otp"
+
+    @extend_schema(request=OtpVerifySerializer, responses={200: OpenApiTypes.OBJECT}, tags=["auth"])
+    def post(self, request):
+        serializer = OtpVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = otp.verify_code(**serializer.validated_data)
+        if result.user is None:
+            return Response({"new_user": True, "signup_token": result.signup_token})
+        return Response(
+            {"new_user": False, "user": UserSerializer(result.user).data, **tokens_for(result.user)}
+        )
+
+
+class OtpSignupView(APIView):
+    """Finish signing up a verified new number as a rider (just a name needed)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+    throttle_scope = "registration"
+
+    @extend_schema(
+        request=OtpSignupSerializer, responses={201: RegistrationResponseSerializer}, tags=["auth"]
+    )
+    def post(self, request):
+        serializer = OtpSignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profile = otp.complete_signup(**serializer.validated_data)
+        return Response(
+            {"user": UserSerializer(profile.user).data, **tokens_for(profile.user)},
+            status=status.HTTP_201_CREATED,
+        )

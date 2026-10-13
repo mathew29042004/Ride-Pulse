@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, Download, LifeBuoy, LocateFixed, Phone, RotateCcw, Share2, ShieldAlert, X } from "lucide-react";
+import { ArrowLeft, Download, LifeBuoy, LocateFixed, RotateCcw, Share2, ShieldAlert, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { BaseMap, CarMarker, FitBounds, type LatLng, PinMarker, RouteLine, routePath, snapToPath } from "@/components/map";
 import { RideTypeArt } from "@/components/RideTypeArt";
+import { CallButton } from "@/components/CallButton";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Modal, Sheet, Spinner, StarInput, Stars, Textarea } from "@/components/ui";
 import { api, ApiError, newIdempotencyKey, openFile } from "@/lib/api";
@@ -223,9 +224,7 @@ export default function RiderTrip() {
             <DriverCard trip={trip} />
             {trip.driver && <TripChat tripId={trip.id} me="RIDER" otherName={trip.driver.name} canSend={active} />}
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <a href={`tel:${trip.driver?.phone ?? ""}`} className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold">
-                <Phone className="size-4" /> Call
-              </a>
+              <CallButton tripId={trip.id} name={trip.driver?.name ?? "your driver"} />
               <button
                 onClick={() => share.mutate()}
                 disabled={share.isPending}

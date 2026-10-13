@@ -36,11 +36,24 @@ def notify(
     notification = Notification.objects.create(
         user=user, title=title[:160], body=body, level=level, link=link
     )
-    if email and user.email:
+    # Phone-only accounts have a placeholder address on the reserved .invalid domain.
+    if email and user.email and not user.email.endswith(".invalid"):
         from .tasks import send_notification_email
 
         transaction.on_commit(lambda: send_notification_email.delay(notification.pk))
+    _push(user, title=title[:160], body=body[:300], url=link or "/")
     return notification
+
+
+def _push(user, **message) -> None:
+    """Also deliver it as a phone/desktop notification, to devices that opted in."""
+    from . import push
+    from .models import PushSubscription
+
+    if push.enabled() and PushSubscription.objects.filter(user=user).exists():
+        from .tasks import send_push
+
+        transaction.on_commit(lambda: send_push.delay(user.pk, **message))
 
 
 def notify_users(users: Iterable, title: str, body: str = "", **kwargs) -> int:

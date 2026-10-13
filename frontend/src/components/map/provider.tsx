@@ -9,6 +9,7 @@ export interface ClientConfig {
   currency_symbol: string;
   maps: { provider: "google" | "osm"; browser_key: string; map_id: string; routes: "google" | "estimate" };
   payments?: { razorpay_key_id: string };
+  push?: { vapid_public_key: string };
 }
 
 export const configQuery = {

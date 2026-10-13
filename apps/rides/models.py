@@ -61,6 +61,7 @@ class TripFlag(models.TextChoices):
     LONG_PICKUP = "LONG_PICKUP", "Pickup took much longer than the ETA"
     SOS = "SOS", "SOS raised"
     LOW_RATING = "LOW_RATING", "Rated 2 stars or less"
+    GPS_JUMP = "GPS_JUMP", "GPS jumped impossibly far (glitch or spoofing)"
 
 
 class Trip(AuditedModel, TimeStampedModel):
@@ -110,6 +111,8 @@ class Trip(AuditedModel, TimeStampedModel):
         max_length=16, choices=TripStatus.choices, default=TripStatus.REQUESTED
     )
     otp = models.CharField(max_length=4, help_text="Ride PIN the rider tells the driver at pickup")
+    # Wrong ride-PIN entries; after MAX_PIN_ATTEMPTS the trip can't be started (anti-guessing).
+    pin_attempts = models.PositiveSmallIntegerField(default=0)
     payment_method = models.CharField(max_length=6)
     promo = models.ForeignKey(
         "pricing.PromoCode", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"

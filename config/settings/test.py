@@ -23,6 +23,7 @@ REST_FRAMEWORK = {
         "fare_estimate": "10000/min",
         "location": "10000/min",
         "registration": "10000/min",
+        "otp": "10000/min",
     },
 }
 
@@ -30,6 +31,8 @@ LOGGING = {"version": 1, "disable_existing_loggers": False}
 
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 REALTIME_RELAY = "layer"
+SMS_BACKEND = "console"
+VAPID_PUBLIC_KEY = VAPID_PRIVATE_KEY = ""
 RAZORPAY_KEY_ID = RAZORPAY_KEY_SECRET = RAZORPAY_WEBHOOK_SECRET = (
     ""  # tests that need the PostgreSQL relay switch it on themselves
 )

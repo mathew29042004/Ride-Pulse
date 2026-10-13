@@ -1,14 +1,15 @@
 from drf_spectacular.utils import extend_schema, inline_serializer
-from rest_framework import mixins, serializers
+from rest_framework import mixins, serializers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from apps.core.api import ContextBindingMixin
 
 from . import services
-from .models import Notification
+from .models import Notification, PushSubscription
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -51,3 +52,46 @@ class NotificationViewSet(
     @action(detail=False, methods=["get"], url_path="unread-count")
     def unread_count(self, request):
         return Response({"unread": services.unread_count(request.user)})
+
+
+class PushKeysSerializer(serializers.Serializer):
+    p256dh = serializers.CharField(max_length=200)
+    auth = serializers.CharField(max_length=100)
+
+
+class PushSubscriptionSerializer(serializers.Serializer):
+    endpoint = serializers.URLField(max_length=500)
+    keys = PushKeysSerializer()
+
+
+class PushSubscriptionView(ContextBindingMixin, APIView):
+    """Register (POST) or remove (DELETE) this browser for push notifications."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=PushSubscriptionSerializer, responses={204: None}, tags=["notifications"]
+    )
+    def post(self, request):
+        serializer = PushSubscriptionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        # A device belongs to whoever signed in on it last.
+        PushSubscription.objects.update_or_create(
+            endpoint=data["endpoint"],
+            defaults={
+                "user": request.user,
+                "p256dh": data["keys"]["p256dh"],
+                "auth": data["keys"]["auth"],
+                "user_agent": request.headers.get("User-Agent", "")[:255],
+            },
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        request=PushSubscriptionSerializer, responses={204: None}, tags=["notifications"]
+    )
+    def delete(self, request):
+        endpoint = request.data.get("endpoint", "")
+        PushSubscription.objects.filter(user=request.user, endpoint=endpoint).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -532,3 +532,187 @@ def test_metrics_endpoint_needs_its_token(api, client, settings, rider):
     assert 'ridepulse_trips_active{status="REQUESTED"} 0' in body
     assert "ridepulse_ledger_balanced 1" in body
     assert "ridepulse_http_request_duration_seconds_bucket" in body
+
+
+def test_phone_otp_login_signup_and_abuse_limits(api, settings):
+    from datetime import timedelta
+
+    from apps.accounts.models import PhoneOTP
+
+    settings.DEBUG = True  # the console SMS backend hands the code back in development
+    client = api()
+
+    # A brand-new number: verify, then sign up with just a name.
+    sent = client.post("/api/v1/auth/otp/request/", {"phone": "+91 98400-12345"}).json()
+    assert sent["phone"] == "9840012345" and len(sent["debug_code"]) == 6
+    stored = PhoneOTP.objects.get(phone="9840012345")
+    assert sent["debug_code"] not in stored.code_hash  # only a keyed hash is stored
+
+    wrong = "000000" if sent["debug_code"] != "000000" else "111111"
+    bad = client.post("/api/v1/auth/otp/verify/", {"phone": "9840012345", "code": wrong})
+    assert bad.status_code == 422 and "4 tries left" in bad.json()["error"]["message"]
+    verified = client.post(
+        "/api/v1/auth/otp/verify/", {"phone": "9840012345", "code": sent["debug_code"]}
+    ).json()
+    assert verified["new_user"] is True
+    # The code can't be used twice.
+    again = client.post(
+        "/api/v1/auth/otp/verify/", {"phone": "9840012345", "code": sent["debug_code"]}
+    )
+    assert again.status_code == 422
+    signed_up = client.post(
+        "/api/v1/auth/otp/signup/",
+        {"signup_token": verified["signup_token"], "first_name": "Divya"},
+    )
+    assert signed_up.status_code == 201
+    assert signed_up.json()["user"]["role"] == "RIDER" and signed_up.json()["access"]
+
+    # Next time the same number signs straight in.
+    PhoneOTP.objects.update(created_at=timezone.now() - timedelta(minutes=1))
+    code = client.post("/api/v1/auth/otp/request/", {"phone": "9840012345"}).json()["debug_code"]
+    login = client.post("/api/v1/auth/otp/verify/", {"phone": "9840012345", "code": code}).json()
+    assert login["new_user"] is False and login["user"]["first_name"] == "Divya"
+
+    # Resend limits: one code per 30 s...
+    PhoneOTP.objects.update(created_at=timezone.now() - timedelta(minutes=1))
+    assert client.post("/api/v1/auth/otp/request/", {"phone": "9840012345"}).status_code == 200
+    assert client.post("/api/v1/auth/otp/request/", {"phone": "9840012345"}).status_code == 409
+    # ...five wrong guesses burn the code...
+    for _ in range(5):
+        client.post("/api/v1/auth/otp/verify/", {"phone": "9840012345", "code": "999999"})
+    assert PhoneOTP.objects.filter(phone="9840012345", consumed_at__isnull=True).count() == 0
+    # ...and expired codes don't work.
+    PhoneOTP.objects.update(created_at=timezone.now() - timedelta(minutes=1))
+    code = client.post("/api/v1/auth/otp/request/", {"phone": "9840012345"}).json()["debug_code"]
+    PhoneOTP.objects.update(expires_at=timezone.now() - timedelta(seconds=1))
+    assert (
+        client.post("/api/v1/auth/otp/verify/", {"phone": "9840012345", "code": code}).status_code
+        == 422
+    )
+
+    assert client.post("/api/v1/auth/otp/request/", {"phone": "12345"}).status_code == 422
+    # Staff don't sign in by SMS.
+    agent = make_staff(Role.SUPPORT_AGENT)
+    agent.phone = "9000000001"
+    agent.save()
+    code = client.post("/api/v1/auth/otp/request/", {"phone": "9000000001"}).json()["debug_code"]
+    assert (
+        client.post("/api/v1/auth/otp/verify/", {"phone": "9000000001", "code": code}).status_code
+        == 422
+    )
+
+    # Without DEBUG the code is never returned.
+    settings.DEBUG = False
+    assert (
+        "debug_code" not in client.post("/api/v1/auth/otp/request/", {"phone": "9123456780"}).json()
+    )
+
+
+def test_riders_and_drivers_call_through_a_masked_number(api, rider, make_driver, now, settings):
+    from unittest import mock
+
+    from apps.rides import calls, dispatch
+    from apps.rides.models import TripOffer
+
+    driver = make_driver(now=now)
+    rider_client, driver_client = api(rider.user), api(driver.user)
+    trip = rider_client.post(
+        "/api/v1/trips/", {"ride_type": "MINI", "payment_method": "UPI", **POINTS}, format="json"
+    ).json()
+    url = f"/api/v1/trips/{trip['id']}/call/"
+    assert rider_client.post(url).status_code == 422  # no driver yet
+
+    dispatch.accept_offer(TripOffer.objects.get(trip_id=trip["id"]), driver=driver)
+    # Neither side can see the other's real number...
+    seen_by_rider = rider_client.get(f"/api/v1/trips/{trip['id']}/").json()
+    seen_by_driver = driver_client.get(f"/api/v1/trips/{trip['id']}/").json()
+    assert seen_by_rider["driver"]["phone"] is None and seen_by_driver["rider"]["phone"] is None
+    assert driver.user.phone not in str(seen_by_rider) and rider.user.phone not in str(
+        seen_by_driver
+    )
+    # ...but support staff can.
+    agent = make_staff(Role.SUPPORT_AGENT)
+    assert (
+        api(agent).get(f"/api/v1/trips/{trip['id']}/").json()["rider"]["phone"] == rider.user.phone
+    )
+
+    demo = rider_client.post(url).json()
+    assert demo["mode"] == "demo" and "No call was placed" in demo["message"]
+
+    settings.EXOTEL_SID, settings.EXOTEL_API_KEY = "ridepulse1", "key"
+    settings.EXOTEL_API_TOKEN, settings.EXOTEL_CALLER_ID = "token", "08047180000"
+    with mock.patch.object(calls, "_exotel_connect", return_value="CA123") as connect:
+        live = driver_client.post(url).json()
+    assert live["mode"] == "exotel" and "Pick up" in live["message"]
+    connect.assert_called_once_with(driver.user.phone, rider.user.phone)  # bridged server-side
+    assert api(make_rider().user).post(url).status_code == 404  # strangers can't call
+
+
+def test_web_push_reaches_subscribed_devices(
+    api, rider, make_driver, settings, now, django_capture_on_commit_callbacks
+):
+    import json
+    from io import StringIO
+    from unittest import mock
+
+    from django.core.management import call_command
+    from pywebpush import WebPushException
+
+    from apps.notifications import push
+    from apps.notifications.models import PushSubscription
+    from apps.notifications.services import notify
+    from apps.pricing.models import RideType
+    from tests.integration.helpers import book
+
+    keys = StringIO()
+    call_command("generate_vapid_keys", stdout=keys)
+    pairs = dict(line.split("=", 1) for line in keys.getvalue().split())
+    settings.VAPID_PUBLIC_KEY, settings.VAPID_PRIVATE_KEY = (
+        pairs["VAPID_PUBLIC_KEY"],
+        pairs["VAPID_PRIVATE_KEY"],
+    )
+    assert len(pairs["VAPID_PUBLIC_KEY"]) == 87  # 65-byte uncompressed P-256 point, base64url
+    assert api().get("/api/config/").json()["push"]["vapid_public_key"] == settings.VAPID_PUBLIC_KEY
+
+    device = {"endpoint": "https://push.example.com/abc", "keys": {"p256dh": "BPk", "auth": "xyz"}}
+    assert (
+        api(rider.user).post("/api/v1/push/subscription/", device, format="json").status_code == 204
+    )
+    assert PushSubscription.objects.get().user == rider.user
+
+    with (
+        mock.patch("pywebpush.webpush") as webpush,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        notify(rider.user, "Your driver has arrived", "Meet at T. Nagar", link="/ride/trips/1/")
+        # Drivers get urgent offer pushes that expire with the offer.
+        driver = make_driver(now=now)
+        api(driver.user).post(
+            "/api/v1/push/subscription/",
+            {**device, "endpoint": "https://push.example.com/drv"},
+            format="json",
+        )
+        book(rider, RideType.objects.get(code="MINI"), now=now)
+    sent = [
+        json.loads(c.kwargs["data"])
+        | {"ttl": c.kwargs["ttl"], "urgency": c.kwargs["headers"]["Urgency"]}
+        for c in webpush.call_args_list
+    ]
+    assert {
+        "title": "Your driver has arrived",
+        "body": "Meet at T. Nagar",
+        "url": "/ride/trips/1/",
+        "tag": "",
+    }.items() <= sent[0].items()
+    offer = next(s for s in sent if s["tag"] == "offer")
+    assert (
+        offer["title"].startswith("New Mini request")
+        and offer["urgency"] == "high"
+        and offer["ttl"] <= 20
+    )
+
+    # A device that uninstalled the app is forgotten.
+    gone = WebPushException("Gone", response=mock.Mock(status_code=410))
+    with mock.patch("pywebpush.webpush", side_effect=gone):
+        assert push.send(rider.user.pk, title="x") == 0
+    assert not PushSubscription.objects.filter(user=rider.user).exists()

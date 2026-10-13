@@ -59,3 +59,36 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// --- Push notifications (trip offers, "driver arrived", ...) ---------------------------------
+self.addEventListener("push", (event) => {
+  let message = { title: "Ride Pulse", body: "", url: "/", tag: "" };
+  try {
+    message = { ...message, ...event.data.json() };
+  } catch {
+    /* not JSON: show the generic title */
+  }
+  event.waitUntil(
+    self.registration.showNotification(message.title, {
+      body: message.body,
+      tag: message.tag || undefined, // a newer offer replaces the previous one
+      renotify: Boolean(message.tag),
+      icon: "/static/app/icons/icon-192.png",
+      badge: "/static/app/icons/icon-192.png",
+      data: { url: message.url },
+      vibrate: message.tag === "offer" ? [200, 100, 200, 100, 200] : [100],
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((w) => w.url.startsWith(self.location.origin));
+      if (open) return open.focus().then(() => open.navigate(url));
+      return self.clients.openWindow(url);
+    }),
+  );
+});

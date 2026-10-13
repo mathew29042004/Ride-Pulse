@@ -137,7 +137,32 @@ def _create_offer(
         at=now,
     )
     broadcast.driver_event(candidate.driver.pk, "offer", offer_payload(offer))
+    _push_offer(offer, candidate.driver)
     return offer
+
+
+def _push_offer(offer: TripOffer, driver: DriverProfile) -> None:
+    """Wake the driver's phone even if the app is in the background. Urgent, and it expires
+    with the offer, so a late notification is never shown."""
+    from apps.notifications import push
+    from apps.notifications.models import PushSubscription
+
+    if not (push.enabled() and PushSubscription.objects.filter(user_id=driver.user_id).exists()):
+        return
+    from apps.notifications.tasks import send_push
+
+    trip = offer.trip
+    seconds = max(int((offer.expires_at - timezone.now()).total_seconds()), 1)
+    message = {
+        "title": f"New {trip.ride_type.name} request · ₹{trip.estimate.driver_earning}",
+        "body": f"{offer.distance_km} km away · {trip.pickup_address or 'pickup'} → "
+        f"{trip.dropoff_address or 'drop'}",
+        "url": "/drive",
+        "tag": "offer",
+        "ttl": seconds,
+        "urgent": True,
+    }
+    transaction.on_commit(lambda: send_push.delay(driver.user_id, **message))
 
 
 def offer_payload(offer: TripOffer) -> dict:

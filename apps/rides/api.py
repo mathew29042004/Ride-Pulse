@@ -23,7 +23,7 @@ from apps.pricing.api import FareSerializer, PointSerializer
 from apps.pricing.models import RideType
 from apps.support.api import IncidentSerializer
 
-from . import dispatch, services
+from . import calls, dispatch, services
 from .models import (
     ACTIVE_STATUSES,
     ScheduledRide,
@@ -40,7 +40,14 @@ class TripPartySerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     rating = serializers.DecimalField(max_digits=3, decimal_places=2)
-    phone = serializers.CharField(source="user.phone")
+    phone = serializers.SerializerMethodField()
+
+    def get_phone(self, party) -> str | None:
+        """Riders and drivers never see each other's number (they call through the masked
+        bridge); staff do, for support and safety."""
+        request = self.context.get("request")
+        viewer = request.user if request else None
+        return party.user.phone if viewer is not None and viewer.is_staff_member else None
 
 
 class TripSerializer(serializers.ModelSerializer):
@@ -280,6 +287,7 @@ RIDER = (
     "receipt",
     "messages",
     "share",
+    "call",
 )
 DRIVER = (
     "list",
@@ -294,6 +302,7 @@ DRIVER = (
     "events",
     "route",
     "messages",
+    "call",
 )
 
 
@@ -473,6 +482,13 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def call(self, request, pk=None):
+        """Call the other party through a masked number (Exotel), or a demo explanation."""
+        result = calls.call_other_party(self.get_object(), user=request.user)
+        return Response({"mode": result.mode, "message": result.message})
 
     @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])

@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
 import { Logo } from "@/components/Logo";
+import { PhoneLogin } from "@/components/PhoneLogin";
 import { Button, Field, Input } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import { homeFor, useAuth } from "@/lib/auth";
@@ -19,6 +20,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [method, setMethod] = useState<"phone" | "email">("phone");
 
   // ?switch=1 shows the form even when signed in, to change accounts in this tab.
   if (user && !params.get("switch")) return <Navigate to={params.get("next") ?? homeFor(user.role)} replace />;
@@ -52,8 +54,7 @@ export default function Login() {
         <div className="relative mt-auto">
           <h2 className="text-3xl font-bold tracking-tight">Try every side of the marketplace.</h2>
           <p className="mt-3 max-w-md text-white/70">
-            Sign in with a demo account. Open the rider app in one tab and the driver app in another to book and
-            accept your own ride.
+            Sign in with a demo account. Open the rider app in one tab and the driver app in another to book and accept your own ride.
           </p>
           <div className="mt-8 grid gap-3">
             {DEMO_ACCOUNTS.map((account) => {
@@ -86,23 +87,60 @@ export default function Login() {
             <Logo />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight">Log in</h1>
-          <p className="mt-1 text-sm text-muted">Riders, drivers and staff all sign in here.</p>
-          <form onSubmit={onSubmit} className="mt-8 space-y-4">
-            <Field label="Email">
-              <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-            </Field>
-            <Field label="Password" error={error}>
-              <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
-            </Field>
-            <Button type="submit" block size="lg" loading={busy === "form"}>
-              Continue
-            </Button>
-          </form>
+          <p className="mt-1 text-sm text-muted">Riders and drivers can use their phone; staff sign in with email.</p>
+          <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-surface-3 p-1 text-sm font-semibold" role="tablist">
+            {(["phone", "email"] as const).map((m) => (
+              <button
+                key={m}
+                role="tab"
+                aria-selected={method === m}
+                onClick={() => setMethod(m)}
+                className={method === m ? "rounded-lg bg-surface py-2 shadow-sm" : "rounded-lg py-2 text-muted"}
+              >
+                {m === "phone" ? "Phone" : "Email"}
+              </button>
+            ))}
+          </div>
+          {method === "phone" ? (
+            <div className="mt-6">
+              <PhoneLogin
+                onDone={(me) => {
+                  toast.success(`Welcome, ${me.first_name || "rider"}`);
+                  navigate(params.get("next") ?? homeFor(me.role), { replace: true });
+                }}
+              />
+            </div>
+          ) : (
+            <form onSubmit={onSubmit} className="mt-6 space-y-4">
+              <Field label="Email">
+                <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              </Field>
+              <Field label="Password" error={error}>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </Field>
+              <Button type="submit" block size="lg" loading={busy === "form"}>
+                Continue
+              </Button>
+            </form>
+          )}
           <div className="mt-6 grid gap-2 lg:hidden">
             <p className="text-xs font-semibold tracking-wide text-muted uppercase">Demo accounts</p>
             <div className="grid grid-cols-3 gap-2">
               {DEMO_ACCOUNTS.slice(0, 3).map((account) => (
-                <Button key={account.email} variant="outline" size="sm" loading={busy === account.email} onClick={() => signIn(account.email, DEMO_PASSWORD, account.email)}>
+                <Button
+                  key={account.email}
+                  variant="outline"
+                  size="sm"
+                  loading={busy === account.email}
+                  onClick={() => signIn(account.email, DEMO_PASSWORD, account.email)}
+                >
                   {account.label}
                 </Button>
               ))}

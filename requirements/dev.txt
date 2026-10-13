@@ -127,6 +127,7 @@ pyzmq==27.2.0
     # via locust
 requests==2.34.2
     # via
+    #   -c requirements/base.txt
     #   locust
     #   python-socketio
 ruff==0.17.0

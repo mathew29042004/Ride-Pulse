@@ -9,7 +9,7 @@ from apps.analytics import api as analytics
 from apps.audit.api import AuditLogViewSet
 from apps.drivers import api as drivers
 from apps.geo import api as geo
-from apps.notifications.api import NotificationViewSet
+from apps.notifications.api import NotificationViewSet, PushSubscriptionView
 from apps.payments import api as payments
 from apps.pricing import api as pricing
 from apps.riders import api as riders
@@ -46,6 +46,9 @@ auth_urls = [
     path("me/", accounts.MeView.as_view(), name="me"),
     path("register/rider/", accounts.RegisterRiderView.as_view(), name="register-rider"),
     path("register/driver/", accounts.RegisterDriverView.as_view(), name="register-driver"),
+    path("otp/request/", accounts.OtpRequestView.as_view(), name="otp-request"),
+    path("otp/verify/", accounts.OtpVerifyView.as_view(), name="otp-verify"),
+    path("otp/signup/", accounts.OtpSignupView.as_view(), name="otp-signup"),
 ]
 
 analytics_urls = [
@@ -65,6 +68,7 @@ urlpatterns = [
     path("ops/live/", rides.LiveOpsView.as_view(), name="ops-live"),
     path("ops/dispatch/sweep/", rides.DispatchSweepView.as_view(), name="dispatch-sweep"),
     path("ledger/", payments.LedgerView.as_view(), name="ledger"),
+    path("push/subscription/", PushSubscriptionView.as_view(), name="push-subscription"),
     path(
         "payments/razorpay/webhook/",
         payments.RazorpayWebhookView.as_view(),

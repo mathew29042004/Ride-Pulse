@@ -168,6 +168,7 @@ REST_FRAMEWORK = {
         "fare_estimate": "120/min",
         "location": "240/min",
         "registration": "10/hour",
+        "otp": "10/min",
     },
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -303,6 +304,29 @@ GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 GOOGLE_MAPS_BROWSER_KEY = env("GOOGLE_MAPS_BROWSER_KEY", default="")
 GOOGLE_MAPS_MAP_ID = env("GOOGLE_MAPS_MAP_ID", default="DEMO_MAP_ID")
 GOOGLE_ROUTES_TRAFFIC_AWARE = env.bool("GOOGLE_ROUTES_TRAFFIC_AWARE", default=True)
+
+# --- SMS (phone login codes) -----------------------------------------------------------------
+# console (default: codes go to the log, and to the app in DEBUG), twilio or msg91.
+SMS_BACKEND = env("SMS_BACKEND", default="console")
+TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
+TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
+TWILIO_FROM = env("TWILIO_FROM", default="")
+MSG91_AUTH_KEY = env("MSG91_AUTH_KEY", default="")
+MSG91_TEMPLATE_ID = env("MSG91_TEMPLATE_ID", default="")
+
+# --- Web Push (optional) ---------------------------------------------------------------------
+# Generate with `python manage.py generate_vapid_keys`. Empty: push notifications are off.
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+VAPID_SUBJECT = env("VAPID_SUBJECT", default="mailto:support@ridepulse.dev")
+
+# --- Masked calling (optional) ---------------------------------------------------------------
+# Exotel click-to-call bridges rider and driver through a virtual number (demo mode if unset).
+EXOTEL_SID = env("EXOTEL_SID", default="")
+EXOTEL_API_KEY = env("EXOTEL_API_KEY", default="")
+EXOTEL_API_TOKEN = env("EXOTEL_API_TOKEN", default="")
+EXOTEL_CALLER_ID = env("EXOTEL_CALLER_ID", default="")
+EXOTEL_SUBDOMAIN = env("EXOTEL_SUBDOMAIN", default="api.exotel.com")
 
 # --- Razorpay (optional) ---------------------------------------------------------------------
 # Test keys (rzp_test_...) from the Razorpay dashboard enable real checkout for wallet top-ups.

@@ -244,3 +244,60 @@ def test_bot_riders_are_never_real_people():
     assert Simulator.pick_bot_rider() is None
     synthetic = register_rider(email="asha.rao@example.com", password=None, first_name="Asha")
     assert Simulator.pick_bot_rider() == synthetic
+
+
+def test_ride_pin_cant_be_guessed(rider, mini, make_driver, now):
+    from apps.core.exceptions import ActionNotPermitted, BusinessRuleViolation
+    from apps.notifications.models import Notification
+
+    driver = make_driver(now=now)
+    trip = book(rider, mini, now=now)
+    dispatch.accept_offer(pending_offer(trip), driver=driver, now=now)
+    trip.refresh_from_db()
+    from apps.drivers.services import update_location
+
+    update_location(driver, lat=trip.pickup_lat, lng=trip.pickup_lng, now=now)
+    rides.mark_arrived(trip, driver=driver, now=now)
+    wrong = "0000" if trip.otp != "0000" else "1111"
+    for left in (4, 3, 2, 1):
+        with pytest.raises(BusinessRuleViolation, match=f"{left} tr"):
+            rides.start_trip(trip, driver=driver, otp=wrong, now=now)
+    with pytest.raises(BusinessRuleViolation, match="locked"):
+        rides.start_trip(trip, driver=driver, otp=wrong, now=now)
+    # Locked: even the right PIN no longer works, and the rider was warned.
+    with pytest.raises(ActionNotPermitted):
+        rides.start_trip(trip, driver=driver, otp=trip.otp, now=now)
+    trip.refresh_from_db()
+    assert trip.pin_attempts == 5 and trip.status == TripStatus.DRIVER_ARRIVED
+    assert trip.events.filter(kind="PIN_LOCKED").exists()
+    assert Notification.objects.filter(user=rider.user, title__contains="wrong PIN").exists()
+
+
+def test_gps_jumps_are_not_billed(rider, mini, make_driver, now):
+    from datetime import timedelta
+
+    from apps.drivers.services import update_location
+
+    driver = make_driver(now=now)
+    trip = book(rider, mini, now=now)
+    dispatch.accept_offer(pending_offer(trip), driver=driver, now=now)
+    trip.refresh_from_db()
+    update_location(driver, lat=trip.pickup_lat, lng=trip.pickup_lng, now=now)
+    rides.mark_arrived(trip, driver=driver, now=now)
+    trip = rides.start_trip(trip, driver=driver, otp=trip.otp, now=now)
+    # Honest driving towards the drop, one ping a minute...
+    lat, lng = trip.pickup_lat, trip.pickup_lng
+    t = now
+    for _ in range(5):
+        lat, lng, t = lat + 0.002, lng + 0.008, t + timedelta(minutes=1)
+        update_location(driver, lat=lat, lng=lng, now=t)
+    # ...then a spoofing app teleports the phone 20 km away and back within seconds.
+    update_location(driver, lat=lat + 0.18, lng=lng, now=t + timedelta(seconds=5))
+    update_location(driver, lat=lat, lng=lng, now=t + timedelta(seconds=10))
+    update_location(
+        driver, lat=trip.dropoff_lat, lng=trip.dropoff_lng, now=t + timedelta(minutes=4)
+    )
+    trip = rides.complete_trip(trip, driver=driver, now=t + timedelta(minutes=4))
+    assert TripFlag.GPS_JUMP in trip.flags
+    assert trip.actual_distance_km < 12  # the ~40 km round trip "teleport" wasn't billed
+    assert trip.pricing_mode == PricingMode.UPFRONT  # so the rider paid the quoted fare

@@ -5,6 +5,7 @@ import pytest
 pytest.importorskip("playwright", reason="install requirements/dev.txt for browser tests")
 from playwright.sync_api import expect
 
+from apps.accounts.models import User
 from apps.drivers import services as drivers
 from apps.riders.services import register_rider
 from apps.rides import dispatch
@@ -26,6 +27,7 @@ def test_rider_books_chats_and_completes_a_trip(page, live_server, make_driver, 
 
     # Sign in.
     page.goto(f"{live_server.url}/login")
+    page.get_by_role("tab", name="Email").click()  # the default is phone (OTP) sign-in
     page.get_by_placeholder("you@example.com").fill("e2e.rider@test.dev")
     page.get_by_placeholder("••••••••").fill(PASSWORD)
     page.get_by_role("button", name="Continue", exact=True).click()
@@ -87,3 +89,17 @@ def test_shared_trip_link_works_without_signing_in(page, live_server, rider, mak
     expect(page.get_by_text("Marina Beach")).to_be_visible()
     page.goto(f"{live_server.url}/track/not-a-real-link")
     expect(page.get_by_text("This link has expired")).to_be_visible()
+
+
+def test_new_rider_signs_up_with_phone_otp(page, live_server, settings):
+    settings.DEBUG = True  # the console SMS backend shows the code in the app in development
+    page.goto(f"{live_server.url}/login")
+    page.get_by_placeholder("98765 43210").fill("98400 55555")
+    with page.expect_response(lambda r: "/otp/request/" in r.url) as sent:
+        page.get_by_role("button", name="Send code").click()
+    code = sent.value.json()["debug_code"]
+    page.get_by_label("Login code").fill(code)  # verifies automatically at 6 digits
+    page.get_by_placeholder("Full name").fill("Meena Iyer")
+    page.get_by_role("button", name="Create account").click()
+    expect(page.get_by_text("Where to?")).to_be_visible()
+    assert User.objects.get(phone="9840055555").first_name == "Meena"

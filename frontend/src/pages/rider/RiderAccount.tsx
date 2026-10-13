@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
+import { PushToggle } from "@/components/PushToggle";
 import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -119,6 +120,7 @@ export default function RiderAccount() {
 
       <h2 className="mt-4 text-xs font-semibold tracking-wide text-muted uppercase">Safety & help</h2>
       <div className="divide-y divide-line">
+        <PushToggle audience="rider" />
         <button
           onClick={() => {
             setContact({ emergency_contact_name: rider?.emergency_contact_name ?? "", emergency_contact_phone: rider?.emergency_contact_phone ?? "" });

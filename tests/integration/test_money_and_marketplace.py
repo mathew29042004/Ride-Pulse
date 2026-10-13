@@ -321,7 +321,10 @@ def test_analytics_overview_and_series(rider, mini, make_driver, now):
     assert kpis["gmv"] == trip.fare_total
     assert kpis["net_revenue"] == trip.fare_total - trip.gst_amount - trip.driver_earning
     series = analytics.time_series(unit="hour", **window)
-    assert len(series) in (24, 25) and sum(p["completed"] for p in series) == 1
+    # One bucket per local clock hour the window touches (24 to 26, depending on the time).
+    hour = lambda t: timezone.localtime(t).replace(minute=0, second=0, microsecond=0)  # noqa: E731
+    expected = int((hour(window["until"]) - hour(window["since"])) / timedelta(hours=1)) + 1
+    assert len(series) == expected and sum(p["completed"] for p in series) == 1
     assert analytics.demand_heatmap(**window)[0]["requests"] == 1
 
 

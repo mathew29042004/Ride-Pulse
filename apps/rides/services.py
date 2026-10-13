@@ -456,37 +456,83 @@ def mark_arrived(
     return trip
 
 
-@transaction.atomic
+MAX_PIN_ATTEMPTS = 5
+
+
 def start_trip(trip: Trip, *, driver: DriverProfile, otp: str, now: datetime | None = None) -> Trip:
+    """Start the ride with the rider's PIN. The PIN proves the rider is in this car, so it
+    can't be guessed: after MAX_PIN_ATTEMPTS wrong entries the trip is locked and the rider is
+    alerted (the attempt count is committed before the error is raised)."""
     now = now or timezone.now()
-    trip = _lock(trip)
-    _require_driver(trip, driver)
-    assert_transition(trip.status, TripStatus.IN_PROGRESS)
-    if not secrets.compare_digest(str(otp).strip(), trip.otp):
-        raise BusinessRuleViolation("Incorrect ride PIN.", field="otp")
-    waited = max((now - trip.arrived_at).total_seconds() / 60, 0) if trip.arrived_at else 0
-    return _change_status(
-        trip,
-        TripStatus.IN_PROGRESS,
-        actor=driver.user,
-        at=now,
-        started_at=now,
-        waiting_minutes=_q(waited),
+    with transaction.atomic():
+        trip = _lock(trip)
+        _require_driver(trip, driver)
+        assert_transition(trip.status, TripStatus.IN_PROGRESS)
+        if trip.pin_attempts >= MAX_PIN_ATTEMPTS:
+            raise ActionNotPermitted(
+                "Too many wrong PINs. The rider has been alerted; contact support to continue."
+            )
+        if secrets.compare_digest(str(otp).strip(), trip.otp):
+            waited = max((now - trip.arrived_at).total_seconds() / 60, 0) if trip.arrived_at else 0
+            return _change_status(
+                trip,
+                TripStatus.IN_PROGRESS,
+                actor=driver.user,
+                at=now,
+                started_at=now,
+                waiting_minutes=_q(waited),
+            )
+        trip.pin_attempts += 1
+        trip.save(update_fields=["pin_attempts", "updated_at"])
+        left = MAX_PIN_ATTEMPTS - trip.pin_attempts
+        if not left:
+            record_event(
+                trip, "PIN_LOCKED", actor=driver.user, message="Too many wrong ride PINs", at=now
+            )
+            notify(
+                trip.rider.user,
+                "Your driver entered the wrong PIN 5 times",
+                "If you're not in this car, don't share your PIN and tap SOS in the app.",
+                level=Level.WARNING,
+                link=f"/ride/trips/{trip.pk}/",
+            )
+    raise BusinessRuleViolation(
+        f"Incorrect ride PIN. {left} {'try' if left == 1 else 'tries'} left."
+        if left
+        else "Incorrect ride PIN. The trip is now locked and the rider has been alerted.",
+        field="otp",
     )
 
 
-def _distance_from_pings(trip: Trip) -> Decimal | None:
+# A GPS jump longer than this, faster than any car could drive, isn't billed (spoofing apps and
+# glitches teleport the phone; honest small steps are always counted).
+GPS_JUMP_KM = 1.0
+GPS_JUMP_KMH = 150.0
+
+
+def _distance_from_pings(trip: Trip) -> tuple[Decimal | None, Decimal]:
     """Distance driven with the rider on board: from the pickup point along the GPS trail
-    recorded after the trip started (the drive to the pickup isn't billed)."""
+    recorded after the trip started (the drive to the pickup isn't billed).
+
+    Returns ``(billed_km, skipped_jump_km)``.
+    """
     trail = list(
         trip.pings.filter(recorded_at__gte=trip.started_at)
         .order_by("recorded_at")
-        .values_list("lat", "lng")
+        .values_list("lat", "lng", "recorded_at")
     )
     if not trail:
-        return None
-    points = [(trip.pickup_lat, trip.pickup_lng), *trail]
-    return _q(sum(haversine_km(*a, *b) for a, b in pairwise(points)))
+        return None, Decimal(0)
+    points = [(trip.pickup_lat, trip.pickup_lng, trip.started_at), *trail]
+    billed = skipped = 0.0
+    for (lat1, lng1, t1), (lat2, lng2, t2) in pairwise(points):
+        km = haversine_km(lat1, lng1, lat2, lng2)
+        hours = max((t2 - t1).total_seconds(), 1) / 3600
+        if km > GPS_JUMP_KM and km / hours > GPS_JUMP_KMH:
+            skipped += km
+        else:
+            billed += km
+    return _q(billed), _q(skipped)
 
 
 @transaction.atomic
@@ -505,10 +551,12 @@ def complete_trip(
     assert_transition(trip.status, TripStatus.COMPLETED)
 
     duration = _q(max((now - trip.started_at).total_seconds() / 60, 1))
+    skipped_jumps = Decimal(0)
     if actual_distance_km is not None:
         distance = _q(float(actual_distance_km))
     else:
-        distance = _distance_from_pings(trip) or trip.estimated_distance_km
+        measured, skipped_jumps = _distance_from_pings(trip)
+        distance = measured or trip.estimated_distance_km
 
     upfront = distance <= trip.estimated_distance_km * upfront_distance_tolerance() and (
         duration <= trip.estimated_duration_min * upfront_duration_tolerance()
@@ -547,6 +595,8 @@ def complete_trip(
     flags = list(trip.flags)
     if distance > trip.estimated_distance_km * ROUTE_DEVIATION_FACTOR:
         flags.append(TripFlag.ROUTE_DEVIATION)
+    if skipped_jumps:
+        flags.append(TripFlag.GPS_JUMP)
     telemetry = telemetry or {}
     trip = _change_status(
         trip,

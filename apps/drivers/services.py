@@ -55,6 +55,11 @@ def register_driver(
     User = get_user_model()
     if User.objects.filter(email__iexact=email).exists():
         raise BusinessRuleViolation("An account with this email already exists.", field="email")
+    phone = _clean_phone(phone)
+    if phone and User.objects.filter(phone=phone).exists():
+        raise BusinessRuleViolation(
+            "An account with this phone number already exists.", field="phone"
+        )
     user = User.objects.create_user(
         email=email,
         password=password,
@@ -439,3 +444,15 @@ def recompute_safety_score(driver: DriverProfile, *, last_trips: int = 50) -> in
     DriverProfile.objects.filter(pk=driver.pk).update(safety_score=score)
     driver.safety_score = score
     return score
+
+
+def _clean_phone(phone: str) -> str:
+    """Store numbers in one format (10 digits) so phone login finds the account."""
+    from apps.core.validators import normalize_indian_mobile
+
+    if not phone:
+        return ""
+    try:
+        return normalize_indian_mobile(phone)
+    except ValueError as exc:
+        raise BusinessRuleViolation(str(exc), field="phone") from exc

@@ -1,17 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { AlertTriangle, Banknote, Bot, LocateFixed, MapPin, Navigation, Phone, Power, ShieldAlert, Zap } from "lucide-react";
+import { AlertTriangle, Banknote, BellRing, Bot, LocateFixed, MapPin, Navigation, Power, Satellite, ShieldAlert, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
 import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLine, advanceAlong, routePath, snapToPath } from "@/components/map";
+import { CallButton } from "@/components/CallButton";
 import { NotificationBell } from "@/components/NotificationBell";
+import { usePush } from "@/components/PushToggle";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Input, Modal, Sheet, StarInput, Stars } from "@/components/ui";
 import { buzz, chime } from "@/lib/alert";
 import { api, ApiError } from "@/lib/api";
 import { inr, km, minutes } from "@/lib/format";
+import { usePhoneGps } from "@/lib/gps";
 import { clockIn, etaFromKm, haversineKm, useActiveTrip, useDriverMe, useNow } from "@/lib/hooks";
 import type { City, Earnings, Offer, Trip } from "@/lib/types";
 import { useSocket } from "@/lib/ws";
@@ -142,6 +145,15 @@ export default function DriverHome() {
   const [pos, setPos] = useState<Pos | null>(null);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [autopilot, setAutopilot] = useState(false);
+  const push = usePush();
+  // Real GPS from the phone (remembered per device); otherwise the demo: tap the map / autopilot.
+  const [phoneGps, setPhoneGps] = useState(() => {
+    try {
+      return localStorage.getItem("rp.driver.gps") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [completed, setCompleted] = useState<Trip | null>(null);
   const [recenter, setRecenter] = useState(0);
   const [riderStars, setRiderStars] = useState(5);
@@ -195,6 +207,24 @@ export default function DriverHome() {
       /* transient network errors are fine for GPS pings */
     }
   }, []);
+
+  const gpsState = usePhoneGps(phoneGps && online, (fix) => {
+    sendLocation({ lat: fix.lat, lng: fix.lng, heading: fix.heading ?? posRef.current?.heading ?? null });
+  });
+  useEffect(() => {
+    if (gpsState === "denied") toast.error("Location permission is blocked. Allow it in the browser to use phone GPS.");
+    if (gpsState === "unavailable") toast.error("This device can't share its location right now.");
+  }, [gpsState]);
+  const toggleGps = () => {
+    const next = !phoneGps;
+    setPhoneGps(next);
+    if (next) setAutopilot(false);
+    try {
+      localStorage.setItem("rp.driver.gps", next ? "1" : "0");
+    } catch {
+      /* not persisted */
+    }
+  };
 
   // Demo autopilot: drive to the pickup, then along the trip's route to the drop, sending GPS as we go.
   const route = useMemo(
@@ -315,7 +345,7 @@ export default function DriverHome() {
             />
           )}
           {offer && <PinMarker lat={offer.pickup.lat} lng={offer.pickup.lng} kind="pickup" label="Pickup" />}
-          {!autopilot && <MapClick onClick={(lat, lng) => sendLocation({ lat, lng, heading: pos.heading })} />}
+          {!autopilot && !phoneGps && <MapClick onClick={(lat, lng) => sendLocation({ lat, lng, heading: pos.heading })} />}
         </BaseMap>
       </div>
 
@@ -334,14 +364,34 @@ export default function DriverHome() {
         </div>
       </div>
 
-      {!trip && online && !offer && (
+      {online && !trip && !offer && push.status === "off" && (
+        <button
+          onClick={push.toggle}
+          className="relative z-[600] mx-3 mt-1 flex items-center gap-2 rounded-2xl bg-surface px-4 py-2.5 text-left text-xs shadow-[var(--shadow-float)]"
+        >
+          <BellRing className="size-4 shrink-0 text-brand" />
+          <span className="flex-1">
+            <b>Turn on notifications</b> to get trip offers when the app is in the background.
+          </span>
+        </button>
+      )}
+      {!trip && online && !offer && !phoneGps && (
         <div className="relative z-[600] mx-auto mt-1 rounded-full bg-ink/90 px-4 py-1.5 text-xs font-semibold text-ink-fg">Tap the map to move your car</div>
       )}
 
       <div className="flex-1" />
 
       <div className="relative z-[600] flex items-center justify-end gap-2 px-3 pb-2">
-        {trip && (
+        {online && (
+          <button
+            onClick={toggleGps}
+            className={clsx("flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-lg", phoneGps ? "bg-info text-white" : "bg-surface")}
+            aria-pressed={phoneGps}
+          >
+            <Satellite className="size-4" /> {phoneGps ? (gpsState === "tracking" ? "Phone GPS live" : "Finding GPS…") : "Use phone GPS"}
+          </button>
+        )}
+        {trip && !phoneGps && (
           <button
             onClick={() => setAutopilot((a) => !a)}
             className={clsx("flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-lg", autopilot ? "bg-brand text-white" : "bg-surface")}
@@ -416,9 +466,7 @@ export default function DriverHome() {
                   </div>
                 </div>
                 <TripChat tripId={trip.id} me="DRIVER" otherName={trip.rider.name} canSend compact />
-                <a href={`tel:${trip.rider.phone}`} className="flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label="Call rider">
-                  <Phone className="size-4" />
-                </a>
+                <CallButton tripId={trip.id} name={trip.rider.name} compact />
               </div>
 
               <div className="mt-4 flex gap-3 rounded-2xl bg-surface-2 p-3 text-sm">

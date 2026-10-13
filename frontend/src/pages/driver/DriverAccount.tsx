@@ -1,6 +1,7 @@
 import { ChevronRight, Clock, LifeBuoy } from "lucide-react";
 import { Link } from "react-router";
 
+import { PushToggle } from "@/components/PushToggle";
 import { Avatar, Stars } from "@/components/ui";
 import { date } from "@/lib/format";
 import { useDriverMe } from "@/lib/hooks";
@@ -46,6 +47,7 @@ export default function DriverAccount() {
       <p className="mt-2 text-xs text-muted">The safety score comes from braking, acceleration, speeding and night driving on your recent trips. Safer drivers rank higher in dispatch.</p>
 
       <div className="mt-6 divide-y divide-line">
+        <PushToggle audience="driver" />
         <Link to="/drive/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
           <span className="flex-1 font-medium">Help & support</span>

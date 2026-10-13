@@ -80,5 +80,6 @@ class ConfigView(APIView):
                 },
                 # The publishable key only; the secret never leaves the server.
                 "payments": {"razorpay_key_id": razorpay.key_id()},
+                "push": {"vapid_public_key": settings.VAPID_PUBLIC_KEY},
             }
         )

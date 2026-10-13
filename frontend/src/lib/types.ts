@@ -110,7 +110,8 @@ export interface TripParty {
   id: number;
   name: string;
   rating: string;
-  phone: string;
+  /** Staff only: riders and drivers call through the masked bridge. */
+  phone: string | null;
 }
 
 export interface Trip {

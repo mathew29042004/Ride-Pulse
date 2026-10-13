@@ -14,7 +14,7 @@ so every screen has something happening the moment you open it.
 | **Data** | PostgreSQL 16 (partial unique indexes, BRIN, ArrayField, `generate_series` reporting) · Redis |
 | **Front end** | React 19 · TypeScript · Vite · Tailwind CSS · TanStack Query · Leaflet / Google Maps · Recharts |
 | **API** | 123 REST operations, JWT auth, OpenAPI 3 docs (Swagger UI and ReDoc) |
-| **Quality** | 132 tests (88% coverage) + Playwright browser tests + Locust load test · Ruff · strict TypeScript · GitHub Actions · Docker |
+| **Quality** | 137 tests (88% coverage) + Playwright browser tests + Locust load test · Ruff · strict TypeScript · GitHub Actions · Docker |
 | **Ops** | Render blueprint · Sentry · Prometheus `/metrics` · JSON logs · installable PWA |
 
 ---
@@ -251,6 +251,23 @@ unmapped is denied. Riders and drivers only ever see their own records.
   Checkout takes the payment, and the wallet is credited only after the HMAC signature is
   verified, by the browser callback or the `payment.captured` webhook, whichever is first.
 
+### Production essentials
+* **Phone login with SMS codes** (`/api/v1/auth/otp/…`): 6-digit codes stored only as HMACs,
+  5-minute expiry, 5 tries, resend every 30 s and at most 5 an hour per number; new numbers
+  sign up with just a name. SMS goes through Twilio or MSG91 (`SMS_BACKEND`); in development
+  the code is logged and shown in the app.
+* **Masked calling:** riders and drivers never see each other's number (only staff do). Calls
+  go through Exotel click-to-call when configured (demo mode otherwise), are rate limited, and
+  are logged on the trip for safety reviews.
+* **Ride PIN can't be guessed:** five wrong PINs lock the trip and alert the rider.
+* **GPS-spoofing guard:** impossible jumps (over 1 km at over 150 km/h) aren't billed, and the
+  trip is flagged for review.
+* **Real driver GPS:** the driver app can follow the phone's location (`watchPosition`, sent
+  every 15 m or 4 s) and keeps the screen awake while online.
+* **Push notifications** (standard Web Push with VAPID keys, no Firebase account): urgent trip
+  offers that expire with the offer, and trip updates for riders, even with the app closed.
+  `python manage.py generate_vapid_keys`.
+
 ---
 
 ## Deploy
@@ -282,7 +299,7 @@ Celery worker and beat, simulator).
 
 ```bash
 make help        # all commands
-make test        # 132 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
+make test        # 137 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
 make e2e         # browser tests: Playwright drives Chromium through a full trip
 make loadtest    # Locust: 50 riders browsing fares and cars for a minute
 make lint        # Ruff + TypeScript type-check
