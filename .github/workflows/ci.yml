@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Django · lint, migrations, OpenAPI, tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ridepulse
+          POSTGRES_PASSWORD: ridepulse
+          POSTGRES_DB: ridepulse
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ridepulse" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://ridepulse:ridepulse@localhost:5432/ridepulse
+      DJANGO_SETTINGS_MODULE: config.settings.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -r requirements/base.txt pytest pytest-django pytest-asyncio pytest-cov factory-boy ruff
+      - name: Lint and format
+        run: |
+          .venv/bin/ruff check .
+          .venv/bin/ruff format --check .
+      - name: Migrations are up to date
+        run: .venv/bin/python manage.py makemigrations --check --dry-run
+      - name: OpenAPI schema has no warnings
+        run: .venv/bin/python manage.py spectacular --fail-on-warn --file /dev/null
+      - name: Tests
+        run: .venv/bin/python -m pytest --cov --cov-report=term-missing:skip-covered
+
+  frontend:
+    name: React · type-check and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-fund --no-audit
+      - run: npm run typecheck
+      - run: npm run build
+
+  e2e:
+    name: Browser end-to-end (Playwright)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ridepulse
+          POSTGRES_PASSWORD: ridepulse
+          POSTGRES_DB: ridepulse
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ridepulse" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://ridepulse:ridepulse@localhost:5432/ridepulse
+      DJANGO_SETTINGS_MODULE: config.settings.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the React apps
+        working-directory: frontend
+        run: npm ci --no-fund --no-audit && npm run build
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies and Chromium
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -r requirements/base.txt pytest pytest-django pytest-asyncio pytest-playwright
+          .venv/bin/python -m playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: .venv/bin/python -m pytest -m e2e
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t ride-pulse:ci .

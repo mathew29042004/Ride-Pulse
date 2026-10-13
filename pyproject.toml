@@ -1,0 +1,47 @@
+[project]
+name = "ride-pulse"
+version = "1.0.0"
+description = "Ride Pulse: motor insurance management platform (underwriting, policy admin, billing, claims, telematics)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["**/migrations/*.py", ".venv", ".pgdata", "staticfiles", "media"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "SIM", "C4", "PIE", "RUF"]
+ignore = [
+    "RUF012", # Django class attributes (Meta.ordering, choices) are intentionally mutable
+    "DJ001",  # nullable CharField is deliberate where used
+    "RUF001", # ₹, ×, − and – are intentional in user-facing text
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]  # request payloads read better on one line
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers -m \"not e2e\""
+markers = ["e2e: browser end-to-end tests (make e2e)"]
+filterwarnings = ["ignore::DeprecationWarning:celery.*"]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = ["*/migrations/*", "*/management/commands/*", "*/admin.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

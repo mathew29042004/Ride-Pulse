@@ -1,0 +1,15 @@
+.git
+.venv
+.pgdata
+.env
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+media
+staticfiles
+frontend/node_modules
+frontend/dist
+.claude
+.DS_Store

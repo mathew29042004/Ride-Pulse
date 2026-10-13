@@ -1,0 +1,189 @@
+from decimal import Decimal
+
+from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.db.models import F, Q
+
+from apps.core.models import TimeStampedModel
+
+from .fare import FareCard, PromoTerms
+
+
+class RideType(models.Model):
+    code = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=40)
+    description = models.CharField(max_length=120)
+    seats = models.PositiveSmallIntegerField()
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["sort_order"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class FareRule(TimeStampedModel):
+    city = models.ForeignKey("geo.City", on_delete=models.CASCADE, related_name="fare_rules")
+    ride_type = models.ForeignKey(RideType, on_delete=models.CASCADE, related_name="fare_rules")
+    base_fare = models.DecimalField(max_digits=8, decimal_places=2)
+    per_km = models.DecimalField(max_digits=6, decimal_places=2)
+    per_minute = models.DecimalField(max_digits=6, decimal_places=2)
+    minimum_fare = models.DecimalField(max_digits=8, decimal_places=2)
+    booking_fee = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    cancellation_fee = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    free_wait_minutes = models.PositiveSmallIntegerField(default=3)
+    wait_per_minute = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    airport_fee = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["city__name", "ride_type__sort_order"]
+        constraints = [
+            models.UniqueConstraint(fields=["city", "ride_type"], name="fare_rule_city_ride_type"),
+            models.CheckConstraint(
+                condition=Q(minimum_fare__gte=F("base_fare")), name="fare_minimum_covers_base"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.ride_type} in {self.city}"
+
+    def card(self) -> FareCard:
+        return FareCard(
+            base_fare=self.base_fare,
+            per_km=self.per_km,
+            per_minute=self.per_minute,
+            minimum_fare=self.minimum_fare,
+            booking_fee=self.booking_fee,
+            free_wait_minutes=Decimal(self.free_wait_minutes),
+            wait_per_minute=self.wait_per_minute,
+            airport_fee=self.airport_fee,
+        )
+
+
+class SurgeSnapshot(models.Model):
+    zone = models.ForeignKey("geo.Zone", on_delete=models.CASCADE, related_name="surge_snapshots")
+    multiplier = models.DecimalField(max_digits=3, decimal_places=1)
+    demand = models.PositiveIntegerField()
+    supply = models.PositiveIntegerField()
+    computed_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-computed_at"]
+        indexes = [models.Index(fields=["zone", "-computed_at"], name="surge_zone_time_idx")]
+        constraints = [
+            models.CheckConstraint(condition=Q(multiplier__gte=1), name="surge_at_least_one")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.zone} {self.multiplier}× @ {self.computed_at:%H:%M}"
+
+
+class SurgeOverride(models.Model):
+    """Manual surge set by operations, e.g. for a concert or heavy rain."""
+
+    zone = models.ForeignKey("geo.Zone", on_delete=models.CASCADE, related_name="surge_overrides")
+    multiplier = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        validators=[MinValueValidator(Decimal(1)), MaxValueValidator(Decimal(5))],
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    reason = models.CharField(max_length=160)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-starts_at"]
+        constraints = [
+            models.CheckConstraint(condition=Q(ends_at__gt=F("starts_at")), name="override_window"),
+            models.CheckConstraint(
+                condition=Q(multiplier__gte=1) & Q(multiplier__lte=5),
+                name="override_multiplier_range",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.zone}: {self.multiplier}× ({self.reason})"
+
+
+class DiscountType(models.TextChoices):
+    PERCENT = "PERCENT", "Percent off"
+    FLAT = "FLAT", "Flat amount off"
+
+
+class PromoCode(TimeStampedModel):
+    code = models.CharField(max_length=20, unique=True)
+    description = models.CharField(max_length=160)
+    discount_type = models.CharField(max_length=7, choices=DiscountType.choices)
+    value = models.DecimalField(max_digits=8, decimal_places=2)
+    max_discount = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    min_fare = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    valid_from = models.DateTimeField()
+    valid_until = models.DateTimeField()
+    max_redemptions = models.PositiveIntegerField(null=True, blank=True)
+    max_per_rider = models.PositiveSmallIntegerField(default=1)
+    first_ride_only = models.BooleanField(default=False)
+    city = models.ForeignKey(
+        "geo.City", null=True, blank=True, on_delete=models.CASCADE, help_text="Empty = all cities"
+    )
+    ride_types = ArrayField(
+        models.CharField(max_length=10),
+        default=list,
+        blank=True,
+        help_text="Empty = all ride types",
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-valid_until"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(valid_until__gt=F("valid_from")), name="promo_window"
+            ),
+            models.CheckConstraint(
+                condition=~Q(discount_type="PERCENT") | Q(value__lte=100),
+                name="promo_percent_max_100",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.code
+
+    def save(self, *args, **kwargs):
+        self.code = self.code.upper().strip()
+        super().save(*args, **kwargs)
+
+    def terms(self) -> PromoTerms:
+        return PromoTerms(
+            code=self.code,
+            discount_type=self.discount_type,
+            value=self.value,
+            max_discount=self.max_discount,
+            min_fare=self.min_fare,
+        )
+
+
+class PromoRedemption(models.Model):
+    promo = models.ForeignKey(PromoCode, on_delete=models.PROTECT, related_name="redemptions")
+    rider = models.ForeignKey(
+        "riders.RiderProfile", on_delete=models.CASCADE, related_name="promo_redemptions"
+    )
+    trip = models.OneToOneField(
+        "rides.Trip", on_delete=models.CASCADE, related_name="promo_redemption"
+    )
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.promo.code} on {self.trip_id}"

@@ -1,0 +1,440 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { clsx } from "clsx";
+import { ArrowLeft, Download, LifeBuoy, LocateFixed, Phone, RotateCcw, Share2, ShieldAlert, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
+
+import { BaseMap, CarMarker, FitBounds, type LatLng, PinMarker, RouteLine, routePath, snapToPath } from "@/components/map";
+import { RideTypeArt } from "@/components/RideTypeArt";
+import { TripChat } from "@/components/TripChat";
+import { Avatar, Badge, Button, Modal, Sheet, Spinner, StarInput, Stars, Textarea } from "@/components/ui";
+import { api, ApiError, newIdempotencyKey, openFile } from "@/lib/api";
+import { dateTime, inr, km, minutes, time } from "@/lib/format";
+import { clockIn, etaFromKm, etaMinutes, haversineKm, isActive, useLiveTrip, useNow } from "@/lib/hooks";
+import type { Trip } from "@/lib/types";
+
+const TAGS = ["Great driving", "Clean car", "Polite", "On time", "Safe", "Good music"];
+
+function Searching({ trip }: { trip: Trip }) {
+  const now = useNow();
+  const seconds = Math.floor((now - new Date(trip.requested_at).getTime()) / 1000);
+  return (
+    <div className="py-2 text-center">
+      <div className="relative mx-auto mb-4 flex size-20 items-center justify-center">
+        <span className="absolute inset-0 animate-ping rounded-full bg-brand/30" />
+        <span className="absolute inset-3 animate-ping rounded-full bg-brand/30 [animation-delay:400ms]" />
+        <RideTypeArt code={trip.ride_type} className="relative h-10 w-16" />
+      </div>
+      <h2 className="text-lg font-bold">Finding your {trip.ride_type_name}</h2>
+      <p className="mt-1 text-sm text-muted">
+        Matching you with a nearby driver · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+      </p>
+      <div className="mx-auto mt-4 h-1 w-40 overflow-hidden rounded-full bg-surface-3">
+        <div className="h-full w-1/3 animate-[indeterminate_1.3s_ease-in-out_infinite] rounded-full bg-brand" />
+      </div>
+    </div>
+  );
+}
+
+function DriverCard({ trip }: { trip: Trip }) {
+  if (!trip.driver) return null;
+  const [model, plate] = (trip.vehicle ?? "").split(" · ");
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative">
+        <Avatar name={trip.driver.name} size={52} />
+        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-surface px-1.5 text-[10px] font-bold shadow">
+          <Stars value={trip.driver.rating} size={10} />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold">{trip.driver.name}</div>
+        <div className="truncate text-xs text-muted">{model}</div>
+        {plate && <div className="mt-1 inline-block rounded-md border border-line bg-surface-2 px-2 py-0.5 font-mono text-xs font-bold tracking-wider">{plate}</div>}
+      </div>
+      <RideTypeArt code={trip.ride_type} className="h-10 w-18 shrink-0" />
+    </div>
+  );
+}
+
+export default function RiderTrip() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { data: trip, isLoading, driverPos } = useLiveTrip(id);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [recenter, setRecenter] = useState(0);
+  const [sosOpen, setSosOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [stars, setStars] = useState(5);
+  const [tags, setTags] = useState<string[]>([]);
+  const [comment, setComment] = useState("");
+  const now = useNow(5000);
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["trips"] });
+  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : "Something went wrong.");
+  const cancel = useMutation({ mutationFn: () => api.post<Trip>(`trips/${id}/cancel/`, { reason: "Changed my plans" }), onSuccess: () => { setConfirmCancel(false); refresh(); }, onError });
+  const rate = useMutation({ mutationFn: () => api.post<Trip>(`trips/${id}/rate/`, { stars, tags, comment }), onSuccess: () => { toast.success("Thanks for rating your driver!"); refresh(); }, onError });
+  const tip = useMutation({
+    mutationFn: (amount: number) => api.post<Trip>(`trips/${id}/tip/`, { amount, method: "UPI" }, { idempotencyKey: newIdempotencyKey() }),
+    onSuccess: (_, amount) => { toast.success(`₹${amount} tip sent. 100% goes to your driver.`); refresh(); },
+    onError,
+  });
+  // A live "follow my ride" link for family: the phone's share sheet, else the clipboard.
+  const share = useMutation({
+    mutationFn: () => api.post<{ path: string }>(`trips/${id}/share/`),
+    onSuccess: async ({ path }) => {
+      const url = `${location.origin}${path}`;
+      const text = "Follow my Ride Pulse trip live";
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "Ride Pulse", text, url });
+          return;
+        }
+      } catch {
+        return; // the share sheet was dismissed
+      }
+      await navigator.clipboard?.writeText(url);
+      toast.success("Live trip link copied. Anyone with it can follow your ride until you arrive.");
+    },
+    onError,
+  });
+  const sos = useMutation({
+    mutationFn: () => api.post(`trips/${id}/sos/`, { note: "Rider pressed SOS in the app", lat: driverPos?.lat ?? trip?.pickup_lat, lng: driverPos?.lng ?? trip?.pickup_lng }),
+    onSuccess: () => { setSosOpen(false); toast.success("Safety team alerted. Stay on the line; we're calling you now."); },
+    onError,
+  });
+
+  const points = useMemo<[number, number][]>(() => {
+    if (!trip) return [];
+    const pts: [number, number][] = [[trip.pickup_lat, trip.pickup_lng], [trip.dropoff_lat, trip.dropoff_lng]];
+    if (driverPos && (trip.status === "DRIVER_ASSIGNED" || trip.status === "DRIVER_ARRIVED")) {
+      return [[trip.pickup_lat, trip.pickup_lng], [driverPos.lat, driverPos.lng]];
+    }
+    if (driverPos && trip.status === "IN_PROGRESS") pts.push([driverPos.lat, driverPos.lng]);
+    return pts;
+  }, [trip, driverPos?.lat, driverPos?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The route the rider sees, and where the car is along it: the car is drawn on the line, the
+  // part already driven disappears, and the ETA counts the road that's left.
+  const route = useMemo<LatLng[]>(
+    () => (trip ? routePath([trip.pickup_lat, trip.pickup_lng], [trip.dropoff_lat, trip.dropoff_lng], trip.route_polyline, trip.stop && [trip.stop.lat, trip.stop.lng]) : []),
+    [trip?.id, trip?.route_polyline], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const onRoute = useMemo(() => {
+    if (!driverPos || trip?.status !== "IN_PROGRESS") return null;
+    const snap = snapToPath(route, [driverPos.lat, driverPos.lng]);
+    return snap && snap.offMetres < 300 ? snap : null;
+  }, [route, driverPos?.lat, driverPos?.lng, trip?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (isLoading || !trip) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner className="size-7" />
+      </div>
+    );
+  }
+
+  const pickup = { lat: trip.pickup_lat, lng: trip.pickup_lng };
+  const dropoff = { lat: trip.dropoff_lat, lng: trip.dropoff_lng };
+  const toPickupEta = driverPos ? etaMinutes(driverPos, pickup) : Number(trip.pickup_eta_min ?? 0);
+  const toPickupKm = driverPos ? haversineKm(driverPos, pickup) * 1.3 : null;
+  const toDropKm = onRoute ? onRoute.remainingKm : driverPos ? haversineKm(driverPos, dropoff) * 1.3 : Number(trip.estimated_distance_km);
+  const toDropEta = onRoute || driverPos ? etaFromKm(toDropKm) : Number(trip.estimated_duration_min);
+  const stopAt: LatLng | null = trip.stop ? [trip.stop.lat, trip.stop.lng] : null;
+  const carAt: LatLng | null = onRoute ? onRoute.at : driverPos ? [driverPos.lat, driverPos.lng] : null;
+  const waited = trip.arrived_at ? Math.max(0, Math.floor((now - new Date(trip.arrived_at).getTime()) / 60000)) : 0;
+  const active = isActive(trip);
+
+  return (
+    <div className="relative flex h-full flex-col">
+      <div className="absolute inset-0">
+        <BaseMap center={[trip.pickup_lat, trip.pickup_lng]} zoom={14}>
+          <FitBounds points={points} padding={50} bottom={380} fitKey={`${trip.status}-${driverPos ? 1 : 0}-${recenter}`} />
+          <PinMarker lat={trip.pickup_lat} lng={trip.pickup_lng} kind={trip.status === "REQUESTED" ? "searching" : "pickup"} />
+          {stopAt && <PinMarker lat={stopAt[0]} lng={stopAt[1]} kind="stop" />}
+          <PinMarker lat={trip.dropoff_lat} lng={trip.dropoff_lng} kind="dropoff" />
+          {trip.status === "IN_PROGRESS" || !active ? (
+            <RouteLine from={[trip.pickup_lat, trip.pickup_lng]} to={[trip.dropoff_lat, trip.dropoff_lng]} encoded={trip.route_polyline} via={stopAt} progress={active ? carAt : null} />
+          ) : (
+            <RouteLine from={[trip.pickup_lat, trip.pickup_lng]} to={[trip.dropoff_lat, trip.dropoff_lng]} encoded={trip.route_polyline} via={stopAt} dashed />
+          )}
+          {driverPos && carAt && active && trip.status !== "REQUESTED" && (
+            <>
+              {trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[driverPos.lat, driverPos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#10b981" />}
+              <CarMarker lat={carAt[0]} lng={carAt[1]} heading={driverPos.heading} rideType={trip.ride_type} />
+            </>
+          )}
+        </BaseMap>
+      </div>
+
+      <div className="relative z-[600] flex items-center justify-between p-3">
+        <button onClick={() => navigate(active ? "/ride" : "/ride/activity")} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Back">
+          <ArrowLeft className="size-5" />
+        </button>
+        {active && trip.status !== "REQUESTED" && (
+          <button onClick={() => setSosOpen(true)} className="flex items-center gap-1.5 rounded-full bg-danger px-4 py-2 text-sm font-bold text-white shadow-lg">
+            <ShieldAlert className="size-4" /> SOS
+          </button>
+        )}
+      </div>
+
+      <div className="flex-1" />
+
+      <div className="relative z-[600] flex justify-end px-3 pb-2">
+        <button onClick={() => setRecenter((n) => n + 1)} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Re-centre map">
+          <LocateFixed className="size-5" />
+        </button>
+      </div>
+
+      <Sheet height="70%">
+        {trip.status === "REQUESTED" && (
+          <>
+            <Searching trip={trip} />
+            <Button variant="secondary" block className="mt-3" onClick={() => cancel.mutate()} loading={cancel.isPending}>
+              Cancel request
+            </Button>
+          </>
+        )}
+
+        {(trip.status === "DRIVER_ASSIGNED" || trip.status === "DRIVER_ARRIVED" || trip.status === "IN_PROGRESS") && (
+          <>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold">
+                  {trip.status === "DRIVER_ASSIGNED" && `Arriving in ${minutes(toPickupEta)}`}
+                  {trip.status === "DRIVER_ARRIVED" && "Your driver is here"}
+                  {trip.status === "IN_PROGRESS" && `${minutes(toDropEta)} to drop`}
+                </h2>
+                <p className="mt-0.5 text-sm text-muted">
+                  {trip.status === "DRIVER_ASSIGNED" && (toPickupKm !== null ? `${km(toPickupKm)} away · meet at ${trip.pickup_address}` : `Meet at ${trip.pickup_address}`)}
+                  {trip.status === "DRIVER_ARRIVED" && (waited < 3 ? `Free waiting: ${3 - waited} min left` : `Waiting ${waited} min · waiting charges apply`)}
+                  {trip.status === "IN_PROGRESS" && `${km(toDropKm)} left · drop by ${clockIn(toDropEta)}`}
+                </p>
+              </div>
+              {trip.otp && trip.status !== "IN_PROGRESS" && (
+                <div className="rounded-2xl bg-ink px-3 py-2 text-center text-ink-fg">
+                  <div className="text-[10px] font-semibold tracking-widest opacity-60 uppercase">PIN</div>
+                  <div className="font-mono text-xl font-bold tracking-[0.25em]">{trip.otp}</div>
+                </div>
+              )}
+            </div>
+            <DriverCard trip={trip} />
+            {trip.driver && <TripChat tripId={trip.id} me="RIDER" otherName={trip.driver.name} canSend={active} />}
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <a href={`tel:${trip.driver?.phone ?? ""}`} className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold">
+                <Phone className="size-4" /> Call
+              </a>
+              <button
+                onClick={() => share.mutate()}
+                disabled={share.isPending}
+                className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold"
+              >
+                <Share2 className="size-4" /> Share trip
+              </button>
+              {trip.status !== "IN_PROGRESS" ? (
+                <button onClick={() => setConfirmCancel(true)} className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold">
+                  <X className="size-4" /> Cancel
+                </button>
+              ) : (
+                <button onClick={() => setHelpOpen(true)} className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold">
+                  <LifeBuoy className="size-4" /> Help
+                </button>
+              )}
+            </div>
+            <div className="mt-4 flex items-center justify-between rounded-2xl border border-line px-4 py-3 text-sm">
+              <span className="text-muted">
+                {trip.payment_method === "CASH" ? "Pay cash" : `Pay by ${trip.payment_method.toLowerCase()}`} · upfront
+              </span>
+              <span className="font-bold">{inr(trip.estimated_fare)}</span>
+            </div>
+          </>
+        )}
+
+        {trip.status === "COMPLETED" && (
+          <>
+            <div className="text-center">
+              <Badge tone="brand">Trip completed · {time(trip.completed_at)}</Badge>
+              <div className="mt-2 text-4xl font-bold tracking-tight">{inr(trip.fare_total)}</div>
+              <div className="mt-1 text-sm text-muted">
+                {km(trip.actual_distance_km)} · {minutes(trip.actual_duration_min)} · {trip.payment_method.toLowerCase()} {trip.payment_status === "DUES" && "(payment pending)"}
+              </div>
+            </div>
+
+            {!trip.has_rated ? (
+              <div className="mt-5 rounded-2xl bg-surface-2 p-4">
+                <p className="mb-3 text-center text-sm font-semibold">How was your ride with {trip.driver?.name.split(" ")[0]}?</p>
+                <StarInput value={stars} onChange={setStars} />
+                <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+                  {TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setTags((t) => (t.includes(tag) ? t.filter((x) => x !== tag) : [...t, tag]))}
+                      className={clsx("rounded-full border px-3 py-1 text-xs font-medium", tags.includes(tag) ? "border-fg bg-ink text-ink-fg" : "border-line")}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment (optional)" className="mt-3 !min-h-16" />
+                <Button block className="mt-3" onClick={() => rate.mutate()} loading={rate.isPending}>
+                  Submit rating
+                </Button>
+              </div>
+            ) : (
+              <p className="mt-4 text-center text-sm text-muted">Thanks for your rating ⭐</p>
+            )}
+
+            <div className="mt-4">
+              <p className="mb-2 text-center text-xs font-semibold text-muted uppercase">Add a tip · goes 100% to your driver</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[20, 50, 100].map((amount) => (
+                  <Button key={amount} variant="outline" onClick={() => tip.mutate(amount)} loading={tip.isPending && tip.variables === amount}>
+                    ₹{amount}
+                  </Button>
+                ))}
+              </div>
+              {Number(trip.tip_amount) > 0 && <p className="mt-2 text-center text-xs text-brand-strong">You tipped {inr(trip.tip_amount)}. Thank you!</p>}
+            </div>
+
+            <details className="mt-4 rounded-2xl border border-line px-4 py-3 text-sm">
+              <summary className="cursor-pointer font-semibold">Fare details</summary>
+              <div className="mt-2 space-y-1 text-xs">
+                {trip.fare.lines.map((line) => (
+                  <div key={line.code} className="flex justify-between">
+                    <span className="text-muted">{line.label}</span>
+                    <span>{inr(line.amount)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between border-t border-line pt-1 font-semibold">
+                  <span>Total</span>
+                  <span>{inr(trip.fare.total)}</span>
+                </div>
+                <p className="pt-1 text-muted">{trip.pricing_mode === "UPFRONT" ? "Your upfront price was honoured." : "Re-priced because the route was much longer than estimated."}</p>
+              </div>
+            </details>
+
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <Button variant="secondary" icon={<Download className="size-4" />} onClick={() => openFile(`/api/v1/trips/${trip.id}/receipt/`)}>
+                Receipt
+              </Button>
+              <Button variant="secondary" icon={<LifeBuoy className="size-4" />} onClick={() => setHelpOpen(true)}>
+                Help
+              </Button>
+              <Button variant="secondary" icon={<RotateCcw className="size-4" />} onClick={() => navigate(`/ride/book?to=${trip.dropoff_lat},${trip.dropoff_lng}&name=${encodeURIComponent(trip.dropoff_address)}`)}>
+                Again
+              </Button>
+            </div>
+          </>
+        )}
+
+        {(trip.status === "CANCELLED" || trip.status === "NO_DRIVER_FOUND") && (
+          <div className="py-2 text-center">
+            <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-surface-3">
+              <X className="size-6 text-muted" />
+            </div>
+            <h2 className="text-lg font-bold">{trip.status === "NO_DRIVER_FOUND" ? "No drivers available" : "Trip cancelled"}</h2>
+            <p className="mt-1 text-sm text-muted">{trip.cancellation_reason}</p>
+            {Number(trip.cancellation_fee) > 0 && <p className="mt-2 text-sm font-semibold text-danger">Cancellation fee {inr(trip.cancellation_fee)}</p>}
+            <p className="mt-1 text-xs text-muted">{dateTime(trip.cancelled_at)}</p>
+            <Button className="mt-4" block onClick={() => navigate(`/ride/book?to=${trip.dropoff_lat},${trip.dropoff_lng}&name=${encodeURIComponent(trip.dropoff_address)}`)}>
+              Try again
+            </Button>
+          </div>
+        )}
+      </Sheet>
+
+      <Modal
+        open={confirmCancel}
+        onClose={() => setConfirmCancel(false)}
+        title="Cancel this ride?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmCancel(false)}>
+              Keep ride
+            </Button>
+            <Button variant="danger" onClick={() => cancel.mutate()} loading={cancel.isPending}>
+              Cancel ride
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          Cancelling is free for 2 minutes after a driver accepts. After that, or once the driver has arrived, a cancellation fee is charged to your wallet.
+        </p>
+      </Modal>
+
+      <Modal
+        open={sosOpen}
+        onClose={() => setSosOpen(false)}
+        title="Emergency help"
+        footer={
+          <Button variant="danger" block onClick={() => sos.mutate()} loading={sos.isPending}>
+            Alert the safety team now
+          </Button>
+        }
+      >
+        <p className="text-sm">We'll share your trip and live location with the Ride Pulse safety team, who will call you right away.</p>
+        <p className="mt-3 text-sm text-muted">
+          In a life-threatening emergency, call <a className="font-bold text-danger" href="tel:112">112</a>.
+        </p>
+      </Modal>
+
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} tripId={trip.id} />
+    </div>
+  );
+}
+
+export function HelpModal({ open, onClose, tripId, base = "/ride" }: { open: boolean; onClose: () => void; tripId?: number; base?: string }) {
+  const navigate = useNavigate();
+  const [category, setCategory] = useState("FARE_DISPUTE");
+  const [description, setDescription] = useState("");
+  const create = useMutation({
+    mutationFn: () =>
+      api.post<{ id: number }>("support/tickets/", {
+        category,
+        subject: { FARE_DISPUTE: "I was overcharged", LOST_ITEM: "I left something in the car", DRIVER_BEHAVIOUR: "Problem with my driver", PAYMENT: "Payment problem", OTHER: "Something else" }[category] ?? "Help with my trip",
+        description,
+        trip: tripId ?? null,
+      }),
+    onSuccess: (ticket) => {
+      toast.success("Ticket created. Our support team will reply shortly.");
+      onClose();
+      navigate(`${base}/support/${ticket.id}`);
+    },
+    onError: (err) => toast.error((err as Error).message),
+  });
+  const options = [
+    ["FARE_DISPUTE", "I was overcharged"],
+    ["LOST_ITEM", "I lost an item"],
+    ["DRIVER_BEHAVIOUR", "Problem with my driver"],
+    ["PAYMENT", "Payment problem"],
+    ["OTHER", "Something else"],
+  ];
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Get help with this trip"
+      footer={
+        <Button onClick={() => create.mutate()} loading={create.isPending} disabled={description.trim().length < 5}>
+          Send to support
+        </Button>
+      }
+    >
+      <div className="space-y-2">
+        {options.map(([value, label]) => (
+          <label key={value} className={clsx("flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm", category === value ? "border-fg bg-surface-2" : "border-line")}>
+            <input type="radio" name="category" value={value} checked={category === value} onChange={() => setCategory(value)} className="accent-current" />
+            {label}
+          </label>
+        ))}
+      </div>
+      <Textarea className="mt-3" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell us what happened" />
+      <p className="mt-2 text-xs text-muted">
+        Or see <Link to={`${base}/support`} className="font-semibold underline" onClick={onClose}>your tickets</Link>.
+      </p>
+    </Modal>
+  );
+}

@@ -1,0 +1,28 @@
+from celery import shared_task
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+
+from apps.core.conf import company_name
+
+from .models import Notification
+
+
+@shared_task(
+    name="notifications.send_email",
+    autoretry_for=(OSError,),
+    retry_backoff=True,
+    max_retries=5,
+)
+def send_notification_email(notification_id: int) -> bool:
+    notification = Notification.objects.select_related("user").filter(pk=notification_id).first()
+    if notification is None or notification.emailed_at:
+        return False
+    send_mail(
+        subject=f"[{company_name()}] {notification.title}",
+        message=notification.body or notification.title,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[notification.user.email],
+    )
+    Notification.objects.filter(pk=notification_id).update(emailed_at=timezone.now())
+    return True

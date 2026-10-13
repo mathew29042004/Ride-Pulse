@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Django
+/staticfiles/
+/media/
+*.sqlite3
+
+# Local services and secrets
+.env
+.pgdata/
+celerybeat-schedule*
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Front end
+frontend/node_modules/
+frontend/dist/
+
+# Local AI-assistant config
+.claude/

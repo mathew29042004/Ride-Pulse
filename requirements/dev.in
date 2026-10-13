@@ -1,0 +1,15 @@
+-c base.txt
+pytest>=8
+pytest-django>=4.9
+pytest-asyncio>=0.24
+pytest-cov>=6
+factory-boy>=3.3
+ruff>=0.11
+# Bundles a real PostgreSQL 16 server for local development (see scripts/devdb.py).
+pgserver>=0.1.4; python_version < "3.13" and sys_platform != "win32"
+# Node.js for building the React front end, installed into the virtualenv (no system install).
+nodejs-wheel>=22
+# Browser end-to-end tests (make e2e; needs `playwright install chromium` once).
+pytest-playwright>=0.7
+# Load testing (make loadtest).
+locust>=2.32

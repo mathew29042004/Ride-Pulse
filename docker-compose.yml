@@ -1,0 +1,81 @@
+# Full Ride Pulse stack: `docker compose up --build`, then open http://localhost:8000
+# (demo logins are in the README; the first start migrates and seeds the database).
+
+x-app: &app
+  build: .
+  environment: &env
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production-please-0123456789}
+    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,web
+    CSRF_TRUSTED_ORIGINS: http://localhost:8000
+    SECURE_SSL_REDIRECT: "false"
+    SECURE_COOKIES: "false"
+    DATABASE_URL: postgres://ridepulse:ridepulse@db:5432/ridepulse
+    REDIS_URL: redis://redis:6379/1
+    CELERY_BROKER_URL: redis://redis:6379/0
+    GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    GOOGLE_MAPS_BROWSER_KEY: ${GOOGLE_MAPS_BROWSER_KEY:-}
+    RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+    RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+    RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+    SENTRY_DSN: ${SENTRY_DSN:-}
+    METRICS_TOKEN: ${METRICS_TOKEN:-}
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ridepulse
+      POSTGRES_PASSWORD: ridepulse
+      POSTGRES_DB: ridepulse
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ridepulse"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  web:
+    <<: *app
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             (python manage.py seed_demo || true) &&
+             daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *app
+    command: celery -A config worker --loglevel=info --concurrency=2
+    depends_on:
+      web:
+        condition: service_started
+
+  beat:
+    <<: *app
+    command: celery -A config beat --loglevel=info --schedule /tmp/celerybeat-schedule
+    depends_on:
+      web:
+        condition: service_started
+
+  simulator:
+    <<: *app
+    command: python manage.py simulate --quiet
+    depends_on:
+      web:
+        condition: service_started
+
+volumes:
+  pgdata:

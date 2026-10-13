@@ -1,0 +1,720 @@
+from decimal import Decimal
+
+import django_filters
+from django.db.models import Prefetch
+from django.http import HttpResponse
+from django.utils import timezone
+from django.utils.crypto import salted_hmac
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_field
+from rest_framework import mixins, serializers, status
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.accounts.roles import Cap
+from apps.core.api import BaseViewSet, CapabilityPermission, ContextBindingMixin
+from apps.core.exceptions import ActionNotPermitted
+from apps.drivers.models import Availability, DriverProfile, Vehicle
+from apps.payments.models import PaymentMethod
+from apps.pricing.api import FareSerializer, PointSerializer
+from apps.pricing.models import RideType
+from apps.support.api import IncidentSerializer
+
+from . import dispatch, services
+from .models import (
+    ACTIVE_STATUSES,
+    ScheduledRide,
+    Trip,
+    TripEvent,
+    TripMessage,
+    TripOffer,
+    TripStatus,
+)
+from .receipts import render_receipt
+
+
+class TripPartySerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    rating = serializers.DecimalField(max_digits=3, decimal_places=2)
+    phone = serializers.CharField(source="user.phone")
+
+
+class TripSerializer(serializers.ModelSerializer):
+    ride_type = serializers.SlugRelatedField(slug_field="code", read_only=True)
+    ride_type_name = serializers.CharField(source="ride_type.name", read_only=True)
+    city = serializers.SlugRelatedField(slug_field="slug", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    rider = TripPartySerializer(read_only=True)
+    driver = TripPartySerializer(read_only=True, allow_null=True)
+    driver_location = serializers.SerializerMethodField()
+    vehicle = serializers.StringRelatedField()
+    otp = serializers.SerializerMethodField()
+    fare = serializers.SerializerMethodField()
+    promo_code = serializers.CharField(source="promo.code", default=None, read_only=True)
+    has_rated = serializers.SerializerMethodField()
+    stop = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Trip
+        fields = [
+            "id",
+            "trip_number",
+            "status",
+            "status_label",
+            "ride_type",
+            "ride_type_name",
+            "city",
+            "pickup_lat",
+            "pickup_lng",
+            "pickup_address",
+            "dropoff_lat",
+            "dropoff_lng",
+            "dropoff_address",
+            "rider",
+            "driver",
+            "driver_location",
+            "vehicle",
+            "otp",
+            "payment_method",
+            "promo_code",
+            "estimated_distance_km",
+            "estimated_duration_min",
+            "surge_multiplier",
+            "estimated_fare",
+            "route_polyline",
+            "route_source",
+            "pickup_eta_min",
+            "requested_at",
+            "assigned_at",
+            "arrived_at",
+            "started_at",
+            "completed_at",
+            "cancelled_at",
+            "cancelled_by",
+            "cancellation_reason",
+            "cancellation_fee",
+            "actual_distance_km",
+            "actual_duration_min",
+            "waiting_minutes",
+            "pricing_mode",
+            "fare",
+            "fare_total",
+            "driver_earning",
+            "tip_amount",
+            "payment_status",
+            "flags",
+            "has_rated",
+            "stop",
+        ]
+
+    def _viewer(self):
+        request = self.context.get("request")
+        return request.user if request else None
+
+    def get_otp(self, trip) -> str | None:
+        """Only the rider sees the ride PIN; they read it out to the driver at pickup."""
+        viewer = self._viewer()
+        if viewer and viewer.is_rider and trip.status in ACTIVE_STATUSES:
+            return trip.otp
+        return None
+
+    def get_driver_location(self, trip) -> dict | None:
+        driver = trip.driver
+        if driver is None or driver.current_lat is None:
+            return None
+        return {"lat": driver.current_lat, "lng": driver.current_lng, "heading": driver.heading}
+
+    def get_fare(self, trip) -> dict:
+        return FareSerializer(trip.final_fare).data
+
+    @extend_schema_field(PointSerializer(allow_null=True))
+    def get_stop(self, trip) -> dict | None:
+        return services.stop_payload(trip)
+
+    def get_has_rated(self, trip) -> bool:
+        viewer = self._viewer()
+        if viewer is None or trip.status != TripStatus.COMPLETED:
+            return False
+        direction = "RIDER_TO_DRIVER" if viewer.is_rider else "DRIVER_TO_RIDER"
+        return any(r.direction == direction for r in trip.ratings.all())
+
+
+class TripRequestSerializer(serializers.Serializer):
+    ride_type = serializers.SlugRelatedField(
+        slug_field="code", queryset=RideType.objects.filter(is_active=True)
+    )
+    pickup = PointSerializer()
+    dropoff = PointSerializer()
+    stop = PointSerializer(required=False, allow_null=True)
+    payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
+    promo_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
+
+
+class CancelSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+class StartSerializer(serializers.Serializer):
+    otp = serializers.RegexField(r"^\d{4}$")
+
+
+class TelemetrySerializer(serializers.Serializer):
+    harsh_brakes = serializers.IntegerField(min_value=0, default=0)
+    harsh_accelerations = serializers.IntegerField(min_value=0, default=0)
+    speeding_seconds = serializers.IntegerField(min_value=0, default=0)
+    night_distance_km = serializers.DecimalField(
+        max_digits=7, decimal_places=2, min_value=Decimal(0), default=Decimal(0)
+    )
+
+
+class CompleteSerializer(serializers.Serializer):
+    actual_distance_km = serializers.DecimalField(
+        max_digits=7, decimal_places=2, min_value=Decimal(0), required=False, allow_null=True
+    )
+    telemetry = TelemetrySerializer(required=False)
+
+
+class RateSerializer(serializers.Serializer):
+    stars = serializers.IntegerField(min_value=1, max_value=5)
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=30), required=False, max_length=6
+    )
+    comment = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+
+class TipSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=6, decimal_places=2)
+    method = serializers.ChoiceField(
+        choices=[PaymentMethod.UPI, PaymentMethod.CARD, PaymentMethod.WALLET]
+    )
+    payer_reference = serializers.CharField(required=False, allow_blank=True, max_length=60)
+
+
+class SosSerializer(serializers.Serializer):
+    note = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    lat = serializers.FloatField(required=False, allow_null=True)
+    lng = serializers.FloatField(required=False, allow_null=True)
+
+
+class TripEventSerializer(serializers.ModelSerializer):
+    actor = serializers.StringRelatedField()
+
+    class Meta:
+        model = TripEvent
+        fields = [
+            "id",
+            "kind",
+            "from_status",
+            "to_status",
+            "actor",
+            "message",
+            "data",
+            "created_at",
+        ]
+
+
+class TripMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TripMessage
+        fields = ["id", "trip_id", "sender", "body", "created_at"]
+        read_only_fields = ["id", "trip_id", "sender", "created_at"]
+
+
+class TripOfferSerializer(serializers.ModelSerializer):
+    driver = serializers.StringRelatedField()
+
+    class Meta:
+        model = TripOffer
+        fields = [
+            "id",
+            "driver",
+            "status",
+            "offered_at",
+            "expires_at",
+            "responded_at",
+            "distance_km",
+            "eta_minutes",
+            "rank_score",
+            "dispatch_mode",
+        ]
+
+
+class TripFilter(django_filters.FilterSet):
+    since = django_filters.IsoDateTimeFilter(field_name="requested_at", lookup_expr="gte")
+    until = django_filters.IsoDateTimeFilter(field_name="requested_at", lookup_expr="lt")
+    city = django_filters.CharFilter(field_name="city__slug")
+    ride_type = django_filters.CharFilter(field_name="ride_type__code")
+    active = django_filters.BooleanFilter(method="filter_active")
+    flagged = django_filters.BooleanFilter(method="filter_flagged")
+
+    class Meta:
+        model = Trip
+        fields = ["status", "payment_method", "payment_status", "driver", "rider"]
+
+    def filter_active(self, queryset, name, value):
+        return (
+            queryset.filter(status__in=ACTIVE_STATUSES)
+            if value
+            else queryset.exclude(status__in=ACTIVE_STATUSES)
+        )
+
+    def filter_flagged(self, queryset, name, value):
+        return queryset.exclude(flags=[]) if value else queryset.filter(flags=[])
+
+
+RIDER = (
+    "list",
+    "retrieve",
+    "create",
+    "active",
+    "cancel",
+    "rate",
+    "tip",
+    "sos",
+    "events",
+    "route",
+    "receipt",
+    "messages",
+    "share",
+)
+DRIVER = (
+    "list",
+    "retrieve",
+    "active",
+    "cancel",
+    "arrive",
+    "start",
+    "complete",
+    "rate",
+    "sos",
+    "events",
+    "route",
+    "messages",
+)
+
+
+class TripViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, BaseViewSet
+):
+    """Trips. Riders book and track theirs, drivers run theirs, staff see everything."""
+
+    queryset = Trip.objects.select_related(
+        "ride_type", "city", "rider__user", "driver__user", "vehicle", "promo"
+    ).prefetch_related(Prefetch("ratings"))
+    serializer_class = TripSerializer
+    filterset_class = TripFilter
+    search_fields = [
+        "trip_number",
+        "pickup_address",
+        "dropoff_address",
+        "rider__user__email",
+        "driver__user__email",
+    ]
+    ordering_fields = ["requested_at", "fare_total", "completed_at"]
+    rider_lookup = "rider"
+    driver_lookup = "driver"
+    rider_actions = RIDER
+    driver_actions = DRIVER
+    capabilities = {
+        "list": Cap.TRIPS_VIEW,
+        "retrieve": Cap.TRIPS_VIEW,
+        "active": Cap.TRIPS_VIEW,
+        "events": Cap.TRIPS_VIEW,
+        "offers": Cap.TRIPS_VIEW,
+        "route": Cap.TRIPS_VIEW,
+        "receipt": Cap.TRIPS_VIEW,
+        "messages": Cap.TRIPS_VIEW,
+        "cancel": Cap.TRIPS_MANAGE,
+    }
+
+    def get_serializer_class(self):
+        return TripRequestSerializer if self.action == "create" else TripSerializer
+
+    def _respond(self, trip, code=status.HTTP_200_OK):
+        trip = self.get_queryset().get(pk=trip.pk)
+        return Response(
+            TripSerializer(trip, context=self.get_serializer_context()).data, status=code
+        )
+
+    @extend_schema(request=TripRequestSerializer, responses={201: TripSerializer})
+    def create(self, request, *args, **kwargs):
+        serializer = TripRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        trip = services.request_trip(
+            rider=request.user.rider_profile,
+            ride_type=data["ride_type"],
+            pickup=(data["pickup"]["lat"], data["pickup"]["lng"]),
+            dropoff=(data["dropoff"]["lat"], data["dropoff"]["lng"]),
+            pickup_address=data["pickup"].get("address", ""),
+            dropoff_address=data["dropoff"].get("address", ""),
+            payment_method=data["payment_method"],
+            promo_code=data.get("promo_code", ""),
+            stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
+            stop_address=(data.get("stop") or {}).get("address", ""),
+        )
+        return self._respond(trip, status.HTTP_201_CREATED)
+
+    @extend_schema(responses={200: TripSerializer, 204: None})
+    @action(detail=False, methods=["get"])
+    def active(self, request):
+        """The signed-in rider's or driver's current trip, if any."""
+        trip = self.get_queryset().filter(status__in=ACTIVE_STATUSES).first()
+        if trip is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(TripSerializer(trip, context=self.get_serializer_context()).data)
+
+    @extend_schema(request=CancelSerializer, responses=TripSerializer)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        serializer = CancelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        trip = services.cancel_trip(
+            self.get_object(), user=request.user, reason=serializer.validated_data.get("reason", "")
+        )
+        return self._respond(trip)
+
+    def _driver(self, request) -> DriverProfile:
+        return request.user.driver_profile
+
+    @extend_schema(request=None, responses=TripSerializer)
+    @action(detail=True, methods=["post"])
+    def arrive(self, request, pk=None):
+        return self._respond(services.mark_arrived(self.get_object(), driver=self._driver(request)))
+
+    @extend_schema(request=StartSerializer, responses=TripSerializer)
+    @action(detail=True, methods=["post"])
+    def start(self, request, pk=None):
+        serializer = StartSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._respond(
+            services.start_trip(
+                self.get_object(),
+                driver=self._driver(request),
+                otp=serializer.validated_data["otp"],
+            )
+        )
+
+    @extend_schema(request=CompleteSerializer, responses=TripSerializer)
+    @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        serializer = CompleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        trip = services.complete_trip(
+            self.get_object(),
+            driver=self._driver(request),
+            actual_distance_km=data.get("actual_distance_km"),
+            telemetry=data.get("telemetry"),
+        )
+        return self._respond(trip)
+
+    @extend_schema(request=RateSerializer, responses=TripSerializer)
+    @action(detail=True, methods=["post"])
+    def rate(self, request, pk=None):
+        serializer = RateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        trip = self.get_object()
+        services.rate_trip(trip, user=request.user, **serializer.validated_data)
+        return self._respond(trip)
+
+    @extend_schema(
+        request=TipSerializer,
+        responses=TripSerializer,
+        parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER)],
+    )
+    @action(detail=True, methods=["post"])
+    def tip(self, request, pk=None):
+        serializer = TipSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        trip = services.tip_driver(
+            self.get_object(),
+            user=request.user,
+            idempotency_key=request.headers.get("Idempotency-Key", ""),
+            **serializer.validated_data,
+        )
+        return self._respond(trip)
+
+    @extend_schema(request=SosSerializer, responses={201: IncidentSerializer})
+    @action(detail=True, methods=["post"])
+    def sos(self, request, pk=None):
+        from apps.support.services import raise_sos
+
+        serializer = SosSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        incident = raise_sos(trip=self.get_object(), user=request.user, **serializer.validated_data)
+        return Response(IncidentSerializer(incident).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(responses=TripEventSerializer(many=True))
+    @action(detail=True, methods=["get"])
+    def events(self, request, pk=None):
+        events = self.get_object().events.select_related("actor")
+        if request.user.is_end_user:
+            events = events.filter(kind__in=["STATUS", "TIP"])
+        return Response(TripEventSerializer(events, many=True).data)
+
+    @extend_schema(methods=["GET"], request=None, responses=TripMessageSerializer(many=True))
+    @extend_schema(
+        methods=["POST"], request=TripMessageSerializer, responses={201: TripMessageSerializer}
+    )
+    @action(detail=True, methods=["get", "post"])
+    def messages(self, request, pk=None):
+        """In-trip chat. Staff can read it (for support and safety) but not post."""
+        trip = self.get_object()
+        if request.method == "POST":
+            serializer = TripMessageSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            message = services.send_message(
+                trip, user=request.user, body=serializer.validated_data["body"]
+            )
+            return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+        return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def share(self, request, pk=None):
+        """A link family and friends can open (no login) to follow the ride live."""
+        token = services.share_trip(self.get_object(), user=request.user)
+        return Response({"token": token, "path": f"/track/{token}"})
+
+    @extend_schema(responses=TripOfferSerializer(many=True))
+    @action(detail=True, methods=["get"])
+    def offers(self, request, pk=None):
+        return Response(
+            TripOfferSerializer(
+                self.get_object().offers.select_related("driver__user"), many=True
+            ).data
+        )
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["get"])
+    def route(self, request, pk=None):
+        return Response(services.trip_route(self.get_object()))
+
+    @extend_schema(responses={(200, "application/pdf"): bytes})
+    @action(detail=True, methods=["get"])
+    def receipt(self, request, pk=None):
+        trip = self.get_object()
+        if trip.status != TripStatus.COMPLETED:
+            raise ActionNotPermitted("Receipts are available for completed trips.")
+        response = HttpResponse(render_receipt(trip), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{trip.trip_number}.pdf"'
+        return response
+
+
+class DispatchSweepView(ContextBindingMixin, APIView):
+    """Run one dispatcher tick now (normally Celery beat runs it every 10 seconds)."""
+
+    permission_classes = [CapabilityPermission]
+    capabilities = {"post": Cap.DISPATCH_RUN}
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT}, tags=["operations"])
+    def post(self, request):
+        return Response(dispatch.sweep())
+
+
+class LiveOpsView(ContextBindingMixin, APIView):
+    """Everything on the live operations map: online drivers and active trips."""
+
+    permission_classes = [CapabilityPermission]
+    capabilities = {"get": Cap.TRIPS_VIEW}
+
+    @extend_schema(
+        parameters=[OpenApiParameter("city", str, description="City slug")],
+        responses={200: OpenApiTypes.OBJECT},
+        tags=["operations"],
+    )
+    def get(self, request):
+        city = request.query_params.get("city")
+        drivers = DriverProfile.objects.exclude(availability=Availability.OFFLINE).filter(
+            current_lat__isnull=False
+        )
+        trips = Trip.objects.filter(status__in=ACTIVE_STATUSES).select_related(
+            "ride_type", "driver__user"
+        )
+        if city:
+            drivers = drivers.filter(city__slug=city)
+            trips = trips.filter(city__slug=city)
+        return Response(
+            {
+                "time": timezone.now(),
+                "drivers": [
+                    {
+                        "id": d.pk,
+                        "name": d.name,
+                        "lat": d.current_lat,
+                        "lng": d.current_lng,
+                        "heading": d.heading,
+                        "availability": d.availability,
+                        "ride_type": next(
+                            (v.ride_type.code for v in d.vehicles.all() if v.is_active), None
+                        ),
+                    }
+                    for d in drivers.select_related("user").prefetch_related("vehicles__ride_type")[
+                        :2000
+                    ]
+                ],
+                "trips": [
+                    {
+                        "id": t.pk,
+                        "trip_number": t.trip_number,
+                        "status": t.status,
+                        "ride_type": t.ride_type.code,
+                        "pickup": [t.pickup_lat, t.pickup_lng],
+                        "dropoff": [t.dropoff_lat, t.dropoff_lng],
+                        "driver_id": t.driver_id,
+                        "requested_at": t.requested_at,
+                    }
+                    for t in trips[:1000]
+                ],
+            }
+        )
+
+
+class NearbyDriversView(ContextBindingMixin, APIView):
+    """Available cars near a point, for the rider's map. Positions are rounded for privacy."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("lat", float, required=True),
+            OpenApiParameter("lng", float, required=True),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+        tags=["fares"],
+    )
+    def get(self, request):
+        from apps.drivers.services import nearby_available_drivers
+
+        try:
+            lat, lng = float(request.query_params["lat"]), float(request.query_params["lng"])
+        except (KeyError, ValueError):
+            return Response({"drivers": []})
+        drivers = nearby_available_drivers(lat=lat, lng=lng, radius_km=3, limit=15)
+        # An opaque per-day key lets the app animate each car between refreshes without
+        # learning which driver it is (or following them across days).
+        day = timezone.localdate().isoformat()
+        vehicles = {
+            v.driver_id: v.ride_type.code
+            for v in Vehicle.objects.filter(driver__in=drivers, is_active=True).select_related(
+                "ride_type"
+            )
+        }
+        return Response(
+            {
+                "drivers": [
+                    {
+                        "key": salted_hmac("nearby-car", f"{d.pk}:{day}").hexdigest()[:12],
+                        "lat": round(d.current_lat, 4),
+                        "lng": round(d.current_lng, 4),
+                        "heading": d.heading,
+                        "ride_type": vehicles.get(d.pk),
+                    }
+                    for d in drivers
+                ]
+            }
+        )
+
+
+class SharedTripView(APIView):
+    """Public, read-only view of a shared trip (the "follow my ride" page)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=["trips"])
+    def get(self, request, token):
+        view = services.shared_trip_view(token)
+        if view is None:
+            raise NotFound("This link has expired or doesn't exist.")
+        return Response(view)
+
+
+class ScheduledRideSerializer(serializers.ModelSerializer):
+    ride_type = serializers.CharField(source="ride_type.code")
+    ride_type_name = serializers.CharField(source="ride_type.name")
+    status_label = serializers.CharField(source="get_status_display")
+    pickup = serializers.SerializerMethodField()
+    dropoff = serializers.SerializerMethodField()
+    stop = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ScheduledRide
+        fields = [
+            "id",
+            "ride_type",
+            "ride_type_name",
+            "pickup",
+            "dropoff",
+            "stop",
+            "payment_method",
+            "promo_code",
+            "scheduled_for",
+            "quoted_fare",
+            "status",
+            "status_label",
+            "trip_id",
+            "failure_reason",
+            "created_at",
+        ]
+
+    @extend_schema_field(PointSerializer)
+    def get_pickup(self, ride) -> dict:
+        return {"lat": ride.pickup_lat, "lng": ride.pickup_lng, "address": ride.pickup_address}
+
+    @extend_schema_field(PointSerializer)
+    def get_dropoff(self, ride) -> dict:
+        return {"lat": ride.dropoff_lat, "lng": ride.dropoff_lng, "address": ride.dropoff_address}
+
+    @extend_schema_field(PointSerializer(allow_null=True))
+    def get_stop(self, ride) -> dict | None:
+        return services.stop_payload(ride)
+
+
+class ScheduleRequestSerializer(TripRequestSerializer):
+    scheduled_for = serializers.DateTimeField()
+
+
+class ScheduledRideViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, BaseViewSet
+):
+    """Rides booked for later. A few minutes before pickup each becomes a normal trip."""
+
+    queryset = ScheduledRide.objects.select_related("ride_type", "rider__user", "trip")
+    serializer_class = ScheduledRideSerializer
+    filterset_fields = ["status"]
+    ordering_fields = ["scheduled_for", "created_at"]
+    rider_lookup = "rider"
+    rider_actions = ("list", "retrieve", "create", "cancel")
+    capabilities = {"list": Cap.TRIPS_VIEW, "retrieve": Cap.TRIPS_VIEW}
+
+    @extend_schema(request=ScheduleRequestSerializer, responses={201: ScheduledRideSerializer})
+    def create(self, request, *args, **kwargs):
+        serializer = ScheduleRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        ride = services.schedule_ride(
+            rider=request.user.rider_profile,
+            ride_type=data["ride_type"],
+            pickup=(data["pickup"]["lat"], data["pickup"]["lng"]),
+            dropoff=(data["dropoff"]["lat"], data["dropoff"]["lng"]),
+            pickup_address=data["pickup"].get("address", ""),
+            dropoff_address=data["dropoff"].get("address", ""),
+            payment_method=data["payment_method"],
+            promo_code=data.get("promo_code", ""),
+            stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
+            stop_address=(data.get("stop") or {}).get("address", ""),
+            scheduled_for=data["scheduled_for"],
+        )
+        return Response(ScheduledRideSerializer(ride).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses=ScheduledRideSerializer)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        ride = services.cancel_scheduled_ride(self.get_object(), user=request.user)
+        return Response(ScheduledRideSerializer(ride).data)

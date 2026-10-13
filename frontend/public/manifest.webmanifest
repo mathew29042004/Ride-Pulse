@@ -1,0 +1,23 @@
+{
+  "id": "/ride",
+  "name": "Ride Pulse",
+  "short_name": "Ride Pulse",
+  "description": "Book rides, drive and earn across Chennai, Bengaluru and Coimbatore",
+  "start_url": "/ride",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
+  "categories": ["travel", "navigation"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Book a ride", "url": "/ride/book", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Driver app", "url": "/drive", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

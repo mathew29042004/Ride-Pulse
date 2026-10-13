@@ -1,0 +1,17 @@
+Django>=5.2,<5.3
+djangorestframework>=3.16
+djangorestframework-simplejwt>=5.5
+django-filter>=25.1
+django-cors-headers>=4.7
+django-environ>=0.12
+psycopg[binary]>=3.2
+celery[redis]>=5.5
+whitenoise>=6.9
+gunicorn>=23
+reportlab>=4.4
+Faker>=37
+drf-spectacular[sidecar]>=0.28
+channels>=4.2
+channels-redis>=4.2
+daphne>=4.1
+sentry-sdk[django]>=2.19

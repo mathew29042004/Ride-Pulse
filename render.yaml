@@ -1,0 +1,61 @@
+# Render Blueprint: Render dashboard → New → Blueprint → pick this repository.
+#
+# Free plan: one web service (Django + Daphne, with the demo seeder and bot simulator running
+# alongside, see scripts/render_start.sh) and one PostgreSQL database. Without Redis and Celery,
+# background tasks run inline and pages stay live by polling, as in local development.
+
+services:
+  - type: web
+    name: ride-pulse
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerCommand: sh scripts/render_start.sh
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ride-pulse-db
+          property: connectionString
+      - key: PORT
+        value: "8000"
+      # Free instances block outbound SMTP, so notification emails go to the log instead.
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.console.EmailBackend
+      # The app user can't write inside /app; uploads are temporary on Render's free plan anyway.
+      - key: MEDIA_ROOT
+        value: /tmp/media
+      # Days of demo history to seed on first start, and bot drivers per city.
+      - key: SEED_DAYS
+        value: "7"
+      - key: SIM_DRIVERS
+        value: "12"
+      # Structured logs for Render's log search.
+      - key: LOG_FORMAT
+        value: json
+      # Optional: set these in the dashboard (left blank here so secrets never live in git).
+      - key: SENTRY_DSN
+        sync: false
+      - key: METRICS_TOKEN
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_BROWSER_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+
+databases:
+  - name: ride-pulse-db
+    plan: free
+    region: singapore
+    databaseName: ridepulse
+    user: ridepulse
+    postgresMajorVersion: "16"

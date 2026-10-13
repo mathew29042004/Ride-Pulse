@@ -1,0 +1,516 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { clsx } from "clsx";
+import { AlertTriangle, Banknote, Bot, LocateFixed, MapPin, Navigation, Phone, Power, ShieldAlert, Zap } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router";
+import { toast } from "sonner";
+
+import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLine, advanceAlong, routePath, snapToPath } from "@/components/map";
+import { NotificationBell } from "@/components/NotificationBell";
+import { TripChat } from "@/components/TripChat";
+import { Avatar, Badge, Button, Input, Modal, Sheet, StarInput, Stars } from "@/components/ui";
+import { buzz, chime } from "@/lib/alert";
+import { api, ApiError } from "@/lib/api";
+import { inr, km, minutes } from "@/lib/format";
+import { clockIn, etaFromKm, haversineKm, useActiveTrip, useDriverMe, useNow } from "@/lib/hooks";
+import type { City, Earnings, Offer, Trip } from "@/lib/types";
+import { useSocket } from "@/lib/ws";
+
+type Pos = { lat: number; lng: number; heading: number | null };
+
+function stepTowards(from: Pos, to: { lat: number; lng: number }, stepKm: number): Pos & { arrived: boolean } {
+  const d = haversineKm(from, to);
+  const heading = (Math.atan2(to.lng - from.lng, to.lat - from.lat) * 180) / Math.PI;
+  if (d <= stepKm) return { ...to, heading: (heading + 360) % 360, arrived: true };
+  const f = stepKm / d;
+  return { lat: from.lat + (to.lat - from.lat) * f, lng: from.lng + (to.lng - from.lng) * f, heading: (heading + 360) % 360, arrived: false };
+}
+
+function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccept: () => void; onDecline: () => void; busy: boolean }) {
+  const now = useNow(250);
+  const total = 20_000;
+  const left = Math.max(0, new Date(offer.expires_at).getTime() - now);
+  const fraction = Math.min(1, left / total);
+  const r = 26;
+  const c = 2 * Math.PI * r;
+  const urgent = left < 6_000;
+  // Chime and buzz once per offer, like a real driver app.
+  useEffect(() => {
+    chime();
+    buzz();
+  }, [offer.offer_id]);
+  return (
+    <div className={clsx("absolute inset-x-3 bottom-3 z-[800] animate-[slide-up_0.35s_ease-out] rounded-3xl bg-surface p-5 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.45)] ring-2 transition", urgent ? "ring-amber-400/70" : "ring-transparent")}>
+      <div className="flex items-start justify-between">
+        <div>
+          <Badge tone="brand">New {offer.ride_type} request</Badge>
+          <div className="mt-2 text-3xl font-bold tracking-tight">{inr(offer.estimated_earning)}</div>
+          <div className="text-xs text-muted">
+            est. earning · {offer.payment_method.toLowerCase()}
+            {Number(offer.surge) > 1 && (
+              <span className="ml-1 font-semibold text-amber-600">
+                <Zap className="inline size-3" /> {offer.surge}×
+              </span>
+            )}
+          </div>
+        </div>
+        <svg width="64" height="64" className="-rotate-90">
+          <circle cx="32" cy="32" r={r} fill="none" stroke="var(--color-surface-3)" strokeWidth="6" />
+          <circle
+            cx="32"
+            cy="32"
+            r={r}
+            fill="none"
+            stroke={left < 3_000 ? "var(--color-danger)" : urgent ? "#f59e0b" : "var(--color-brand)"}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - fraction)}
+            className="transition-[stroke-dashoffset,stroke] duration-300 ease-linear"
+          />
+          <text x="32" y="38" textAnchor="middle" className="rotate-90 fill-fg text-base font-bold" style={{ transformOrigin: "32px 32px" }}>
+            {Math.ceil(left / 1000)}
+          </text>
+        </svg>
+      </div>
+      <div className="mt-4 space-y-3 text-sm">
+        <div className="flex gap-3">
+          <span className="mt-1.5 size-2.5 shrink-0 rounded-full bg-brand" />
+          <div>
+            <div className="font-semibold">{offer.pickup.address || "Pickup"}</div>
+            <div className="text-xs text-muted">
+              {km(offer.pickup_distance_km)} away · {minutes(offer.pickup_eta_min)}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <span className="mt-1.5 size-2.5 shrink-0 bg-ink" />
+          <div>
+            <div className="font-semibold">{offer.dropoff.address || "Drop"}</div>
+            <div className="text-xs text-muted">{km(offer.trip_distance_km)} trip</div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-5 grid grid-cols-[1fr_2fr] gap-2">
+        <Button variant="secondary" size="lg" onClick={onDecline} disabled={busy}>
+          Decline
+        </Button>
+        <Button variant="brand" size="lg" onClick={onAccept} loading={busy}>
+          Accept
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PinEntry({ onSubmit, busy }: { onSubmit: (pin: string) => void; busy: boolean }) {
+  const [pin, setPin] = useState("");
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (pin.length === 4) onSubmit(pin);
+      }}
+    >
+      <label className="label">Ask the rider for their 4-digit ride PIN</label>
+      <div className="flex gap-2">
+        <Input
+          inputMode="numeric"
+          maxLength={4}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          placeholder="• • • •"
+          className="text-center font-mono text-2xl font-bold tracking-[0.6em]"
+        />
+        <Button type="submit" size="lg" variant="brand" disabled={pin.length !== 4} loading={busy}>
+          Start
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export default function DriverHome() {
+  const qc = useQueryClient();
+  const me = useDriverMe(6_000);
+  const driver = me.data;
+  const online = driver?.availability === "ONLINE" || driver?.availability === "ON_TRIP";
+  const active = useActiveTrip(!!driver);
+  const trip = active.data;
+  const cities = useQuery({ queryKey: ["cities"], queryFn: () => api.get<City[]>("cities/") });
+  const city = cities.data?.find((c) => c.slug === driver?.city);
+  const [pos, setPos] = useState<Pos | null>(null);
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const [autopilot, setAutopilot] = useState(false);
+  const [completed, setCompleted] = useState<Trip | null>(null);
+  const [recenter, setRecenter] = useState(0);
+  const [riderStars, setRiderStars] = useState(5);
+  const lastSent = useRef(0);
+
+  const today = useQuery({
+    queryKey: ["driver", "earnings", "today"],
+    queryFn: () => api.get<Earnings>("driver/earnings/?period=today"),
+    refetchInterval: 30_000,
+    enabled: !!driver,
+  });
+  const surge = useQuery({
+    queryKey: ["driver", "surge"],
+    queryFn: () => api.get<{ zone: string; lat: number; lng: number; radius_km: number; multiplier: string }[]>("driver/surge/"),
+    refetchInterval: 60_000,
+    enabled: !!driver,
+  });
+  const offerPoll = useQuery({
+    queryKey: ["driver", "offer"],
+    queryFn: () => api.get<Offer | undefined>("driver/offer/").then((o) => o ?? null),
+    refetchInterval: 2_500,
+    enabled: online && !trip,
+  });
+
+  useEffect(() => {
+    if (offerPoll.data !== undefined) setOffer(offerPoll.data);
+  }, [offerPoll.data]);
+
+  useSocket(driver ? "/ws/driver/" : null, (msg) => {
+    if (msg.event === "offer") setOffer(msg.data as Offer);
+    if (msg.event === "offer_closed") setOffer(null);
+    if (msg.event === "trip_cancelled") {
+      toast.warning("The rider cancelled the trip.");
+      qc.invalidateQueries({ queryKey: ["trips"] });
+    }
+  });
+
+  // Initial position: last known GPS, else the city centre.
+  useEffect(() => {
+    if (pos || !driver) return;
+    if (driver.current_lat !== null && driver.current_lng !== null) setPos({ lat: driver.current_lat, lng: driver.current_lng, heading: null });
+    else if (city) setPos({ lat: city.center_lat, lng: city.center_lng, heading: null });
+  }, [driver, city, pos]);
+
+  const sendLocation = useCallback(async (next: Pos) => {
+    setPos(next);
+    lastSent.current = Date.now();
+    try {
+      await api.post("driver/location/", { lat: next.lat, lng: next.lng, heading: next.heading ?? undefined });
+    } catch {
+      /* transient network errors are fine for GPS pings */
+    }
+  }, []);
+
+  // Demo autopilot: drive to the pickup, then along the trip's route to the drop, sending GPS as we go.
+  const route = useMemo(
+    () => (trip ? routePath([trip.pickup_lat, trip.pickup_lng], [trip.dropoff_lat, trip.dropoff_lng], trip.route_polyline, trip.stop && [trip.stop.lat, trip.stop.lng]) : []),
+    [trip?.id, trip?.route_polyline], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const target = useMemo(() => {
+    if (!trip) return null;
+    if (trip.status === "DRIVER_ASSIGNED") return { lat: trip.pickup_lat, lng: trip.pickup_lng };
+    if (trip.status === "IN_PROGRESS") return { lat: trip.dropoff_lat, lng: trip.dropoff_lng };
+    return null;
+  }, [trip]);
+  const following = trip?.status === "IN_PROGRESS";
+  const posRef = useRef(pos);
+  posRef.current = pos;
+  useEffect(() => {
+    if (!autopilot || !target) return;
+    const t = setInterval(() => {
+      const current = posRef.current;
+      if (!current) return;
+      if (following) {
+        const next = advanceAlong(route, [current.lat, current.lng], 0.18);
+        sendLocation({ lat: next.at[0], lng: next.at[1], heading: next.heading });
+      } else {
+        sendLocation(stepTowards(current, target, 0.18));
+      }
+    }, 1200);
+    return () => clearInterval(t);
+  }, [autopilot, target, following, route, sendLocation]);
+
+  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : "Something went wrong.");
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["driver"] });
+    qc.invalidateQueries({ queryKey: ["trips"] });
+  };
+  const toggle = useMutation({
+    mutationFn: () => (online ? api.post("driver/offline/") : api.post("driver/online/", { lat: pos?.lat, lng: pos?.lng })),
+    onSuccess: () => {
+      toast.success(online ? "You're offline" : "You're online. Finding trips near you…");
+      refresh();
+    },
+    onError,
+  });
+  const accept = useMutation({
+    mutationFn: (o: Offer) => api.post<Trip>(`driver/offers/${o.offer_id}/accept/`),
+    onSuccess: (accepted) => {
+      setOffer(null);
+      // Show the trip straight away rather than waiting for the next poll.
+      qc.setQueryData(["trips", "active"], accepted);
+      toast.success("Trip accepted. Head to the pickup.");
+      refresh();
+    },
+    onError: (err) => {
+      setOffer(null);
+      onError(err);
+    },
+  });
+  // Declining can't meaningfully fail for the driver, so the card goes away immediately.
+  const decline = useMutation({ mutationFn: (o: Offer) => api.post(`driver/offers/${o.offer_id}/decline/`), onMutate: () => setOffer(null), onError });
+  const arrive = useMutation({ mutationFn: () => api.post(`trips/${trip!.id}/arrive/`), onSuccess: refresh, onError });
+  const start = useMutation({ mutationFn: (otp: string) => api.post(`trips/${trip!.id}/start/`, { otp }), onSuccess: () => { toast.success("Trip started. Drive safe!"); refresh(); }, onError });
+  const complete = useMutation({
+    mutationFn: () =>
+      api.post<Trip>(`trips/${trip!.id}/complete/`, {
+        telemetry: { harsh_brakes: Math.round(Math.random() * 2), harsh_accelerations: Math.round(Math.random()), speeding_seconds: Math.round(Math.random() * 40) },
+      }),
+    onSuccess: (t) => {
+      setCompleted(t);
+      setAutopilot(false);
+      refresh();
+    },
+    onError,
+  });
+  const cancel = useMutation({ mutationFn: () => api.post(`trips/${trip!.id}/cancel/`, { reason: "Driver cancelled" }), onSuccess: () => { toast("Trip released to another driver"); refresh(); }, onError });
+  const rateRider = useMutation({
+    mutationFn: () => api.post(`trips/${completed!.id}/rate/`, { stars: riderStars }),
+    onSuccess: () => setCompleted(null),
+    onError: () => setCompleted(null),
+  });
+
+  const points = useMemo<[number, number][]>(() => {
+    const pts: [number, number][] = [];
+    if (pos) pts.push([pos.lat, pos.lng]);
+    if (trip) pts.push(trip.status === "IN_PROGRESS" ? [trip.dropoff_lat, trip.dropoff_lng] : [trip.pickup_lat, trip.pickup_lng]);
+    if (offer) pts.push([offer.pickup.lat, offer.pickup.lng]);
+    return pts;
+  }, [pos?.lat, pos?.lng, trip?.status, trip?.id, offer?.offer_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!driver || !pos) {
+    return <div className="flex h-full items-center justify-center text-muted">Loading…</div>;
+  }
+
+  const blocked = driver.compliance_problems.length > 0;
+  const distanceToPickup = trip ? haversineKm(pos, { lat: trip.pickup_lat, lng: trip.pickup_lng }) : 0;
+  const onRoute = following ? snapToPath(route, [pos.lat, pos.lng]) : null;
+  const distanceToDrop = trip ? (onRoute && onRoute.offMetres < 300 ? onRoute.remainingKm : haversineKm(pos, { lat: trip.dropoff_lat, lng: trip.dropoff_lng }) * 1.3) : 0;
+
+  return (
+    <div className="relative flex h-full flex-col">
+      <div className="absolute inset-0">
+        <BaseMap center={[pos.lat, pos.lng]} zoom={14}>
+          <FitBounds points={points} padding={60} bottom={380} fitKey={`${trip?.id}-${trip?.status}-${offer?.offer_id}-${recenter}`} />
+          {(surge.data ?? []).map((z) => (
+            <MapCircle key={z.zone} center={[z.lat, z.lng]} radius={z.radius_km * 1000} color="#f59e0b" label={`${z.multiplier}×`} permanentLabel />
+          ))}
+          <CarMarker lat={pos.lat} lng={pos.lng} heading={pos.heading} rideType={driver.vehicle?.ride_type} />
+          {trip && <PinMarker lat={trip.pickup_lat} lng={trip.pickup_lng} kind="pickup" />}
+          {trip?.stop && <PinMarker lat={trip.stop.lat} lng={trip.stop.lng} kind="stop" label="Stop" />}
+          {trip && <PinMarker lat={trip.dropoff_lat} lng={trip.dropoff_lng} kind="dropoff" />}
+          {trip && trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[pos.lat, pos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#10b981" />}
+          {trip && trip.status !== "DRIVER_ASSIGNED" && (
+            <RouteLine
+              from={[trip.pickup_lat, trip.pickup_lng]}
+              to={[trip.dropoff_lat, trip.dropoff_lng]}
+              encoded={trip.route_polyline}
+              via={trip.stop && [trip.stop.lat, trip.stop.lng]}
+              progress={following ? [pos.lat, pos.lng] : null}
+            />
+          )}
+          {offer && <PinMarker lat={offer.pickup.lat} lng={offer.pickup.lng} kind="pickup" label="Pickup" />}
+          {!autopilot && <MapClick onClick={(lat, lng) => sendLocation({ lat, lng, heading: pos.heading })} />}
+        </BaseMap>
+      </div>
+
+      <div className="relative z-[600] flex items-center gap-2 p-3">
+        <div className="flex flex-1 items-center gap-2 rounded-full bg-surface/95 px-2 py-1.5 shadow-[var(--shadow-float)] backdrop-blur">
+          <Avatar name={driver.name} size={32} />
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-sm font-semibold">{inr(today.data?.earnings ?? 0)} today</div>
+            <div className="text-[11px] text-muted">
+              <Stars value={driver.rating} size={10} /> · {today.data?.trips ?? 0} trips
+            </div>
+          </div>
+        </div>
+        <div className="rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
+          <NotificationBell />
+        </div>
+      </div>
+
+      {!trip && online && !offer && (
+        <div className="relative z-[600] mx-auto mt-1 rounded-full bg-ink/90 px-4 py-1.5 text-xs font-semibold text-ink-fg">Tap the map to move your car</div>
+      )}
+
+      <div className="flex-1" />
+
+      <div className="relative z-[600] flex items-center justify-end gap-2 px-3 pb-2">
+        {trip && (
+          <button
+            onClick={() => setAutopilot((a) => !a)}
+            className={clsx("flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-lg", autopilot ? "bg-brand text-white" : "bg-surface")}
+          >
+            <Bot className="size-4" /> Demo autopilot {autopilot ? "on" : "off"}
+          </button>
+        )}
+        <button onClick={() => setRecenter((n) => n + 1)} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Re-centre map">
+          <LocateFixed className="size-5" />
+        </button>
+      </div>
+
+      {offer && !trip ? (
+        <OfferCard offer={offer} busy={accept.isPending || decline.isPending} onAccept={() => accept.mutate(offer)} onDecline={() => decline.mutate(offer)} />
+      ) : (
+        <Sheet>
+          {!trip && (
+            <>
+              {blocked && (
+                <div className="mb-3 flex gap-2 rounded-2xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">
+                  <AlertTriangle className="size-4 shrink-0" />
+                  <div>
+                    <div className="font-semibold">You can't go online yet</div>
+                    <ul className="mt-1 list-disc pl-4">
+                      {driver.compliance_problems.map((p) => (
+                        <li key={p}>{p}</li>
+                      ))}
+                    </ul>
+                    <Link to="/drive/documents" className="mt-1 inline-block font-semibold underline">
+                      Fix in Documents
+                    </Link>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="text-lg font-bold">{online ? "You're online" : "You're offline"}</div>
+                  <div className="text-sm text-muted">{online ? "Finding trips near you" : "Go online to start earning"}</div>
+                </div>
+                <button
+                  onClick={() => toggle.mutate()}
+                  disabled={toggle.isPending || (!online && blocked)}
+                  className={clsx(
+                    "flex size-16 items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 disabled:opacity-50",
+                    online ? "bg-danger" : "bg-brand",
+                  )}
+                  aria-label={online ? "Go offline" : "Go online"}
+                >
+                  <Power className="size-7" />
+                </button>
+              </div>
+              {online && (
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted">
+                  <span className="relative flex size-2.5">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-75" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-brand" />
+                  </span>
+                  Acceptance {Number(driver.acceptance_rate).toFixed(0)}% · Safety score {driver.safety_score ?? "—"}
+                </div>
+              )}
+            </>
+          )}
+
+          {trip && (
+            <>
+              <div className="flex items-center gap-3">
+                <Avatar name={trip.rider.name} size={46} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold">{trip.rider.name}</div>
+                  <div className="text-xs text-muted">
+                    <Stars value={trip.rider.rating} size={10} /> · {trip.ride_type_name} · {trip.payment_method === "CASH" ? "collect cash" : trip.payment_method.toLowerCase()}
+                  </div>
+                </div>
+                <TripChat tripId={trip.id} me="DRIVER" otherName={trip.rider.name} canSend compact />
+                <a href={`tel:${trip.rider.phone}`} className="flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label="Call rider">
+                  <Phone className="size-4" />
+                </a>
+              </div>
+
+              <div className="mt-4 flex gap-3 rounded-2xl bg-surface-2 p-3 text-sm">
+                <MapPin className={clsx("mt-0.5 size-4 shrink-0", trip.status === "IN_PROGRESS" ? "text-fg" : "text-brand")} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-semibold text-muted uppercase">{trip.status === "IN_PROGRESS" ? "Drop" : "Pickup"}</div>
+                  <div className="truncate font-semibold">{trip.status === "IN_PROGRESS" ? trip.dropoff_address : trip.pickup_address}</div>
+                  {trip.stop && <div className="truncate text-xs text-muted">Stop on the way: {trip.stop.address || "marked on the map"}</div>}
+                  {trip.status === "DRIVER_ASSIGNED" && <div className="text-xs text-muted">{km(distanceToPickup)} away</div>}
+                  {trip.status === "IN_PROGRESS" && (
+                    <div className="text-xs text-muted">
+                      {km(distanceToDrop)} · {minutes(etaFromKm(distanceToDrop))} · drop by {clockIn(etaFromKm(distanceToDrop))}
+                    </div>
+                  )}
+                </div>
+                <a
+                  target="_blank"
+                  rel="noreferrer"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${trip.status === "IN_PROGRESS" ? `${trip.dropoff_lat},${trip.dropoff_lng}` : `${trip.pickup_lat},${trip.pickup_lng}`}`}
+                  className="flex size-9 items-center justify-center rounded-full bg-info text-white"
+                  aria-label="Navigate"
+                >
+                  <Navigation className="size-4" />
+                </a>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {trip.status === "DRIVER_ASSIGNED" && (
+                  <>
+                    <Button block size="lg" variant="brand" onClick={() => arrive.mutate()} loading={arrive.isPending}>
+                      I've arrived
+                    </Button>
+                    {distanceToPickup > 0.5 && <p className="text-center text-xs text-muted">Get within 500 m of the pickup (tap the map or use autopilot).</p>}
+                    <Button block variant="ghost" onClick={() => cancel.mutate()} loading={cancel.isPending}>
+                      Cancel trip
+                    </Button>
+                  </>
+                )}
+                {trip.status === "DRIVER_ARRIVED" && (
+                  <>
+                    <PinEntry onSubmit={(pin) => start.mutate(pin)} busy={start.isPending} />
+                    <Button block variant="ghost" onClick={() => cancel.mutate()} loading={cancel.isPending}>
+                      Rider didn't show up
+                    </Button>
+                  </>
+                )}
+                {trip.status === "IN_PROGRESS" && (
+                  <>
+                    {trip.payment_method === "CASH" && (
+                      <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">
+                        <Banknote className="size-4" /> Collect about {inr(trip.estimated_fare)} in cash at drop-off
+                      </div>
+                    )}
+                    <Button block size="lg" variant="primary" onClick={() => complete.mutate()} loading={complete.isPending}>
+                      Complete trip
+                    </Button>
+                  </>
+                )}
+              </div>
+              {trip.flags.includes("SOS") && (
+                <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-danger">
+                  <ShieldAlert className="size-3.5" /> The safety team is monitoring this trip
+                </p>
+              )}
+            </>
+          )}
+        </Sheet>
+      )}
+
+      <Modal
+        open={!!completed}
+        onClose={() => setCompleted(null)}
+        title="Trip complete"
+        footer={
+          <Button block onClick={() => rateRider.mutate()} loading={rateRider.isPending}>
+            Rate rider & continue
+          </Button>
+        }
+      >
+        {completed && (
+          <div className="text-center">
+            <div className="text-xs font-semibold text-muted uppercase">You earned</div>
+            <div className="text-4xl font-bold tracking-tight text-brand-strong">{inr(completed.driver_earning)}</div>
+            <div className="mt-1 text-sm text-muted">
+              Fare {inr(completed.fare_total)} · {km(completed.actual_distance_km)} · {minutes(completed.actual_duration_min)}
+            </div>
+            {completed.payment_method === "CASH" && <p className="mt-3 rounded-xl bg-surface-2 p-2 text-sm">Collect {inr(completed.fare_total)} in cash from the rider.</p>}
+            <p className="mt-5 mb-2 text-sm font-semibold">Rate {completed.rider.name.split(" ")[0]}</p>
+            <StarInput value={riderStars} onChange={setRiderStars} />
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
