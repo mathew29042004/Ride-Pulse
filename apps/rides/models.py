@@ -113,6 +113,13 @@ class Trip(AuditedModel, TimeStampedModel):
     otp = models.CharField(max_length=4, help_text="Ride PIN the rider tells the driver at pickup")
     # Wrong ride-PIN entries; after MAX_PIN_ATTEMPTS the trip can't be started (anti-guessing).
     pin_attempts = models.PositiveSmallIntegerField(default=0)
+    # Pickup verification: the rider's phone location (only while plausibly near the trip),
+    # the rider's "yes, this is my car" tap, and the rider-left-the-car alert.
+    rider_lat = LatitudeField(null=True, blank=True)
+    rider_lng = LongitudeField(null=True, blank=True)
+    rider_location_at = models.DateTimeField(null=True, blank=True)
+    car_confirmed_at = models.DateTimeField(null=True, blank=True)
+    separation_alerted_at = models.DateTimeField(null=True, blank=True)
     payment_method = models.CharField(max_length=6)
     promo = models.ForeignKey(
         "pricing.PromoCode", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"

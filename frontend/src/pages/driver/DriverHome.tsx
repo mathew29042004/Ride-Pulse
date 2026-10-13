@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { AlertTriangle, Banknote, BellRing, Bot, LocateFixed, MapPin, Navigation, Power, Satellite, ShieldAlert, Zap } from "lucide-react";
+import { AlertTriangle, Banknote, BellRing, Bot, LocateFixed, MapPin, Navigation, Power, Satellite, ScanLine, ShieldAlert, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLin
 import { CallButton } from "@/components/CallButton";
 import { NotificationBell } from "@/components/NotificationBell";
 import { usePush } from "@/components/PushToggle";
+import { QrScanner } from "@/components/QrScanner";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Input, Modal, Sheet, StarInput, Stars } from "@/components/ui";
 import { buzz, chime } from "@/lib/alert";
@@ -106,8 +107,9 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
   );
 }
 
-function PinEntry({ onSubmit, busy }: { onSubmit: (pin: string) => void; busy: boolean }) {
+function PinEntry({ onSubmit, onScan, busy }: { onSubmit: (pin: string) => void; onScan: (code: string) => void; busy: boolean }) {
   const [pin, setPin] = useState("");
+  const [scanning, setScanning] = useState(false);
   return (
     <form
       onSubmit={(e) => {
@@ -115,7 +117,28 @@ function PinEntry({ onSubmit, busy }: { onSubmit: (pin: string) => void; busy: b
         if (pin.length === 4) onSubmit(pin);
       }}
     >
-      <label className="label">Ask the rider for their 4-digit ride PIN</label>
+      <Button
+        type="button"
+        block
+        size="lg"
+        variant="brand"
+        className="mb-3"
+        icon={<ScanLine className="size-5" />}
+        onClick={() => setScanning(true)}
+        loading={busy && scanning}
+      >
+        Scan rider's QR code
+      </Button>
+      {scanning && (
+        <QrScanner
+          onClose={() => setScanning(false)}
+          onScan={(code) => {
+            setScanning(false);
+            onScan(code);
+          }}
+        />
+      )}
+      <label className="label">Or enter the 4-digit PIN they read out</label>
       <div className="flex gap-2">
         <Input
           inputMode="numeric"
@@ -285,7 +308,14 @@ export default function DriverHome() {
   // Declining can't meaningfully fail for the driver, so the card goes away immediately.
   const decline = useMutation({ mutationFn: (o: Offer) => api.post(`driver/offers/${o.offer_id}/decline/`), onMutate: () => setOffer(null), onError });
   const arrive = useMutation({ mutationFn: () => api.post(`trips/${trip!.id}/arrive/`), onSuccess: refresh, onError });
-  const start = useMutation({ mutationFn: (otp: string) => api.post(`trips/${trip!.id}/start/`, { otp }), onSuccess: () => { toast.success("Trip started. Drive safe!"); refresh(); }, onError });
+  const start = useMutation({
+    mutationFn: (proof: { otp: string } | { qr: string }) => api.post(`trips/${trip!.id}/start/`, proof),
+    onSuccess: () => {
+      toast.success("Trip started. Drive safe!");
+      refresh();
+    },
+    onError,
+  });
   const complete = useMutation({
     mutationFn: () =>
       api.post<Trip>(`trips/${trip!.id}/complete/`, {
@@ -507,7 +537,7 @@ export default function DriverHome() {
                 )}
                 {trip.status === "DRIVER_ARRIVED" && (
                   <>
-                    <PinEntry onSubmit={(pin) => start.mutate(pin)} busy={start.isPending} />
+                    <PinEntry onSubmit={(pin) => start.mutate({ otp: pin })} onScan={(code) => start.mutate({ qr: code })} busy={start.isPending} />
                     <Button block variant="ghost" onClick={() => cancel.mutate()} loading={cancel.isPending}>
                       Rider didn't show up
                     </Button>

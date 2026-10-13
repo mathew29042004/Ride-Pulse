@@ -14,7 +14,7 @@ so every screen has something happening the moment you open it.
 | **Data** | PostgreSQL 16 (partial unique indexes, BRIN, ArrayField, `generate_series` reporting) · Redis |
 | **Front end** | React 19 · TypeScript · Vite · Tailwind CSS · TanStack Query · Leaflet / Google Maps · Recharts |
 | **API** | 123 REST operations, JWT auth, OpenAPI 3 docs (Swagger UI and ReDoc) |
-| **Quality** | 137 tests (88% coverage) + Playwright browser tests + Locust load test · Ruff · strict TypeScript · GitHub Actions · Docker |
+| **Quality** | 143 tests (88% coverage) + Playwright browser tests + Locust load test · Ruff · strict TypeScript · GitHub Actions · Docker |
 | **Ops** | Render blueprint · Sentry · Prometheus `/metrics` · JSON logs · installable PWA |
 
 ---
@@ -259,7 +259,17 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Masked calling:** riders and drivers never see each other's number (only staff do). Calls
   go through Exotel click-to-call when configured (demo mode otherwise), are rate limited, and
   are logged on the trip for safety reviews.
-* **Ride PIN can't be guessed:** five wrong PINs lock the trip and alert the rider.
+* **Pickup verification** (`apps/rides/pickup.py`):
+  * *Scan to start:* the rider shows a QR code that rotates every 30 s (an HMAC of the trip,
+    its secret PIN and the time window), the driver scans it with the phone camera
+    (BarcodeDetector, or jsQR on Safari). A screenshot stops working within a minute.
+  * *The PIN is the fallback,* shown only once the driver is within 500 m, hidden until tapped,
+    and read aloud on request. Five wrong PINs or codes lock the trip and alert the rider.
+  * *Is this your car?* The rider checks the plate; "no" raises a safety incident at once.
+  * *Together at the pickup:* the trip only starts with the driver at the pickup and, when the
+    rider shares location, both phones within 150 m.
+  * *After the start:* if the rider's phone and the car drift over 1 km apart, both are alerted
+    (once). Locations from a device that's clearly elsewhere (a laptop demo) are ignored.
 * **GPS-spoofing guard:** impossible jumps (over 1 km at over 150 km/h) aren't billed, and the
   trip is flagged for review.
 * **Real driver GPS:** the driver app can follow the phone's location (`watchPosition`, sent
@@ -299,7 +309,7 @@ Celery worker and beat, simulator).
 
 ```bash
 make help        # all commands
-make test        # 137 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
+make test        # 143 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
 make e2e         # browser tests: Playwright drives Chromium through a full trip
 make loadtest    # Locust: 50 riders browsing fares and cars for a minute
 make lint        # Ruff + TypeScript type-check

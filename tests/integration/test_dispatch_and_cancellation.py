@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 
 from apps.core.exceptions import BusinessRuleViolation, ConflictError, InvalidStateTransition
+from apps.drivers.services import update_location
 from apps.payments.services import verify_ledger, wallet_balance
 from apps.rides import dispatch
 from apps.rides import services as rides
@@ -118,7 +119,8 @@ def test_ops_can_cancel_a_trip_in_progress_without_a_fee(rider, mini, make_drive
     driver = make_driver(now=now)
     trip = book(rider, mini, now=now)
     trip = dispatch.accept_offer(pending_offer(trip), driver=driver, now=now)
-    trip = rides.mark_arrived(trip, driver=driver, now=now, enforce_distance=False)
+    update_location(driver, lat=trip.pickup_lat, lng=trip.pickup_lng, now=now)
+    trip = rides.mark_arrived(trip, driver=driver, now=now)
     trip = rides.start_trip(trip, driver=driver, otp=trip.otp, now=now)
     with pytest.raises(Exception, match="in progress"):
         rides.cancel_trip(trip, user=rider.user, now=now)

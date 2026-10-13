@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 
 from apps.core.exceptions import BusinessRuleViolation, ConflictError, InvalidStateTransition
 from apps.drivers.models import Availability
+from apps.drivers.services import update_location
 from apps.payments.services import verify_ledger, wallet_balance
 from apps.rides import dispatch
 from apps.rides import services as rides
@@ -49,7 +50,8 @@ def test_wrong_ride_pin_is_rejected(rider, mini, make_driver, now):
     driver = make_driver(now=now)
     trip = book(rider, mini, now=now)
     trip = dispatch.accept_offer(pending_offer(trip), driver=driver, now=now)
-    trip = rides.mark_arrived(trip, driver=driver, now=now, enforce_distance=False)
+    update_location(driver, lat=trip.pickup_lat, lng=trip.pickup_lng, now=now)
+    trip = rides.mark_arrived(trip, driver=driver, now=now)
     wrong = "0000" if trip.otp != "0000" else "1111"
     with pytest.raises(BusinessRuleViolation, match="ride PIN"):
         rides.start_trip(trip, driver=driver, otp=wrong, now=now)
@@ -301,3 +303,119 @@ def test_gps_jumps_are_not_billed(rider, mini, make_driver, now):
     assert TripFlag.GPS_JUMP in trip.flags
     assert trip.actual_distance_km < 12  # the ~40 km round trip "teleport" wasn't billed
     assert trip.pricing_mode == PricingMode.UPFRONT  # so the rider paid the quoted fare
+
+
+def _arrived_trip(rider, mini, make_driver, now):
+    driver = make_driver(now=now)
+    trip = book(rider, mini, now=now)
+    dispatch.accept_offer(pending_offer(trip), driver=driver, now=now)
+    trip.refresh_from_db()
+    update_location(driver, lat=trip.pickup_lat, lng=trip.pickup_lng, now=now)
+    return rides.mark_arrived(trip, driver=driver, now=now), driver
+
+
+def test_driver_starts_by_scanning_the_riders_rotating_qr(rider, mini, make_driver, now):
+    from datetime import timedelta
+
+    from apps.core.exceptions import BusinessRuleViolation
+    from apps.rides import pickup
+
+    trip, driver = _arrived_trip(rider, mini, make_driver, now)
+    code, expires_in = pickup.start_code(trip, now=now)
+    assert code.startswith(f"RP1.{trip.pk}.") and 0 < expires_in <= 30
+    # Valid now and for one more 30 s window; a screenshot from a minute ago is useless.
+    assert pickup.start_code_valid(trip, code, now=now + timedelta(seconds=30))
+    assert not pickup.start_code_valid(trip, code, now=now + timedelta(seconds=61))
+    forged = code[:-4] + ("0000" if not code.endswith("0000") else "1111")
+    with pytest.raises(BusinessRuleViolation, match="QR code isn't for this trip"):
+        rides.start_trip(trip, driver=driver, qr=forged, now=now)
+    trip = rides.start_trip(trip, driver=driver, qr=code, now=now + timedelta(seconds=5))
+    assert trip.status == TripStatus.IN_PROGRESS and trip.pin_attempts == 1
+
+
+def test_pin_appears_only_when_the_driver_is_close(api, rider, mini, make_driver, now):
+    from apps.drivers.services import update_location as move
+
+    driver = make_driver(at=(T_NAGAR[0] + 0.03, T_NAGAR[1]), now=now)  # ~3.3 km away
+    trip = book(rider, mini, now=now)
+    dispatch.accept_offer(pending_offer(trip), driver=driver, now=now)
+    url = f"/api/v1/trips/{trip.pk}/"
+    client = api(rider.user)
+    assert client.get(url).json()["otp"] is None
+    assert client.get(url + "start-code/").status_code == 403
+    move(driver, lat=T_NAGAR[0] + 0.003, lng=T_NAGAR[1], now=now)  # ~330 m: nearly there
+    assert len(client.get(url).json()["otp"]) == 4
+    assert client.get(url + "start-code/").json()["code"].startswith("RP1.")
+    assert api(driver.user).get(url).json()["otp"] is None  # never shown to the driver
+
+
+def test_trip_starts_only_when_rider_and_car_are_together(rider, mini, make_driver, now):
+    from apps.core.exceptions import BusinessRuleViolation
+    from apps.rides import pickup
+
+    trip, driver = _arrived_trip(rider, mini, make_driver, now)
+    # The rider's phone is 400 m down the road: not in the car yet.
+    pickup.record_rider_location(
+        trip, user=rider.user, lat=trip.pickup_lat + 0.0036, lng=trip.pickup_lng, now=now
+    )
+    with pytest.raises(BusinessRuleViolation, match=r"phone is .* away"):
+        rides.start_trip(trip, driver=driver, otp=trip.otp, now=now)
+    pickup.record_rider_location(
+        trip, user=rider.user, lat=trip.pickup_lat, lng=trip.pickup_lng, now=now
+    )
+    assert (
+        rides.start_trip(trip, driver=driver, otp=trip.otp, now=now).status
+        == TripStatus.IN_PROGRESS
+    )
+
+
+def test_a_phone_somewhere_else_entirely_is_ignored(rider, mini, make_driver, now):
+    # e.g. a laptop in Bengaluru running the demo for a Chennai trip: no false alarms.
+    from apps.rides import pickup
+
+    trip, driver = _arrived_trip(rider, mini, make_driver, now)
+    far = pickup.record_rider_location(trip, user=rider.user, lat=12.97, lng=77.59, now=now)
+    assert far.tracked is False
+    assert (
+        rides.start_trip(trip, driver=driver, otp=trip.otp, now=now).status
+        == TripStatus.IN_PROGRESS
+    )
+
+
+def test_rider_confirms_the_car_or_raises_the_alarm(rider, mini, make_driver, now):
+    from apps.rides import pickup
+    from apps.support.models import SafetyIncident
+
+    trip, _ = _arrived_trip(rider, mini, make_driver, now)
+    assert pickup.confirm_car(trip, user=rider.user, is_my_car=True, now=now).car_confirmed_at
+    assert trip.events.filter(kind="CAR_CONFIRMED").exists()
+
+    other = make_rider()
+    trip2, _ = _arrived_trip(other, mini, make_driver, now)
+    pickup.confirm_car(trip2, user=other.user, is_my_car=False, now=now)
+    incident = SafetyIncident.objects.get(trip=trip2)
+    assert "isn't the one shown" in incident.note
+
+
+def test_rider_and_car_separating_mid_trip_alerts_both_once(rider, mini, make_driver, now):
+    from apps.notifications.models import Notification
+    from apps.rides import pickup
+
+    trip, driver = _arrived_trip(rider, mini, make_driver, now)
+    pickup.record_rider_location(
+        trip, user=rider.user, lat=trip.pickup_lat, lng=trip.pickup_lng, now=now
+    )
+    trip = rides.start_trip(trip, driver=driver, otp=trip.otp, now=now)
+    update_location(
+        driver, lat=trip.pickup_lat + 0.01, lng=trip.pickup_lng, now=now
+    )  # car moves on
+    left = pickup.record_rider_location(
+        trip, user=rider.user, lat=trip.pickup_lat - 0.01, lng=trip.pickup_lng, now=now
+    )
+    assert left.separated  # ~2.2 km apart
+    assert Notification.objects.filter(user=rider.user, title="Are you in the car?").exists()
+    assert Notification.objects.filter(user=driver.user, title="Is your rider with you?").exists()
+    again = pickup.record_rider_location(
+        trip, user=rider.user, lat=trip.pickup_lat - 0.011, lng=trip.pickup_lng, now=now
+    )
+    assert not again.separated and trip.events.filter(kind="SEPARATION").count() == 1

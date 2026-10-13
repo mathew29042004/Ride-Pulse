@@ -106,7 +106,7 @@ def test_full_trip_over_the_api(api, rider, make_driver):
         "/api/v1/trips/", {"ride_type": "MINI", "payment_method": "UPI", **POINTS}, format="json"
     ).json()
     assert trip["status"] == "REQUESTED" and trip["estimated_fare"] == mini["fare"]["total"]
-    assert len(trip["otp"]) == 4  # the rider sees the PIN
+    assert trip["otp"] is None  # hidden until the driver is close
 
     offer = driver_client.get("/api/v1/driver/offer/").json()
     assert offer["trip_id"] == trip["id"]
@@ -120,6 +120,8 @@ def test_full_trip_over_the_api(api, rider, make_driver):
         driver_client.post(f"/api/v1/trips/{trip['id']}/arrive/").json()["status"]
         == "DRIVER_ARRIVED"
     )
+    trip = rider_client.get(f"/api/v1/trips/{trip['id']}/").json()
+    assert len(trip["otp"]) == 4  # now the rider sees the PIN to read out
     bad = driver_client.post(
         f"/api/v1/trips/{trip['id']}/start/",
         {"otp": "9999" if trip["otp"] != "9999" else "1111"},
@@ -443,7 +445,8 @@ def test_shared_trip_link_shows_the_ride_without_private_details(api, rider, mak
     assert view["driver"]["first_name"] == "Driver" and "Swift · TN 09" in view["vehicle"]
     assert view["driver_location"] is not None
     flat = str(view)
-    for secret in (trip["otp"], rider.user.phone, driver.user.phone, rider.user.email):
+    pin = rides.Trip.objects.get(pk=trip["id"]).otp
+    for secret in (pin, rider.user.phone, driver.user.phone, rider.user.email):
         assert secret not in flat
     assert "fare" not in view
 

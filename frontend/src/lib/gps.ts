@@ -15,7 +15,7 @@ function metres(a: { lat: number; lng: number }, b: { lat: number; lng: number }
   return Math.hypot(dx, dy);
 }
 
-export function usePhoneGps(enabled: boolean, onFix: (fix: GpsFix) => void): GpsState {
+export function usePhoneGps(enabled: boolean, onFix: (fix: GpsFix) => void, { keepAwake = true }: { keepAwake?: boolean } = {}): GpsState {
   const [state, setState] = useState<GpsState>("off");
   const handler = useRef(onFix);
   handler.current = onFix;
@@ -53,7 +53,7 @@ export function usePhoneGps(enabled: boolean, onFix: (fix: GpsFix) => void): Gps
     let lock: { release(): Promise<void> } | null = null;
     const wakeLock = (navigator as Navigator & { wakeLock?: { request(type: "screen"): Promise<{ release(): Promise<void> }> } }).wakeLock;
     const acquire = () => {
-      if (document.visibilityState === "visible") wakeLock?.request("screen").then((l) => (lock = l)).catch(() => undefined);
+      if (keepAwake && document.visibilityState === "visible") wakeLock?.request("screen").then((l) => (lock = l)).catch(() => undefined);
     };
     acquire();
     document.addEventListener("visibilitychange", acquire);
@@ -63,7 +63,7 @@ export function usePhoneGps(enabled: boolean, onFix: (fix: GpsFix) => void): Gps
       document.removeEventListener("visibilitychange", acquire);
       lock?.release().catch(() => undefined);
     };
-  }, [enabled]);
+  }, [enabled, keepAwake]);
 
   return state;
 }

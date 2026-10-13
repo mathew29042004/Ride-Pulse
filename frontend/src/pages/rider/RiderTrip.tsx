@@ -8,10 +8,12 @@ import { toast } from "sonner";
 import { BaseMap, CarMarker, FitBounds, type LatLng, PinMarker, RouteLine, routePath, snapToPath } from "@/components/map";
 import { RideTypeArt } from "@/components/RideTypeArt";
 import { CallButton } from "@/components/CallButton";
+import { CarCheck, StartCode } from "@/components/PickupVerification";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Modal, Sheet, Spinner, StarInput, Stars, Textarea } from "@/components/ui";
 import { api, ApiError, newIdempotencyKey, openFile } from "@/lib/api";
 import { dateTime, inr, km, minutes, time } from "@/lib/format";
+import { usePhoneGps } from "@/lib/gps";
 import { clockIn, etaFromKm, etaMinutes, haversineKm, isActive, useLiveTrip, useNow } from "@/lib/hooks";
 import type { Trip } from "@/lib/types";
 
@@ -66,6 +68,16 @@ export default function RiderTrip() {
   const { data: trip, isLoading, driverPos } = useLiveTrip(id);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [recenter, setRecenter] = useState(0);
+  // Share the rider's location during pickup and the ride, for the safety checks (the server
+  // ignores it if this device clearly isn't near the trip, e.g. a laptop running the demo).
+  const sharing = !!trip && ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"].includes(trip.status);
+  usePhoneGps(
+    sharing,
+    (fix) => {
+      api.post(`trips/${id}/rider-location/`, { lat: fix.lat, lng: fix.lng }).catch(() => undefined);
+    },
+    { keepAwake: false },
+  );
   const [sosOpen, setSosOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [stars, setStars] = useState(5);
@@ -214,14 +226,14 @@ export default function RiderTrip() {
                   {trip.status === "IN_PROGRESS" && `${km(toDropKm)} left · drop by ${clockIn(toDropEta)}`}
                 </p>
               </div>
-              {trip.otp && trip.status !== "IN_PROGRESS" && (
-                <div className="rounded-2xl bg-ink px-3 py-2 text-center text-ink-fg">
-                  <div className="text-[10px] font-semibold tracking-widest opacity-60 uppercase">PIN</div>
-                  <div className="font-mono text-xl font-bold tracking-[0.25em]">{trip.otp}</div>
-                </div>
-              )}
             </div>
             <DriverCard trip={trip} />
+            {trip.otp && trip.status !== "IN_PROGRESS" && (
+              <>
+                <CarCheck trip={trip} />
+                <StartCode trip={trip} />
+              </>
+            )}
             {trip.driver && <TripChat tripId={trip.id} me="RIDER" otherName={trip.driver.name} canSend={active} />}
             <div className="mt-3 grid grid-cols-3 gap-2">
               <CallButton tripId={trip.id} name={trip.driver?.name ?? "your driver"} />

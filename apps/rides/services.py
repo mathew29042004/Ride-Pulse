@@ -459,10 +459,20 @@ def mark_arrived(
 MAX_PIN_ATTEMPTS = 5
 
 
-def start_trip(trip: Trip, *, driver: DriverProfile, otp: str, now: datetime | None = None) -> Trip:
-    """Start the ride with the rider's PIN. The PIN proves the rider is in this car, so it
-    can't be guessed: after MAX_PIN_ATTEMPTS wrong entries the trip is locked and the rider is
-    alerted (the attempt count is committed before the error is raised)."""
+def start_trip(
+    trip: Trip,
+    *,
+    driver: DriverProfile,
+    otp: str = "",
+    qr: str = "",
+    now: datetime | None = None,
+) -> Trip:
+    """Start the ride by scanning the rider's QR code or entering their spoken PIN. Either
+    proves the rider is in this car, so neither can be guessed: after MAX_PIN_ATTEMPTS wrong
+    entries the trip is locked and the rider is alerted (the attempt count is committed before
+    the error is raised). The driver must also be at the pickup, next to the rider's phone."""
+    from . import pickup
+
     now = now or timezone.now()
     with transaction.atomic():
         trip = _lock(trip)
@@ -472,7 +482,13 @@ def start_trip(trip: Trip, *, driver: DriverProfile, otp: str, now: datetime | N
             raise ActionNotPermitted(
                 "Too many wrong PINs. The rider has been alerted; contact support to continue."
             )
-        if secrets.compare_digest(str(otp).strip(), trip.otp):
+        pickup.assert_together(trip, now=now)
+        valid = (
+            pickup.start_code_valid(trip, qr, now=now)
+            if qr
+            else bool(otp) and secrets.compare_digest(str(otp).strip(), trip.otp)
+        )
+        if valid:
             waited = max((now - trip.arrived_at).total_seconds() / 60, 0) if trip.arrived_at else 0
             return _change_status(
                 trip,
@@ -496,11 +512,12 @@ def start_trip(trip: Trip, *, driver: DriverProfile, otp: str, now: datetime | N
                 level=Level.WARNING,
                 link=f"/ride/trips/{trip.pk}/",
             )
+    what = "That QR code isn't for this trip (or has expired)" if qr else "Incorrect ride PIN"
     raise BusinessRuleViolation(
-        f"Incorrect ride PIN. {left} {'try' if left == 1 else 'tries'} left."
+        f"{what}. {left} {'try' if left == 1 else 'tries'} left."
         if left
-        else "Incorrect ride PIN. The trip is now locked and the rider has been alerted.",
-        field="otp",
+        else f"{what}. The trip is now locked and the rider has been alerted.",
+        field="qr" if qr else "otp",
     )
 
 

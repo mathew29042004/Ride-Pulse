@@ -23,7 +23,7 @@ from apps.pricing.api import FareSerializer, PointSerializer
 from apps.pricing.models import RideType
 from apps.support.api import IncidentSerializer
 
-from . import calls, dispatch, services
+from . import calls, dispatch, pickup, services
 from .models import (
     ACTIVE_STATUSES,
     ScheduledRide,
@@ -116,6 +116,7 @@ class TripSerializer(serializers.ModelSerializer):
             "flags",
             "has_rated",
             "stop",
+            "car_confirmed_at",
         ]
 
     def _viewer(self):
@@ -123,9 +124,10 @@ class TripSerializer(serializers.ModelSerializer):
         return request.user if request else None
 
     def get_otp(self, trip) -> str | None:
-        """Only the rider sees the ride PIN; they read it out to the driver at pickup."""
+        """Only the rider sees the ride PIN, and only once the driver is close (so it can't be
+        passed on early); they show the QR or read the PIN out at pickup."""
         viewer = self._viewer()
-        if viewer and viewer.is_rider and trip.status in ACTIVE_STATUSES:
+        if viewer and viewer.is_rider and pickup.pin_visible(trip):
             return trip.otp
         return None
 
@@ -166,7 +168,24 @@ class CancelSerializer(serializers.Serializer):
 
 
 class StartSerializer(serializers.Serializer):
-    otp = serializers.RegexField(r"^\d{4}$")
+    """Either the rider's spoken 4-digit PIN or the QR code scanned from their phone."""
+
+    otp = serializers.RegexField(r"^\d{4}$", required=False)
+    qr = serializers.CharField(max_length=80, required=False)
+
+    def validate(self, attrs):
+        if not attrs.get("otp") and not attrs.get("qr"):
+            raise serializers.ValidationError("Scan the rider's QR code or enter their PIN.")
+        return attrs
+
+
+class RiderLocationSerializer(serializers.Serializer):
+    lat = serializers.FloatField(min_value=-90, max_value=90)
+    lng = serializers.FloatField(min_value=-180, max_value=180)
+
+
+class ConfirmCarSerializer(serializers.Serializer):
+    is_my_car = serializers.BooleanField()
 
 
 class TelemetrySerializer(serializers.Serializer):
@@ -288,6 +307,9 @@ RIDER = (
     "messages",
     "share",
     "call",
+    "start_code",
+    "rider_location",
+    "confirm_car",
 )
 DRIVER = (
     "list",
@@ -404,7 +426,8 @@ class TripViewSet(
             services.start_trip(
                 self.get_object(),
                 driver=self._driver(request),
-                otp=serializer.validated_data["otp"],
+                otp=serializer.validated_data.get("otp", ""),
+                qr=serializer.validated_data.get("qr", ""),
             )
         )
 
@@ -482,6 +505,38 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["get"], url_path="start-code")
+    def start_code(self, request, pk=None):
+        """The rotating QR code the driver scans to start the trip (rider only)."""
+        trip = self.get_object()
+        if not (request.user.is_rider and pickup.pin_visible(trip)):
+            raise ActionNotPermitted("The code appears when your driver is close.")
+        code, expires_in = pickup.start_code(trip)
+        return Response({"code": code, "expires_in": expires_in})
+
+    @extend_schema(request=RiderLocationSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="rider-location")
+    def rider_location(self, request, pk=None):
+        """The rider's phone location during pickup and the ride (safety checks only)."""
+        serializer = RiderLocationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = pickup.record_rider_location(
+            self.get_object(), user=request.user, **serializer.validated_data
+        )
+        return Response({"tracked": result.tracked, "separated": result.separated})
+
+    @extend_schema(request=ConfirmCarSerializer, responses=TripSerializer)
+    @action(detail=True, methods=["post"], url_path="confirm-car")
+    def confirm_car(self, request, pk=None):
+        """'Is this your car?': yes records it; no alerts the safety desk."""
+        serializer = ConfirmCarSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        trip = pickup.confirm_car(
+            self.get_object(), user=request.user, is_my_car=serializer.validated_data["is_my_car"]
+        )
+        return self._respond(trip)
 
     @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])
