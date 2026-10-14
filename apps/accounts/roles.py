@@ -27,6 +27,7 @@ class Cap:
     SAFETY_MANAGE = "safety.manage"
     REPORTS_VIEW = "reports.view"
     AUDIT_VIEW = "audit.view"
+    TEAM_VIEW = "team.view"
 
     @classmethod
     def all(cls) -> frozenset[str]:
@@ -64,10 +65,66 @@ _SUPPORT_AGENT = {
     Cap.SAFETY_MANAGE,
 }
 
+_MANAGERS = {*_OPS_MANAGER, Cap.TEAM_VIEW}
+
+# Associate managers: each runs one line of the business across their state.
+_ASSOC_RIDES = {
+    Cap.TRIPS_VIEW,
+    Cap.TRIPS_MANAGE,
+    Cap.DISPATCH_RUN,
+    Cap.DRIVERS_VIEW,
+    Cap.RIDERS_VIEW,
+    Cap.PRICING_VIEW,
+    Cap.SAFETY_MANAGE,
+    Cap.SUPPORT_VIEW,
+    Cap.REPORTS_VIEW,
+    Cap.TEAM_VIEW,
+}
+_ASSOC_SUPPORT = {*_SUPPORT_AGENT, Cap.REPORTS_VIEW, Cap.TEAM_VIEW}
+_ASSOC_MAINTENANCE = {
+    Cap.DRIVERS_VIEW,
+    Cap.DRIVERS_VERIFY,
+    Cap.DRIVERS_MANAGE,
+    Cap.TRIPS_VIEW,
+    Cap.SAFETY_MANAGE,
+    Cap.REPORTS_VIEW,
+    Cap.TEAM_VIEW,
+}
+_ASSOC_INTERCITY = {
+    Cap.TRIPS_VIEW,
+    Cap.TRIPS_MANAGE,
+    Cap.DRIVERS_VIEW,
+    Cap.PRICING_VIEW,
+    Cap.PRICING_MANAGE,
+    Cap.SUPPORT_VIEW,
+    Cap.REPORTS_VIEW,
+    Cap.TEAM_VIEW,
+}
+_ASSOC_PARCELS = {
+    Cap.TRIPS_VIEW,
+    Cap.TRIPS_MANAGE,
+    Cap.DRIVERS_VIEW,
+    Cap.RIDERS_VIEW,
+    Cap.SUPPORT_VIEW,
+    Cap.SUPPORT_MANAGE,
+    Cap.REPORTS_VIEW,
+    Cap.TEAM_VIEW,
+}
+_SUPPORT_LEAD = {*_SUPPORT_AGENT, Cap.TEAM_VIEW}
+_FLEET_EXECUTIVE = {Cap.DRIVERS_VIEW, Cap.DRIVERS_VERIFY, Cap.TRIPS_VIEW}
+
 ROLE_CAPABILITIES: dict[str, frozenset[str]] = {
     "ADMIN": Cap.all(),
-    "OPS_MANAGER": frozenset(_OPS_MANAGER),
+    "REGIONAL_MANAGER": frozenset({*_MANAGERS, Cap.PAYMENTS_REFUND, Cap.AUDIT_VIEW}),
+    "OPS_MANAGER": frozenset(_MANAGERS),
+    "ASSOC_RIDES": frozenset(_ASSOC_RIDES),
+    "ASSOC_SUPPORT": frozenset(_ASSOC_SUPPORT),
+    "ASSOC_MAINTENANCE": frozenset(_ASSOC_MAINTENANCE),
+    "ASSOC_INTERCITY": frozenset(_ASSOC_INTERCITY),
+    "ASSOC_PARCELS": frozenset(_ASSOC_PARCELS),
+    "SUPPORT_LEAD": frozenset(_SUPPORT_LEAD),
     "SUPPORT_AGENT": frozenset(_SUPPORT_AGENT),
+    "FLEET_EXECUTIVE": frozenset(_FLEET_EXECUTIVE),
     "DRIVER": frozenset(),
     "RIDER": frozenset(),
 }

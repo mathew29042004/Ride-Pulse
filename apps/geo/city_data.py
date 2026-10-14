@@ -92,6 +92,16 @@ LANDMARKS = {
 }
 
 
+# The South India expansion (Tamil Nadu, Kerala, Karnataka, Andhra Pradesh).
+from .city_data_south import CITIES as _SOUTH_CITIES  # noqa: E402
+from .city_data_south import LANDMARKS as _SOUTH_LANDMARKS  # noqa: E402
+from .city_data_south import ZONES as _SOUTH_ZONES  # noqa: E402
+
+CITIES = CITIES + _SOUTH_CITIES
+ZONES = {**ZONES, **_SOUTH_ZONES}
+LANDMARKS = {**LANDMARKS, **_SOUTH_LANDMARKS}
+
+
 def load_landmarks(City, Landmark) -> None:
     for slug, places in LANDMARKS.items():
         city = City.objects.get(slug=slug)

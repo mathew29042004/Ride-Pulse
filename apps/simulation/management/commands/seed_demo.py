@@ -38,6 +38,9 @@ class Command(BaseCommand):
             seed=options["seed"],
             log=self.stdout.write,
         ).run()
+        from apps.simulation.network import NetworkBuilder
+
+        stats.update(NetworkBuilder(seed=options["seed"], log=self.stdout.write).run())
         self.stdout.write(self.style.SUCCESS(f"Done in {time.monotonic() - started:.0f}s: {stats}"))
         self.stdout.write(
             f"Demo logins (password {DEMO_PASSWORD}): "

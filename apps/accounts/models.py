@@ -6,8 +6,16 @@ from .roles import capabilities_for
 
 class Role(models.TextChoices):
     ADMIN = "ADMIN", "Administrator"
-    OPS_MANAGER = "OPS_MANAGER", "Operations manager"
+    REGIONAL_MANAGER = "REGIONAL_MANAGER", "Regional manager"
+    OPS_MANAGER = "OPS_MANAGER", "City operations manager"
+    ASSOC_RIDES = "ASSOC_RIDES", "Associate manager · Rides"
+    ASSOC_SUPPORT = "ASSOC_SUPPORT", "Associate manager · Support"
+    ASSOC_MAINTENANCE = "ASSOC_MAINTENANCE", "Associate manager · Fleet & maintenance"
+    ASSOC_INTERCITY = "ASSOC_INTERCITY", "Associate manager · Intercity & rentals"
+    ASSOC_PARCELS = "ASSOC_PARCELS", "Associate manager · Parcels"
+    SUPPORT_LEAD = "SUPPORT_LEAD", "Support team lead"
     SUPPORT_AGENT = "SUPPORT_AGENT", "Support agent"
+    FLEET_EXECUTIVE = "FLEET_EXECUTIVE", "Fleet executive"
     DRIVER = "DRIVER", "Driver"
     RIDER = "RIDER", "Rider"
 
@@ -112,3 +120,38 @@ class PhoneOTP(models.Model):
 
     def __str__(self) -> str:
         return f"OTP for {self.phone[:2]}******{self.phone[-2:]}"
+
+
+class Department(models.TextChoices):
+    LEADERSHIP = "LEADERSHIP", "Leadership"
+    OPERATIONS = "OPERATIONS", "City operations"
+    RIDES = "RIDES", "Rides"
+    SUPPORT = "SUPPORT", "Customer support"
+    MAINTENANCE = "MAINTENANCE", "Fleet & maintenance"
+    INTERCITY = "INTERCITY", "Intercity & rentals"
+    PARCELS = "PARCELS", "Parcels"
+
+
+class StaffProfile(models.Model):
+    """An employee's place in the organisation: title, department, where they work and who they
+    report to (``reports_to`` builds the org chart from regional managers down to the fleet
+    executives who look after driver partners)."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="staff_profile")
+    employee_id = models.CharField(max_length=12, unique=True)
+    title = models.CharField(max_length=80)
+    department = models.CharField(max_length=12, choices=Department.choices)
+    state = models.CharField(max_length=60, blank=True)
+    city = models.ForeignKey(
+        "geo.City", null=True, blank=True, on_delete=models.SET_NULL, related_name="staff"
+    )
+    reports_to = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reports"
+    )
+    joined_on = models.DateField()
+
+    class Meta:
+        ordering = ["employee_id"]
+
+    def __str__(self) -> str:
+        return f"{self.employee_id} {self.user.get_full_name()} ({self.title})"

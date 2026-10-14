@@ -47,6 +47,7 @@ const OpsSafety = lazy(() => import("./pages/ops/OpsSafety"));
 const OpsFinance = lazy(() => import("./pages/ops/OpsFinance"));
 const OpsAnalytics = lazy(() => import("./pages/ops/OpsAnalytics"));
 const OpsAudit = lazy(() => import("./pages/ops/OpsAudit"));
+const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
 
 function FullScreenSpinner() {
   return (
@@ -60,7 +61,19 @@ function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<FullScreenSpinner />}>{children}</Suspense>;
 }
 
-const STAFF: Role[] = ["ADMIN", "OPS_MANAGER", "SUPPORT_AGENT"];
+const STAFF: Role[] = [
+  "ADMIN",
+  "REGIONAL_MANAGER",
+  "OPS_MANAGER",
+  "ASSOC_RIDES",
+  "ASSOC_SUPPORT",
+  "ASSOC_MAINTENANCE",
+  "ASSOC_INTERCITY",
+  "ASSOC_PARCELS",
+  "SUPPORT_LEAD",
+  "SUPPORT_AGENT",
+  "FLEET_EXECUTIVE",
+];
 
 function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -144,6 +157,7 @@ export const router = createBrowserRouter([
       { path: "finance", element: lazyPage(<OpsFinance />) },
       { path: "analytics", element: lazyPage(<OpsAnalytics />) },
       { path: "audit", element: lazyPage(<OpsAudit />) },
+      { path: "team", element: lazyPage(<OpsTeam />) },
     ],
   },
   { path: "*", element: <NotFound /> },

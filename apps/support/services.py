@@ -210,6 +210,13 @@ def escalate_sla_breaches(*, now: datetime | None = None) -> int:
         ticket.escalated = True
         ticket.save(update_fields=["escalated", "updated_at"])
         notify_role(
+            Role.ASSOC_SUPPORT,
+            f"SLA breached: {ticket.ticket_number}",
+            f"{ticket.get_priority_display()} ticket open since {ticket.created_at:%d %b %H:%M}.",
+            level=Level.DANGER,
+            link=f"/ops/support/{ticket.pk}/",
+        )
+        notify_role(
             Role.OPS_MANAGER,
             f"SLA breached: {ticket.ticket_number}",
             f"{ticket.get_priority_display()} ticket open since {ticket.created_at:%d %b %H:%M}.",
@@ -266,7 +273,13 @@ def raise_sos(
     if TripFlag.SOS not in trip.flags:
         trip.flags = [*trip.flags, TripFlag.SOS]
         trip.save(update_fields=["flags", "updated_at"])
-    for role in (Role.OPS_MANAGER, Role.SUPPORT_AGENT, Role.ADMIN):
+    for role in (
+        Role.OPS_MANAGER,
+        Role.SUPPORT_AGENT,
+        Role.ASSOC_RIDES,
+        Role.ASSOC_SUPPORT,
+        Role.ADMIN,
+    ):
         notify_role(
             role,
             f"🚨 SOS on {trip.trip_number}",

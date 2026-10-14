@@ -47,6 +47,13 @@ has one-click buttons for each).
 | Operations | `ops@ridepulse.dev` | Live map, trips, driver verification, surge overrides, analytics |
 | Support | `support@ridepulse.dev` | Ticket queue, refunds, SOS safety desk |
 | Admin | `admin@ridepulse.dev` | Everything, plus the audit trail and the Django admin at `/admin/` |
+| Regional manager (Tamil Nadu) | `regional@ridepulse.dev` | The whole state: ops, team, refunds, audit |
+| Associate manager · Rides | `rides@ridepulse.dev` | Trips, dispatch, safety |
+| Associate manager · Support | `supportlead@ridepulse.dev` | Support queue, refunds, SLA alerts |
+| Associate manager · Fleet & maintenance | `fleet@ridepulse.dev` | Driver documents, verification, low-rating alerts |
+| Associate manager · Intercity & rentals | `intercity@ridepulse.dev` | Trips and pricing for rentals and outstation |
+| Associate manager · Parcels | `parcels@ridepulse.dev` | Parcel trips and support |
+| Fleet executive (Chennai) | `fleetexec@ridepulse.dev` | Driver onboarding and verification |
 
 To play both sides yourself, open the rider app in one tab and the driver app in another: each tab
 keeps its own sign-in, and opening an app with the wrong account offers a one-click switch. Put the
@@ -320,6 +327,21 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Eco score:** each trip records CO₂ saved versus driving your own petrol car (by vehicle
   and fuel; EVs save most). 1 eco point per 100 g; 100 points = ₹10 in the wallet. Riders can
   prefer electric vehicles, which get a dispatch head start.
+
+* **33 cities across South India:** Tamil Nadu (Chennai, Coimbatore, Madurai, Tiruchirappalli,
+  Salem, Tirunelveli, Vellore, Erode, Thoothukudi, Thanjavur, Tiruppur), Kerala (Kochi,
+  Thiruvananthapuram, Kozhikode, Thrissur, Kannur, Kollam), Karnataka (Bengaluru, Mysuru,
+  Mangaluru, Hubballi-Dharwad, Belagavi, Kalaburagi, Davanagere) and Andhra Pradesh
+  (Visakhapatnam, Vijayawada, Guntur, Tirupati, Nellore, Kakinada, Rajamahendravaram, Kurnool,
+  Anantapur), each with zones, airports, landmarks and fares scaled to the city
+  (`apps/geo/city_data_south.py`; coordinates are approximate).
+* **The organisation:** a Head of Operations; a regional manager per state; five associate
+  managers per state (Rides, Support, Fleet & maintenance, Intercity & rentals, Parcels), each
+  with permissions for their line of business; a city operations manager per city with support
+  leads, agents and fleet executives; and every driver partner assigned a fleet executive. The
+  ops console's **Team** page shows the org chart and staff directory. `manage.py grow_network`
+  tops up drivers, riders and staff in every city (it also runs at the end of `make seed`), and
+  `manage.py simulate --cities all` runs bots everywhere (the default is the 9 busiest cities).
 
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the

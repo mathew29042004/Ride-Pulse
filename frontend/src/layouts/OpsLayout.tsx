@@ -1,25 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import {
-  BadgeIndianRupee,
-  ChartNoAxesCombined,
-  FileCheck,
-  Gauge,
-  Headset,
-  LayoutDashboard,
-  LogOut,
-  Map,
-  Menu,
-  Moon,
-  ScrollText,
-  ShieldAlert,
-  Sun,
-  Tag,
-  Users,
-  CarTaxiFront,
-  Route,
-  X,
-} from "lucide-react";
+import { BadgeIndianRupee, CarTaxiFront, ChartNoAxesCombined, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Route, ScrollText, ShieldAlert, Sun, Tag, Users, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -73,6 +54,7 @@ const NAV = [
       { to: "/ops/support", label: "Support", icon: Headset, cap: "support.view" },
       { to: "/ops/safety", label: "Safety (SOS)", icon: ShieldAlert, cap: "safety.manage", badge: "sos" as const },
       { to: "/ops/audit", label: "Audit trail", icon: ScrollText, cap: "audit.view" },
+      { to: "/ops/team", label: "Team", icon: Network, cap: "team.view" },
     ],
   },
 ];
@@ -147,7 +129,7 @@ export default function OpsLayout() {
             <div className="truncate text-sm font-semibold text-white">
               {user?.first_name} {user?.last_name}
             </div>
-            <div className="truncate text-xs text-white/50">{user?.role.replace("_", " ").toLowerCase()}</div>
+            <div className="truncate text-xs text-white/50">{user?.role_label ?? user?.role.replaceAll("_", " ").toLowerCase()}</div>
           </div>
           <button
             onClick={async () => {

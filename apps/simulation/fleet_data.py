@@ -1,5 +1,7 @@
 """Reference data for generating a believable fleet."""
 
+from apps.geo.city_data_south import RTO_CODES as SOUTH_RTO_CODES
+
 # ride type -> [(make, model, seats)]
 VEHICLES = {
     "BIKE": [
@@ -36,6 +38,7 @@ RTO_CODES = {
     "chennai": ["TN01", "TN02", "TN07", "TN09", "TN10", "TN22"],
     "bengaluru": ["KA01", "KA03", "KA05", "KA51", "KA53"],
     "coimbatore": ["TN37", "TN38", "TN66"],
+    **SOUTH_RTO_CODES,
 }
 
 RIDE_TYPE_WEIGHTS = {"BIKE": 0.18, "AUTO": 0.24, "MINI": 0.32, "SEDAN": 0.16, "SUV": 0.10}

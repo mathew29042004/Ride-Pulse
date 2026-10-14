@@ -1042,6 +1042,13 @@ def rate_trip(
         trip.driver.refresh_from_db(fields=["rating", "rating_count"])
         if trip.driver.rating < Decimal("4.20") and trip.driver.rating_count >= 20:
             notify_role(
+                Role.ASSOC_MAINTENANCE,
+                f"{trip.driver.name}'s rating fell to {trip.driver.rating}",
+                "Review recent trips and consider coaching or suspension.",
+                level=Level.WARNING,
+                link=f"/ops/drivers/{trip.driver.pk}/",
+            )
+            notify_role(
                 Role.OPS_MANAGER,
                 f"{trip.driver.name}'s rating fell to {trip.driver.rating}",
                 "Review recent trips and consider coaching or suspension.",

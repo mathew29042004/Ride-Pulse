@@ -24,7 +24,10 @@ def test_health_config_and_public_cities(api):
     config = client.get("/api/config/").json()
     assert config["maps"]["provider"] == "osm" and config["currency_symbol"] == "₹"
     cities = client.get("/api/v1/cities/").json()
-    assert {c["slug"] for c in cities} == {"chennai", "bengaluru", "coimbatore"}
+    slugs = {c["slug"] for c in cities}
+    assert {"chennai", "bengaluru", "coimbatore", "kochi", "visakhapatnam", "mysuru"} <= slugs
+    assert len(slugs) == 33  # major cities of Tamil Nadu, Kerala, Karnataka, Andhra Pradesh
+    assert {c["state"] for c in cities} >= {"Tamil Nadu", "Kerala", "Karnataka", "Andhra Pradesh"}
 
 
 def test_pages_send_their_origin_to_map_servers(api):

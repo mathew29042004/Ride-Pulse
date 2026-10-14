@@ -3,15 +3,30 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.geo.models import City
 from apps.simulation.simulator import Simulator
 
+# The busiest cities in each state; pass --cities all to run bots everywhere.
+CORE_CITIES = [
+    "chennai",
+    "bengaluru",
+    "coimbatore",
+    "madurai",
+    "kochi",
+    "thiruvananthapuram",
+    "mysuru",
+    "visakhapatnam",
+    "vijayawada",
+]
+
 
 class Command(BaseCommand):
     help = "Run bot drivers and riders in real time (and the dispatch/surge jobs) until stopped."
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--cities", default="chennai,bengaluru,coimbatore", help="Comma-separated city slugs"
+            "--cities",
+            default=",".join(CORE_CITIES),
+            help='Comma-separated city slugs, or "all" for every active city',
         )
-        parser.add_argument("--drivers", type=int, default=30, help="Bot drivers online per city")
+        parser.add_argument("--drivers", type=int, default=18, help="Bot drivers online per city")
         parser.add_argument(
             "--request-every",
             type=float,
@@ -31,6 +46,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         slugs = [s.strip() for s in options["cities"].split(",") if s.strip()]
+        if slugs == ["all"]:
+            slugs = list(City.objects.filter(is_active=True).values_list("slug", flat=True))
         if not City.objects.filter(slug__in=slugs).exists():
             raise CommandError(f"No such cities: {slugs}")
         log = (lambda *_: None) if options["quiet"] else self.stdout.write

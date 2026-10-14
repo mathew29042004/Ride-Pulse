@@ -77,6 +77,14 @@ class DriverProfile(AuditedModel, TimeStampedModel):
     going_home_uses = models.PositiveSmallIntegerField(default=0)
     # Bike drivers carry parcels unless they opt out.
     accepts_parcels = models.BooleanField(default=True)
+    # The fleet executive who onboards and looks after this driver partner.
+    fleet_executive = models.ForeignKey(
+        "accounts.StaffProfile",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="drivers",
+    )
     # Car drivers take intercity trips (hours away from home) only if they opt in.
     accepts_intercity = models.BooleanField(default=True)
     # Driver Wellbeing (see drivers.wellbeing): enforced rest after long driving stretches.

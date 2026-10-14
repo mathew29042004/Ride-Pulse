@@ -1,4 +1,17 @@
-export type Role = "ADMIN" | "OPS_MANAGER" | "SUPPORT_AGENT" | "DRIVER" | "RIDER";
+export type Role =
+  | "ADMIN"
+  | "REGIONAL_MANAGER"
+  | "OPS_MANAGER"
+  | "ASSOC_RIDES"
+  | "ASSOC_SUPPORT"
+  | "ASSOC_MAINTENANCE"
+  | "ASSOC_INTERCITY"
+  | "ASSOC_PARCELS"
+  | "SUPPORT_LEAD"
+  | "SUPPORT_AGENT"
+  | "FLEET_EXECUTIVE"
+  | "DRIVER"
+  | "RIDER";
 
 export interface User {
   id: number;
@@ -7,6 +20,8 @@ export interface User {
   last_name: string;
   phone: string;
   role: Role;
+  role_label?: string;
+  language?: string;
   capabilities: string[];
   date_joined: string;
 }

@@ -14,9 +14,17 @@ const DEMO_NOUN: Record<string, string> = { Operations: "operations manager", Su
 const ROLE_NAMES: Record<Role, string> = {
   RIDER: "a rider",
   DRIVER: "a driver",
-  OPS_MANAGER: "an operations manager",
+  OPS_MANAGER: "a city operations manager",
   SUPPORT_AGENT: "a support agent",
   ADMIN: "an admin",
+  REGIONAL_MANAGER: "a regional manager",
+  ASSOC_RIDES: "an associate manager (rides)",
+  ASSOC_SUPPORT: "an associate manager (support)",
+  ASSOC_MAINTENANCE: "an associate manager (fleet & maintenance)",
+  ASSOC_INTERCITY: "an associate manager (intercity & rentals)",
+  ASSOC_PARCELS: "an associate manager (parcels)",
+  SUPPORT_LEAD: "a support team lead",
+  FLEET_EXECUTIVE: "a fleet executive",
 };
 
 /**

@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, mixins, serializers, status
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +16,7 @@ from apps.core.api import BaseViewSet, ContextBindingMixin
 from apps.geo.models import City
 
 from . import otp
-from .models import Role
+from .models import Role, StaffProfile
 from .roles import Cap
 
 User = get_user_model()
@@ -23,6 +24,7 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     capabilities = serializers.SerializerMethodField()
+    role_label = serializers.CharField(source="get_role_display", read_only=True)
 
     class Meta:
         model = User
@@ -34,6 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "language",
             "role",
+            "role_label",
             "capabilities",
             "date_joined",
         ]
@@ -315,3 +318,72 @@ class OtpSignupView(APIView):
             {"user": UserSerializer(profile.user).data, **tokens_for(profile.user)},
             status=status.HTTP_201_CREATED,
         )
+
+
+class StaffDirectorySerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="user.get_full_name", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    phone = serializers.CharField(source="user.phone", read_only=True)
+    role = serializers.CharField(source="user.role", read_only=True)
+    role_label = serializers.CharField(source="user.get_role_display", read_only=True)
+    department_label = serializers.CharField(source="get_department_display", read_only=True)
+    city = serializers.CharField(source="city.name", default="", read_only=True)
+    reports_to = serializers.CharField(
+        source="reports_to.user.get_full_name", default="", read_only=True
+    )
+    drivers = serializers.IntegerField(source="driver_count", read_only=True, default=0)
+
+    class Meta:
+        model = StaffProfile
+        fields = [
+            "id",
+            "employee_id",
+            "name",
+            "email",
+            "phone",
+            "role",
+            "role_label",
+            "title",
+            "department",
+            "department_label",
+            "state",
+            "city",
+            "reports_to",
+            "drivers",
+            "joined_on",
+        ]
+
+
+class TeamViewSet(mixins.ListModelMixin, BaseViewSet):
+    """The staff directory and org chart (managers and associate managers)."""
+
+    serializer_class = StaffDirectorySerializer
+    capabilities = {"list": Cap.TEAM_VIEW, "tree": Cap.TEAM_VIEW, "summary": Cap.TEAM_VIEW}
+    filterset_fields = ["department", "state", "user__role"]
+    search_fields = ["user__first_name", "user__last_name", "user__email", "employee_id", "title"]
+
+    def get_queryset(self):
+        from django.db.models import Count
+
+        return (
+            StaffProfile.objects.select_related("user", "city", "reports_to__user")
+            .annotate(driver_count=Count("drivers"))
+            .order_by("employee_id")
+        )
+
+    @extend_schema(
+        parameters=[OpenApiParameter("state", str, required=False)],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=False, methods=["get"])
+    def tree(self, request):
+        from . import org
+
+        return Response(org.tree(state=request.query_params.get("state") or None))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def summary(self, request):
+        from . import org
+
+        return Response(org.summary())
