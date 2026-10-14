@@ -205,6 +205,7 @@ SPECTACULAR_SETTINGS = {
         "DriverAvailabilityEnum": "apps.drivers.models.Availability",
         "OnboardingStatusEnum": "apps.drivers.models.OnboardingStatus",
         "TicketStatusEnum": "apps.support.models.TicketStatus",
+        "OnlinePaymentMethodEnum": [("UPI", "UPI"), ("CARD", "CARD"), ("WALLET", "WALLET")],
     },
 }
 
@@ -296,6 +297,11 @@ RIDE_PULSE = {
     "UPFRONT_DURATION_TOLERANCE": "1.3",
     "PAYOUT_MINIMUM": "100",
     "REFERRAL_BONUS": "50",  # each, to the inviter and the new rider, after their first trip
+    # Ride Pass (monthly subscription): price, length, % off each ride (capped), no booking fee.
+    "RIDE_PASS_PRICE": "99",
+    "RIDE_PASS_DAYS": 30,
+    "RIDE_PASS_PERCENT": "10",
+    "RIDE_PASS_MAX_DISCOUNT": "30",
     "LOCATION_PING_RETENTION_DAYS": 7,
     "TICKET_SLA_HOURS": {"URGENT": 1, "HIGH": 4, "NORMAL": 24, "LOW": 72},
 }

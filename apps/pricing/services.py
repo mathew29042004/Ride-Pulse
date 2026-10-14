@@ -194,7 +194,11 @@ def price_trip(
     airport: bool,
     promo: PromoCode | None = None,
     waiting_minutes: Decimal = Decimal(0),
+    ride_pass: bool = False,
 ) -> FareBreakdown:
+    from apps.core.conf import ride_pass_terms
+
+    terms = ride_pass_terms() if ride_pass else None
     return calculate_fare(
         FareInput(
             card=fare_rule(city, ride_type).card(),
@@ -206,6 +210,8 @@ def price_trip(
             promo=promo.terms() if promo else None,
             gst_rate=gst_rate(),
             commission_percent=platform_commission_percent(),
+            pass_percent=terms["percent"] if terms else None,
+            pass_max_discount=terms["max_discount"] if terms else Decimal(0),
         )
     )
 
@@ -219,6 +225,7 @@ def estimate_fare(
     at: datetime | None = None,
     promo: PromoCode | None = None,
     stop: tuple[float, float] | None = None,
+    ride_pass: bool = False,
 ) -> FareEstimate:
     at = at or timezone.now()
     zones = list(city.zones.all())
@@ -236,6 +243,7 @@ def estimate_fare(
         surge_multiplier=multiplier,
         airport=airport,
         promo=promo,
+        ride_pass=ride_pass,
     )
     return FareEstimate(ride_type, route, fare, multiplier, pickup_zone, dropoff_zone)
 

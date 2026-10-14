@@ -109,6 +109,15 @@ def referral_bonus() -> Decimal:
     return _decimal("REFERRAL_BONUS")
 
 
+def ride_pass_terms() -> dict:
+    return {
+        "price": _decimal("RIDE_PASS_PRICE"),
+        "days": int(_value("RIDE_PASS_DAYS")),
+        "percent": _decimal("RIDE_PASS_PERCENT"),
+        "max_discount": _decimal("RIDE_PASS_MAX_DISCOUNT"),
+    }
+
+
 def location_ping_retention_days() -> int:
     return int(_value("LOCATION_PING_RETENTION_DAYS"))
 

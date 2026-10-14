@@ -1,3 +1,4 @@
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, extend_schema_field
 from rest_framework import mixins, serializers
 from rest_framework.decorators import action
@@ -56,6 +57,11 @@ class RiderSerializer(serializers.ModelSerializer):
 
     def get_wallet_balance(self, rider) -> str:
         return str(wallet_balance(rider.user))
+
+
+class RidePassPurchaseSerializer(serializers.Serializer):
+    method = serializers.ChoiceField(choices=["UPI", "CARD", "WALLET"])
+    payer_reference = serializers.CharField(required=False, allow_blank=True, max_length=60)
 
 
 class RiderMeSerializer(RiderSerializer):
@@ -160,6 +166,30 @@ class RiderProfileViewSet(ContextBindingMixin, GenericViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(RiderMeSerializer(profile).data)
+
+    @extend_schema(request=RidePassPurchaseSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get", "post"], url_path="ride-pass")
+    def ride_pass(self, request):
+        """The Ride Pass offer and this rider's pass (GET), or buy / extend it (POST)."""
+        from apps.core.conf import ride_pass_terms
+        from apps.pricing import passes
+
+        rider = request.user.rider_profile
+        if request.method == "POST":
+            serializer = RidePassPurchaseSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            passes.buy_pass(rider, **serializer.validated_data)
+        current = passes.active_pass(rider)
+        latest_end = rider.passes.values_list("ends_at", flat=True).first()
+        terms = ride_pass_terms()
+        return Response(
+            {
+                "plan": {k: str(v) for k, v in terms.items()},
+                "active": current is not None,
+                "ends_at": latest_end if current else None,
+                "savings": str(passes.savings(rider)),
+            }
+        )
 
     @extend_schema(request=None, responses={204: None})
     @action(detail=False, methods=["delete"], url_path=r"favourites/(?P<driver_id>\d+)")

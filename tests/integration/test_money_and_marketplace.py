@@ -539,3 +539,56 @@ def test_invoice_explains_upfront_price_and_skips_synthetic_riders(mini, make_dr
     assert not invoices.can_email(trip)  # reserved demo domain: never emailed
     html = invoices.render_html(trip)
     assert "Upfront price" in html and f"{trip.estimated_distance_km:.1f} km" in html
+
+
+# --- Ride Pass -----------------------------------------------------------------------------------
+
+
+def test_ride_pass_discounts_rides_and_drivers_earn_the_same(rider, mini, make_driver, now):
+    from apps.pricing import passes
+
+    make_driver(now=now)
+    plain = drive_to_completion(book(rider, mini, now=now), now=now)
+    with pytest.raises(BusinessRuleViolation):
+        passes.buy_pass(rider, method="WALLET", now=now)  # empty wallet
+
+    ride_pass = passes.buy_pass(rider, method="UPI", payer_reference="priya@upi", now=now)
+    assert ride_pass.price == 99 and (ride_pass.ends_at - ride_pass.starts_at).days == 30
+    assert payments.account_balances()[accounts.PLATFORM_SUBSCRIPTIONS] == Decimal(99)
+
+    later = now + timedelta(minutes=30)
+    make_driver(now=later)
+    trip = book(rider, mini, now=later)
+    assert trip.ride_pass_applied
+    codes = {line.code: line.amount for line in trip.estimate.lines}
+    assert codes["BOOKING_FEE"] == 0 and codes["RIDE_PASS"] < 0
+    assert -codes["RIDE_PASS"] <= 30  # 10%, capped
+    trip = drive_to_completion(trip, now=later)
+    assert trip.fare_total < plain.fare_total
+    assert trip.driver_earning == plain.driver_earning  # the platform funds the saving
+    assert passes.savings(rider) == -codes["RIDE_PASS"]
+    assert payments.verify_ledger()["balanced"]
+
+    # Renewing early extends from the current end date.
+    again = passes.buy_pass(rider, method="UPI", payer_reference="priya@upi", now=now)
+    assert again.starts_at == ride_pass.ends_at
+
+
+def test_ride_pass_api(api, rider):
+    client = api(rider.user)
+    offer = client.get("/api/v1/rider/ride-pass/").json()
+    assert offer["active"] is False and offer["plan"]["price"] == "99"
+    bought = client.post(
+        "/api/v1/rider/ride-pass/", {"method": "UPI", "payer_reference": "x@upi"}
+    ).json()
+    assert bought["active"] is True and bought["ends_at"]
+    estimate = client.post(
+        "/api/v1/fares/estimate/",
+        {
+            "pickup": {"lat": T_NAGAR[0], "lng": T_NAGAR[1]},
+            "dropoff": {"lat": 13.05, "lng": 80.2824},
+        },
+        format="json",
+    ).json()
+    mini = next(o for o in estimate["options"] if o["ride_type"]["code"] == "MINI")
+    assert any(line["code"] == "RIDE_PASS" for line in mini["fare"]["lines"])

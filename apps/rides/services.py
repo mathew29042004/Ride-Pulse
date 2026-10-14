@@ -37,6 +37,7 @@ from apps.notifications.models import Level
 from apps.notifications.services import notify, notify_role
 from apps.payments import services as payments
 from apps.payments.models import PaymentMethod
+from apps.pricing import passes
 from apps.pricing import services as pricing
 from apps.pricing.fare import with_boost
 from apps.pricing.models import RideType
@@ -239,6 +240,7 @@ def estimate_options(
     at = at or timezone.now()
     city = require_city(*pickup)
     _validate_points(city, pickup, dropoff, stop)
+    has_pass = bool(rider and passes.active_pass(rider, at))
     options, promo_error = [], ""
     for ride_type in pricing.active_ride_types(city):
         promo = None
@@ -257,6 +259,7 @@ def estimate_options(
             at=at,
             promo=promo,
             stop=stop,
+            ride_pass=has_pass,
         )
         nearest = nearby_available_drivers(
             lat=pickup[0],
@@ -327,6 +330,7 @@ def request_trip(
         if promo_code
         else None
     )
+    has_pass = passes.active_pass(rider, now) is not None
     estimate = pricing.estimate_fare(
         city=city,
         ride_type=ride_type,
@@ -335,6 +339,7 @@ def request_trip(
         at=now,
         promo=promo,
         stop=stop,
+        ride_pass=has_pass,
     )
     if payment_method == PaymentMethod.WALLET and balance < estimate.fare.total + tip:
         raise BusinessRuleViolation(
@@ -346,6 +351,7 @@ def request_trip(
             trip = Trip.objects.create(
                 tip_pledged=tip,
                 preferences=preferences,
+                ride_pass_applied=has_pass,
                 trip_number=_next_trip_number(now),
                 rider=rider,
                 ride_type=ride_type,
@@ -612,6 +618,7 @@ def complete_trip(
             airport=airport,
             promo=promo,
             waiting_minutes=trip.waiting_minutes or Decimal(0),
+            ride_pass=trip.ride_pass_applied,
         )
 
     fare = price(trip.promo)

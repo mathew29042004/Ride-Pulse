@@ -53,6 +53,9 @@ class FareInput:
     promo: PromoTerms | None = None
     gst_rate: Decimal = Decimal("0.05")
     commission_percent: Decimal = Decimal(20)
+    # Ride Pass benefits, when the rider has one: % off the ride fare (capped), no booking fee.
+    pass_percent: Decimal | None = None
+    pass_max_discount: Decimal = ZERO
 
 
 @dataclass(frozen=True)
@@ -170,7 +173,10 @@ def calculate_fare(inp: FareInput) -> FareBreakdown:
         lines.append(FareLine("SURGE", f"Surge {inp.surge_multiplier}×", surge_amount, "SURGE"))
 
     fees = money(card.booking_fee)
-    if fees:
+    if fees and inp.pass_percent is not None:
+        lines.append(FareLine("BOOKING_FEE", "Booking fee (free with Ride Pass)", ZERO, "FEE"))
+        fees = ZERO
+    elif fees:
         lines.append(FareLine("BOOKING_FEE", "Booking fee", fees, "FEE"))
     if inp.airport and card.airport_fee:
         fees += money(card.airport_fee)
@@ -181,6 +187,17 @@ def calculate_fare(inp: FareInput) -> FareBreakdown:
     if discount:
         lines.append(FareLine("PROMO", f"Promo {inp.promo.code}", -discount, "DISCOUNT"))
         result.promo_code = inp.promo.code
+    if inp.pass_percent:
+        saving = min(
+            money((ride_fare + surge_amount) * inp.pass_percent / 100),
+            money(inp.pass_max_discount),
+            gross - discount,
+        )
+        if saving > 0:
+            lines.append(
+                FareLine("RIDE_PASS", f"Ride Pass {inp.pass_percent:.0f}% off", -saving, "DISCOUNT")
+            )
+            discount += saving
 
     taxable = gross - discount
     gst = money(taxable * inp.gst_rate)

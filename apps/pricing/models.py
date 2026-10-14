@@ -187,3 +187,25 @@ class PromoRedemption(models.Model):
 
     def __str__(self) -> str:
         return f"{self.promo.code} on {self.trip_id}"
+
+
+class RidePass(models.Model):
+    """A rider's monthly Ride Pass: % off every ride and no booking fee until ``ends_at``.
+    Buying again before it ends extends it (the new period starts when the old one ends)."""
+
+    rider = models.ForeignKey(
+        "riders.RiderProfile", on_delete=models.CASCADE, related_name="passes"
+    )
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    payment_method = models.CharField(max_length=6)
+    reference = models.CharField(max_length=24, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-ends_at"]
+        indexes = [models.Index(fields=["rider", "ends_at"], name="ride_pass_rider_end_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.reference} ({self.starts_at:%d %b} – {self.ends_at:%d %b})"

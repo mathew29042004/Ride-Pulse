@@ -143,6 +143,8 @@ class Trip(AuditedModel, TimeStampedModel):
     preferences = ArrayField(
         models.CharField(max_length=12, choices=RidePreference.choices), default=list, blank=True
     )
+    # Booked with an active Ride Pass: its discount applies to this ride's final fare too.
+    ride_pass_applied = models.BooleanField(default=False)
     payment_method = models.CharField(max_length=6)
     promo = models.ForeignKey(
         "pricing.PromoCode", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"

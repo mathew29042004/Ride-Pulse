@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { PushToggle } from "@/components/PushToggle";
+import { RidePassCard } from "@/components/RidePassCard";
 import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -98,6 +99,7 @@ export default function RiderAccount() {
         </div>
       </div>
 
+      <RidePassCard />
       {rider && <InviteCard rider={rider} />}
       <InvoiceEmailRow />
 

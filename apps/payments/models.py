@@ -46,6 +46,7 @@ class TransactionKind(models.TextChoices):
     PAYOUT_REVERSAL = "PAYOUT_REVERSAL", "Payout reversal"
     REFUND = "REFUND", "Refund"
     REFERRAL_BONUS = "REFERRAL_BONUS", "Referral bonus"
+    RIDE_PASS = "RIDE_PASS", "Ride Pass purchase"
 
 
 class LedgerTransaction(models.Model):
@@ -111,6 +112,7 @@ class PaymentPurpose(models.TextChoices):
     TIP = "TIP", "Tip"
     TOP_UP = "TOP_UP", "Wallet top-up"
     DUES = "DUES", "Dues payment"
+    PASS = "PASS", "Ride Pass"
 
 
 class Payment(TimeStampedModel):

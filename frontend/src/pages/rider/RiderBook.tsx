@@ -409,6 +409,7 @@ export default function RiderBook() {
                   <Clock className="size-3.5" /> {scheduleAt ? formatWhen(scheduleAt) : "Now"}
                   <ChevronDown className="size-3.5" />
                 </button>
+                {option?.fare.lines.some((l) => l.code === "RIDE_PASS") && <Badge tone="brand">Ride Pass</Badge>}
                 {option && Number(option.fare.surge_multiplier) > 1 && (
                   <Badge tone="warning">
                     <Zap className="size-3" /> {option.fare.surge_multiplier}× high demand
