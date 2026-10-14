@@ -141,6 +141,13 @@ else:
 # --- Email ---------------------------------------------------------------------------------
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ride Pulse <no-reply@ridepulse.local>")
+# Real delivery (e.g. Gmail): EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend plus these.
+EMAIL_HOST = env("EMAIL_HOST", default="localhost")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_TIMEOUT = 10
 
 # --- REST API ------------------------------------------------------------------------------
 REST_FRAMEWORK = {
