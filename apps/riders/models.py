@@ -31,6 +31,8 @@ class RiderProfile(AuditedModel, TimeStampedModel):
     )
     default_payment_method = models.CharField(max_length=10, default="UPI")
     emergency_contact_name = models.CharField(max_length=80, blank=True)
+    # Set your own Ride PIN (Uber, 2026): the same 4 digits every trip instead of a random one.
+    ride_pin = models.CharField(max_length=4, blank=True, default="")
     emergency_contact_phone = models.CharField(
         max_length=15, blank=True, validators=[phone_validator]
     )

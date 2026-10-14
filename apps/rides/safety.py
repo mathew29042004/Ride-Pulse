@@ -378,3 +378,19 @@ def answer_for_bots(now: datetime | None = None) -> int:
 def _require_rider(trip: Trip, user) -> None:
     if trip.rider.user_id != user.pk:
         raise ActionNotPermitted("Only the rider can do this.")
+
+
+def belt_reminder(trip) -> None:
+    """Seatbelt (cars) or helmet (bikes) reminder when the ride starts."""
+    from apps.notifications.services import notify
+
+    if trip.ride_type.served_by.code == "BIKE":
+        title, body = (
+            "Wear your helmet",
+            "Ask your captain for the passenger helmet and strap it on.",
+        )
+    elif trip.ride_type.served_by.code == "AUTO":
+        return
+    else:
+        title, body = "Buckle up", "Please wear your seatbelt, including in the back seat."
+    notify(trip.rider.user, title, body, link=f"/ride/trips/{trip.pk}/")

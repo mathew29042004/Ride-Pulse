@@ -162,8 +162,8 @@ export default function RiderTrip() {
     onError,
   });
   const sos = useMutation({
-    mutationFn: () => api.post(`trips/${id}/sos/`, { note: "Rider pressed SOS in the app", lat: driverPos?.lat ?? trip?.pickup_lat, lng: driverPos?.lng ?? trip?.pickup_lng }),
-    onSuccess: () => { setSosOpen(false); toast.success("Safety team alerted. Stay on the line; we're calling you now."); },
+    mutationFn: (ambulance: boolean) => api.post(`trips/${id}/sos/`, { note: "Rider pressed SOS in the app", ambulance, lat: driverPos?.lat ?? trip?.pickup_lat, lng: driverPos?.lng ?? trip?.pickup_lng }),
+    onSuccess: (_d, ambulance) => { setSosOpen(false); toast.success(ambulance ? "Safety team alerted and an ambulance requested. Also call 108 if you can." : "Safety team alerted. Stay on the line; we're calling you now."); },
     onError,
   });
 
@@ -452,14 +452,19 @@ export default function RiderTrip() {
         onClose={() => setSosOpen(false)}
         title="Emergency help"
         footer={
-          <Button variant="danger" block onClick={() => sos.mutate()} loading={sos.isPending}>
-            Alert the safety team now
-          </Button>
+          <div className="grid gap-2">
+            <Button variant="danger" block onClick={() => sos.mutate(false)} loading={sos.isPending}>
+              Alert the safety team now
+            </Button>
+            <Button variant="secondary" block onClick={() => sos.mutate(true)} disabled={sos.isPending}>
+              Medical emergency: send an ambulance
+            </Button>
+          </div>
         }
       >
         <p className="text-sm">We'll share your trip and live location with the Ride Pulse safety team, who will call you right away.</p>
         <p className="mt-3 text-sm text-muted">
-          In a life-threatening emergency, call <a className="font-bold text-danger" href="tel:112">112</a>.
+          In a life-threatening emergency, call <a className="font-bold text-danger" href="tel:112">112</a> (ambulance: <a className="font-bold text-danger" href="tel:108">108</a>).
         </p>
       </Modal>
 

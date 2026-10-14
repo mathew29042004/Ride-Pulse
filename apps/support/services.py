@@ -238,6 +238,7 @@ def raise_sos(
     lat: float | None = None,
     lng: float | None = None,
     note: str = "",
+    ambulance: bool = False,
     now: datetime | None = None,
 ) -> SafetyIncident:
     from apps.rides.models import TripFlag, TripStatus
@@ -270,6 +271,7 @@ def raise_sos(
         lng=lng if lng is not None else trip.pickup_lng,
         note=note,
         ticket=ticket,
+        ambulance_requested=ambulance,
     )
     if TripFlag.SOS not in trip.flags:
         trip.flags = [*trip.flags, TripFlag.SOS]
@@ -283,8 +285,13 @@ def raise_sos(
     ):
         notify_role(
             role,
-            f"🚨 SOS on {trip.trip_number}",
-            note or "Rider or driver pressed SOS. Call them now.",
+            f"🚨 SOS on {trip.trip_number}" + (" · AMBULANCE NEEDED" if ambulance else ""),
+            (
+                "Medical emergency: dispatch an ambulance (108) to the trip's location. "
+                if ambulance
+                else ""
+            )
+            + (note or "Rider or driver pressed SOS. Call them now."),
             level=Level.DANGER,
             link=f"/ops/safety/{incident.pk}/",
         )

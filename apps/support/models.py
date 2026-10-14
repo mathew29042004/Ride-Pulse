@@ -120,6 +120,7 @@ class SafetyIncident(TimeStampedModel):
     lat = LatitudeField(null=True, blank=True)
     lng = LongitudeField(null=True, blank=True)
     note = models.CharField(max_length=500, blank=True)
+    ambulance_requested = models.BooleanField(default=False)
     status = models.CharField(
         max_length=12, choices=IncidentStatus.choices, default=IncidentStatus.OPEN
     )

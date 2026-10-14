@@ -234,7 +234,7 @@ function ChatPanel({
         <div className="border-t border-line bg-surface px-3 pt-2 pb-4">
           <div className="-mx-3 mb-2 flex gap-2 overflow-x-auto px-3 pb-1">
             {QUICK_REPLIES[me].map((reply) => (
-              <button key={reply} onClick={() => submit(t(reply))} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-2">
+              <button key={reply} onClick={() => submit(me === "DRIVER" ? reply : t(reply))} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-2">
                 {t(reply)}
               </button>
             ))}

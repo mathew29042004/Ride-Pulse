@@ -79,7 +79,9 @@ RATING_SAMPLE = 100
 # --- Helpers -----------------------------------------------------------------------------
 
 
-def generate_otp() -> str:
+def generate_otp(rider: RiderProfile | None = None) -> str:
+    if rider is not None and rider.ride_pin:
+        return rider.ride_pin
     return f"{secrets.randbelow(10_000):04d}"
 
 
@@ -490,7 +492,7 @@ def request_trip(
                 stop_lat=stop[0] if stop else None,
                 stop_lng=stop[1] if stop else None,
                 stop_address=stop_address[:255] if stop else "",
-                otp=generate_otp(),
+                otp=generate_otp(rider),
                 payment_method=payment_method,
                 promo=promo,
                 estimated_distance_km=estimate.route.distance_km,
@@ -666,6 +668,7 @@ def start_trip(
                 transaction.on_commit(lambda: parcels.notify_recipient(trip_id))
             else:
                 transaction.on_commit(lambda: safety.share_with_contacts(trip_id, now=now))
+                safety.belt_reminder(trip)
             return trip
         trip.pin_attempts += 1
         trip.save(update_fields=["pin_attempts", "updated_at"])
@@ -1164,6 +1167,29 @@ def message_payload(message: TripMessage) -> dict:
     }
 
 
+# Drivers can always send these with one tap, even while moving.
+DRIVER_QUICK_REPLIES = {
+    "I'm on my way",
+    "I've reached the pickup",
+    "Stuck in traffic, 5 more minutes",
+    "Okay 👍",
+}
+MOVING_KMH = 10
+
+
+def driver_is_moving(driver: DriverProfile, now: datetime | None = None) -> bool:
+    """From the last GPS ping in the past minute (no recent ping = not known to be moving)."""
+    from apps.drivers.models import LocationPing
+
+    now = now or timezone.now()
+    ping = (
+        LocationPing.objects.filter(driver=driver, recorded_at__gte=now - timedelta(seconds=60))
+        .order_by("-recorded_at")
+        .first()
+    )
+    return bool(ping and (ping.speed_kmh or 0) >= MOVING_KMH)
+
+
 def send_message(trip: Trip, *, user, body: str) -> TripMessage:
     """Chat between the rider and the driver while a trip is under way."""
     body = " ".join(body.split())[:500]
@@ -1177,6 +1203,14 @@ def send_message(trip: Trip, *, user, body: str) -> TripMessage:
         raise ActionNotPermitted("Only the rider and the driver can chat on a trip.")
     if trip.status not in CHAT_STATUSES:
         raise InvalidStateTransition("Chat is open from when a driver is assigned until drop-off.")
+    if (
+        sender == TripMessage.Sender.DRIVER
+        and body not in DRIVER_QUICK_REPLIES
+        and driver_is_moving(trip.driver)
+    ):
+        raise BusinessRuleViolation(
+            "Don't type and drive: use a quick reply, or stop the vehicle to type.", field="body"
+        )
     from .translate import translate
 
     other = trip.driver.user if sender == TripMessage.Sender.RIDER else trip.rider.user

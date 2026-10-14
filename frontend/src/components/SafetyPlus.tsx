@@ -5,7 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { HeartHandshake, House, Moon, ShieldAlert, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
+import { HeartHandshake, House, KeyRound, Moon, ShieldAlert, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -183,6 +183,7 @@ export function SafetySettings({ rider }: { rider: Rider | undefined }) {
         </span>
         <Toggle checked={rider?.night_safety ?? true} onChange={(on) => nightMode.mutate(on)} label={t("Night Safe mode")} />
       </div>
+      <RidePinSetting rider={rider} />
       <div className="py-3.5">
         <div className="flex items-center gap-3">
           <Users className="size-5" />
@@ -286,5 +287,39 @@ export function OpsRideChecks() {
         </div>
       )}
     </Card>
+  );
+}
+
+/** Set your own Ride PIN: the same 4 digits every trip (blank = a new random PIN each time). */
+function RidePinSetting({ rider }: { rider: Rider | undefined }) {
+  const qc = useQueryClient();
+  const [pin, setPin] = useState<string | null>(null);
+  const value = pin ?? rider?.ride_pin ?? "";
+  const save = useMutation({
+    mutationFn: (ride_pin: string) => api.patch<Rider>("rider/me/", { ride_pin }),
+    onSuccess: (me) => {
+      qc.setQueryData(["rider", "me"], me);
+      setPin(null);
+      toast.success(me.ride_pin ? t("Your Ride PIN is saved.") : t("You'll get a new PIN every trip."));
+    },
+    onError: (err) => toast.error(errorText(err, "Couldn't save the PIN.")),
+  });
+  return (
+    <div className="flex items-center gap-3 py-3.5">
+      <KeyRound className="size-5" />
+      <span className="flex-1">
+        <span className="block font-medium">{t("My Ride PIN")}</span>
+        <span className="block text-xs text-muted">{t("Use the same 4 digits on every trip. Leave empty for a new PIN each time.")}</span>
+      </span>
+      <input
+        value={value}
+        onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+        onBlur={() => pin !== null && pin !== (rider?.ride_pin ?? "") && (pin.length === 4 || pin === "") && save.mutate(pin)}
+        inputMode="numeric"
+        placeholder="––––"
+        aria-label={t("My Ride PIN")}
+        className="w-20 rounded-xl border border-line bg-surface px-2 py-1.5 text-center font-mono tracking-[0.3em]"
+      />
+    </div>
   );
 }

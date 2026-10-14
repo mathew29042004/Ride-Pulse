@@ -49,6 +49,7 @@ class RiderSerializer(serializers.ModelSerializer):
             "emergency_contact_name",
             "emergency_contact_phone",
             "night_safety",
+            "ride_pin",
             "is_blocked",
             "blocked_reason",
             "wallet_balance",
@@ -63,6 +64,13 @@ class RiderSerializer(serializers.ModelSerializer):
             "blocked_reason",
             "created_at",
         ]
+
+    def validate_ride_pin(self, value: str) -> str:
+        if value and (len(value) != 4 or not value.isdigit()):
+            raise serializers.ValidationError("Your Ride PIN must be 4 digits.")
+        if value and len(set(value)) == 1:
+            raise serializers.ValidationError("Pick a PIN that's harder to guess.")
+        return value
 
     def get_wallet_balance(self, rider) -> str:
         return str(wallet_balance(rider.user))

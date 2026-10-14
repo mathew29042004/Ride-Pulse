@@ -359,6 +359,7 @@ export interface Rider {
   emergency_contact_name: string;
   emergency_contact_phone: string;
   night_safety: boolean;
+  ride_pin: string;
   is_blocked: boolean;
   blocked_reason: string;
   wallet_balance: string;

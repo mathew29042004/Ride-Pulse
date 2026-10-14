@@ -479,6 +479,7 @@ class SosSerializer(serializers.Serializer):
     note = serializers.CharField(required=False, allow_blank=True, max_length=500)
     lat = serializers.FloatField(required=False, allow_null=True)
     lng = serializers.FloatField(required=False, allow_null=True)
+    ambulance = serializers.BooleanField(required=False, default=False)
 
 
 class TripEventSerializer(serializers.ModelSerializer):
