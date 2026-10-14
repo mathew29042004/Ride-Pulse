@@ -101,6 +101,36 @@ class FareBreakdown:
 
 
 BOOST_LABEL = "Boost (100% to your driver)"
+OFFER_LABEL = "Your fare offer"
+
+
+def with_fee(fare: FareBreakdown, code: str, label: str, amount: Decimal) -> FareBreakdown:
+    """Add a flat platform fee after pricing (e.g. Sure Ride), GST-inclusive."""
+    from dataclasses import replace
+
+    amount = Decimal(amount).quantize(Decimal("0.01"))
+    lines = [line for line in fare.lines if line.code != code]
+    previous = sum((line.amount for line in fare.lines if line.code == code), ZERO)
+    if amount:
+        lines.append(FareLine(code, label, amount, "FEE"))
+    delta = amount - previous
+    return replace(fare, lines=lines, total=fare.total + delta, fees=fare.fees + delta)
+
+
+def with_offer_adjustment(fare: FareBreakdown, amount: Decimal) -> FareBreakdown:
+    """Bid your fare: the agreed price minus the usual price (up or down). Like a boost, the
+    difference is the driver's alone, outside commission and GST."""
+    from dataclasses import replace
+
+    amount = Decimal(amount).quantize(Decimal("0.01"))
+    previous = sum((line.amount for line in fare.lines if line.kind == "OFFER"), ZERO)
+    lines = [line for line in fare.lines if line.kind != "OFFER"]
+    if amount:
+        lines.append(FareLine("offer", OFFER_LABEL, amount, "OFFER"))
+    delta = amount - previous
+    return replace(
+        fare, lines=lines, total=fare.total + delta, driver_earning=fare.driver_earning + delta
+    )
 
 
 def with_boost(fare: FareBreakdown, amount: Decimal) -> FareBreakdown:

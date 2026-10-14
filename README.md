@@ -287,11 +287,27 @@ unmapped is denied. Riders and drivers only ever see their own records.
   stops the driver ending the trip away from the drop unless the rider confirms, and adds an
   "I'm home safe" check-in. Ops see every check in the Safety desk.
 
+* **When a ride type isn't available:** bike taxis run 5 am – 11 pm (service hours per ride
+  type). If nobody of that type is near the pickup, or it's closed, the booking screen suggests
+  the closest alternative (enough seats first, then a similar price) or lets the rider search
+  anyway with a boost; after "no drivers available" the trip screen offers the same switch.
+* **Bid your fare (like inDrive):** riders can offer 85% – 150% of the upfront price. Drivers
+  accept, or counter with +₹10/20/30; counters appear live on the rider's search screen for two
+  minutes while the search continues. The agreed difference is the driver's, outside commission.
+* **Sure Ride:** for ₹5, "a driver at your pickup within N minutes or ₹30 back" (N = nearest
+  ETA + 4). Late arrivals and no-driver-found are refunded to the wallet automatically.
+* **Fair Share Meter:** every finished trip shows where the money went (driver, commission,
+  each fee, discount, GST). Drivers see their real hourly earnings after estimated running costs.
+
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the
   ledger (`DRIVER_GOALS`).
 * **Going-home mode:** twice a day, for an hour, only trips that take the driver at least 1 km
   closer to their saved home are offered.
+
+* **Driver Wellbeing:** after 6 hours of driving (pauses under 20 minutes don't count as rest)
+  drivers get no new offers and are taken offline for a 20-minute break, with a warning 30
+  minutes before; a proper break after 4+ hours pays a ₹10 rest bonus once a day.
 
 ### Production essentials
 * **Phone login with SMS codes** (`/api/v1/auth/otp/…`): 6-digit codes stored only as HMACs,

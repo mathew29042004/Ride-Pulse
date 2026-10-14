@@ -324,6 +324,16 @@ RIDE_PULSE = {
     # Driver Wellbeing: a 20-minute break after 6 hours of driving (gaps under 20 min don't
     # count as rest), a warning 30 minutes before, and a rest bonus once a day for a proper
     # break after 4+ hours.
+    # Bid your fare: the rider may offer 85% – 150% of the upfront price; drivers can counter
+    # with these steps; the rider has 2 minutes to take a counter-offer.
+    "FARE_OFFER_RANGE": ["0.85", "1.50"],
+    "COUNTER_STEPS": ["10", "20", "30"],
+    "COUNTER_VALID_SECONDS": 120,
+    # Sure Ride: a small fee for "driver within N minutes or ₹30 back" (N = ETA + buffer).
+    "SURE_RIDE_FEE": "5",
+    "SURE_RIDE_REFUND": "30",
+    "SURE_RIDE_BUFFER_MINUTES": 4,
+    "SURE_RIDE_MIN_MINUTES": 6,
     "WELLBEING_MAX_DRIVING_MINUTES": 360,
     "WELLBEING_BREAK_MINUTES": 20,
     "WELLBEING_WARN_MINUTES": 30,

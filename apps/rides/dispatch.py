@@ -28,6 +28,7 @@ from apps.core.conf import (
     dispatch_max_radius_km,
     dispatch_mode,
     dispatch_radius_km,
+    fare_offer_rules,
     offer_timeout_seconds,
 )
 from apps.core.exceptions import ActionNotPermitted, InvalidStateTransition
@@ -205,6 +206,12 @@ def offer_payload(offer: TripOffer) -> dict:
         "preferences": trip.preferences,
         "surge": trip.surge_multiplier,
         "payment_method": trip.payment_method,
+        # Bid your fare: what the rider offers vs the usual price; drivers may counter.
+        "fare_offer": trip.fare_offer,
+        "usual_fare": trip.estimated_fare - trip.offer_adjustment,
+        "counter_steps": [str(s) for s in fare_offer_rules()["counter_steps"]]
+        if trip.fare_offer
+        else [],
         "expires_at": offer.expires_at,
     }
 
@@ -459,4 +466,7 @@ def sweep(*, now: datetime | None = None) -> dict:
         for trip in waiting:
             if dispatch_trip(trip, now=now):
                 result["offers_sent"] += 1
+    from . import bids
+
+    result["sure_ride_refunds"] = bids.sweep(now)
     return result

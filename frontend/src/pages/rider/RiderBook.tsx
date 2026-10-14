@@ -14,6 +14,7 @@ import {
   HandCoins,
   MapPin,
   Plus,
+  ShieldCheck,
   Smartphone,
   Tag,
   Users,
@@ -29,7 +30,7 @@ import { BaseMap, FitBounds, MapCenterWatch, PinMarker, Recenter, RouteLine, use
 import { describePoint, PlaceSuggestions } from "@/components/PlaceSuggestions";
 import { RideTypeArt } from "@/components/RideTypeArt";
 import { earliestSlot, formatWhen, SchedulePicker } from "@/components/SchedulePicker";
-import { Badge, Button, Input, Sheet } from "@/components/ui";
+import { Badge, Button, Input, Sheet, Toggle } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { inr, km, minutes } from "@/lib/format";
 import { useWallet } from "@/lib/hooks";
@@ -88,6 +89,9 @@ export default function RiderBook() {
   const [moving, setMoving] = useState(false);
   const [selected, setSelected] = useState<string>(() => params.get("type") ?? "MINI");
   const [boost, setBoost] = useState(0); // "search anyway" boost when nobody's nearby
+  const [bidding, setBidding] = useState(false); // Bid your fare
+  const [bid, setBid] = useState(0);
+  const [sureRide, setSureRide] = useState(false);
   const [payment, setPayment] = useState<PaymentMethod>("UPI");
   const [promoInput, setPromoInput] = useState("");
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
@@ -175,7 +179,9 @@ export default function RiderBook() {
         payment_method: payment,
         promo_code: promo,
         tip,
-        boost: option?.availability === "NONE" ? boost : 0,
+        boost: option?.availability === "NONE" && !bidding ? boost : 0,
+        fare_offer: bidding && !scheduleAt ? bid : null,
+        sure_ride: sureRide && !bidding && !!option?.sure_ride && !scheduleAt,
         preferences: chosenPrefs.filter((p) => isCar(selected) || !PREFERENCES.find((x) => x.value === p)?.carsOnly),
       }),
     onSuccess: (trip) => {
@@ -234,6 +240,11 @@ export default function RiderBook() {
   }
 
   const option = estimate.data?.options.find((o) => o.ride_type.code === selected);
+  const bookingTotal = !option
+    ? 0
+    : bidding && !scheduleAt
+      ? bid
+      : Number(option.fare.total) + (option.availability === "NONE" ? boost : 0) + (sureRide && option.sure_ride && !scheduleAt ? Number(option.sure_ride.fee) : 0);
   const choosing = !!dropoff && !pickOnMap && editing === "dropoff" && !query;
   const points = useMemo(
     () =>
@@ -404,7 +415,7 @@ export default function RiderBook() {
               </Button>
             ) : (
               <Button size="lg" block loading={book.isPending} disabled={!option || option.availability === "CLOSED"} onClick={() => book.mutate()}>
-                {t("Book {ride} · {fare}", { ride: option?.ride_type.name ?? "", fare: inr(Number(option?.fare.total ?? 0) + (option?.availability === "NONE" ? boost : 0)) })}
+                {t("Book {ride} · {fare}", { ride: option?.ride_type.name ?? "", fare: inr(bookingTotal) })}
                 {tip > 0 && t(" + ₹{tip} tip", { tip })}
               </Button>
             ))
@@ -509,6 +520,10 @@ export default function RiderBook() {
                     <span>{inr(option.fare.total)}</span>
                   </div>
                 </div>
+              )}
+
+              {option && option.availability !== "CLOSED" && !scheduleAt && (
+                <PriceOptions option={option} bidding={bidding} bid={bid} sureRide={sureRide} onBidding={(on) => { setBidding(on); setBid(Math.round(Number(option.fare.total))); }} onBid={setBid} onSureRide={setSureRide} />
               )}
 
               <div className="mt-3">
@@ -618,6 +633,69 @@ function Unavailable({ option, boost, onBoost, onSwitch }: { option: EstimateOpt
               </button>
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Bid your fare (pick your own price within a range) or Sure Ride (pickup promise). */
+function PriceOptions({
+  option,
+  bidding,
+  bid,
+  sureRide,
+  onBidding,
+  onBid,
+  onSureRide,
+}: {
+  option: EstimateOption;
+  bidding: boolean;
+  bid: number;
+  sureRide: boolean;
+  onBidding: (on: boolean) => void;
+  onBid: (amount: number) => void;
+  onSureRide: (on: boolean) => void;
+}) {
+  const low = Math.ceil(Number(option.offer_range.min));
+  const high = Math.floor(Number(option.offer_range.max));
+  const usual = Number(option.fare.total);
+  const step = (delta: number) => onBid(Math.min(high, Math.max(low, bid + delta)));
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="rounded-2xl border border-line p-3">
+        <div className="flex items-center gap-2">
+          <HandCoins className="size-4" />
+          <span className="flex-1 text-sm font-semibold">{t("Offer your fare")}</span>
+          <Toggle checked={bidding} onChange={onBidding} label={t("Offer your fare")} />
+        </div>
+        {bidding && (
+          <div className="mt-2">
+            <div className="flex items-center justify-between gap-2">
+              <button onClick={() => step(-5)} className="size-9 rounded-full bg-surface-3 text-lg font-bold" aria-label="−₹5">
+                −
+              </button>
+              <div className="text-center">
+                <div className="text-2xl font-bold">₹{bid}</div>
+                <div className="text-[11px] text-muted">{t("Usual fare {fare}", { fare: inr(usual) })}</div>
+              </div>
+              <button onClick={() => step(5)} className="size-9 rounded-full bg-surface-3 text-lg font-bold" aria-label="+₹5">
+                +
+              </button>
+            </div>
+            <input type="range" min={low} max={high} step={1} value={bid} onChange={(e) => onBid(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-brand)]" aria-label={t("Your offer")} />
+            <p className="text-[11px] text-muted">{t(bid < usual ? "Drivers may accept or counter. Lower offers can take longer." : "A higher offer gets you a driver faster. The extra is all theirs.")}</p>
+          </div>
+        )}
+      </div>
+      {option.sure_ride && !bidding && (
+        <div className="flex items-center gap-2 rounded-2xl border border-line p-3">
+          <ShieldCheck className="size-4 text-brand" />
+          <span className="flex-1 text-sm">
+            <span className="block font-semibold">{t("Sure Ride · +{fee}", { fee: inr(option.sure_ride.fee) })}</span>
+            <span className="block text-[11px] text-muted">{t("Driver at your pickup within {n} min, or {refund} back in your wallet", { n: option.sure_ride.minutes, refund: inr(option.sure_ride.refund) })}</span>
+          </span>
+          <Toggle checked={sureRide} onChange={onSureRide} label="Sure Ride" />
         </div>
       )}
     </div>

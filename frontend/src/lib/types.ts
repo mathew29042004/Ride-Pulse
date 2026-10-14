@@ -91,6 +91,10 @@ export interface EstimateOption {
   unavailable_reason: string;
   /** The closest ride type that is available, when this one isn't. */
   suggestion: { ride_type: string; name: string; pickup_eta_min: number | null; fare_total: string } | null;
+  /** "Driver within N min or ₹30 back", when a driver is nearby. */
+  sure_ride: { minutes: number; fee: string; refund: string } | null;
+  /** Bid your fare: the allowed range for an offer. */
+  offer_range: { min: string; max: string };
   fare: Fare;
 }
 
@@ -141,6 +145,13 @@ export interface Trip {
   tip_pledged: string;
   preferences: string[];
   is_favourite_driver: boolean;
+  fare_offer: string | null;
+  offer_adjustment: string;
+  /** Drivers' counter-offers on the rider's bid (rider only, while searching). */
+  counter_offers: { id: number; driver_name: string; driver_rating: string; counter_amount: string; eta_minutes: number; responded_at: string }[];
+  sure_ride_minutes: number | null;
+  sure_ride_deadline: string | null;
+  sure_ride_refunded_at: string | null;
   night_safe: boolean;
   early_drop_confirmed: boolean;
   contacts_notified_at: string | null;
@@ -225,6 +236,11 @@ export interface Offer {
   tip: string;
   preferences: string[];
   payment_method: PaymentMethod;
+  /** Bid your fare: the rider's offered total (null for normal requests). */
+  fare_offer: string | number | null;
+  usual_fare: string | number;
+  /** Counter-offer steps (+₹10/20/30), only when the rider bid. */
+  counter_steps: string[];
   expires_at: string;
 }
 

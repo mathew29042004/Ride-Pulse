@@ -160,6 +160,14 @@ class Trip(AuditedModel, TimeStampedModel):
     route_polyline = models.TextField(blank=True, help_text="Encoded road route (Google)")
     # Secret for the public "follow my ride" page; set when the rider first shares the trip.
     share_token = models.CharField(max_length=32, null=True, blank=True, unique=True)
+    # Bid your fare (see rides.bids): the rider's offered total, and the agreed difference from
+    # the usual fare (applied like a boost: all of it is the driver's).
+    fare_offer = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)
+    offer_adjustment = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal(0))
+    # Sure Ride: "driver at pickup within N minutes or ₹30 back".
+    sure_ride_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    sure_ride_deadline = models.DateTimeField(null=True, blank=True)
+    sure_ride_refunded_at = models.DateTimeField(null=True, blank=True)
     # Night Safe mode (see rides.safety): decided when the trip starts.
     night_safe = models.BooleanField(default=False)
     contacts_notified_at = models.DateTimeField(null=True, blank=True)
@@ -318,6 +326,7 @@ class OfferStatus(models.TextChoices):
     DECLINED = "DECLINED", "Declined"
     EXPIRED = "EXPIRED", "Timed out"
     WITHDRAWN = "WITHDRAWN", "Withdrawn"
+    COUNTERED = "COUNTERED", "Driver made a counter-offer"
 
 
 class TripOffer(models.Model):
@@ -340,6 +349,8 @@ class TripOffer(models.Model):
 
     # Dispatch round: 0 for the original request, +1 after each boost.
     round = models.PositiveSmallIntegerField(default=0)
+    # Bid your fare: the total this driver would do the trip for, instead of the rider's offer.
+    counter_amount = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ["-offered_at"]

@@ -68,6 +68,17 @@ class AlternativeSerializer(serializers.Serializer):
     fare_total = serializers.DecimalField(max_digits=9, decimal_places=2)
 
 
+class SureRideQuoteSerializer(serializers.Serializer):
+    minutes = serializers.IntegerField()
+    fee = serializers.DecimalField(max_digits=6, decimal_places=2)
+    refund = serializers.DecimalField(max_digits=6, decimal_places=2)
+
+
+class OfferRangeSerializer(serializers.Serializer):
+    min = serializers.DecimalField(max_digits=9, decimal_places=2)
+    max = serializers.DecimalField(max_digits=9, decimal_places=2)
+
+
 class EstimateOptionSerializer(serializers.Serializer):
     ride_type = RideTypeSerializer()
     distance_km = serializers.DecimalField(max_digits=7, decimal_places=2)
@@ -77,6 +88,8 @@ class EstimateOptionSerializer(serializers.Serializer):
     availability = serializers.ChoiceField(choices=["AVAILABLE", "NONE", "CLOSED"])
     unavailable_reason = serializers.CharField(allow_blank=True)
     suggestion = AlternativeSerializer(allow_null=True)
+    sure_ride = SureRideQuoteSerializer(allow_null=True)
+    offer_range = OfferRangeSerializer()
     fare = FareSerializer()
 
 
@@ -100,6 +113,8 @@ def serialize_options(result: dict) -> dict:
                 "availability": option["availability"],
                 "unavailable_reason": option["unavailable_reason"],
                 "suggestion": option["suggestion"],
+                "sure_ride": option["sure_ride"],
+                "offer_range": option["offer_range"],
                 "fare": option["estimate"].fare,
             }
             for option in result["options"]

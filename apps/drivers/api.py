@@ -187,6 +187,10 @@ class EarningsSerializer(serializers.Serializer):
     daily = serializers.ListField(child=serializers.DictField())
 
 
+class CounterSerializer(serializers.Serializer):
+    extra = serializers.DecimalField(max_digits=5, decimal_places=2)
+
+
 class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
     """Endpoints the driver app uses: availability, GPS, offers, earnings, documents."""
 
@@ -333,6 +337,19 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
 
         offer = get_object_or_404(TripOffer, pk=offer_id, driver__user=request.user)
         decline_offer(offer, driver=self.driver)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(request=CounterSerializer, responses={204: None})
+    @action(detail=False, methods=["post"], url_path=r"offers/(?P<offer_id>\d+)/counter")
+    def counter(self, request, offer_id=None):
+        """Bid your fare: "I'll do it for ₹X more" instead of accepting the rider's offer."""
+        from apps.rides import bids
+        from apps.rides.models import TripOffer
+
+        serializer = CounterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        offer = get_object_or_404(TripOffer, pk=offer_id, driver__user=request.user)
+        bids.counter(offer, driver=self.driver, extra=serializer.validated_data["extra"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(

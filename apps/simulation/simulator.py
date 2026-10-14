@@ -15,6 +15,7 @@ import time as clock
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from decimal import Decimal
 from itertools import pairwise
 
 from django.db import close_old_connections
@@ -32,7 +33,7 @@ from apps.pricing import alerts as price_alerts
 from apps.pricing import services as pricing
 from apps.pricing.models import RideType
 from apps.riders.models import RiderProfile
-from apps.rides import dispatch
+from apps.rides import bids, dispatch
 from apps.rides import safety as ride_safety
 from apps.rides import services as rides
 from apps.rides.models import (
@@ -256,9 +257,23 @@ class Simulator:
             return
         bot.next_action_at = None
         is_demo_rider = offer.trip.rider.user.email in DEMO_EMAILS
+        trip = offer.trip
         try:
-            # A boost or a promised tip makes a driver likelier to say yes (+1% per rupee).
-            sweetener = float(offer.trip.boost_amount + offer.trip.tip_pledged) / 100
+            # A low fare offer often gets a counter ("I'll come for ₹20 more"); the demo
+            # rider always gets one, so the feature is easy to try.
+            low_offer = trip.fare_offer is not None and trip.offer_adjustment < 0
+            if low_offer and (is_demo_rider or self.rng.random() < 0.5):
+                short = -trip.offer_adjustment
+                steps = [Decimal(10), Decimal(20), Decimal(30)]
+                extra = next((s for s in steps if s >= short), steps[-1])
+                bids.counter(offer, driver=driver, extra=extra)
+                self.bump("counter_offers")
+                return
+            # A boost or a promised tip makes a driver likelier to say yes (+1% per rupee);
+            # an offer below the usual fare makes it less likely.
+            sweetener = (
+                float(trip.boost_amount + trip.tip_pledged + min(trip.offer_adjustment, 0)) / 100
+            )
             if is_demo_rider or self.rng.random() < min(0.99, bot.accept_rate + sweetener):
                 dispatch.accept_offer(offer, driver=driver)
                 self.bump("offers_accepted")

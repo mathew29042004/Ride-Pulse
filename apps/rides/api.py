@@ -4,6 +4,7 @@ from decimal import Decimal
 import django_filters
 from django.db.models import Prefetch
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from drf_spectacular.types import OpenApiTypes
@@ -58,6 +59,29 @@ class TripPartySerializer(serializers.Serializer):
         return party.user.phone if viewer is not None and viewer.is_staff_member else None
 
 
+class CounterOfferSerializer(serializers.ModelSerializer):
+    driver_name = serializers.CharField(source="driver.user.first_name", read_only=True)
+    driver_rating = serializers.DecimalField(
+        source="driver.rating", max_digits=3, decimal_places=2, read_only=True
+    )
+    eta_minutes = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = TripOffer
+        fields = [
+            "id",
+            "driver_name",
+            "driver_rating",
+            "counter_amount",
+            "eta_minutes",
+            "responded_at",
+        ]
+
+
+class TakeCounterSerializer(serializers.Serializer):
+    offer_id = serializers.IntegerField()
+
+
 class RideCheckSerializer(serializers.ModelSerializer):
     kind_label = serializers.CharField(source="get_kind_display", read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
@@ -107,6 +131,7 @@ class TripSerializer(serializers.ModelSerializer):
     stop = serializers.SerializerMethodField()
     is_favourite_driver = serializers.SerializerMethodField()
     open_ride_check = serializers.SerializerMethodField()
+    counter_offers = serializers.SerializerMethodField()
 
     class Meta:
         model = Trip
@@ -166,6 +191,12 @@ class TripSerializer(serializers.ModelSerializer):
             "tip_pledged",
             "preferences",
             "is_favourite_driver",
+            "fare_offer",
+            "offer_adjustment",
+            "counter_offers",
+            "sure_ride_minutes",
+            "sure_ride_deadline",
+            "sure_ride_refunded_at",
             "night_safe",
             "early_drop_confirmed",
             "contacts_notified_at",
@@ -193,6 +224,18 @@ class TripSerializer(serializers.ModelSerializer):
 
     def get_fare(self, trip) -> dict:
         return FareSerializer(trip.final_fare).data
+
+    @extend_schema_field(CounterOfferSerializer(many=True))
+    def get_counter_offers(self, trip) -> list:
+        """Drivers' counter-offers on a bid, for the rider while the search is on."""
+        viewer = self._viewer()
+        if trip.status != TripStatus.REQUESTED or trip.fare_offer is None:
+            return []
+        if not (viewer and viewer.is_rider):
+            return []
+        from .bids import open_counters
+
+        return CounterOfferSerializer(open_counters(trip), many=True).data
 
     @extend_schema_field(RideCheckSerializer(allow_null=True))
     def get_open_ride_check(self, trip) -> dict | None:
@@ -237,6 +280,10 @@ class TripRequestSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
     tip = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
     boost = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
+    fare_offer = serializers.DecimalField(
+        max_digits=9, decimal_places=2, required=False, allow_null=True, default=None
+    )
+    sure_ride = serializers.BooleanField(required=False, default=False)
     preferences = serializers.ListField(
         child=serializers.ChoiceField(choices=RidePreference.choices), required=False, default=list
     )
@@ -485,6 +532,7 @@ RIDER = (
     "early_drop",
     "home_safe",
     "fair_share",
+    "take_counter",
 )
 DRIVER = (
     "list",
@@ -570,6 +618,8 @@ class TripViewSet(
             tip=data.get("tip") or 0,
             preferences=data.get("preferences") or [],
             boost=data.get("boost") or 0,
+            fare_offer=data.get("fare_offer"),
+            sure_ride=data.get("sure_ride", False),
         )
         return self._respond(trip, status.HTTP_201_CREATED)
 
@@ -688,6 +738,18 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=TakeCounterSerializer, responses=TripSerializer)
+    @action(detail=True, methods=["post"], url_path="take-counter")
+    def take_counter(self, request, pk=None):
+        """Accept a driver's counter-offer: the fare becomes their price and they're assigned."""
+        from .bids import take_counter
+
+        serializer = TakeCounterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        trip = self.get_object()
+        offer = get_object_or_404(TripOffer, pk=serializer.validated_data["offer_id"], trip=trip)
+        return self._respond(take_counter(offer, user=request.user))
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["get"], url_path="fair-share")

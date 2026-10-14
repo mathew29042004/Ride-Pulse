@@ -17,6 +17,7 @@ from apps.core.conf import (
     dispatch_mode,
     free_cancellation_seconds,
     request_timeout_seconds,
+    sure_ride_terms,
     upfront_distance_tolerance,
     upfront_duration_tolerance,
 )
@@ -40,12 +41,12 @@ from apps.payments import services as payments
 from apps.payments.models import PaymentMethod
 from apps.pricing import passes
 from apps.pricing import services as pricing
-from apps.pricing.fare import with_boost
+from apps.pricing.fare import with_boost, with_fee, with_offer_adjustment
 from apps.pricing.models import RideType
 from apps.realtime import broadcast
 from apps.riders.models import RiderProfile
 
-from . import dispatch
+from . import bids, dispatch
 from .models import (
     CAR_ONLY_PREFERENCES,
     TERMINAL_STATUSES,
@@ -271,15 +272,19 @@ def estimate_options(
             limit=1,
         )
         open_now = ride_type.is_open(at)
+        eta = (
+            eta_minutes(nearest[0].current_lat, nearest[0].current_lng, *pickup, at)
+            if nearest and open_now
+            else None
+        )
+        low, high = bids.offer_bounds(estimate.fare.total)
         options.append(
             {
                 "ride_type": ride_type,
                 "estimate": estimate,
-                "pickup_eta_min": (
-                    round(eta_minutes(nearest[0].current_lat, nearest[0].current_lng, *pickup, at))
-                    if nearest and open_now
-                    else None
-                ),
+                "pickup_eta_min": round(eta) if eta is not None else None,
+                "sure_ride": bids.sure_ride_quote(eta),
+                "offer_range": {"min": low, "max": high},
                 "availability": "CLOSED" if not open_now else "AVAILABLE" if nearest else "NONE",
                 "unavailable_reason": (
                     f"{ride_type.name} rides run {ride_type.service_hours_label}"
@@ -342,10 +347,15 @@ def request_trip(
     tip: Decimal | int = 0,
     preferences: list[str] | tuple[str, ...] = (),
     boost: Decimal | int = 0,
+    fare_offer: Decimal | int | None = None,
+    sure_ride: bool = False,
 ) -> Trip:
     now = now or timezone.now()
     tip = Decimal(tip or 0)
     boost = Decimal(boost or 0)
+    fare_offer = Decimal(fare_offer) if fare_offer else None
+    if fare_offer and (boost or sure_ride):
+        raise BusinessRuleViolation("A fare offer can't be combined with a boost or Sure Ride.")
     preferences = clean_preferences(preferences, ride_type)
     if not ride_type.is_open(now):
         raise BusinessRuleViolation(
@@ -388,6 +398,32 @@ def request_trip(
         ride_pass=has_pass,
     )
     fare = with_boost(estimate.fare, boost) if boost else estimate.fare
+    adjustment = Decimal(0)
+    if fare_offer:
+        adjustment = bids.check_offer(estimate.fare.total, fare_offer)
+        fare = with_offer_adjustment(fare, adjustment)
+    sure_minutes = None
+    if sure_ride:
+        nearest = nearby_available_drivers(
+            lat=pickup[0],
+            lng=pickup[1],
+            radius_km=float(dispatch_max_radius_km()),
+            ride_type=ride_type,
+            now=now,
+            limit=1,
+        )
+        if not nearest:
+            raise BusinessRuleViolation(
+                "Sure Ride needs a driver nearby. Try without it.", field="sure_ride"
+            )
+        eta = eta_minutes(nearest[0].current_lat, nearest[0].current_lng, *pickup, now)
+        sure_minutes = bids.sure_ride_minutes(eta)
+        fare = with_fee(
+            fare,
+            bids.SURE_RIDE_CODE,
+            f"Sure Ride ({sure_minutes}-min pickup promise)",
+            sure_ride_terms()["fee"],
+        )
     if payment_method == PaymentMethod.WALLET and balance < fare.total + tip:
         raise BusinessRuleViolation(
             f"Your wallet balance (₹{balance:,.2f}) doesn't cover this fare.",
@@ -427,6 +463,10 @@ def request_trip(
                 fare_estimate=fare.to_dict(),
                 boost_amount=boost,
                 boosted_at=now if boost else None,
+                fare_offer=fare_offer,
+                offer_adjustment=adjustment,
+                sure_ride_minutes=sure_minutes,
+                sure_ride_deadline=now + timedelta(minutes=sure_minutes) if sure_minutes else None,
                 route_polyline=estimate.route.polyline,
                 route_source=estimate.route.source,
                 requested_at=now,
@@ -524,6 +564,8 @@ def mark_arrived(
         level=Level.INFO,
         link=f"/ride/trips/{trip.pk}/",
     )
+    if trip.sure_ride_deadline:
+        bids.refund_if_late(trip, now=now)
     return trip
 
 
@@ -691,6 +733,11 @@ def complete_trip(
         fare = price(None)
     if trip.boost_amount:
         fare = with_boost(fare, trip.boost_amount)
+    if trip.offer_adjustment:
+        fare = with_offer_adjustment(fare, trip.offer_adjustment)
+    for line in trip.estimate.lines:  # Sure Ride fee, as agreed at booking
+        if line.code == bids.SURE_RIDE_CODE:
+            fare = with_fee(fare, line.code, line.label, line.amount)
 
     flags = list(trip.flags)
     if distance > trip.estimated_distance_km * ROUTE_DEVIATION_FACTOR:
@@ -883,6 +930,8 @@ def expire_request(trip: Trip, *, now: datetime) -> Trip:
         cancellation_reason="No driver accepted in time",
         payment_status=TripPaymentStatus.NOT_APPLICABLE,
     )
+    if trip.sure_ride_deadline:
+        bids.refund_if_late(trip, now=now)
     notify(
         trip.rider.user,
         "No drivers available right now",

@@ -36,7 +36,7 @@ function stepTowards(from: Pos, to: { lat: number; lng: number }, stepKm: number
   return { lat: from.lat + (to.lat - from.lat) * f, lng: from.lng + (to.lng - from.lng) * f, heading: (heading + 360) % 360, arrived: false };
 }
 
-function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccept: () => void; onDecline: () => void; busy: boolean }) {
+function OfferCard({ offer, onAccept, onDecline, onCounter, busy }: { offer: Offer; onAccept: () => void; onDecline: () => void; onCounter: (extra: string) => void; busy: boolean }) {
   const now = useNow(250);
   const total = 20_000;
   const left = Math.max(0, new Date(offer.expires_at).getTime() - now);
@@ -55,6 +55,11 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
         <div>
           <Badge tone="brand">New {offer.ride_type} request</Badge>
           <div className="mt-2 text-3xl font-bold tracking-tight">{inr(offer.estimated_earning)}</div>
+          {offer.fare_offer !== null && (
+            <div className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+              {t("Rider offers {offer} · usual fare {usual}", { offer: inr(offer.fare_offer), usual: inr(offer.usual_fare) })}
+            </div>
+          )}
           {offer.preferences.length > 0 && <PreferenceChips values={offer.preferences} />}
           {(Number(offer.boost) > 0 || Number(offer.tip) > 0) && (
             <div className="mt-1 flex flex-wrap gap-1.5">
@@ -108,6 +113,18 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
           </div>
         </div>
       </div>
+      {offer.counter_steps.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-1 text-xs font-semibold text-muted">{t("Or counter-offer")}</div>
+          <div className="grid grid-cols-3 gap-2">
+            {offer.counter_steps.map((step) => (
+              <Button key={step} variant="outline" size="sm" disabled={busy} onClick={() => onCounter(step)}>
+                +₹{Number(step)}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="mt-5 grid grid-cols-[1fr_2fr] gap-2">
         <Button variant="secondary" size="lg" onClick={onDecline} disabled={busy}>
           {t("Decline")}
@@ -333,6 +350,12 @@ export default function DriverHome() {
   });
   // Declining can't meaningfully fail for the driver, so the card goes away immediately.
   const decline = useMutation({ mutationFn: (o: Offer) => api.post(`driver/offers/${o.offer_id}/decline/`), onMutate: () => setOffer(null), onError });
+  const counter = useMutation({
+    mutationFn: ({ o, extra }: { o: Offer; extra: string }) => api.post(`driver/offers/${o.offer_id}/counter/`, { extra }),
+    onMutate: () => setOffer(null),
+    onSuccess: () => toast.success(t("Counter-offer sent. We'll tell you if the rider accepts.")),
+    onError,
+  });
   const arrive = useMutation({ mutationFn: () => api.post(`trips/${trip!.id}/arrive/`), onSuccess: refresh, onError });
   const start = useMutation({
     mutationFn: (proof: { otp: string } | { qr: string }) => api.post(`trips/${trip!.id}/start/`, proof),
@@ -466,7 +489,7 @@ export default function DriverHome() {
       </div>
 
       {offer && !trip ? (
-        <OfferCard offer={offer} busy={accept.isPending || decline.isPending} onAccept={() => accept.mutate(offer)} onDecline={() => decline.mutate(offer)} />
+        <OfferCard offer={offer} busy={accept.isPending || decline.isPending || counter.isPending} onAccept={() => accept.mutate(offer)} onDecline={() => decline.mutate(offer)} onCounter={(extra) => counter.mutate({ o: offer, extra })} />
       ) : (
         <Sheet>
           {!trip && (

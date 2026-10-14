@@ -146,6 +146,25 @@ def ride_check_rules(*, night: bool) -> dict:
     }
 
 
+def fare_offer_rules() -> dict:
+    low, high = _value("FARE_OFFER_RANGE")
+    return {
+        "min_ratio": Decimal(low),
+        "max_ratio": Decimal(high),
+        "counter_steps": [Decimal(step) for step in _value("COUNTER_STEPS")],
+        "counter_valid_seconds": int(_value("COUNTER_VALID_SECONDS")),
+    }
+
+
+def sure_ride_terms() -> dict:
+    return {
+        "fee": _decimal("SURE_RIDE_FEE"),
+        "refund": _decimal("SURE_RIDE_REFUND"),
+        "buffer_minutes": int(_value("SURE_RIDE_BUFFER_MINUTES")),
+        "min_minutes": int(_value("SURE_RIDE_MIN_MINUTES")),
+    }
+
+
 def wellbeing_rules() -> dict:
     return {
         "max_minutes": int(_value("WELLBEING_MAX_DRIVING_MINUTES")),

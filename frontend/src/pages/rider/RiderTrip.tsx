@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { BaseMap, CarMarker, FitBounds, type LatLng, PinMarker, RouteLine, routePath, snapToPath } from "@/components/map";
 import { RideTypeArt } from "@/components/RideTypeArt";
+import { CounterOffers, SureRideBadge } from "@/components/Bids";
 import { CallButton } from "@/components/CallButton";
 import { CarCheck, StartCode } from "@/components/PickupVerification";
 import { FairShareCard } from "@/components/FairShare";
@@ -249,6 +250,8 @@ export default function RiderTrip() {
         {trip.status === "REQUESTED" && (
           <>
             <Searching trip={trip} />
+            <CounterOffers trip={trip} />
+            <SureRideBadge trip={trip} />
             <Button variant="secondary" block className="mt-3" onClick={() => cancel.mutate()} loading={cancel.isPending}>
               {t("Cancel request")}
             </Button>
@@ -272,6 +275,7 @@ export default function RiderTrip() {
               </div>
             </div>
             <DriverCard trip={trip} />
+            <SureRideBadge trip={trip} />
             <NightSafeBar trip={trip} role="rider" />
             {trip.otp && trip.status !== "IN_PROGRESS" && (
               <>

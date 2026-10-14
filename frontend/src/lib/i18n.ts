@@ -187,6 +187,32 @@ const STRINGS: Record<string, [string, string]> = {
   "break due": ["ஓய்வு நேரம்", "ब्रेक का समय"],
   "Rest break": ["ஓய்வு இடைவேளை", "आराम का ब्रेक"],
 
+  // Bid your fare and Sure Ride
+  "Offer your fare": ["உங்கள் கட்டணத்தைச் சொல்லுங்கள்", "अपना किराया बताएँ"],
+  "Usual fare {fare}": ["வழக்கமான கட்டணம் {fare}", "सामान्य किराया {fare}"],
+  "Your offer": ["உங்கள் சலுகை", "आपका ऑफ़र"],
+  "Your offer: {fare}": ["உங்கள் சலுகை: {fare}", "आपका ऑफ़र: {fare}"],
+  "Drivers may accept or counter. Lower offers can take longer.": [
+    "டிரைவர்கள் ஏற்கலாம் அல்லது எதிர்ச் சலுகை தரலாம். குறைந்த சலுகைக்கு நேரம் ஆகலாம்.",
+    "ड्राइवर मान सकते हैं या जवाबी ऑफ़र दे सकते हैं। कम ऑफ़र में देर लग सकती है।",
+  ],
+  "A higher offer gets you a driver faster. The extra is all theirs.": [
+    "அதிக சலுகை விரைவில் டிரைவரைப் பெற்றுத் தரும். கூடுதல் தொகை முழுவதும் அவருக்கே.",
+    "ज़्यादा ऑफ़र से ड्राइवर जल्दी मिलता है। अतिरिक्त राशि पूरी उनकी।",
+  ],
+  "Sure Ride · +{fee}": ["உறுதிப் பயணம் · +{fee}", "श्योर राइड · +{fee}"],
+  "Driver at your pickup within {n} min, or {refund} back in your wallet": [
+    "{n} நிமிடத்துக்குள் டிரைவர் வருவார், இல்லையெனில் {refund} உங்கள் வாலெட்டுக்கு",
+    "{n} मिनट में ड्राइवर पिकअप पर, वरना {refund} आपके वॉलेट में",
+  ],
+  "Drivers can accept your price or send a counter-offer. They'll show up here.": [
+    "டிரைவர்கள் உங்கள் விலையை ஏற்கலாம் அல்லது எதிர்ச் சலுகை அனுப்பலாம். அவை இங்கே தெரியும்.",
+    "ड्राइवर आपकी क़ीमत मान सकते हैं या जवाबी ऑफ़र भेज सकते हैं। वे यहाँ दिखेंगे।",
+  ],
+  "Driver booked at their price": ["அவர் விலையில் டிரைவர் புக் ஆனார்", "उनकी क़ीमत पर ड्राइवर बुक हुआ"],
+  "Rider offers {offer} · usual fare {usual}": ["பயணி {offer} தருகிறார் · வழக்கம் {usual}", "राइडर {offer} दे रहे हैं · सामान्य {usual}"],
+  "Or counter-offer": ["அல்லது எதிர்ச் சலுகை", "या जवाबी ऑफ़र दें"],
+
   // Safety+
   "Is everything OK?": ["எல்லாம் சரியாக இருக்கிறதா?", "क्या सब ठीक है?"],
   "Are you OK?": ["நீங்கள் நலமா?", "क्या आप ठीक हैं?"],
