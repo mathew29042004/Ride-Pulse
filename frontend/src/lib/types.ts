@@ -86,6 +86,11 @@ export interface EstimateOption {
   duration_minutes: string;
   route_polyline: string;
   pickup_eta_min: number | null;
+  /** NONE: no drivers near the pickup now; CLOSED: outside this ride type's hours. */
+  availability: "AVAILABLE" | "NONE" | "CLOSED";
+  unavailable_reason: string;
+  /** The closest ride type that is available, when this one isn't. */
+  suggestion: { ride_type: string; name: string; pickup_eta_min: number | null; fare_total: string } | null;
   fare: Fare;
 }
 

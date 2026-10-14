@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, Download, Heart, LifeBuoy, LocateFixed, Mail, RotateCcw, Share2, ShieldAlert, X, Zap } from "lucide-react";
+import { ArrowLeft, ChevronRight, Download, Heart, LifeBuoy, LocateFixed, Mail, RotateCcw, Share2, ShieldAlert, X, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import { dateTime, inr, km, minutes, time } from "@/lib/format";
 import { usePhoneGps } from "@/lib/gps";
 import { clockIn, etaFromKm, etaMinutes, haversineKm, isActive, useLiveTrip, useNow } from "@/lib/hooks";
 import { t } from "@/lib/i18n";
-import type { Trip } from "@/lib/types";
+import type { Estimate, Trip } from "@/lib/types";
 
 const TAGS = ["Great driving", "Clean car", "Polite", "On time", "Safe", "Good music"];
 
@@ -399,8 +399,9 @@ export default function RiderTrip() {
             <p className="mt-1 text-sm text-muted">{trip.cancellation_reason}</p>
             {Number(trip.cancellation_fee) > 0 && <p className="mt-2 text-sm font-semibold text-danger">Cancellation fee {inr(trip.cancellation_fee)}</p>}
             <p className="mt-1 text-xs text-muted">{dateTime(trip.cancelled_at)}</p>
+            {trip.status === "NO_DRIVER_FOUND" && <NoDriverAlternative trip={trip} />}
             <Button className="mt-4" block onClick={() => navigate(`/ride/book?to=${trip.dropoff_lat},${trip.dropoff_lng}&name=${encodeURIComponent(trip.dropoff_address)}`)}>
-              Try again
+              {t("Try again")}
             </Button>
           </div>
         )}
@@ -555,6 +556,38 @@ function FavouriteDriver({ trip }: { trip: Trip }) {
       aria-pressed={on}
     >
       <Heart className={clsx("size-4", on && "fill-current")} /> {on ? `${trip.driver!.name.split(" ")[0]} is a favourite driver` : `Add ${trip.driver!.name.split(" ")[0]} to favourite drivers`}
+    </button>
+  );
+}
+
+/** After "no drivers available": the ride type that has cars near this pickup right now. */
+function NoDriverAlternative({ trip }: { trip: Trip }) {
+  const navigate = useNavigate();
+  const estimate = useQuery({
+    queryKey: ["estimate", "after-no-driver", trip.id],
+    queryFn: () =>
+      api.post<Estimate>("fares/estimate/", {
+        pickup: { lat: trip.pickup_lat, lng: trip.pickup_lng },
+        dropoff: { lat: trip.dropoff_lat, lng: trip.dropoff_lng },
+      }),
+    staleTime: 30_000,
+  });
+  const mine = estimate.data?.options.find((o) => o.ride_type.code === trip.ride_type);
+  const alt = mine?.suggestion;
+  if (!alt) return null;
+  return (
+    <button
+      onClick={() => navigate(`/ride/book?to=${trip.dropoff_lat},${trip.dropoff_lng}&name=${encodeURIComponent(trip.dropoff_address)}&type=${alt.ride_type}`)}
+      className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-brand/10 px-4 py-3 text-left"
+    >
+      <RideTypeArt code={alt.ride_type} className="h-8 w-14 shrink-0" />
+      <span className="flex-1">
+        <span className="block font-semibold">{t("Switch to {ride}", { ride: alt.name })}</span>
+        <span className="block text-xs text-muted">
+          {alt.pickup_eta_min !== null && t("{n} min away", { n: alt.pickup_eta_min })} · {inr(alt.fare_total)}
+        </span>
+      </span>
+      <ChevronRight className="size-4" />
     </button>
   );
 }

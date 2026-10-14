@@ -34,6 +34,14 @@ def _quiet():
         yield
 
 
+@pytest.fixture(autouse=True)
+def _round_the_clock(request):
+    """Bike taxis stop at night; tests shouldn't depend on the hour they run. Tests of service
+    hours set them explicitly."""
+    if "django_db_setup" in request.fixturenames or "db" in request.fixturenames:
+        RideType.objects.update(service_start_hour=None, service_end_hour=None)
+
+
 @pytest.fixture
 def now():
     return timezone.now()

@@ -236,6 +236,7 @@ class TripRequestSerializer(serializers.Serializer):
     stop = PointSerializer(required=False, allow_null=True)
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
     tip = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
+    boost = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
     preferences = serializers.ListField(
         child=serializers.ChoiceField(choices=RidePreference.choices), required=False, default=list
     )
@@ -566,6 +567,7 @@ class TripViewSet(
             stop_address=(data.get("stop") or {}).get("address", ""),
             tip=data.get("tip") or 0,
             preferences=data.get("preferences") or [],
+            boost=data.get("boost") or 0,
         )
         return self._respond(trip, status.HTTP_201_CREATED)
 

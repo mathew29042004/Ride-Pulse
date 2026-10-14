@@ -11,6 +11,15 @@ RIDE_TYPES = [
     ("SUV", "Prime SUV", "Six-seaters for groups and luggage", 6, 5),
 ]
 
+# Local service hours (start, end) for ride types that don't run all night.
+SERVICE_HOURS = {"BIKE": (5, 23)}
+
+
+def apply_service_hours(RideType) -> None:
+    for code, (start, end) in SERVICE_HOURS.items():
+        RideType.objects.filter(code=code).update(service_start_hour=start, service_end_hour=end)
+
+
 # code: base, per km, per min, minimum, booking fee, cancel fee, free wait, wait/min, airport
 FARE_CARDS = {
     "BIKE": ("20", "6", "0.50", "30", "5", "15", 3, "1", "0"),

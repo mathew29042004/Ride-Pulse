@@ -18,12 +18,33 @@ class RideType(models.Model):
     seats = models.PositiveSmallIntegerField()
     sort_order = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    # Local hours this ride type runs (e.g. bike taxis 5 am – 11 pm). Blank = round the clock.
+    service_start_hour = models.PositiveSmallIntegerField(null=True, blank=True)
+    service_end_hour = models.PositiveSmallIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ["sort_order"]
 
     def __str__(self) -> str:
         return self.name
+
+    def is_open(self, at) -> bool:
+        from django.utils import timezone
+
+        if self.service_start_hour is None or self.service_end_hour is None:
+            return True
+        hour = timezone.localtime(at).hour
+        start, end = self.service_start_hour, self.service_end_hour
+        return start <= hour < end if start < end else hour >= start or hour < end
+
+    @property
+    def service_hours_label(self) -> str:
+        def fmt(hour: int) -> str:
+            return f"{hour % 12 or 12} {'am' if hour < 12 else 'pm'}"
+
+        if self.service_start_hour is None or self.service_end_hour is None:
+            return ""
+        return f"{fmt(self.service_start_hour)} – {fmt(self.service_end_hour)}"
 
 
 class FareRule(TimeStampedModel):

@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
 import {
+  AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   Banknote,
   BellRing,
   ChevronDown,
@@ -34,7 +36,7 @@ import { useWallet } from "@/lib/hooks";
 import { useLayout } from "@/lib/layout";
 import { isCar, PREFERENCES } from "@/lib/preferences";
 import { t } from "@/lib/i18n";
-import type { Estimate, PaymentMethod, Rider, SavedPlace, Trip } from "@/lib/types";
+import type { Estimate, EstimateOption, PaymentMethod, Rider, SavedPlace, Trip } from "@/lib/types";
 
 import { useRiderLocation } from "./RiderHome";
 
@@ -84,7 +86,8 @@ export default function RiderBook() {
   const [pickStart, setPickStart] = useState<[number, number]>([0, 0]);
   const [candidate, setCandidate] = useState<Spot | null>(null);
   const [moving, setMoving] = useState(false);
-  const [selected, setSelected] = useState<string>("MINI");
+  const [selected, setSelected] = useState<string>(() => params.get("type") ?? "MINI");
+  const [boost, setBoost] = useState(0); // "search anyway" boost when nobody's nearby
   const [payment, setPayment] = useState<PaymentMethod>("UPI");
   const [promoInput, setPromoInput] = useState("");
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
@@ -172,6 +175,7 @@ export default function RiderBook() {
         payment_method: payment,
         promo_code: promo,
         tip,
+        boost: option?.availability === "NONE" ? boost : 0,
         preferences: chosenPrefs.filter((p) => isCar(selected) || !PREFERENCES.find((x) => x.value === p)?.carsOnly),
       }),
     onSuccess: (trip) => {
@@ -399,8 +403,8 @@ export default function RiderBook() {
                 {t("Schedule {ride} · {when}", { ride: option?.ride_type.name ?? "", when: formatWhen(scheduleAt) })}
               </Button>
             ) : (
-              <Button size="lg" block loading={book.isPending} disabled={!option} onClick={() => book.mutate()}>
-                {t("Book {ride} · {fare}", { ride: option?.ride_type.name ?? "", fare: inr(option?.fare.total) })}
+              <Button size="lg" block loading={book.isPending} disabled={!option || option.availability === "CLOSED"} onClick={() => book.mutate()}>
+                {t("Book {ride} · {fare}", { ride: option?.ride_type.name ?? "", fare: inr(Number(option?.fare.total ?? 0) + (option?.availability === "NONE" ? boost : 0)) })}
                 {tip > 0 && t(" + ₹{tip} tip", { tip })}
               </Button>
             ))
@@ -472,7 +476,7 @@ export default function RiderBook() {
                           </span>
                         </div>
                         <div className="text-xs text-muted">
-                          {o.pickup_eta_min !== null ? t("{n} min away", { n: o.pickup_eta_min }) : t("No cars nearby")} · {km(o.distance_km)}
+                          {o.availability === "CLOSED" ? t("Not running now") : o.pickup_eta_min !== null ? t("{n} min away", { n: o.pickup_eta_min }) : t("No cars nearby")} · {km(o.distance_km)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -484,6 +488,9 @@ export default function RiderBook() {
                 })}
               </div>
 
+              {option && option.availability !== "AVAILABLE" && !scheduleAt && (
+                <Unavailable option={option} boost={boost} onBoost={setBoost} onSwitch={(code) => setSelected(code)} />
+              )}
               {option && (
                 <button onClick={() => setShowFare((s) => !s)} className="mt-2 flex w-full items-center justify-center gap-1 text-xs font-medium text-muted">
                   {t("Fare breakdown")} {showFare ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
@@ -573,6 +580,45 @@ export default function RiderBook() {
             </>
           )}
         </Sheet>
+      )}
+    </div>
+  );
+}
+
+/** "No Bikes near you right now": switch to the suggested ride type, or search anyway with a boost. */
+function Unavailable({ option, boost, onBoost, onSwitch }: { option: EstimateOption; boost: number; onBoost: (n: number) => void; onSwitch: (code: string) => void }) {
+  const alt = option.suggestion;
+  return (
+    <div className="mt-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">
+      <div className="flex items-center gap-2 font-semibold">
+        <AlertTriangle className="size-4 shrink-0" /> {t(option.unavailable_reason)}
+      </div>
+      {alt && (
+        <button onClick={() => onSwitch(alt.ride_type)} className="mt-2 flex w-full items-center justify-between rounded-xl bg-surface px-3 py-2 text-left text-sm font-semibold text-fg">
+          <span>
+            {t("Switch to {ride}", { ride: alt.name })}
+            <span className="block text-xs font-normal text-muted">
+              {alt.pickup_eta_min !== null && t("{n} min away", { n: alt.pickup_eta_min })} · {inr(alt.fare_total)}
+            </span>
+          </span>
+          <ArrowRight className="size-4" />
+        </button>
+      )}
+      {option.availability === "NONE" && (
+        <div className="mt-2">
+          <div className="mb-1 font-semibold">{t("Or search anyway with a boost (100% to the driver)")}</div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {[0, 10, 20, 30].map((amount) => (
+              <button
+                key={amount}
+                onClick={() => onBoost(amount)}
+                className={clsx("rounded-lg border py-1 font-semibold", boost === amount ? "border-fg bg-surface text-fg" : "border-amber-300 dark:border-amber-400/30")}
+              >
+                {amount ? `+₹${amount}` : t("No boost")}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

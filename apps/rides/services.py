@@ -270,17 +270,27 @@ def estimate_options(
             now=at,
             limit=1,
         )
+        open_now = ride_type.is_open(at)
         options.append(
             {
                 "ride_type": ride_type,
                 "estimate": estimate,
                 "pickup_eta_min": (
                     round(eta_minutes(nearest[0].current_lat, nearest[0].current_lng, *pickup, at))
-                    if nearest
+                    if nearest and open_now
                     else None
+                ),
+                "availability": "CLOSED" if not open_now else "AVAILABLE" if nearest else "NONE",
+                "unavailable_reason": (
+                    f"{ride_type.name} rides run {ride_type.service_hours_label}"
+                    if not open_now
+                    else ""
+                    if nearest
+                    else f"No {ride_type.name} drivers near you right now"
                 ),
             }
         )
+    _suggest_alternatives(options)
     return {
         "city": city,
         "options": options,
@@ -291,6 +301,31 @@ def estimate_options(
 
 
 @transaction.atomic
+def _suggest_alternatives(options: list[dict]) -> None:
+    """For each ride type nobody can take right now, the closest one that's available: enough
+    seats first (don't send a group to a bike), then similar price, then the quicker pickup."""
+    available = [o for o in options if o["availability"] == "AVAILABLE"]
+    for option in options:
+        option["suggestion"] = None
+        if option["availability"] == "AVAILABLE" or not available:
+            continue
+        price, seats = option["estimate"].fare.total, option["ride_type"].seats
+        best = min(
+            available,
+            key=lambda o: (
+                o["ride_type"].seats < seats,
+                abs(o["estimate"].fare.total - price),
+                o["pickup_eta_min"],
+            ),
+        )
+        option["suggestion"] = {
+            "ride_type": best["ride_type"].code,
+            "name": best["ride_type"].name,
+            "pickup_eta_min": best["pickup_eta_min"],
+            "fare_total": best["estimate"].fare.total,
+        }
+
+
 def request_trip(
     *,
     rider: RiderProfile,
@@ -306,10 +341,20 @@ def request_trip(
     stop_address: str = "",
     tip: Decimal | int = 0,
     preferences: list[str] | tuple[str, ...] = (),
+    boost: Decimal | int = 0,
 ) -> Trip:
     now = now or timezone.now()
     tip = Decimal(tip or 0)
+    boost = Decimal(boost or 0)
     preferences = clean_preferences(preferences, ride_type)
+    if not ride_type.is_open(now):
+        raise BusinessRuleViolation(
+            f"{ride_type.name} rides run {ride_type.service_hours_label}. "
+            "Choose another ride type.",
+            field="ride_type",
+        )
+    if boost and boost not in BOOST_STEPS:
+        raise BusinessRuleViolation("Choose a boost of ₹10, ₹20, ₹30 or ₹50.", field="boost")
     if tip and not payments.MIN_TIP <= tip <= payments.MAX_TIP:
         raise BusinessRuleViolation(
             f"Tips must be between ₹{payments.MIN_TIP} and ₹{payments.MAX_TIP}.", field="tip"
@@ -342,7 +387,8 @@ def request_trip(
         stop=stop,
         ride_pass=has_pass,
     )
-    if payment_method == PaymentMethod.WALLET and balance < estimate.fare.total + tip:
+    fare = with_boost(estimate.fare, boost) if boost else estimate.fare
+    if payment_method == PaymentMethod.WALLET and balance < fare.total + tip:
         raise BusinessRuleViolation(
             f"Your wallet balance (₹{balance:,.2f}) doesn't cover this fare.",
             field="payment_method",
@@ -377,8 +423,10 @@ def request_trip(
                 estimated_distance_km=estimate.route.distance_km,
                 estimated_duration_min=estimate.route.duration_minutes,
                 surge_multiplier=estimate.surge_multiplier,
-                estimated_fare=estimate.fare.total,
-                fare_estimate=estimate.fare.to_dict(),
+                estimated_fare=fare.total,
+                fare_estimate=fare.to_dict(),
+                boost_amount=boost,
+                boosted_at=now if boost else None,
                 route_polyline=estimate.route.polyline,
                 route_source=estimate.route.source,
                 requested_at=now,
@@ -391,7 +439,8 @@ def request_trip(
         "STATUS",
         to_status=TripStatus.REQUESTED,
         actor=rider.user,
-        message=f"{ride_type.name} requested · ₹{estimate.fare.total} upfront",
+        message=f"{ride_type.name} requested · ₹{fare.total} upfront"
+        + (f" (₹{boost} boost)" if boost else ""),
         at=now,
     )
     broadcast.ops_event(
