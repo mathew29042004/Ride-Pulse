@@ -200,7 +200,9 @@ def settle_trip(trip, *, payer_reference: str = "", now: datetime | None = None)
 
     fare = trip.final_fare
     total = fare.total
-    rider_wallet = ensure_wallet(trip.rider.user)
+    # A family/business profile pays from its owner's wallet (and owes any shortfall).
+    payer = trip.payment_profile.owner.user if trip.payment_profile_id else trip.rider.user
+    rider_wallet = ensure_wallet(payer)
     driver_wallet = ensure_wallet(trip.driver.user)
     platform = _platform_legs(fare)
     description = f"Fare for {trip.trip_number}"
@@ -215,7 +217,8 @@ def settle_trip(trip, *, payer_reference: str = "", now: datetime | None = None)
         )
         return TripPaymentStatus.PAID
 
-    if trip.payment_method == PaymentMethod.WALLET and rider_wallet.balance >= total:
+    credit = trip.payment_profile.credit_limit if trip.payment_profile_id else 0
+    if trip.payment_method == PaymentMethod.WALLET and rider_wallet.balance + credit >= total:
         post(
             TransactionKind.TRIP_FARE,
             [(rider_wallet, -total), (driver_wallet, fare.driver_earning), *platform],
@@ -255,7 +258,7 @@ def settle_trip(trip, *, payer_reference: str = "", now: datetime | None = None)
         at=now,
     )
     notify(
-        trip.rider.user,
+        payer,
         "Payment pending for your last ride",
         f"₹{total} is due. Clear it from your wallet before your next booking.",
         level=Level.WARNING,

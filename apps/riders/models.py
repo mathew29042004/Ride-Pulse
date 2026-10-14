@@ -105,3 +105,56 @@ class TrustedContact(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.phone})"
+
+
+class ProfileKind(models.TextChoices):
+    FAMILY = "FAMILY", "Family"
+    BUSINESS = "BUSINESS", "Business"
+
+
+class PaymentProfile(models.Model):
+    """One payer for several riders: a family head paying for family members, or a company
+    paying for employees' work trips (see riders.profiles)."""
+
+    kind = models.CharField(max_length=8, choices=ProfileKind.choices)
+    name = models.CharField(max_length=80)
+    owner = models.ForeignKey(RiderProfile, on_delete=models.CASCADE, related_name="owned_profiles")
+    gstin = models.CharField(max_length=15, blank=True)
+    # Business only: how far the company's balance may go below zero (settled monthly).
+    credit_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["kind", "name"]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()}: {self.name}"
+
+
+class MemberStatus(models.TextChoices):
+    INVITED = "INVITED", "Invited"
+    ACTIVE = "ACTIVE", "Active"
+    DECLINED = "DECLINED", "Declined"
+    REMOVED = "REMOVED", "Removed"
+
+
+class ProfileMember(models.Model):
+    profile = models.ForeignKey(PaymentProfile, on_delete=models.CASCADE, related_name="members")
+    rider = models.ForeignKey(RiderProfile, on_delete=models.CASCADE, related_name="memberships")
+    status = models.CharField(
+        max_length=8, choices=MemberStatus.choices, default=MemberStatus.INVITED
+    )
+    # Monthly spending limit on this profile (blank = no limit).
+    monthly_limit = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)
+    invited_at = models.DateTimeField(auto_now_add=True)
+    joined_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["invited_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "rider"], name="profile_member_once"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.rider_id} in {self.profile_id} ({self.status})"

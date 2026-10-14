@@ -354,6 +354,8 @@ def request_trip(
     fare_offer: Decimal | int | None = None,
     sure_ride: bool = False,
     parcel: dict | None = None,
+    payment_profile=None,
+    trip_purpose: str = "",
 ) -> Trip:
     now = now or timezone.now()
     tip = Decimal(tip or 0)
@@ -441,7 +443,15 @@ def request_trip(
             f"Sure Ride ({sure_minutes}-min pickup promise)",
             sure_ride_terms()["fee"],
         )
-    if payment_method == PaymentMethod.WALLET and balance < fare.total + tip:
+    if payment_profile is not None:
+        from apps.riders import profiles
+
+        # Paid from the family/business owner's wallet, not the rider's.
+        trip_purpose = profiles.check_booking(
+            payment_profile, rider, fare=fare.total + tip, purpose=trip_purpose, at=now
+        )
+        payment_method = PaymentMethod.WALLET
+    elif payment_method == PaymentMethod.WALLET and balance < fare.total + tip:
         raise BusinessRuleViolation(
             f"Your wallet balance (₹{balance:,.2f}) doesn't cover this fare.",
             field="payment_method",
@@ -481,6 +491,8 @@ def request_trip(
                 boost_amount=boost,
                 boosted_at=now if boost else None,
                 service=ride_type.service,
+                payment_profile=payment_profile,
+                trip_purpose=trip_purpose,
                 fare_lock=lock,
                 fare_offer=fare_offer,
                 offer_adjustment=adjustment,
@@ -822,6 +834,10 @@ def complete_trip(
         night_distance_km=min(_q(float(telemetry.get("night_distance_km", 0))), distance),
     )
     trip.payment_status = payments.settle_trip(trip, payer_reference=payer_reference, now=now)
+    if trip.payment_profile_id:
+        from apps.riders import profiles
+
+        profiles.charge_notice(trip)
     trip.save(update_fields=["payment_status", "updated_at"])
     if trip.tip_pledged and trip.payment_status == TripPaymentStatus.PAID:
         _collect_pledged_tip(trip, payer_reference=payer_reference, now=now)

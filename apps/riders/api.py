@@ -1,5 +1,6 @@
+from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, extend_schema_field
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_field
 from rest_framework import mixins, serializers
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
@@ -12,7 +13,14 @@ from apps.core.conf import referral_bonus
 from apps.payments.services import wallet_balance
 
 from . import services
-from .models import RiderProfile, SavedPlace, TrustedContact
+from .models import (
+    MemberStatus,
+    PaymentProfile,
+    ProfileMember,
+    RiderProfile,
+    SavedPlace,
+    TrustedContact,
+)
 
 
 class IsRider(BasePermission):
@@ -290,3 +298,223 @@ class SavedPlaceViewSet(ContextBindingMixin, ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(rider=self.request.user.rider_profile)
+
+
+class ProfileMemberSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="rider.name", read_only=True)
+    phone = serializers.CharField(source="rider.user.phone", read_only=True)
+
+    class Meta:
+        model = ProfileMember
+        fields = ["id", "name", "phone", "status", "monthly_limit", "joined_at"]
+
+
+class PaymentProfileSerializer(serializers.ModelSerializer):
+    kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    owner_name = serializers.CharField(source="owner.name", read_only=True)
+    role = serializers.SerializerMethodField()
+    members = serializers.SerializerMethodField()
+    spent_this_month = serializers.SerializerMethodField()
+    my_limit = serializers.SerializerMethodField()
+    invitation_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PaymentProfile
+        fields = [
+            "id",
+            "kind",
+            "kind_label",
+            "name",
+            "gstin",
+            "credit_limit",
+            "owner_name",
+            "role",
+            "members",
+            "spent_this_month",
+            "my_limit",
+            "invitation_id",
+        ]
+        read_only_fields = ["credit_limit"]
+
+    def _rider(self):
+        return self.context["request"].user.rider_profile
+
+    def _membership(self, profile):
+        return profile.members.filter(rider=self._rider()).first()
+
+    def get_role(self, profile) -> str:
+        if profile.owner_id == self._rider().pk:
+            return "OWNER"
+        member = self._membership(profile)
+        return "INVITED" if member and member.status == MemberStatus.INVITED else "MEMBER"
+
+    @extend_schema_field(ProfileMemberSerializer(many=True))
+    def get_members(self, profile) -> list:
+        if profile.owner_id != self._rider().pk:
+            return []
+        rows = profile.members.exclude(status=MemberStatus.REMOVED).select_related("rider__user")
+        return ProfileMemberSerializer(rows, many=True).data
+
+    def get_spent_this_month(self, profile) -> str:
+        from django.utils import timezone
+
+        from .profiles import spent_this_month
+
+        return str(spent_this_month(profile, self._rider(), timezone.now()))
+
+    def get_my_limit(self, profile) -> str | None:
+        member = self._membership(profile)
+        return str(member.monthly_limit) if member and member.monthly_limit is not None else None
+
+    def get_invitation_id(self, profile) -> int | None:
+        member = self._membership(profile)
+        return member.pk if member and member.status == MemberStatus.INVITED else None
+
+
+class InviteSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=20)
+
+
+class RespondSerializer(serializers.Serializer):
+    accept = serializers.BooleanField()
+
+
+class MemberUpdateSerializer(serializers.Serializer):
+    member_id = serializers.IntegerField()
+    monthly_limit = serializers.DecimalField(
+        max_digits=9, decimal_places=2, required=False, allow_null=True
+    )
+    remove = serializers.BooleanField(required=False, default=False)
+
+
+class PaymentProfileViewSet(ContextBindingMixin, ModelViewSet):
+    """Family and business profiles: one payer for several riders."""
+
+    serializer_class = PaymentProfileSerializer
+    permission_classes = [IsRider]
+    pagination_class = None
+    http_method_names = ["get", "post", "delete"]
+
+    def get_queryset(self):
+        from django.db.models import Q
+
+        if getattr(self, "swagger_fake_view", False):
+            return PaymentProfile.objects.none()
+        rider = self.request.user.rider_profile
+        return (
+            PaymentProfile.objects.filter(is_active=True)
+            .filter(
+                Q(owner=rider)
+                | Q(
+                    members__rider=rider,
+                    members__status__in=[MemberStatus.ACTIVE, MemberStatus.INVITED],
+                )
+            )
+            .select_related("owner__user")
+            .distinct()
+        )
+
+    def perform_create(self, serializer):
+        from . import profiles
+
+        data = serializer.validated_data
+        serializer.instance = profiles.create_profile(
+            self.request.user.rider_profile,
+            kind=data["kind"],
+            name=data["name"],
+            gstin=data.get("gstin", ""),
+        )
+
+    def perform_destroy(self, instance):
+        from . import profiles
+
+        profiles.deactivate(instance, user=self.request.user)
+
+    def _respond(self, profile):
+        return Response(self.get_serializer(profile).data)
+
+    @extend_schema(request=InviteSerializer, responses=PaymentProfileSerializer)
+    @action(detail=True, methods=["post"])
+    def invite(self, request, pk=None):
+        from . import profiles
+
+        serializer = InviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profile = self.get_object()
+        profiles.invite(profile, user=request.user, phone=serializer.validated_data["phone"])
+        return self._respond(profile)
+
+    @extend_schema(request=RespondSerializer, responses=PaymentProfileSerializer)
+    @action(detail=True, methods=["post"])
+    def respond(self, request, pk=None):
+        from . import profiles
+
+        serializer = RespondSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profile = self.get_object()
+        member = get_object_or_404(ProfileMember, profile=profile, rider=request.user.rider_profile)
+        profiles.respond(member, user=request.user, accept=serializer.validated_data["accept"])
+        return self._respond(profile)
+
+    @extend_schema(request=MemberUpdateSerializer, responses=PaymentProfileSerializer)
+    @action(detail=True, methods=["post"])
+    def member(self, request, pk=None):
+        """Owner: set a member's monthly limit, or remove them."""
+        from . import profiles
+
+        serializer = MemberUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        profile = self.get_object()
+        member = get_object_or_404(ProfileMember, pk=data["member_id"], profile=profile)
+        profiles.update_member(
+            member,
+            user=request.user,
+            monthly_limit=data.get("monthly_limit"),
+            remove=data.get("remove", False),
+        )
+        return self._respond(profile)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("month", str, required=False, description="YYYY-MM"),
+            OpenApiParameter("export", str, required=False, enum=["csv"]),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=True, methods=["get"])
+    def statement(self, request, pk=None):
+        """Owner: every ride on the profile in a month (JSON, or CSV with ?export=csv)."""
+        import csv
+
+        from django.http import HttpResponse
+
+        from . import profiles
+
+        data = profiles.statement(
+            self.get_object(), user=request.user, month=request.query_params.get("month")
+        )
+        if request.query_params.get("export") != "csv":
+            return Response(data)
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="ride-pulse-{data["month"]}-statement.csv"'
+        )
+        writer = csv.writer(response)
+        columns = [
+            "trip_number",
+            "date",
+            "rider",
+            "ride_type",
+            "from",
+            "to",
+            "purpose",
+            "fare",
+            "gst",
+        ]
+        writer.writerow(columns)
+        for row in data["trips"]:
+            writer.writerow([row[c] for c in columns])
+        writer.writerow([])
+        writer.writerow(["Total", "", "", "", "", "", "", data["total"], data["gst"]])
+        return response

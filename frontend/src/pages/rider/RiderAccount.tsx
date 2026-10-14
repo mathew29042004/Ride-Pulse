@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { PushToggle } from "@/components/PushToggle";
 import { EcoCard, FareLocks } from "@/components/GreenAndLock";
+import { ProfilesSection } from "@/components/Profiles";
 import { RidePassCard } from "@/components/RidePassCard";
 import { SafetySettings } from "@/components/SafetyPlus";
 import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components/ui";
@@ -123,6 +124,7 @@ export default function RiderAccount() {
       <RidePassCard />
       <EcoCard />
       <FareLocks />
+      <ProfilesSection />
       {rider && <InviteCard rider={rider} />}
       <InvoiceEmailRow />
 

@@ -205,6 +205,9 @@ class TripSerializer(serializers.ModelSerializer):
     is_favourite_driver = serializers.SerializerMethodField()
     open_ride_check = serializers.SerializerMethodField()
     counter_offers = serializers.SerializerMethodField()
+    payment_profile_name = serializers.CharField(
+        source="payment_profile.name", default=None, read_only=True
+    )
     parcel = serializers.SerializerMethodField()
 
     class Meta:
@@ -267,6 +270,8 @@ class TripSerializer(serializers.ModelSerializer):
             "is_favourite_driver",
             "service",
             "parcel",
+            "payment_profile_name",
+            "trip_purpose",
             "co2_saved_g",
             "fare_lock",
             "package_hours",
@@ -379,6 +384,10 @@ class TripRequestSerializer(serializers.Serializer):
     )
     sure_ride = serializers.BooleanField(required=False, default=False)
     parcel = ParcelInputSerializer(required=False, allow_null=True, default=None)
+    payment_profile = serializers.IntegerField(required=False, allow_null=True, default=None)
+    trip_purpose = serializers.CharField(
+        required=False, allow_blank=True, max_length=120, default=""
+    )
     preferences = serializers.ListField(
         child=serializers.ChoiceField(choices=RidePreference.choices), required=False, default=list
     )
@@ -738,8 +747,20 @@ class TripViewSet(
             fare_offer=data.get("fare_offer"),
             sure_ride=data.get("sure_ride", False),
             parcel=data.get("parcel"),
+            payment_profile=self._payment_profile(request, data.get("payment_profile")),
+            trip_purpose=data.get("trip_purpose", ""),
         )
         return self._respond(trip, status.HTTP_201_CREATED)
+
+    def _payment_profile(self, request, profile_id):
+        if not profile_id:
+            return None
+        from apps.riders.profiles import usable_profiles
+
+        profile = usable_profiles(request.user.rider_profile).filter(pk=profile_id).first()
+        if profile is None:
+            raise ActionNotPermitted("You can't book on that profile.")
+        return profile
 
     @extend_schema(responses={200: TripSerializer, 204: None})
     @action(detail=False, methods=["get"])

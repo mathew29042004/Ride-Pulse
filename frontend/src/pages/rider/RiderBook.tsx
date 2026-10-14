@@ -28,6 +28,7 @@ import { toast } from "sonner";
 
 import { BaseMap, FitBounds, MapCenterWatch, PinMarker, Recenter, RouteLine, useMapProvider } from "@/components/map";
 import { EMPTY_PARCEL, ParcelForm, parcelReady, type ParcelDetails } from "@/components/ParcelForm";
+import { BillTo } from "@/components/Profiles";
 import { describePoint, PlaceSuggestions } from "@/components/PlaceSuggestions";
 import { RideTypeArt } from "@/components/RideTypeArt";
 import { earliestSlot, formatWhen, SchedulePicker } from "@/components/SchedulePicker";
@@ -95,6 +96,8 @@ export default function RiderBook() {
   const [bidding, setBidding] = useState(false); // Bid your fare
   const [bid, setBid] = useState(0);
   const [sureRide, setSureRide] = useState(false);
+  const [billTo, setBillTo] = useState<number | null>(null); // family / business profile
+  const [purpose, setPurpose] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("UPI");
   const [promoInput, setPromoInput] = useState("");
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
@@ -184,6 +187,8 @@ export default function RiderBook() {
         promo_code: promo,
         tip,
         parcel: service === "PARCEL" ? parcel : null,
+        payment_profile: billTo,
+        trip_purpose: purpose,
         boost: option?.availability === "NONE" && !bidding ? boost : 0,
         fare_offer: bidding && !scheduleAt ? bid : null,
         sure_ride: sureRide && !bidding && !!option?.sure_ride && !scheduleAt,
@@ -579,7 +584,8 @@ export default function RiderBook() {
                 </div>
               </div>
 
-              <div className="mt-3 grid grid-cols-4 gap-1.5">
+              <BillTo value={billTo} purpose={purpose} onChange={setBillTo} onPurpose={setPurpose} />
+              <div className={clsx("mt-3 grid grid-cols-4 gap-1.5", billTo !== null && "hidden")}>
                 {PAYMENT.map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
