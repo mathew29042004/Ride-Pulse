@@ -1,0 +1,89 @@
+version: 2
+
+models:
+  - name: fct_trips
+    description: One row per trip of any service. Money in rupees; dates and hours in IST.
+    columns:
+      - name: trip_id
+        tests: [unique, not_null]
+      - name: trip_number
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              arguments:
+                values: [REQUESTED, DRIVER_ASSIGNED, DRIVER_ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED, NO_DRIVER_FOUND]
+      - name: service
+        tests:
+          - accepted_values:
+              arguments:
+                values: [RIDE, PARCEL, RENTAL, INTERCITY]
+      - name: payment_status
+        tests:
+          - accepted_values:
+              arguments:
+                values: [PENDING, PAID, DUES, NOT_APPLICABLE]
+      - name: city_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_city')
+                field: city_id
+      - name: ride_type_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_ride_type')
+                field: ride_type_id
+      - name: driver_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_driver')
+                field: driver_id
+      - name: rider_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_rider')
+                field: rider_id
+      - name: request_date
+        tests: [not_null]
+
+  - name: fct_dispatch_offers
+    columns:
+      - name: offer_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              arguments:
+                values: [PENDING, ACCEPTED, DECLINED, EXPIRED, WITHDRAWN, COUNTERED]
+
+  - name: dim_city
+    columns:
+      - name: city_id
+        tests: [unique, not_null]
+      - name: state
+        tests:
+          - accepted_values:
+              arguments:
+                values: [Tamil Nadu, Kerala, Karnataka, Andhra Pradesh]
+  - name: dim_driver
+    columns:
+      - name: driver_id
+        tests: [unique, not_null]
+  - name: dim_rider
+    columns:
+      - name: rider_id
+        tests: [unique, not_null]
+  - name: dim_ride_type
+    columns:
+      - name: ride_type_id
+        tests: [unique, not_null]
+  - name: dim_date
+    columns:
+      - name: date_day
+        tests: [unique, not_null]

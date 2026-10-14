@@ -1,0 +1,9 @@
+ridepulse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('RIDEPULSE_WAREHOUSE', '../warehouse/ridepulse.duckdb') }}"
+      threads: 4
+      settings:
+        TimeZone: UTC

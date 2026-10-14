@@ -37,3 +37,4 @@ data/dbt/target/
 data/dbt/logs/
 data/dbt/dbt_packages/
 data/.dagster/
+data/dbt/.user.yml

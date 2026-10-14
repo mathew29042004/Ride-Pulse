@@ -5,7 +5,7 @@ NPM     := PATH="$(CURDIR)/.venv/bin:$$PATH" npm --prefix frontend
 MANAGE  := $(PY) manage.py
 
 .DEFAULT_GOAL := help
-.PHONY: help setup install db-start db-stop migrate seed reset frontend frontend-dev run simulate dev test coverage lint format check docker-up docker-down
+.PHONY: help setup install db-start db-stop migrate seed reset frontend frontend-dev run simulate dev test coverage lint format check docker-up docker-down history data-setup data-run data-ui
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -80,3 +80,21 @@ docker-up: ## Full stack in Docker (Postgres, Redis, web, worker, beat, simulato
 
 docker-down: ## Stop the Docker stack
 	docker compose down
+
+# --- Data platform (data/: Parquet lake, DuckDB warehouse, dbt, Dagster) -----------------------
+
+DATA_PY := data/.venv/bin/python
+
+history: ## Back-fill 60 days of trips in every city (stop the simulator first)
+	$(MANAGE) generate_history --days 60 --trips-per-day 300
+
+data-setup: ## Create data/.venv with DuckDB, dbt and Dagster (separate from the app)
+	uv venv --python 3.12 data/.venv
+	uv pip install --python $(DATA_PY) -r data/requirements.in
+	cd data/dbt && ../.venv/bin/dbt parse --profiles-dir . -q
+
+data-run: ## Run the pipeline once: extract -> dbt build + tests -> insights report
+	cd data && .venv/bin/python -m pipeline.run
+
+data-ui: ## Dagster UI at http://localhost:3000 (pipeline graph, runs, daily schedule)
+	cd data && mkdir -p .dagster && DAGSTER_HOME="$$PWD/.dagster" .venv/bin/dagster dev -f orchestration/definitions.py -d . -p 3000

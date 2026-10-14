@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: lake
+    description: Parquet files written by data/pipeline/extract.py (privacy-filtered copies of the app database).
+    tables:
+      - name: cities
+      - name: zones
+      - name: ride_types
+      - name: drivers
+      - name: vehicles
+      - name: riders
+      - name: staff
+      - name: trips
+      - name: trip_offers
+      - name: ratings
+      - name: parcels
+      - name: payments
+      - name: support_tickets
+      - name: driver_sessions
+      - name: ride_checks
+      - name: trip_events
+      - name: ledger_entries
