@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { BadgeIndianRupee, CarTaxiFront, ChartNoAxesCombined, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Route, ScrollText, ShieldAlert, Sun, Tag, Users, X } from "lucide-react";
+import { BadgeIndianRupee, CarTaxiFront, ChartNoAxesCombined, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Route, ScrollText, ShieldAlert, Sun, Tag, Users, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -46,6 +46,7 @@ const NAV = [
       { to: "/ops/promos", label: "Promotions", icon: Tag, cap: "promos.manage" },
       { to: "/ops/finance", label: "Payments & payouts", icon: BadgeIndianRupee, cap: "payments.view" },
       { to: "/ops/analytics", label: "Analytics", icon: ChartNoAxesCombined, cap: "reports.view" },
+      { to: "/ops/insights", label: "Data insights", icon: Database, cap: "reports.view" },
     ],
   },
   {

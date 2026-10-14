@@ -841,3 +841,12 @@ def test_lost_and_found(api, rider, make_driver, now):
         ).status_code
         == 422
     )
+
+
+def test_warehouse_insights(api, ops, rider, settings, tmp_path):
+    settings.DATA_INSIGHTS_PATH = tmp_path / "insights.json"
+    assert api(ops).get("/api/v1/analytics/warehouse/").json()["available"] is False
+    settings.DATA_INSIGHTS_PATH.write_text('{"headline": {"requests": 12}, "cities": []}')
+    body = api(ops).get("/api/v1/analytics/warehouse/").json()
+    assert body["available"] is True and body["headline"]["requests"] == 12
+    assert api(rider.user).get("/api/v1/analytics/warehouse/").status_code == 403

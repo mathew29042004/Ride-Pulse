@@ -48,6 +48,7 @@ const OpsFinance = lazy(() => import("./pages/ops/OpsFinance"));
 const OpsAnalytics = lazy(() => import("./pages/ops/OpsAnalytics"));
 const OpsAudit = lazy(() => import("./pages/ops/OpsAudit"));
 const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
+const OpsInsights = lazy(() => import("./pages/ops/OpsInsights"));
 
 function FullScreenSpinner() {
   return (
@@ -158,6 +159,7 @@ export const router = createBrowserRouter([
       { path: "analytics", element: lazyPage(<OpsAnalytics />) },
       { path: "audit", element: lazyPage(<OpsAudit />) },
       { path: "team", element: lazyPage(<OpsTeam />) },
+      { path: "insights", element: lazyPage(<OpsInsights />) },
     ],
   },
   { path: "*", element: <NotFound /> },

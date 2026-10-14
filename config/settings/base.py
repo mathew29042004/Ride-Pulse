@@ -388,6 +388,10 @@ RIDE_PULSE = {
 # Browser key: Maps JavaScript API + Places in the React apps (restrict it by HTTP referrer).
 # Leave both empty to use OpenStreetMap tiles and built-in route estimates.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
+# The data platform's published summary (data/pipeline/report.py), shown on Ops > Data insights.
+DATA_INSIGHTS_PATH = Path(
+    env("DATA_INSIGHTS_PATH", default=str(BASE_DIR / "data" / "reports" / "insights.json"))
+)
 # Language Bridge: free-text chat translation (the phrasebook works without it).
 GOOGLE_TRANSLATE_API_KEY = env("GOOGLE_TRANSLATE_API_KEY", default="")
 GOOGLE_MAPS_BROWSER_KEY = env("GOOGLE_MAPS_BROWSER_KEY", default="")

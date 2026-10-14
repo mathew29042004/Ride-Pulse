@@ -1,7 +1,9 @@
 """Insights report: a readable summary of the warehouse, written after every pipeline run to
 ``data/reports/insights.md``."""
 
+import json
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import duckdb
@@ -9,6 +11,8 @@ import duckdb
 DATA_DIR = Path(__file__).resolve().parent.parent
 WAREHOUSE = DATA_DIR / "warehouse" / "ridepulse.duckdb"
 REPORT = DATA_DIR / "reports" / "insights.md"
+# Machine-readable summary for the ops console's "Data insights" page.
+SUMMARY = DATA_DIR / "reports" / "insights.json"
 
 
 def _rupees(value) -> str:
@@ -149,8 +153,116 @@ def build(log=print) -> Path:
     ]
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text("\n".join(lines))
-    log(f"Wrote {REPORT}")
+    SUMMARY.write_text(json.dumps(summary(con), indent=1, default=_json_value))
+    log(f"Wrote {REPORT} and {SUMMARY.name}")
     return REPORT
+
+
+def _json_value(value):
+    """Numbers stay numbers (DuckDB sums are Decimal); dates become ISO strings."""
+    if isinstance(value, Decimal):
+        return float(value)
+    return str(value)
+
+
+def _rows(con, sql: str) -> list[dict]:
+    cursor = con.execute(sql)
+    names = [d[0] for d in cursor.description]
+    return [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
+
+
+def summary(con) -> dict:
+    """The numbers behind the report, as JSON for the ops console."""
+    (headline,) = _rows(
+        con,
+        """
+        select count(*) as requests, count(*) filter (where is_completed) as completed,
+               sum(fare_total) as gross_bookings, sum(platform_commission) as commission,
+               sum(driver_earning + tip_amount) as driver_earnings,
+               count(distinct city_id) as cities, min(request_date) as first_day,
+               max(request_date) as last_day,
+               count(*) filter (where service = 'PARCEL') as parcels,
+               round(sum(co2_saved_g) / 1e6, 2) as co2_saved_tonnes
+        from core.fct_trips
+        """,
+    )
+    return {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "headline": headline,
+        "daily": _rows(
+            con,
+            """
+            select request_date as date, sum(requests) as requests, sum(completed) as completed,
+                   sum(gross_bookings) as gross_bookings, sum(parcels) as parcels
+            from reporting.rpt_city_daily group by 1 order by 1
+            """,
+        ),
+        "cities": _rows(
+            con,
+            """
+            select city, state, sum(requests) as requests, sum(completed) as completed,
+                   round(sum(completed) / sum(requests), 3) as completion_rate,
+                   sum(gross_bookings) as gross_bookings, round(avg(avg_pickup_minutes), 1)
+                   as avg_pickup_minutes
+            from reporting.rpt_city_daily group by all order by gross_bookings desc
+            """,
+        ),
+        "states": _rows(
+            con,
+            """
+            select state, service, sum(requests) as requests, sum(completed) as completed,
+                   sum(gross_bookings) as gross_bookings
+            from reporting.rpt_service_mix group by all order by state, requests desc
+            """,
+        ),
+        "hours": _rows(
+            con,
+            """
+            select hour, sum(requests) as requests, round(avg(avg_surge), 2) as avg_surge,
+                   round(avg(no_driver_rate), 3) as no_driver_rate
+            from reporting.rpt_hourly_demand group by hour order by hour
+            """,
+        ),
+        "no_driver_hotspots": _rows(
+            con,
+            """
+            select city, ride_type, requests, no_driver,
+                   round(no_driver / requests, 3) as rate
+            from reporting.rpt_cancellations where requests >= 30
+            order by no_driver / requests desc limit 10
+            """,
+        ),
+        "driver_earnings": _rows(
+            con,
+            """
+            select vehicle_class, case when is_electric then 'EV' else 'Fuel' end as fuel,
+                   count(distinct driver_id) as drivers,
+                   round(median(earnings_per_hour), 0) as median_per_hour,
+                   round(median(trips), 1) as median_trips_per_week
+            from reporting.rpt_driver_weekly
+            where earnings_per_hour is not null and vehicle_class is not null
+            group by all order by 1, 2
+            """,
+        ),
+        "support": _rows(
+            con,
+            """
+            select category, sum(tickets) as tickets, sum(resolved) as resolved,
+                   sum(within_sla) as within_sla, round(avg(avg_hours_to_resolve), 1)
+                   as avg_hours_to_resolve
+            from reporting.rpt_support_sla group by all order by tickets desc
+            """,
+        ),
+        "team": _rows(
+            con,
+            """
+            select state, sum(approved_drivers) as drivers, sum(fleet_executives)
+                   as fleet_executives, sum(support_staff) as support_staff,
+                   sum(city_managers) as city_managers
+            from reporting.rpt_org_coverage group by state order by drivers desc
+            """,
+        ),
+    }
 
 
 if __name__ == "__main__":

@@ -132,3 +132,31 @@ class TripExportView(AnalyticsView):
         response = StreamingHttpResponse(stream(), content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="ride-pulse-trips.csv"'
         return response
+
+
+class WarehouseInsightsView(ContextBindingMixin, APIView):
+    """The data platform's latest summary (data/reports/insights.json, written by the nightly
+    pipeline). The app never opens the warehouse itself: the pipeline publishes this file."""
+
+    permission_classes = [CapabilityPermission]
+    capabilities = {"get": Cap.REPORTS_VIEW}
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=["analytics"])
+    def get(self, request):
+        import json
+
+        from django.conf import settings
+
+        path = settings.DATA_INSIGHTS_PATH
+        try:
+            data = json.loads(path.read_text())
+        except FileNotFoundError:
+            return Response(
+                {
+                    "available": False,
+                    "message": "No data-platform run yet. Run `make data-run` (data/README.md).",
+                }
+            )
+        except ValueError:
+            return Response({"available": False, "message": "The insights file is unreadable."})
+        return Response({"available": True, **data})
