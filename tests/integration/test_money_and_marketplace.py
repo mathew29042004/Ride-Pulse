@@ -556,7 +556,8 @@ def test_ride_pass_discounts_rides_and_drivers_earn_the_same(rider, mini, make_d
     assert ride_pass.price == 99 and (ride_pass.ends_at - ride_pass.starts_at).days == 30
     assert payments.account_balances()[accounts.PLATFORM_SUBSCRIPTIONS] == Decimal(99)
 
-    later = now + timedelta(minutes=30)
+    # Same weekday and time a week later, so traffic speeds (and the base fare) match.
+    later = now + timedelta(days=7)
     make_driver(now=later)
     trip = book(rider, mini, now=later)
     assert trip.ride_pass_applied

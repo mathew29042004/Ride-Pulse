@@ -88,6 +88,7 @@ class Seeder:
         self.profile: dict[int, dict] = {}
         self.used_emails: set[str] = set()
         self.used_plates: set[str] = set()
+        self.used_phones: set[str] = set()
 
     def count(self, key: str, n: int = 1) -> None:
         self.stats[key] = self.stats.get(key, 0) + n
@@ -104,7 +105,12 @@ class Seeder:
         return email
 
     def _phone(self) -> str:
-        return f"{self.rng.choice('6789')}{self.rng.randrange(10**8, 10**9)}"
+        """A random mobile number no account uses yet (phone numbers are unique logins)."""
+        while True:
+            phone = f"{self.rng.choice('6789')}{self.rng.randrange(10**8, 10**9)}"
+            if phone not in self.used_phones:
+                self.used_phones.add(phone)
+                return phone
 
     def create_staff(self) -> None:
         User = get_user_model()

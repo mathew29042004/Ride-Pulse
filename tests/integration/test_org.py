@@ -38,6 +38,7 @@ def test_network_builder_creates_the_org_and_assigns_drivers(admin, make_driver)
         mock.patch.object(network, "TIER_ONE", {}),
         mock.patch.object(network, "OTHER_CITY_DRIVERS", 1),
         mock.patch.object(network, "BOT_RIDERS_TARGET", 5),
+        mock.patch.object(network, "MIN_PER_VEHICLE", 0),
     ):
         stats = network.NetworkBuilder(log=lambda *_: None).run()
         again = network.NetworkBuilder(log=lambda *_: None).run()  # idempotent top-up
@@ -71,6 +72,7 @@ def test_team_api(api, admin):
         mock.patch.object(network, "TIER_ONE", {}),
         mock.patch.object(network, "OTHER_CITY_DRIVERS", 0),
         mock.patch.object(network, "BOT_RIDERS_TARGET", 0),
+        mock.patch.object(network, "MIN_PER_VEHICLE", 0),
     ):
         network.NetworkBuilder(log=lambda *_: None).run()
     client = api(admin)

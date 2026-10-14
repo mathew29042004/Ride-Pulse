@@ -181,6 +181,11 @@ def _refresh_onboarding(driver: DriverProfile, *, actor=None) -> None:
         driver.approved_at = timezone.now()
     driver.save(update_fields=["onboarding_status", "approved_at", "updated_at"])
     log_transition(driver, previous, target, actor=actor)
+    # A newly approved (or no longer approved) driver can change which ride types the city
+    # can offer.
+    from apps.pricing import coverage
+
+    transaction.on_commit(lambda: coverage.sync(city_id=driver.city_id))
     if target == OnboardingStatus.APPROVED:
         notify(
             driver.user,
@@ -208,6 +213,9 @@ def suspend_driver(driver: DriverProfile, *, reason: str, actor=None) -> DriverP
     )
     log_transition(driver, previous, OnboardingStatus.SUSPENDED, actor=actor, note=reason)
     notify(driver.user, "Your account is suspended", reason, level=Level.DANGER, email=True)
+    from apps.pricing import coverage
+
+    transaction.on_commit(lambda: coverage.sync(city_id=driver.city_id))
     return driver
 
 

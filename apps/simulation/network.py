@@ -43,6 +43,9 @@ TIER_ONE = {
     "hubballi-dharwad": 20,
 }
 OTHER_CITY_DRIVERS = 12
+# Every city can serve every ride type: at least this many approved drivers of each vehicle.
+MIN_PER_VEHICLE = 3
+VEHICLE_TYPES = ["BIKE", "AUTO", "MINI", "SEDAN", "SUV"]
 BOT_RIDERS_TARGET = 900
 DRIVERS_PER_FLEET_EXECUTIVE = 15
 
@@ -275,6 +278,7 @@ class NetworkBuilder:
         )
         seeder.used_plates |= set(Vehicle.objects.values_list("registration_number", flat=True))
         seeder.used_emails |= set(User.objects.values_list("email", flat=True))
+        seeder.used_phones |= set(User.objects.exclude(phone="").values_list("phone", flat=True))
         for slug, city in cities.items():
             have = DriverProfile.objects.filter(city=city).count()
             need = driver_target(slug) - have
@@ -286,6 +290,25 @@ class NetworkBuilder:
                     seeder._add_driver(city, documents=documents)
             self.count("drivers_added", need)
             self.log(f"  {city.name}: +{need} drivers")
+
+    def fill_vehicle_gaps(self, cities: dict[str, City]) -> None:
+        """Top up each city to MIN_PER_VEHICLE approved drivers of every vehicle type."""
+        from django.db.models import Count
+
+        have = {
+            (row["city__slug"], row["vehicles__ride_type__code"]): row["n"]
+            for row in DriverProfile.objects.filter(
+                onboarding_status=OnboardingStatus.APPROVED, vehicles__is_active=True
+            )
+            .values("city__slug", "vehicles__ride_type__code")
+            .annotate(n=Count("id"))
+        }
+        for slug, city in cities.items():
+            for code in VEHICLE_TYPES:
+                for _ in range(max(0, MIN_PER_VEHICLE - have.get((slug, code), 0))):
+                    with transaction.atomic():
+                        self.seeder._add_driver(city, ride_type=code)
+                    self.count("gap_drivers_added")
 
     def grow_riders(self) -> None:
         from apps.payments import services as payments
@@ -315,6 +338,7 @@ class NetworkBuilder:
         with notifications.muted(), broadcast.muted():
             self.log(f"Growing the network across {len(cities)} cities…")
             self.grow_drivers(cities)
+            self.fill_vehicle_gaps(cities)
             self.grow_riders()
             self.build_org(cities)
             self.assign_fleet_executives()
@@ -324,6 +348,10 @@ class NetworkBuilder:
             ):
                 with contextlib.suppress(DomainError):
                     drivers_svc.go_offline(driver)
+        from apps.pricing import coverage
+
+        changes = coverage.sync()
+        self.stats["ride_types_paused"] = len(changes["paused"])
         self.stats["employees"] = StaffProfile.objects.count()
         self.stats["approved_drivers"] = DriverProfile.objects.filter(
             onboarding_status=OnboardingStatus.APPROVED

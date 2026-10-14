@@ -77,6 +77,9 @@ class FareRule(TimeStampedModel):
     wait_per_minute = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     airport_fee = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
+    # Switched off automatically while no approved driver in the city can serve it (see
+    # pricing.coverage); never set for rules ops turned off by hand.
+    auto_paused = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["city__name", "ride_type__sort_order"]
