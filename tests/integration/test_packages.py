@@ -170,3 +170,15 @@ def test_api(api, make_driver, now):
         format="json",
     )
     assert missing.status_code == 400  # a normal ride needs a drop
+
+
+def test_quotes_skip_car_types_paused_in_the_city(make_driver, now, chennai):
+    from apps.pricing.models import FareRule
+
+    make_driver(now=now)
+    FareRule.objects.filter(city=chennai, ride_type__code="SUV").update(is_active=False)
+    codes = [
+        o["ride_type"].code
+        for o in packages.quotes(service="RENTAL", pickup=T_NAGAR, hours=2, at=now)["options"]
+    ]
+    assert codes == ["MINI", "SEDAN"]

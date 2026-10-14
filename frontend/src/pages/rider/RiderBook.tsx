@@ -413,7 +413,7 @@ export default function RiderBook() {
         <Sheet
           height="66%"
           footer={
-            estimate.data &&
+            !!estimate.data?.options.length &&
             (scheduleAt ? (
               <Button size="lg" block loading={schedule.isPending} disabled={!option} onClick={() => schedule.mutate()}>
                 {t("Schedule {ride} · {when}", { ride: option?.ride_type.name ?? "", when: formatWhen(scheduleAt) })}
@@ -435,7 +435,10 @@ export default function RiderBook() {
             </div>
           )}
           {estimate.error && <p className="py-6 text-center text-sm text-danger">{(estimate.error as Error).message}</p>}
-          {estimate.data && (
+          {estimate.data && estimate.data.options.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted">{t("No rides are available here right now. Please try again in a little while.")}</p>
+          )}
+          {estimate.data && estimate.data.options.length > 0 && (
             <>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <h2 className="font-semibold">{t(service === "PARCEL" ? "Send a parcel" : "Choose a ride")}</h2>

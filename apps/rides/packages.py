@@ -209,10 +209,13 @@ def quotes(
     for ride_type in RideType.objects.filter(code__in=CAR_TYPES, is_active=True).order_by(
         "sort_order"
     ):
-        if service == Service.RENTAL:
-            fare = rental_fare(city, ride_type, hours or 2)
-        else:
-            fare = intercity_fare(city, ride_type, distance, round_trip=round_trip, days=days)
+        try:
+            if service == Service.RENTAL:
+                fare = rental_fare(city, ride_type, hours or 2)
+            else:
+                fare = intercity_fare(city, ride_type, distance, round_trip=round_trip, days=days)
+        except BusinessRuleViolation:
+            continue  # this car type isn't offered in the city right now (see pricing.coverage)
         nearest = _nearby(
             ride_type, service, pickup, at, nearby_available_drivers, dispatch_max_radius_km
         )

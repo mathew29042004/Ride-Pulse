@@ -300,6 +300,12 @@ const STRINGS: Record<string, [string, string]> = {
   Sat: ["சனி", "शनि"],
   Sun: ["ஞாயி", "रवि"],
 
+  "No rides are available here right now. Please try again in a little while.": [
+    "இப்போது இங்கே சவாரிகள் கிடைக்கவில்லை. சிறிது நேரம் கழித்து முயற்சிக்கவும்.",
+    "अभी यहाँ कोई राइड उपलब्ध नहीं है। थोड़ी देर बाद कोशिश करें।",
+  ],
+  "No cars are available for this right now.": ["இதற்கு இப்போது கார்கள் இல்லை.", "अभी इसके लिए कोई कार उपलब्ध नहीं है।"],
+
   // Safety+
   "Is everything OK?": ["எல்லாம் சரியாக இருக்கிறதா?", "क्या सब ठीक है?"],
   "Are you OK?": ["நீங்கள் நலமா?", "क्या आप ठीक हैं?"],

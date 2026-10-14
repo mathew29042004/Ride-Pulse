@@ -195,6 +195,7 @@ export default function RiderPackages() {
 
         {quote.isError && <p className="mt-3 text-sm text-danger">{(quote.error as Error).message}</p>}
         <div className="mt-3 space-y-1.5">
+          {quote.data && quote.data.options.length === 0 && <p className="py-4 text-center text-sm text-muted">{t("No cars are available for this right now.")}</p>}
           {quote.data?.options.map((o) => (
             <button
               key={o.ride_type.code}
