@@ -12,7 +12,7 @@ import { date } from "@/lib/format";
 import { useDriverMe } from "@/lib/hooks";
 import type { Driver } from "@/lib/types";
 
-import { LogoutRow, ThemeRow } from "../rider/RiderAccount";
+import { LanguageRow, LogoutRow, ThemeRow } from "../rider/RiderAccount";
 
 function Meter({ label, value, max = 100, suffix = "", good = 80 }: { label: string; value: number | null; max?: number; suffix?: string; good?: number }) {
   const pct = value === null ? 0 : Math.min(100, (value / max) * 100);
@@ -65,6 +65,7 @@ export default function DriverAccount() {
           <span className="flex-1 font-medium">Licence expires</span>
           <span className="text-sm text-muted">{date(d?.license_expiry ?? null)}</span>
         </div>
+        <LanguageRow />
         <ThemeRow />
         <LogoutRow />
       </div>

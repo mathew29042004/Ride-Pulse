@@ -10,6 +10,7 @@ import { configQuery, MapsProvider } from "./components/map";
 import { LayoutProvider } from "./lib/layout";
 import { ApiError } from "./lib/api";
 import { AuthProvider } from "./lib/auth";
+import { getLanguage, useLanguage } from "./lib/i18n";
 import { router } from "./router";
 
 const queryClient = new QueryClient({
@@ -22,6 +23,14 @@ const queryClient = new QueryClient({
   },
 });
 
+document.documentElement.lang = getLanguage();
+
+/** Re-render every screen in the new language when the rider or driver switches. */
+function Routes() {
+  const [language] = useLanguage();
+  return <RouterProvider key={language} router={router} />;
+}
+
 // Know the map provider before the first render so maps don't swap renderers mid-flight.
 queryClient
   .prefetchQuery(configQuery)
@@ -33,7 +42,7 @@ queryClient
           <AuthProvider>
             <MapsProvider>
               <LayoutProvider>
-                <RouterProvider router={router} />
+                <Routes />
               </LayoutProvider>
             </MapsProvider>
             <Toaster position="top-center" richColors closeButton />

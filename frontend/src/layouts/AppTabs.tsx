@@ -2,6 +2,8 @@ import { clsx } from "clsx";
 import type { LucideIcon } from "lucide-react";
 import { NavLink } from "react-router";
 
+import { t } from "@/lib/i18n";
+
 export type AppTab = { to: string; label: string; icon: LucideIcon; end?: boolean };
 
 export function AppTabs({ tabs }: { tabs: AppTab[] }) {
@@ -19,7 +21,7 @@ export function AppTabs({ tabs }: { tabs: AppTab[] }) {
           {({ isActive }) => (
             <>
               <Icon className={clsx("size-[22px]", isActive && "stroke-[2.4]")} />
-              {label}
+              {t(label)}
             </>
           )}
         </NavLink>

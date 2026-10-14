@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { dateTime, inr, km, minutes, time } from "@/lib/format";
 import { usePhoneGps } from "@/lib/gps";
 import { clockIn, etaFromKm, etaMinutes, haversineKm, isActive, useLiveTrip, useNow } from "@/lib/hooks";
+import { t } from "@/lib/i18n";
 import type { Trip } from "@/lib/types";
 
 const TAGS = ["Great driving", "Clean car", "Polite", "On time", "Safe", "Good music"];
@@ -32,9 +33,9 @@ function Searching({ trip }: { trip: Trip }) {
         <span className="absolute inset-3 animate-ping rounded-full bg-brand/30 [animation-delay:400ms]" />
         <RideTypeArt code={trip.ride_type} className="relative h-10 w-16" />
       </div>
-      <h2 className="text-lg font-bold">Finding your {trip.ride_type_name}</h2>
+      <h2 className="text-lg font-bold">{t("Finding your {ride}", { ride: trip.ride_type_name })}</h2>
       <p className="mt-1 text-sm text-muted">
-        Matching you with a nearby driver · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+        {t("Matching you with a nearby driver")} · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
       </p>
       <div className="mx-auto mt-4 h-1 w-40 overflow-hidden rounded-full bg-surface-3">
         <div className="h-full w-1/3 animate-[indeterminate_1.3s_ease-in-out_infinite] rounded-full bg-brand" />
@@ -61,7 +62,7 @@ function BoostChips({ trip, show }: { trip: Trip; show: boolean }) {
     <div className="mt-5 rounded-2xl bg-amber-50 p-3 text-left dark:bg-amber-400/10">
       <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
         <Zap className="size-4" />
-        {boosted > 0 ? `₹${boosted} boost added · new fare ${inr(trip.estimated_fare)}` : "Taking a while? Boost your request"}
+        {boosted > 0 ? `₹${boosted} boost added · new fare ${inr(trip.estimated_fare)}` : t("Taking a while? Boost your request")}
       </div>
       <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/70">100% goes to your driver. More drivers see your ride, and those who passed get asked again.</p>
       <div className="mt-2.5 grid grid-cols-3 gap-2">
@@ -246,7 +247,7 @@ export default function RiderTrip() {
           <>
             <Searching trip={trip} />
             <Button variant="secondary" block className="mt-3" onClick={() => cancel.mutate()} loading={cancel.isPending}>
-              Cancel request
+              {t("Cancel request")}
             </Button>
           </>
         )}
@@ -256,14 +257,14 @@ export default function RiderTrip() {
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold">
-                  {trip.status === "DRIVER_ASSIGNED" && `Arriving in ${minutes(toPickupEta)}`}
-                  {trip.status === "DRIVER_ARRIVED" && "Your driver is here"}
-                  {trip.status === "IN_PROGRESS" && `${minutes(toDropEta)} to drop`}
+                  {trip.status === "DRIVER_ASSIGNED" && t("Arriving in {time}", { time: minutes(toPickupEta) })}
+                  {trip.status === "DRIVER_ARRIVED" && t("Your driver is here")}
+                  {trip.status === "IN_PROGRESS" && t("{time} to drop", { time: minutes(toDropEta) })}
                 </h2>
                 <p className="mt-0.5 text-sm text-muted">
-                  {trip.status === "DRIVER_ASSIGNED" && (toPickupKm !== null ? `${km(toPickupKm)} away · meet at ${trip.pickup_address}` : `Meet at ${trip.pickup_address}`)}
-                  {trip.status === "DRIVER_ARRIVED" && (waited < 3 ? `Free waiting: ${3 - waited} min left` : `Waiting ${waited} min · waiting charges apply`)}
-                  {trip.status === "IN_PROGRESS" && `${km(toDropKm)} left · drop by ${clockIn(toDropEta)}`}
+                  {trip.status === "DRIVER_ASSIGNED" && (toPickupKm !== null ? t("{distance} away · meet at {place}", { distance: km(toPickupKm), place: trip.pickup_address }) : t("Meet at {place}", { place: trip.pickup_address }))}
+                  {trip.status === "DRIVER_ARRIVED" && (waited < 3 ? t("Free waiting: {n} min left", { n: 3 - waited }) : t("Waiting {n} min · waiting charges apply", { n: waited }))}
+                  {trip.status === "IN_PROGRESS" && t("{distance} left · drop by {clock}", { distance: km(toDropKm), clock: clockIn(toDropEta) })}
                 </p>
               </div>
             </div>
@@ -282,21 +283,21 @@ export default function RiderTrip() {
                 disabled={share.isPending}
                 className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold"
               >
-                <Share2 className="size-4" /> Share trip
+                <Share2 className="size-4" /> {t("Share trip")}
               </button>
               {trip.status !== "IN_PROGRESS" ? (
                 <button onClick={() => setConfirmCancel(true)} className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold">
-                  <X className="size-4" /> Cancel
+                  <X className="size-4" /> {t("Cancel")}
                 </button>
               ) : (
                 <button onClick={() => setHelpOpen(true)} className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold">
-                  <LifeBuoy className="size-4" /> Help
+                  <LifeBuoy className="size-4" /> {t("Help")}
                 </button>
               )}
             </div>
             <div className="mt-4 flex items-center justify-between rounded-2xl border border-line px-4 py-3 text-sm">
               <span className="text-muted">
-                {trip.payment_method === "CASH" ? "Pay cash" : `Pay by ${trip.payment_method.toLowerCase()}`} · upfront
+                {trip.payment_method === "CASH" ? t("Pay cash") : t("Pay by {method}", { method: trip.payment_method.toLowerCase() })} · {t("upfront")}
               </span>
               <span className="font-bold">{inr(trip.estimated_fare)}</span>
             </div>
@@ -306,7 +307,7 @@ export default function RiderTrip() {
         {trip.status === "COMPLETED" && (
           <>
             <div className="text-center">
-              <Badge tone="brand">Trip completed · {time(trip.completed_at)}</Badge>
+              <Badge tone="brand">{t("Trip completed · {time}", { time: time(trip.completed_at) })}</Badge>
               <div className="mt-2 text-4xl font-bold tracking-tight">{inr(trip.fare_total)}</div>
               <div className="mt-1 text-sm text-muted">
                 {km(trip.actual_distance_km)} · {minutes(trip.actual_duration_min)} · {trip.payment_method.toLowerCase()} {trip.payment_status === "DUES" && "(payment pending)"}
@@ -316,7 +317,7 @@ export default function RiderTrip() {
             {trip.driver && <FavouriteDriver trip={trip} />}
             {!trip.has_rated ? (
               <div className="mt-5 rounded-2xl bg-surface-2 p-4">
-                <p className="mb-3 text-center text-sm font-semibold">How was your ride with {trip.driver?.name.split(" ")[0]}?</p>
+                <p className="mb-3 text-center text-sm font-semibold">{t("How was your ride with {name}?", { name: trip.driver?.name.split(" ")[0] ?? "" })}</p>
                 <StarInput value={stars} onChange={setStars} />
                 <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                   {TAGS.map((tag) => (
@@ -329,13 +330,13 @@ export default function RiderTrip() {
                     </button>
                   ))}
                 </div>
-                <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment (optional)" className="mt-3 !min-h-16" />
+                <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("Add a comment (optional)")} className="mt-3 !min-h-16" />
                 <Button block className="mt-3" onClick={() => rate.mutate()} loading={rate.isPending}>
-                  Submit rating
+                  {t("Submit rating")}
                 </Button>
               </div>
             ) : (
-              <p className="mt-4 text-center text-sm text-muted">Thanks for your rating ⭐</p>
+              <p className="mt-4 text-center text-sm text-muted">{t("Thanks for your rating ⭐")}</p>
             )}
 
             <div className="mt-4">
@@ -351,7 +352,7 @@ export default function RiderTrip() {
             </div>
 
             <details className="mt-4 rounded-2xl border border-line px-4 py-3 text-sm">
-              <summary className="cursor-pointer font-semibold">Fare details</summary>
+              <summary className="cursor-pointer font-semibold">{t("Fare details")}</summary>
               <div className="mt-2 space-y-1 text-xs">
                 {trip.fare.lines.map((line) => (
                   <div key={line.code} className="flex justify-between">
@@ -360,7 +361,7 @@ export default function RiderTrip() {
                   </div>
                 ))}
                 <div className="flex justify-between border-t border-line pt-1 font-semibold">
-                  <span>Total</span>
+                  <span>{t("Total")}</span>
                   <span>{inr(trip.fare.total)}</span>
                 </div>
                 <p className="pt-1 text-muted">{trip.pricing_mode === "UPFRONT" ? "Your upfront price was honoured." : "Re-priced because the route was much longer than estimated."}</p>
@@ -376,10 +377,10 @@ export default function RiderTrip() {
                 PDF
               </Button>
               <Button variant="secondary" icon={<LifeBuoy className="size-4" />} onClick={() => setHelpOpen(true)}>
-                Help
+                {t("Help")}
               </Button>
               <Button variant="secondary" icon={<RotateCcw className="size-4" />} onClick={() => navigate(`/ride/book?to=${trip.dropoff_lat},${trip.dropoff_lng}&name=${encodeURIComponent(trip.dropoff_address)}`)}>
-                Again
+                {t("Again")}
               </Button>
             </div>
           </>
@@ -404,14 +405,14 @@ export default function RiderTrip() {
       <Modal
         open={confirmCancel}
         onClose={() => setConfirmCancel(false)}
-        title="Cancel this ride?"
+        title={t("Cancel this ride?")}
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmCancel(false)}>
-              Keep ride
+              {t("Keep ride")}
             </Button>
             <Button variant="danger" onClick={() => cancel.mutate()} loading={cancel.isPending}>
-              Cancel ride
+              {t("Cancel ride")}
             </Button>
           </>
         }

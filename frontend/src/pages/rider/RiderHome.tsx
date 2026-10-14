@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { greeting } from "@/lib/format";
 import { useActiveTrip, useTrips } from "@/lib/hooks";
+import { t } from "@/lib/i18n";
 import type { SavedPlace } from "@/lib/types";
 
 const DEFAULT_SPOT = { lat: 13.0418, lng: 80.2341, name: "T. Nagar, Chennai" };
@@ -90,7 +91,7 @@ export default function RiderHome() {
 
       <div className="rp-overlay relative z-[500] flex items-center justify-between p-4">
         <div className="rounded-full bg-surface/95 px-4 py-2 text-sm font-semibold shadow-[var(--shadow-float)] backdrop-blur">
-          {greeting()}, {user?.first_name || "there"} 👋
+          {t(greeting())}, {user?.first_name || t("there")} 👋
         </div>
         <div className="rp-phone-only rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
           <NotificationBell />
@@ -117,7 +118,7 @@ export default function RiderHome() {
               <span className="relative inline-flex size-3 rounded-full bg-emerald-400" />
             </span>
             <div className="flex-1">
-              <div className="text-sm font-semibold">{active.data.status_label}</div>
+              <div className="text-sm font-semibold">{t(active.data.status_label)}</div>
               <div className="text-xs opacity-70">
                 {active.data.ride_type_name} to {active.data.dropoff_address}
               </div>
@@ -131,7 +132,7 @@ export default function RiderHome() {
           className="flex w-full items-center gap-3 rounded-2xl bg-surface-3 px-4 py-4 text-left transition hover:bg-line"
         >
           <Search className="size-5" />
-          <span className="flex-1 text-lg font-semibold">Where to?</span>
+          <span className="flex-1 text-lg font-semibold">{t("Where to?")}</span>
           <span
             role="button"
             tabIndex={0}
@@ -142,13 +143,13 @@ export default function RiderHome() {
             className="flex items-center gap-1 rounded-full bg-surface px-3 py-1.5 text-xs font-semibold hover:bg-line"
             aria-label="Schedule a ride for later"
           >
-            <Clock className="size-3.5" /> Later
+            <Clock className="size-3.5" /> {t("Later")}
           </span>
         </button>
 
         <div className="mt-2 text-xs text-muted">
           <MapPin className="mr-1 inline size-3.5" />
-          Pickup near {spot.name}
+          {t("Pickup near {place}", { place: spot.name })}
         </div>
 
         <div className="mt-4 divide-y divide-line">
@@ -162,7 +163,7 @@ export default function RiderHome() {
                   <Icon className="size-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">{label}</span>
+                  <span className="block font-semibold">{t(label)}</span>
                   <span className="block truncate text-sm text-muted">{place.name}</span>
                 </span>
               </button>
@@ -175,7 +176,7 @@ export default function RiderHome() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{trip.dropoff_address}</span>
-                <span className="block truncate text-sm text-muted">From {trip.pickup_address}</span>
+                <span className="block truncate text-sm text-muted">{t("From {place}", { place: trip.pickup_address })}</span>
               </span>
               <StatusBadge status={trip.ride_type} label={trip.ride_type_name} />
             </button>

@@ -21,6 +21,7 @@ import { usePhoneGps } from "@/lib/gps";
 import { PREFERENCES } from "@/lib/preferences";
 import { clockIn, etaFromKm, haversineKm, useActiveTrip, useDriverMe, useNow } from "@/lib/hooks";
 import type { City, Earnings, Offer, Trip } from "@/lib/types";
+import { t } from "@/lib/i18n";
 import { useSocket } from "@/lib/ws";
 
 type Pos = { lat: number; lng: number; heading: number | null };
@@ -107,10 +108,10 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
       </div>
       <div className="mt-5 grid grid-cols-[1fr_2fr] gap-2">
         <Button variant="secondary" size="lg" onClick={onDecline} disabled={busy}>
-          Decline
+          {t("Decline")}
         </Button>
         <Button variant="brand" size="lg" onClick={onAccept} loading={busy}>
-          Accept
+          {t("Accept")}
         </Button>
       </div>
     </div>
@@ -150,7 +151,7 @@ function PinEntry({ onSubmit, onScan, busy }: { onSubmit: (pin: string) => void;
         onClick={() => setScanning(true)}
         loading={busy && scanning}
       >
-        Scan rider's QR code
+        {t("Scan rider's QR code")}
       </Button>
       {scanning && (
         <QrScanner
@@ -161,7 +162,7 @@ function PinEntry({ onSubmit, onScan, busy }: { onSubmit: (pin: string) => void;
           }}
         />
       )}
-      <label className="label">Or enter the 4-digit PIN they read out</label>
+      <label className="label">{t("Or enter the 4-digit PIN they read out")}</label>
       <div className="flex gap-2">
         <Input
           inputMode="numeric"
@@ -172,7 +173,7 @@ function PinEntry({ onSubmit, onScan, busy }: { onSubmit: (pin: string) => void;
           className="text-center font-mono text-2xl font-bold tracking-[0.6em]"
         />
         <Button type="submit" size="lg" variant="brand" disabled={pin.length !== 4} loading={busy}>
-          Start
+          {t("Start")}
         </Button>
       </div>
     </form>
@@ -430,7 +431,7 @@ export default function DriverHome() {
         </button>
       )}
       {!trip && online && !offer && !phoneGps && (
-        <div className="rp-overlay relative z-[600] mx-auto mt-1 rounded-full bg-ink/90 px-4 py-1.5 text-xs font-semibold text-ink-fg">Tap the map to move your car</div>
+        <div className="rp-overlay relative z-[600] mx-auto mt-1 rounded-full bg-ink/90 px-4 py-1.5 text-xs font-semibold text-ink-fg">{t("Tap the map to move your car")}</div>
       )}
 
       <div className="flex-1" />
@@ -470,22 +471,22 @@ export default function DriverHome() {
                 <div className="mb-3 flex gap-2 rounded-2xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">
                   <AlertTriangle className="size-4 shrink-0" />
                   <div>
-                    <div className="font-semibold">You can't go online yet</div>
+                    <div className="font-semibold">{t("You can't go online yet")}</div>
                     <ul className="mt-1 list-disc pl-4">
                       {driver.compliance_problems.map((p) => (
                         <li key={p}>{p}</li>
                       ))}
                     </ul>
                     <Link to="/drive/documents" className="mt-1 inline-block font-semibold underline">
-                      Fix in Documents
+                      {t("Fix in Documents")}
                     </Link>
                   </div>
                 </div>
               )}
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <div className="text-lg font-bold">{online ? "You're online" : "You're offline"}</div>
-                  <div className="text-sm text-muted">{online ? "Finding trips near you" : "Go online to start earning"}</div>
+                  <div className="text-lg font-bold">{t(online ? "You're online" : "You're offline")}</div>
+                  <div className="text-sm text-muted">{t(online ? "Finding trips near you" : "Go online to start earning")}</div>
                 </div>
                 <button
                   onClick={() => toggle.mutate()}
@@ -529,7 +530,7 @@ export default function DriverHome() {
               <div className="mt-4 flex gap-3 rounded-2xl bg-surface-2 p-3 text-sm">
                 <MapPin className={clsx("mt-0.5 size-4 shrink-0", trip.status === "IN_PROGRESS" ? "text-fg" : "text-brand")} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-muted uppercase">{trip.status === "IN_PROGRESS" ? "Drop" : "Pickup"}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">{t(trip.status === "IN_PROGRESS" ? "Drop" : "Pickup")}</div>
                   <div className="truncate font-semibold">{trip.status === "IN_PROGRESS" ? trip.dropoff_address : trip.pickup_address}</div>
                   {trip.stop && <div className="truncate text-xs text-muted">Stop on the way: {trip.stop.address || "marked on the map"}</div>}
                   {trip.status === "DRIVER_ASSIGNED" && <div className="text-xs text-muted">{km(distanceToPickup)} away</div>}
@@ -554,11 +555,11 @@ export default function DriverHome() {
                 {trip.status === "DRIVER_ASSIGNED" && (
                   <>
                     <Button block size="lg" variant="brand" onClick={() => arrive.mutate()} loading={arrive.isPending}>
-                      I've arrived
+                      {t("I've arrived")}
                     </Button>
                     {distanceToPickup > 0.5 && <p className="text-center text-xs text-muted">Get within 500 m of the pickup (tap the map or use autopilot).</p>}
                     <Button block variant="ghost" onClick={() => cancel.mutate()} loading={cancel.isPending}>
-                      Cancel trip
+                      {t("Cancel trip")}
                     </Button>
                   </>
                 )}
@@ -566,7 +567,7 @@ export default function DriverHome() {
                   <>
                     <PinEntry onSubmit={(pin) => start.mutate({ otp: pin })} onScan={(code) => start.mutate({ qr: code })} busy={start.isPending} />
                     <Button block variant="ghost" onClick={() => cancel.mutate()} loading={cancel.isPending}>
-                      Rider didn't show up
+                      {t("Rider didn't show up")}
                     </Button>
                   </>
                 )}
@@ -578,7 +579,7 @@ export default function DriverHome() {
                       </div>
                     )}
                     <Button block size="lg" variant="primary" onClick={() => complete.mutate()} loading={complete.isPending}>
-                      Complete trip
+                      {t("Complete trip")}
                     </Button>
                   </>
                 )}
@@ -596,16 +597,16 @@ export default function DriverHome() {
       <Modal
         open={!!completed}
         onClose={() => setCompleted(null)}
-        title="Trip complete"
+        title={t("Trip complete")}
         footer={
           <Button block onClick={() => rateRider.mutate()} loading={rateRider.isPending}>
-            Rate rider & continue
+            {t("Rate rider & continue")}
           </Button>
         }
       >
         {completed && (
           <div className="text-center">
-            <div className="text-xs font-semibold text-muted uppercase">You earned</div>
+            <div className="text-xs font-semibold text-muted uppercase">{t("You earned")}</div>
             <div className="text-4xl font-bold tracking-tight text-brand-strong">{inr(completed.driver_earning)}</div>
             <div className="mt-1 text-sm text-muted">
               Fare {inr(completed.fare_total)} · {km(completed.actual_distance_km)} · {minutes(completed.actual_duration_min)}

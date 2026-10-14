@@ -6,6 +6,7 @@ import { NavLink } from "react-router";
 import { NotificationBell } from "@/components/NotificationBell";
 import { type AppTab, AppTabs } from "@/layouts/AppTabs";
 import { useLayout } from "@/lib/layout";
+import { t } from "@/lib/i18n";
 
 import { Logo, LogoMark } from "./Logo";
 
@@ -95,7 +96,7 @@ function DesktopFrame({ children, tabs, mapScreen, title }: FrameProps) {
                   clsx("flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition", isActive ? "bg-ink text-ink-fg" : "text-muted hover:bg-surface-3 hover:text-fg")
                 }
               >
-                <Icon className="size-4" /> {label}
+                <Icon className="size-4" /> {t(label)}
               </NavLink>
             ))}
           </nav>

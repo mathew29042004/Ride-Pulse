@@ -65,6 +65,7 @@ lint: ## Lint Python and type-check TypeScript
 	$(PY) -m ruff check .
 	$(PY) -m ruff format --check .
 	$(NPM) run typecheck
+	$(NPM) test
 
 format: ## Auto-format Python
 	$(PY) -m ruff check --fix .

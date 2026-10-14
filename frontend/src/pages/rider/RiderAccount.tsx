@@ -1,5 +1,6 @@
+import { clsx } from "clsx";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Copy, Gift, Heart, House, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Shield, Sun, Trash2 } from "lucide-react";
+import { Briefcase, ChevronRight, Copy, Gift, Heart, House, Languages, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Shield, Sun, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { PREFERENCES } from "@/lib/preferences";
 import { useTheme } from "@/lib/theme";
+import { LANGUAGES, t, useLanguage } from "@/lib/i18n";
 import type { Place, Rider, SavedPlace } from "@/lib/types";
 
 export function ThemeRow() {
@@ -18,8 +20,32 @@ export function ThemeRow() {
   return (
     <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="flex w-full items-center gap-3 py-3.5 text-left">
       {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
-      <span className="flex-1 font-medium">{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+      <span className="flex-1 font-medium">{t(theme === "dark" ? "Light mode" : "Dark mode")}</span>
     </button>
+  );
+}
+
+/** English, Tamil or Hindi for the rider and driver apps (remembered on this device). */
+export function LanguageRow() {
+  const [language, setLanguage] = useLanguage();
+  return (
+    <div className="flex items-center gap-3 py-3.5">
+      <Languages className="size-5" />
+      <span className="flex-1 font-medium">{t("Language")}</span>
+      <div className="flex gap-1" role="radiogroup" aria-label="Language">
+        {LANGUAGES.map(({ code, label }) => (
+          <button
+            key={code}
+            role="radio"
+            aria-checked={language === code}
+            onClick={() => setLanguage(code)}
+            className={clsx("rounded-full px-3 py-1 text-xs font-semibold", language === code ? "bg-ink text-ink-fg" : "bg-surface-3 text-muted")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -35,7 +61,7 @@ export function LogoutRow() {
       className="flex w-full items-center gap-3 py-3.5 text-left text-danger"
     >
       <LogOut className="size-5" />
-      <span className="font-medium">Log out</span>
+      <span className="font-medium">{t("Log out")}</span>
     </button>
   );
 }
@@ -146,6 +172,7 @@ export default function RiderAccount() {
           <span className="flex-1 font-medium">Help & support tickets</span>
           <ChevronRight className="size-4 text-muted" />
         </Link>
+        <LanguageRow />
         <ThemeRow />
         <LogoutRow />
       </div>

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { CallButton } from "@/components/CallButton";
 import { Button, Modal, StatusBadge, Textarea } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import type { Trip } from "@/lib/types";
 
 export interface LostItem {
@@ -75,7 +76,7 @@ export function LostItemCard({ trip }: { trip: Trip }) {
         </div>
       ) : (
         <button onClick={() => setOpen(true)} className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-surface-2 px-4 py-3 text-left text-sm font-semibold">
-          <PackageSearch className="size-4" /> Lost something in the car?
+          <PackageSearch className="size-4" /> {t("Lost something in the car?")}
         </button>
       )}
       <Modal

@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { Avatar, Button } from "@/components/ui";
+import { t } from "@/lib/i18n";
 import { api, ApiError } from "@/lib/api";
 
 export function CallButton({ tripId, name, compact = false }: { tripId: number; name: string; compact?: boolean }) {
@@ -26,7 +27,7 @@ export function CallButton({ tripId, name, compact = false }: { tripId: number; 
         </button>
       ) : (
         <button onClick={() => call.mutate()} disabled={call.isPending} className="flex flex-col items-center gap-1 rounded-2xl bg-surface-2 py-3 text-xs font-semibold">
-          <Phone className="size-4" /> Call
+          <Phone className="size-4" /> {t("Call")}
         </button>
       )}
       {createPortal(

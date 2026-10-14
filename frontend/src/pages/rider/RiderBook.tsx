@@ -33,6 +33,7 @@ import { inr, km, minutes } from "@/lib/format";
 import { useWallet } from "@/lib/hooks";
 import { useLayout } from "@/lib/layout";
 import { isCar, PREFERENCES } from "@/lib/preferences";
+import { t } from "@/lib/i18n";
 import type { Estimate, PaymentMethod, Rider, SavedPlace, Trip } from "@/lib/types";
 
 import { useRiderLocation } from "./RiderHome";
@@ -76,7 +77,7 @@ export default function RiderBook() {
   // One optional stop on the way.
   const [stop, setStop] = useState<Spot | null>(null);
   const [showStop, setShowStop] = useState(false);
-  const fieldLabel = { pickup: "pickup", stop: "stop", dropoff: "drop" }[editing];
+  const fieldLabel = t({ pickup: "pickup", stop: "stop", dropoff: "drop" }[editing]);
   const [query, setQuery] = useState("");
   const [pickOnMap, setPickOnMap] = useState(false);
   // "Move the map to set the pin": the pin stays in the middle and the map moves under it.
@@ -249,7 +250,7 @@ export default function RiderBook() {
             {(["pickup", ...(showStop ? ["stop"] : []), "dropoff"] as Field[]).map((field) => {
               const value = field === "pickup" ? pickup.name : field === "stop" ? (stop?.name ?? "") : (dropoff?.name ?? "");
               const isEditing = editing === field;
-              const placeholder = field === "pickup" ? "Pickup location" : field === "stop" ? "Add a stop" : "Where to?";
+              const placeholder = t(field === "pickup" ? "Pickup location" : field === "stop" ? "Add a stop" : "Where to?");
               return (
                 <div key={field} className="flex items-center gap-3">
                   <span
@@ -288,7 +289,7 @@ export default function RiderBook() {
                 }}
                 className="ml-8 flex items-center gap-1 text-xs font-semibold text-brand-strong"
               >
-                <Plus className="size-3.5" /> Add a stop
+                <Plus className="size-3.5" /> {t("Add a stop")}
               </button>
             )}
           </div>
@@ -343,20 +344,20 @@ export default function RiderBook() {
             </div>
           </div>
           <div className="rp-overlay relative z-[600] m-3 rounded-3xl bg-surface p-4 shadow-[var(--shadow-float)]">
-            <div className="text-xs font-semibold tracking-wide text-muted uppercase">Set {fieldLabel}</div>
+            <div className="text-xs font-semibold tracking-wide text-muted uppercase">{t("Set {field}", { field: fieldLabel })}</div>
             <div className="mt-1 flex min-h-12 items-center gap-2">
               <MapPin className={clsx("size-5 shrink-0", editing === "pickup" ? "text-brand" : "text-fg")} />
               <div className="min-w-0 flex-1 font-semibold">
                 {moving || !candidate?.name ? <span className="inline-block h-4 w-40 animate-pulse rounded bg-surface-3 align-middle" /> : <span className="line-clamp-2">{candidate.name}</span>}
               </div>
             </div>
-            <p className="mb-3 text-xs text-muted">Move the map to put the pin exactly where you are.</p>
+            <p className="mb-3 text-xs text-muted">{t("Move the map to put the pin exactly where you are.")}</p>
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => setPickOnMap(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button className="flex-1" size="lg" disabled={moving || !candidate?.name} onClick={confirmPick}>
-                Confirm {fieldLabel}
+                {t("Confirm {field}", { field: fieldLabel })}
               </Button>
             </div>
           </div>
@@ -370,7 +371,7 @@ export default function RiderBook() {
             <span className="flex size-9 items-center justify-center rounded-full bg-surface-3">
               <Crosshair className="size-4" />
             </span>
-            <span className="font-semibold">Set {fieldLabel} on map</span>
+            <span className="font-semibold">{t("Set {field} on map", { field: fieldLabel })}</span>
           </button>
           {query.length < 2 &&
             (saved.data ?? []).map((p) => (
@@ -379,7 +380,7 @@ export default function RiderBook() {
                   <MapPin className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold">{p.label === "OTHER" ? p.name : p.label === "HOME" ? "Home" : "Work"}</span>
+                  <span className="block text-sm font-semibold">{p.label === "OTHER" ? p.name : t(p.label === "HOME" ? "Home" : "Work")}</span>
                   <span className="block truncate text-xs text-muted">{p.address || p.name}</span>
                 </span>
               </button>
@@ -395,12 +396,12 @@ export default function RiderBook() {
             estimate.data &&
             (scheduleAt ? (
               <Button size="lg" block loading={schedule.isPending} disabled={!option} onClick={() => schedule.mutate()}>
-                Schedule {option?.ride_type.name} · {formatWhen(scheduleAt)}
+                {t("Schedule {ride} · {when}", { ride: option?.ride_type.name ?? "", when: formatWhen(scheduleAt) })}
               </Button>
             ) : (
               <Button size="lg" block loading={book.isPending} disabled={!option} onClick={() => book.mutate()}>
-                Book {option?.ride_type.name} · {inr(option?.fare.total)}
-                {tip > 0 && ` + ₹${tip} tip`}
+                {t("Book {ride} · {fare}", { ride: option?.ride_type.name ?? "", fare: inr(option?.fare.total) })}
+                {tip > 0 && t(" + ₹{tip} tip", { tip })}
               </Button>
             ))
           }
@@ -417,19 +418,19 @@ export default function RiderBook() {
           {estimate.data && (
             <>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <h2 className="font-semibold">Choose a ride</h2>
+                <h2 className="font-semibold">{t("Choose a ride")}</h2>
                 <button
                   onClick={() => setPickingTime((v) => !v)}
                   className="ml-auto flex items-center gap-1 rounded-full bg-surface-3 px-3 py-1 text-xs font-semibold"
                   aria-expanded={pickingTime}
                 >
-                  <Clock className="size-3.5" /> {scheduleAt ? formatWhen(scheduleAt) : "Now"}
+                  <Clock className="size-3.5" /> {scheduleAt ? formatWhen(scheduleAt) : t("Now")}
                   <ChevronDown className="size-3.5" />
                 </button>
                 {option?.fare.lines.some((l) => l.code === "RIDE_PASS") && <Badge tone="brand">Ride Pass</Badge>}
                 {option && Number(option.fare.surge_multiplier) > 1 && (
                   <Badge tone="warning">
-                    <Zap className="size-3" /> {option.fare.surge_multiplier}× high demand
+                    <Zap className="size-3" /> {t("{n}× high demand", { n: option.fare.surge_multiplier })}
                   </Badge>
                 )}
               </div>
@@ -440,7 +441,7 @@ export default function RiderBook() {
                   className="mb-2 flex w-full items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-left text-xs font-semibold text-amber-900 disabled:opacity-80 dark:bg-amber-400/10 dark:text-amber-200"
                 >
                   <BellRing className="size-4 shrink-0" />
-                  {watching === selected ? "We'll tell you when prices drop (for the next 2 hours)" : "Prices are high right now. Tell me when they drop"}
+                  {t(watching === selected ? "We'll tell you when prices drop (for the next 2 hours)" : "Prices are high right now. Tell me when they drop")}
                 </button>
               )}
               {pickingTime && (
@@ -471,7 +472,7 @@ export default function RiderBook() {
                           </span>
                         </div>
                         <div className="text-xs text-muted">
-                          {o.pickup_eta_min !== null ? `${o.pickup_eta_min} min away` : "No cars nearby"} · {km(o.distance_km)}
+                          {o.pickup_eta_min !== null ? t("{n} min away", { n: o.pickup_eta_min }) : t("No cars nearby")} · {km(o.distance_km)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -485,7 +486,7 @@ export default function RiderBook() {
 
               {option && (
                 <button onClick={() => setShowFare((s) => !s)} className="mt-2 flex w-full items-center justify-center gap-1 text-xs font-medium text-muted">
-                  Fare breakdown {showFare ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                  {t("Fare breakdown")} {showFare ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
                 </button>
               )}
               {option && showFare && (
@@ -497,14 +498,14 @@ export default function RiderBook() {
                     </div>
                   ))}
                   <div className="flex justify-between border-t border-line pt-1 font-semibold">
-                    <span>Total (upfront)</span>
+                    <span>{t("Total (upfront)")}</span>
                     <span>{inr(option.fare.total)}</span>
                   </div>
                 </div>
               )}
 
               <div className="mt-3">
-                <div className="mb-1.5 text-xs font-semibold text-muted">Ride preferences</div>
+                <div className="mb-1.5 text-xs font-semibold text-muted">{t("Ride preferences")}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {PREFERENCES.filter((p) => isCar(selected) || !p.carsOnly).map(({ value, label, icon: Icon }) => {
                     const on = chosenPrefs.includes(value);
@@ -515,17 +516,17 @@ export default function RiderBook() {
                         aria-pressed={on}
                         className={clsx("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition", on ? "border-fg bg-ink text-ink-fg" : "border-line text-muted")}
                       >
-                        <Icon className="size-3.5" /> {label}
+                        <Icon className="size-3.5" /> {t(label)}
                       </button>
                     );
                   })}
                 </div>
-                {chosenPrefs.includes("WOMAN_DRIVER") && <p className="mt-1.5 text-xs text-muted">Women drivers nearby are asked first. If none is free, we'll find you the next best driver.</p>}
+                {chosenPrefs.includes("WOMAN_DRIVER") && <p className="mt-1.5 text-xs text-muted">{t("Women drivers nearby are asked first. If none is free, we'll find you the next best driver.")}</p>}
               </div>
 
               <div className="mt-3">
                 <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
-                  <HandCoins className="size-3.5" /> Tip your driver <span className="font-normal">(optional, 100% to them)</span>
+                  <HandCoins className="size-3.5" /> {t("Tip your driver")} <span className="font-normal">{t("(optional, 100% to them)")}</span>
                 </div>
                 <div className="grid grid-cols-4 gap-1.5">
                   {[0, 10, 20, 30].map((amount) => (
@@ -537,7 +538,7 @@ export default function RiderBook() {
                         tip === amount ? "border-fg bg-surface-2" : "border-line text-muted",
                       )}
                     >
-                      {amount ? `₹${amount}` : "No tip"}
+                      {amount ? `₹${amount}` : t("No tip")}
                     </button>
                   ))}
                 </div>
@@ -554,19 +555,19 @@ export default function RiderBook() {
                     )}
                   >
                     <Icon className="size-4" />
-                    {label}
+                    {t(label)}
                   </button>
                 ))}
               </div>
-              {payment === "WALLET" && wallet.data && <p className="mt-1.5 text-center text-xs text-muted">Wallet balance {inr(wallet.data.balance)}</p>}
+              {payment === "WALLET" && wallet.data && <p className="mt-1.5 text-center text-xs text-muted">{t("Wallet balance {amount}", { amount: inr(wallet.data.balance) })}</p>}
 
               <div className="mt-3 flex gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
-                  <Input value={promoInput} onChange={(e) => setPromoInput(e.target.value.toUpperCase())} placeholder="Promo code" className="!py-2 pl-9" />
+                  <Input value={promoInput} onChange={(e) => setPromoInput(e.target.value.toUpperCase())} placeholder={t("Promo code")} className="!py-2 pl-9" />
                 </div>
                 <Button variant="secondary" onClick={() => setPromo(promoInput.trim())} disabled={!promoInput.trim()}>
-                  Apply
+                  {t("Apply")}
                 </Button>
               </div>
             </>
