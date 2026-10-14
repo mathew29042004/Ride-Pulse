@@ -75,6 +75,10 @@ class DriverProfile(AuditedModel, TimeStampedModel):
     going_home_until = models.DateTimeField(null=True, blank=True)
     going_home_day = models.DateField(null=True, blank=True)
     going_home_uses = models.PositiveSmallIntegerField(default=0)
+    # Driver Wellbeing (see drivers.wellbeing): enforced rest after long driving stretches.
+    break_until = models.DateTimeField(null=True, blank=True)
+    break_warned_at = models.DateTimeField(null=True, blank=True)
+    rest_bonus_on = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

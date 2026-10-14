@@ -22,6 +22,7 @@ from django.utils import timezone
 
 from apps.core.exceptions import DomainError
 from apps.drivers import services as drivers_svc
+from apps.drivers import wellbeing as driver_wellbeing
 from apps.drivers.models import Availability, DriverProfile, OnboardingStatus
 from apps.geo.distance import arc, bearing_degrees, haversine_km, move_along, move_towards, offset
 from apps.geo.google import decode_polyline
@@ -372,6 +373,7 @@ class Simulator:
         if clock.monotonic() - self.last_surge > 60:
             pricing.recompute_surge()
             price_alerts.check_alerts()
+            driver_wellbeing.sweep()
             self.last_surge = clock.monotonic()
 
     def run(self, *, duration: float | None = None, report_every: float = 30) -> None:

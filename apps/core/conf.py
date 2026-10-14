@@ -146,6 +146,20 @@ def ride_check_rules(*, night: bool) -> dict:
     }
 
 
+def wellbeing_rules() -> dict:
+    return {
+        "max_minutes": int(_value("WELLBEING_MAX_DRIVING_MINUTES")),
+        "break_minutes": int(_value("WELLBEING_BREAK_MINUTES")),
+        "warn_minutes": int(_value("WELLBEING_WARN_MINUTES")),
+        "bonus_after_minutes": int(_value("WELLBEING_BONUS_AFTER_MINUTES")),
+        "rest_bonus": _decimal("WELLBEING_REST_BONUS"),
+    }
+
+
+def running_cost_per_km(ride_type_code: str) -> Decimal:
+    return Decimal(str(_value("RUNNING_COST_PER_KM").get(ride_type_code, "6")))
+
+
 def location_ping_retention_days() -> int:
     return int(_value("LOCATION_PING_RETENTION_DAYS"))
 

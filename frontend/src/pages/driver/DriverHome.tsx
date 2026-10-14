@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLine, advanceAlong, routePath, snapToPath } from "@/components/map";
 import { CallButton } from "@/components/CallButton";
 import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
+import { BreakCard, WellbeingChip } from "@/components/FairShare";
 import { DriverLostItems } from "@/components/LostItem";
 import { NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -413,6 +414,7 @@ export default function DriverHome() {
               <Stars value={driver.rating} size={10} /> · {today.data?.trips ?? 0} trips
             </div>
             <GoalChip />
+            <WellbeingChip />
           </div>
         </div>
         <div className="rp-phone-only rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
@@ -469,6 +471,7 @@ export default function DriverHome() {
         <Sheet>
           {!trip && (
             <>
+              <BreakCard />
               {blocked && (
                 <div className="mb-3 flex gap-2 rounded-2xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">
                   <AlertTriangle className="size-4 shrink-0" />

@@ -16,3 +16,10 @@ def check_document_expiry() -> dict:
 @shared_task(name="drivers.purge_location_pings")
 def purge_location_pings() -> int:
     return services.purge_location_pings()
+
+
+@shared_task(name="drivers.wellbeing_sweep")
+def wellbeing_sweep() -> dict:
+    from .wellbeing import sweep
+
+    return sweep()

@@ -243,6 +243,29 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])
+    def wellbeing(self, request):
+        """Driving time in the current stretch, time to the next break, and any break running."""
+        from . import wellbeing
+
+        return Response(wellbeing.status(self.driver))
+
+    @extend_schema(
+        parameters=[OpenApiParameter("days", int, required=False)],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=False, methods=["get"], url_path="fair-share")
+    def fair_share(self, request):
+        """Real earnings: gross, commission, running costs and the hourly figure after costs."""
+        from apps.rides.fair_share import driver_summary
+
+        try:
+            days = min(max(int(request.query_params.get("days", 7)), 1), 30)
+        except ValueError:
+            days = 7
+        return Response(driver_summary(self.driver, days=days))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
     def goals(self, request):
         """Today's goals: trips completed and the bonus tiers reached."""
         return Response(goals.progress(self.driver))

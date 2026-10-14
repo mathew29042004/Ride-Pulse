@@ -169,6 +169,24 @@ const STRINGS: Record<string, [string, string]> = {
   "No boost": ["பூஸ்ட் இல்லை", "बूस्ट नहीं"],
   "Try again": ["மீண்டும் முயற்சி செய்", "फिर कोशिश करें"],
 
+  // Fair Share Meter and Driver Wellbeing
+  "Where your {amount} went": ["உங்கள் {amount} எங்கே போனது", "आपके {amount} कहाँ गए"],
+  "{n}% to your driver": ["{n}% உங்கள் டிரைவருக்கு", "{n}% आपके ड्राइवर को"],
+  "Your driver": ["உங்கள் டிரைவர்", "आपके ड्राइवर"],
+  "Ride Pulse commission": ["Ride Pulse கமிஷன்", "Ride Pulse कमीशन"],
+  "Booking fee": ["புக்கிங் கட்டணம்", "बुकिंग शुल्क"],
+  "Airport access fee": ["விமான நிலைய கட்டணம்", "एयरपोर्ट शुल्क"],
+  "Your discount (paid by Ride Pulse)": ["உங்கள் தள்ளுபடி (Ride Pulse செலுத்தியது)", "आपकी छूट (Ride Pulse ने दी)"],
+  "GST (to the government)": ["GST (அரசுக்கு)", "GST (सरकार को)"],
+  "Boosts and tips go 100% to the driver.": ["பூஸ்ட் மற்றும் டிப்ஸ் 100% டிரைவருக்கே.", "बूस्ट और टिप 100% ड्राइवर को जाते हैं।"],
+  "Real earnings · last 7 days": ["உண்மையான வருமானம் · கடந்த 7 நாட்கள்", "असली कमाई · पिछले 7 दिन"],
+  "{n} h online": ["{n} மணி ஆன்லைன்", "{n} घंटे ऑनलाइन"],
+  "per hour after costs": ["செலவுகளுக்குப் பின் ஒரு மணிக்கு", "खर्च के बाद प्रति घंटा"],
+  "{time} driving": ["{time} ஓட்டியது", "{time} ड्राइविंग"],
+  "break in {time}": ["{time}-ல் ஓய்வு", "{time} में ब्रेक"],
+  "break due": ["ஓய்வு நேரம்", "ब्रेक का समय"],
+  "Rest break": ["ஓய்வு இடைவேளை", "आराम का ब्रेक"],
+
   // Safety+
   "Is everything OK?": ["எல்லாம் சரியாக இருக்கிறதா?", "क्या सब ठीक है?"],
   "Are you OK?": ["நீங்கள் நலமா?", "क्या आप ठीक हैं?"],

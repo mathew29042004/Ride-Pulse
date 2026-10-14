@@ -484,6 +484,7 @@ RIDER = (
     "lost_item_returned",
     "early_drop",
     "home_safe",
+    "fair_share",
 )
 DRIVER = (
     "list",
@@ -502,6 +503,7 @@ DRIVER = (
     "lost_item",
     "lost_item_answer",
     "lost_item_returned",
+    "fair_share",
 )
 
 
@@ -686,6 +688,17 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["get"], url_path="fair-share")
+    def fair_share(self, request, pk=None):
+        """Where the fare went: driver, commission, GST and any Ride Pulse discount."""
+        from .fair_share import trip_split
+
+        trip = self.get_object()
+        if trip.status != TripStatus.COMPLETED:
+            raise ActionNotPermitted("The fare split is shown once the trip is complete.")
+        return Response(trip_split(trip))
 
     @extend_schema(request=None, responses=TripSerializer)
     @action(detail=True, methods=["post"], url_path="early-drop")

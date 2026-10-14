@@ -233,6 +233,7 @@ CELERY_BEAT_SCHEDULE = {
     "surge-recompute": {"task": "pricing.recompute_surge", "schedule": timedelta(minutes=2)},
     "price-alerts": {"task": "pricing.check_price_alerts", "schedule": timedelta(minutes=2)},
     "ride-checks": {"task": "rides.run_ride_checks", "schedule": timedelta(minutes=1)},
+    "driver-wellbeing": {"task": "drivers.wellbeing_sweep", "schedule": timedelta(minutes=5)},
     "stale-drivers-offline": {
         "task": "drivers.mark_stale_drivers_offline",
         "schedule": timedelta(minutes=5),
@@ -320,6 +321,16 @@ RIDE_PULSE = {
     "RIDE_CHECK_OFF_ROUTE_KM": ["2.0", "1.0"],
     "RIDE_CHECK_ANSWER_MINUTES": 3,
     "DRIVER_GOALS": [[5, "75"], [10, "125"]],
+    # Driver Wellbeing: a 20-minute break after 6 hours of driving (gaps under 20 min don't
+    # count as rest), a warning 30 minutes before, and a rest bonus once a day for a proper
+    # break after 4+ hours.
+    "WELLBEING_MAX_DRIVING_MINUTES": 360,
+    "WELLBEING_BREAK_MINUTES": 20,
+    "WELLBEING_WARN_MINUTES": 30,
+    "WELLBEING_BONUS_AFTER_MINUTES": 240,
+    "WELLBEING_REST_BONUS": "10",
+    # Rough running cost per km (fuel/charge + upkeep) for the drivers' real hourly earnings.
+    "RUNNING_COST_PER_KM": {"BIKE": "2.2", "AUTO": "3.5", "MINI": "6", "SEDAN": "7", "SUV": "9"},
     "GOING_HOME_PER_DAY": 2,
     "GOING_HOME_MINUTES": 60,
     "LOCATION_PING_RETENTION_DAYS": 7,

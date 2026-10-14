@@ -27,7 +27,7 @@ from apps.core.exceptions import (
     DomainError,
     InvalidStateTransition,
 )
-from apps.drivers import goals
+from apps.drivers import goals, wellbeing
 from apps.drivers.models import Availability, DriverProfile, Vehicle
 from apps.drivers.services import nearby_available_drivers, recompute_safety_score
 from apps.geo import geohash
@@ -733,6 +733,7 @@ def complete_trip(
     DriverProfile.objects.filter(pk=driver.pk).update(completed_trips=F("completed_trips") + 1)
     goals.reward_goals(driver, now=now)
     goals.after_trip(driver, trip, now=now)
+    wellbeing.enforce(driver, now=now)
     RiderProfile.objects.filter(pk=trip.rider_id).update(completed_trips=F("completed_trips") + 1)
     if trip.rider.referred_by_id and not trip.rider.referral_rewarded_at:
         payments.grant_referral_bonus(trip.rider, now=now)

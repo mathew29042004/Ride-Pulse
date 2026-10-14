@@ -31,7 +31,7 @@ from apps.core.conf import (
     offer_timeout_seconds,
 )
 from apps.core.exceptions import ActionNotPermitted, InvalidStateTransition
-from apps.drivers import goals
+from apps.drivers import goals, wellbeing
 from apps.drivers.models import Availability, DriverProfile, Gender
 from apps.drivers.safety import dispatch_penalty_minutes
 from apps.drivers.services import nearby_available_drivers
@@ -97,6 +97,9 @@ def candidates_for(
     for driver in drivers:
         # Going-home drivers only get trips that take them closer to home.
         if goals.going_home_active(driver, now) and not goals.heads_home(driver, trip):
+            continue
+        # Drivers past the driving limit rest before their next trip.
+        if wellbeing.needs_break(driver, now):
             continue
         eta = eta_minutes(
             driver.current_lat, driver.current_lng, trip.pickup_lat, trip.pickup_lng, now

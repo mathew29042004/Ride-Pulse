@@ -9,6 +9,7 @@ import { BaseMap, CarMarker, FitBounds, type LatLng, PinMarker, RouteLine, route
 import { RideTypeArt } from "@/components/RideTypeArt";
 import { CallButton } from "@/components/CallButton";
 import { CarCheck, StartCode } from "@/components/PickupVerification";
+import { FairShareCard } from "@/components/FairShare";
 import { LostItemCard } from "@/components/LostItem";
 import { HomeSafeButton, NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { SplitFareCard } from "@/components/SplitFare";
@@ -372,6 +373,7 @@ export default function RiderTrip() {
               </div>
             </details>
 
+            <FairShareCard trip={trip} />
             <InvoiceCard trip={trip} />
             <SplitFareCard trip={trip} />
             <LostItemCard trip={trip} />

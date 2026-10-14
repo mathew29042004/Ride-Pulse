@@ -274,10 +274,15 @@ def go_online(
     problems = compliance_problems(driver, on=timezone.localdate(now))
     if problems:
         raise BusinessRuleViolation(" ".join(problems))
+    from . import wellbeing
+
+    wellbeing.check_can_go_online(driver, now)
     if driver.availability == Availability.OFFLINE:
+        wellbeing.reward_rest(driver, now)
         DriverSession.objects.create(driver=driver, started_at=now)
     driver.availability = Availability.ONLINE
-    driver.save(update_fields=["availability", "updated_at"])
+    driver.break_until = None
+    driver.save(update_fields=["availability", "break_until", "updated_at"])
     update_location(driver, lat=lat, lng=lng, now=now)
     return driver
 
