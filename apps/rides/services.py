@@ -309,7 +309,6 @@ def estimate_options(
     }
 
 
-@transaction.atomic
 def _suggest_alternatives(options: list[dict]) -> None:
     """For each ride type nobody can take right now, the closest one that's available: enough
     seats first (don't send a group to a bike), then similar price, then the quicker pickup."""
@@ -335,6 +334,7 @@ def _suggest_alternatives(options: list[dict]) -> None:
         }
 
 
+@transaction.atomic
 def request_trip(
     *,
     rider: RiderProfile,

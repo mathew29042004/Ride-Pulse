@@ -1,0 +1,8 @@
+# Data platform tools, in their own virtualenv (data/.venv) so they never clash with the app's.
+duckdb>=1.1
+dbt-core>=1.9
+dbt-duckdb>=1.9
+dagster>=1.9
+dagster-webserver>=1.9
+dagster-dbt>=0.25
+psycopg[binary]>=3.2

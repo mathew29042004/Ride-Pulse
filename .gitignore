@@ -28,3 +28,12 @@ frontend/dist/
 
 # Local AI-assistant config
 .claude/
+
+# Data platform: local virtualenv, lake and warehouse files (rebuilt by the pipeline)
+data/.venv/
+data/lake/
+data/warehouse/
+data/dbt/target/
+data/dbt/logs/
+data/dbt/dbt_packages/
+data/.dagster/

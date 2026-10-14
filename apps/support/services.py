@@ -160,6 +160,7 @@ def resolve_ticket_quietly(ticket: SupportTicket, *, note: str) -> None:
     log_transition(ticket, previous, TicketStatus.RESOLVED, actor=None, note=note)
 
 
+@transaction.atomic
 def resolve(
     ticket: SupportTicket, *, actor, resolution: str, refund_amount: Decimal | int | str = 0
 ) -> SupportTicket:
