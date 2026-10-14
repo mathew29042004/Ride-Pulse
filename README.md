@@ -1,20 +1,85 @@
 # Ride Pulse
 
-**A full ride-hailing platform: rider app, driver app and operations console**, built on Django,
-PostgreSQL and React. Riders book rides with upfront fares and track their driver live; drivers go
-online, accept trip offers and start trips with a ride PIN; the operations team watches a live city
-map, verifies drivers, tunes surge pricing, handles support and SOS alerts, and reads analytics.
+**A full ride-hailing platform, like Uber, Ola or Rapido, built end to end**: a rider app, a
+driver app, an operations console and a data platform, on Django, PostgreSQL and React.
 
-It runs in three cities (Chennai, Bengaluru, Coimbatore) with a bot fleet that drives in real time,
-so every screen has something happening the moment you open it.
+Riders book rides, bike parcels, hourly rentals and intercity trips with upfront fares (or bid
+their own price), and track the driver live. Drivers go online, accept or counter offers, start
+with a ride PIN and see their real hourly earnings. Operations runs **33 cities across Tamil
+Nadu, Kerala, Karnataka and Andhra Pradesh** with a 171-person organisation, a live map, surge
+pricing, driver verification, support and an SOS desk. A bot fleet drives in real time, so every
+screen is alive the moment you open it, and a nightly pipeline turns it all into analytics.
+
+![Booking a ride](docs/screenshots/rider-book.jpg)
+
+## Highlights
+
+| | |
+| --- | --- |
+| **Ride, parcel, rental, intercity** | Bike, auto and cars; bike parcels with a recipient delivery code; 1–8 h rentals; outstation one-way or round trips |
+| **Fair pricing** | Upfront fares, surge, promos, Ride Pass; **bid your fare** with driver counter-offers; **Sure Ride** (driver in N minutes or ₹30 back); **Fare Lock** for commutes |
+| **Safety** | Ride PIN / QR start, **Ride Check** (long stops, off-route, late, lost signal), **Night Safe** mode, trusted contacts, SOS desk, masked calls |
+| **Drivers first** | Boosts and tips 100% to drivers, **Fair Share Meter**, real earnings after costs, daily goals, going-home mode, **wellbeing breaks** |
+| **Built for India** | ₹ and GST, UPI/cards/cash/wallet, Razorpay, English/Tamil/Hindi with a **chat translation** bridge, IST everywhere |
+| **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 13 roles |
+| **Data platform** | PostgreSQL → privacy-filtered Parquet lake → DuckDB + dbt star schema with 68 data-quality tests → Dagster, daily |
+
+## Screenshots
+
+| Rider | Driver | Operations |
+| --- | --- | --- |
+| ![Rider home](docs/screenshots/rider-home.jpg) | ![Driver home](docs/screenshots/driver-home.jpg) | ![Live map](docs/screenshots/ops-live-map.jpg) |
+| ![Send a parcel](docs/screenshots/rider-parcel.jpg) | ![Real earnings](docs/screenshots/driver-earnings.jpg) | ![Dashboard](docs/screenshots/ops-dashboard.jpg) |
+| ![Intercity](docs/screenshots/rider-intercity.jpg) | ![Phone: home](docs/screenshots/rider-home-phone.jpg) | ![Data insights](docs/screenshots/ops-data-insights.jpg) |
+| ![Phone: booking](docs/screenshots/rider-book-phone.jpg) | | ![Team](docs/screenshots/ops-team.jpg) |
+
+Regenerate them with `.venv/bin/python scripts/screenshots.py` while `make dev` is running.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Clients
+        R[Rider app<br/>React PWA]
+        D[Driver app<br/>React PWA]
+        O[Ops console<br/>React]
+    end
+    subgraph Backend["Django backend"]
+        API[REST API<br/>DRF + JWT]
+        WS[WebSockets<br/>Channels]
+        DOM[Domain services<br/>dispatch · pricing · ledger · safety]
+        JOBS[Celery jobs<br/>dispatch sweep · surge · Ride Check · payouts]
+    end
+    PG[(PostgreSQL)]
+    RD[(Redis)]
+    EXT[Google Maps · Razorpay · Twilio · Exotel · Web Push]
+    SIM[Bot simulator]
+    subgraph Data["Data platform"]
+        LAKE[(Parquet lake)]
+        DBT[dbt + DuckDB<br/>star schema + tests]
+        DAG[Dagster<br/>daily 02:00 IST]
+    end
+    R & D & O --> API
+    R & D & O <--> WS
+    API --> DOM --> PG
+    JOBS --> DOM
+    WS <--> RD
+    DOM --> EXT
+    SIM --> DOM
+    PG -- extract --> LAKE --> DBT
+    DAG -. runs .-> LAKE & DBT
+    DBT -- insights.json --> API
+```
+
+## Stack and quality
 
 | | |
 | --- | --- |
 | **Back end** | Python 3.12 · Django 5.2 LTS · Django REST Framework · Channels (WebSockets) · Celery |
-| **Data** | PostgreSQL 16 (partial unique indexes, BRIN, ArrayField, `generate_series` reporting) · Redis |
+| **Data** | PostgreSQL 16 (partial unique indexes, BRIN, ArrayField, row locking) · Redis · DuckDB · dbt · Dagster |
 | **Front end** | React 19 · TypeScript · Vite · Tailwind CSS · TanStack Query · Leaflet / Google Maps · Recharts |
-| **API** | 123 REST operations, JWT auth, OpenAPI 3 docs (Swagger UI and ReDoc) |
-| **Quality** | 149 tests (88% coverage) + Playwright browser tests + Locust load test · Ruff · strict TypeScript · GitHub Actions · Docker |
+| **API** | 183 REST operations, JWT auth, OpenAPI 3 docs (Swagger UI and ReDoc) |
+| **Quality** | 217 tests (88% coverage) + 9 Playwright browser tests + Locust load test · Ruff · strict TypeScript · dependency audits clean · GitHub Actions · Docker |
 | **Ops** | Render blueprint · Sentry · Prometheus `/metrics` · JSON logs · installable PWA |
 
 ---
@@ -411,13 +476,16 @@ Celery worker and beat, simulator).
 
 ```bash
 make help        # all commands
-make test        # 149 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
+make test        # 217 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
 make e2e         # browser tests: Playwright drives Chromium through a full trip
 make loadtest    # Locust: 50 riders browsing fares and cars for a minute
 make lint        # Ruff + TypeScript type-check
 make check       # everything CI runs, plus migration and OpenAPI checks
 make frontend-dev   # Vite with hot reload on :5173, proxying the API to :8000
 make reset       # wipe and reseed the demo (three weeks of history in about 40 s)
+make history     # 60 days of trips in all 33 cities (stop the simulator first)
+make data-run    # data platform: extract → dbt models + tests → insights report
+make data-ui     # Dagster pipeline UI on :3000
 ```
 
 | Path | What lives there |
@@ -431,7 +499,9 @@ make reset       # wipe and reseed the demo (three weeks of history in about 40 
 | `apps/realtime` | WebSocket consumers, broadcasting, PostgreSQL LISTEN/NOTIFY relay |
 | `apps/analytics` | KPIs, time series, heatmaps, CSV export |
 | `apps/audit` · `apps/notifications` | audit trail with field diffs, in-app and email notifications |
-| `apps/simulation` | demo-history seeder and the live bot simulator |
+| `apps/simulation` | demo seeder, network growth (cities, staff), history generator, live bot simulator |
+| `apps/accounts` | users, 13 roles with capability-based permissions, staff org chart |
+| `data/` | data platform: extract to Parquet, dbt models and tests, Dagster, insights report ([guide](data/README.md)) |
 | `frontend/src` | React apps: `pages/rider`, `pages/driver`, `pages/ops`, map abstraction in `components/map` |
 
 Fares, drivers, riders and trips are simulated; payments go through a mock gateway (any UPI ID
