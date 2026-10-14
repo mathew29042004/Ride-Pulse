@@ -81,7 +81,10 @@ def call_other_party(trip: Trip, *, user) -> CallResult:
         raise BusinessRuleViolation("No driver yet: calling opens once one is assigned.")
     ended = trip.completed_at or trip.cancelled_at
     open_now = trip.status in ACTIVE_STATUSES and trip.status != TripStatus.REQUESTED
-    if not open_now and not (ended and timezone.now() - ended < CALL_WINDOW_AFTER_TRIP):
+    from .lost_items import calls_open
+
+    recently_ended = ended and timezone.now() - ended < CALL_WINDOW_AFTER_TRIP
+    if not open_now and not recently_ended and not calls_open(trip):
         raise BusinessRuleViolation("Calling is closed for this trip. Contact support for help.")
     if trip.events.filter(kind="CALL", actor=user).count() >= MAX_CALLS_PER_TRIP:
         raise ConflictError("Call limit reached for this trip. Use chat or contact support.")

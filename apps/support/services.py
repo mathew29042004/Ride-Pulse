@@ -147,6 +147,19 @@ def assign(ticket: SupportTicket, *, agent, actor=None) -> SupportTicket:
 
 
 @transaction.atomic
+def resolve_ticket_quietly(ticket: SupportTicket, *, note: str) -> None:
+    """Close a ticket the users sorted out themselves (e.g. a lost item handed back)."""
+    ticket = SupportTicket.objects.select_for_update().get(pk=ticket.pk)
+    if not ticket.is_open:
+        return
+    previous = ticket.status
+    ticket.status = TicketStatus.RESOLVED
+    ticket.resolution = note
+    ticket.resolved_at = timezone.now()
+    ticket.save(update_fields=["status", "resolution", "resolved_at", "updated_at"])
+    log_transition(ticket, previous, TicketStatus.RESOLVED, actor=None, note=note)
+
+
 def resolve(
     ticket: SupportTicket, *, actor, resolution: str, refund_amount: Decimal | int | str = 0
 ) -> SupportTicket:

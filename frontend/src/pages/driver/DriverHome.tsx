@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLine, advanceAlong, routePath, snapToPath } from "@/components/map";
 import { CallButton } from "@/components/CallButton";
 import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
+import { DriverLostItems } from "@/components/LostItem";
 import { NotificationBell } from "@/components/NotificationBell";
 import { usePush } from "@/components/PushToggle";
 import { QrScanner } from "@/components/QrScanner";
@@ -434,6 +435,7 @@ export default function DriverHome() {
 
       <div className="flex-1" />
 
+      {!trip && !offer && <DriverLostItems />}
       <div className="rp-overlay relative z-[600] flex items-center justify-end gap-2 px-3 pb-2">
         {online && !trip && <GoingHomeButton driver={driver} />}
         {online && (

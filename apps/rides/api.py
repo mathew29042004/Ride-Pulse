@@ -24,10 +24,11 @@ from apps.pricing.api import FareSerializer, PointSerializer
 from apps.pricing.models import RideType
 from apps.support.api import IncidentSerializer
 
-from . import calls, dispatch, invoices, pickup, services, splits
+from . import calls, dispatch, invoices, lost_items, pickup, services, splits
 from .models import (
     ACTIVE_STATUSES,
     FareSplit,
+    LostItemReport,
     RidePreference,
     ScheduledRide,
     Trip,
@@ -298,6 +299,36 @@ class TripOfferSerializer(serializers.ModelSerializer):
         ]
 
 
+class LostItemSerializer(serializers.ModelSerializer):
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    trip_number = serializers.CharField(source="trip.trip_number", read_only=True)
+    rider_name = serializers.CharField(source="trip.rider.name", read_only=True)
+
+    class Meta:
+        model = LostItemReport
+        fields = [
+            "id",
+            "trip_id",
+            "trip_number",
+            "rider_name",
+            "description",
+            "status",
+            "status_label",
+            "driver_note",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class LostItemRequestSerializer(serializers.Serializer):
+    description = serializers.CharField(max_length=300)
+
+
+class LostItemAnswerSerializer(serializers.Serializer):
+    found = serializers.BooleanField()
+    note = serializers.CharField(required=False, allow_blank=True, max_length=300)
+
+
 class FareSplitSerializer(serializers.ModelSerializer):
     trip_number = serializers.CharField(source="trip.trip_number", read_only=True)
     rider_name = serializers.CharField(source="trip.rider.name", read_only=True)
@@ -391,6 +422,8 @@ RIDER = (
     "boost",
     "favourite",
     "split",
+    "lost_item",
+    "lost_item_returned",
 )
 DRIVER = (
     "list",
@@ -406,6 +439,9 @@ DRIVER = (
     "route",
     "messages",
     "call",
+    "lost_item",
+    "lost_item_answer",
+    "lost_item_returned",
 )
 
 
@@ -589,6 +625,43 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=LostItemRequestSerializer, responses=LostItemSerializer)
+    @action(detail=True, methods=["get", "post"], url_path="lost-item")
+    def lost_item(self, request, pk=None):
+        """Report an item left in the car (rider, POST) or see the report (GET)."""
+        trip = self.get_object()
+        if request.method == "POST":
+            serializer = LostItemRequestSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            item = lost_items.report(trip, user=request.user, **serializer.validated_data)
+            return Response(LostItemSerializer(item).data, status=status.HTTP_201_CREATED)
+        item = LostItemReport.objects.filter(trip=trip).first()
+        if item is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(LostItemSerializer(item).data)
+
+    @extend_schema(request=LostItemAnswerSerializer, responses=LostItemSerializer)
+    @action(detail=True, methods=["post"], url_path="lost-item/answer")
+    def lost_item_answer(self, request, pk=None):
+        serializer = LostItemAnswerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        item = lost_items.driver_answer(
+            self._lost_item(), user=request.user, **serializer.validated_data
+        )
+        return Response(LostItemSerializer(item).data)
+
+    @extend_schema(request=None, responses=LostItemSerializer)
+    @action(detail=True, methods=["post"], url_path="lost-item/returned")
+    def lost_item_returned(self, request, pk=None):
+        item = lost_items.mark_returned(self._lost_item(), user=request.user)
+        return Response(LostItemSerializer(item).data)
+
+    def _lost_item(self) -> LostItemReport:
+        item = LostItemReport.objects.filter(trip=self.get_object()).first()
+        if item is None:
+            raise ActionNotPermitted("No lost item was reported for this ride.")
+        return item
 
     @extend_schema(request=SplitRequestSerializer, responses=FareSplitSerializer(many=True))
     @action(detail=True, methods=["get", "post"])

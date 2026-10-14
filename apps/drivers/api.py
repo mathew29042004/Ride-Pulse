@@ -230,6 +230,18 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
         return Response(DriverStatusSerializer(self.driver).data)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"], url_path="lost-items")
+    def lost_items(self, request):
+        """Riders' lost-item reports waiting for this driver's answer."""
+        from apps.rides.api import LostItemSerializer
+        from apps.rides.models import LostItemReport, LostItemStatus
+
+        items = LostItemReport.objects.filter(
+            trip__driver=self.driver, status__in=[LostItemStatus.REPORTED, LostItemStatus.FOUND]
+        ).select_related("trip__rider__user")
+        return Response(LostItemSerializer(items, many=True).data)
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])
     def goals(self, request):
         """Today's goals: trips completed and the bonus tiers reached."""

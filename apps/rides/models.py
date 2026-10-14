@@ -495,3 +495,29 @@ class FareSplit(models.Model):
 
     def __str__(self) -> str:
         return f"{self.trip_id} split with {self.friend_id} ({self.status})"
+
+
+class LostItemStatus(models.TextChoices):
+    REPORTED = "REPORTED", "Waiting for the driver"
+    FOUND = "FOUND", "Driver found it"
+    NOT_FOUND = "NOT_FOUND", "Driver couldn't find it"
+    RETURNED = "RETURNED", "Returned"
+
+
+class LostItemReport(models.Model):
+    """ "I left something in the car": the driver checks and answers; calls stay open for 24 h."""
+
+    trip = models.OneToOneField(Trip, on_delete=models.CASCADE, related_name="lost_item")
+    description = models.CharField(max_length=300)
+    status = models.CharField(
+        max_length=9, choices=LostItemStatus.choices, default=LostItemStatus.REPORTED
+    )
+    driver_note = models.CharField(max_length=300, blank=True)
+    ticket = models.ForeignKey(
+        "support.SupportTicket", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.trip_id}: {self.description[:30]} ({self.status})"

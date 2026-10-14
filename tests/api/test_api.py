@@ -783,3 +783,56 @@ def test_split_fare_with_friends(api, rider, make_driver, now):
         == 404
     )
     assert verify_ledger()["balanced"]
+
+
+def test_lost_and_found(api, rider, make_driver, now):
+    from apps.rides import services as rides
+    from apps.rides.models import Trip
+    from apps.support.models import SupportTicket, TicketStatus
+    from tests.integration.helpers import book, drive_to_completion
+
+    driver = make_driver(now=now)
+    trip = drive_to_completion(
+        book(rider, rides.RideType.objects.get(code="MINI"), now=now), now=now
+    )
+    rider_client, driver_client = api(rider.user), api(driver.user)
+    url = f"/api/v1/trips/{trip.pk}/lost-item/"
+    call = f"/api/v1/trips/{trip.pk}/call/"
+
+    # Long after the ride, calls are closed until a lost item is reported.
+    Trip.objects.filter(pk=trip.pk).update(completed_at=timezone.now() - timedelta(days=2))
+    assert rider_client.get(url).status_code == 204
+    assert rider_client.post(call).status_code == 422
+    assert driver_client.post(url, {"description": "bag"}).status_code == 403  # rider only
+    assert rider_client.post(url, {"description": "x"}).status_code == 422
+    item = rider_client.post(url, {"description": "Black  backpack"}).json()
+    assert item["status"] == "REPORTED" and item["description"] == "Black backpack"
+    assert rider_client.post(url, {"description": "again"}).status_code == 409
+    ticket = SupportTicket.objects.get(trip=trip)
+    assert ticket.category == "LOST_ITEM" and ticket.priority == "HIGH"
+    assert rider_client.post(call).status_code == 200  # the call window reopened
+
+    # The driver sees it, finds it, and they arrange the hand-back.
+    waiting = driver_client.get("/api/v1/driver/lost-items/").json()
+    assert [w["id"] for w in waiting] == [item["id"]]
+    assert rider_client.post(f"{url}answer/", {"found": True}).status_code == 403
+    found = driver_client.post(f"{url}answer/", {"found": True, "note": "On the seat"}).json()
+    assert found["status"] == "FOUND" and found["driver_note"] == "On the seat"
+    returned = rider_client.post(f"{url}returned/").json()
+    assert returned["status"] == "RETURNED"
+    ticket.refresh_from_db()
+    assert ticket.status == TicketStatus.RESOLVED
+    assert driver_client.get("/api/v1/driver/lost-items/").json() == []
+    assert rider_client.post(call).status_code == 422  # closed again
+
+    # Too late to report after 7 days.
+    other = drive_to_completion(
+        book(rider, rides.RideType.objects.get(code="MINI"), now=now), now=now
+    )
+    Trip.objects.filter(pk=other.pk).update(completed_at=timezone.now() - timedelta(days=8))
+    assert (
+        rider_client.post(
+            f"/api/v1/trips/{other.pk}/lost-item/", {"description": "phone"}
+        ).status_code
+        == 422
+    )
