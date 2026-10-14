@@ -62,6 +62,13 @@ function MobileFrame({ children, aside, tabs, hideTabs }: FrameProps) {
           </button>
         </aside>
       )}
+      {/* Always offer the way back to the big-map website layout on laptop-sized screens. */}
+      <button
+        onClick={() => setMode("desktop")}
+        className="fixed top-4 right-4 z-[1000] hidden items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-ink-fg shadow-lg md:flex"
+      >
+        <Monitor className="size-4" /> Website view
+      </button>
       <div className="relative h-dvh w-full md:h-[min(860px,calc(100dvh-48px))] md:w-[400px] md:shrink-0 md:rounded-[52px] md:border-[12px] md:border-[#0b0f19] md:bg-[#0b0f19] md:shadow-[0_40px_80px_-20px_rgb(15_23_42/0.45)]">
         <div id="phone-screen" className="relative flex h-full flex-col overflow-hidden bg-surface md:rounded-[40px]">
           <div className="hidden md:block">

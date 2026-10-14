@@ -7,7 +7,8 @@ import { createContext, type ReactNode, useContext, useEffect, useState } from "
 
 export type LayoutMode = "phone" | "desktop";
 const KEY = "rp.layout";
-const WIDE = "(min-width: 1024px)";
+// Laptops and tablets in landscape get the website layout (a phone is narrower than this).
+const WIDE = "(min-width: 768px)";
 
 const LayoutContext = createContext<{ mode: LayoutMode; setMode: (m: LayoutMode) => void }>({ mode: "phone", setMode: () => undefined });
 
