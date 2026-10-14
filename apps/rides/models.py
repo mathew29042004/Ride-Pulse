@@ -185,6 +185,9 @@ class Trip(AuditedModel, TimeStampedModel):
         related_name="trips",
     )
     trip_purpose = models.CharField(max_length=120, blank=True)
+    # Shared rides: trips carried together by one driver share a pool id (the first trip's
+    # number). Pooled trips are the only way a driver has more than one active trip.
+    pool_id = models.CharField(max_length=20, blank=True, default="", db_index=True)
     # Zero-commission day pass: the commission the driver kept on this trip.
     commission_waived = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal(0))
     # Eco score: CO2 saved vs driving your own car, and the points it earned.
@@ -273,7 +276,7 @@ class Trip(AuditedModel, TimeStampedModel):
             ),
             models.UniqueConstraint(
                 fields=["driver"],
-                condition=Q(status__in=ACTIVE_DRIVER_STATUSES),
+                condition=Q(status__in=ACTIVE_DRIVER_STATUSES, pool_id=""),
                 name="one_active_trip_per_driver",
                 violation_error_message="This driver is already on a trip.",
             ),

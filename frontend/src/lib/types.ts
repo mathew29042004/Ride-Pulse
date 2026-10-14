@@ -163,6 +163,8 @@ export interface Trip {
   preferences: string[];
   is_favourite_driver: boolean;
   service: "RIDE" | "PARCEL" | "RENTAL" | "INTERCITY";
+  pool_id: string;
+  co_riders: number;
   co2_saved_g: number;
   fare_lock: number | null;
   package_hours: number | null;

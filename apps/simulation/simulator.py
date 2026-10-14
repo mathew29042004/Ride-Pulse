@@ -45,6 +45,7 @@ from apps.rides.models import (
     TripOffer,
     TripStatus,
 )
+from apps.rides.pooling import driver_run
 
 from .fleet_data import PAYMENT_WEIGHTS, RIDE_TYPE_WEIGHTS
 
@@ -170,7 +171,7 @@ class Simulator:
             self.bots.pop(bot.driver_id, None)
             return
         trip = (
-            Trip.objects.filter(driver=driver, status__in=ACTIVE_STATUSES)
+            driver_run(driver.pk)
             .select_related("rider__user", "ride_type", "city", "pickup_zone", "dropoff_zone")
             .first()
         )

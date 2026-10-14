@@ -16,6 +16,7 @@ import { ParcelCard } from "@/components/ParcelForm";
 import { LostItemCard } from "@/components/LostItem";
 import { HomeSafeButton, NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { SplitFareCard } from "@/components/SplitFare";
+import { PoolBadge } from "@/components/PoolBadge";
 import { TripRecorder } from "@/components/TripRecorder";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Modal, Sheet, Spinner, StarInput, Stars, Textarea } from "@/components/ui";
@@ -281,6 +282,7 @@ export default function RiderTrip() {
               </div>
             </div>
             <DriverCard trip={trip} />
+            <PoolBadge trip={trip} role="rider" />
             <ParcelCard trip={trip} />
             <TripRecorder trip={trip} />
             <SureRideBadge trip={trip} />

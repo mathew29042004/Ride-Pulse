@@ -216,6 +216,7 @@ class TripSerializer(serializers.ModelSerializer):
         source="payment_profile.name", default=None, read_only=True
     )
     parcel = serializers.SerializerMethodField()
+    co_riders = serializers.SerializerMethodField()
 
     class Meta:
         model = Trip
@@ -279,6 +280,8 @@ class TripSerializer(serializers.ModelSerializer):
             "parcel",
             "payment_profile_name",
             "trip_purpose",
+            "pool_id",
+            "co_riders",
             "co2_saved_g",
             "fare_lock",
             "package_hours",
@@ -320,6 +323,11 @@ class TripSerializer(serializers.ModelSerializer):
         return FareSerializer(trip.final_fare).data
 
     @extend_schema_field(ParcelSerializer(allow_null=True))
+    def get_co_riders(self, trip) -> int:
+        from .pooling import co_riders
+
+        return co_riders(trip)
+
     def get_parcel(self, trip) -> dict | None:
         parcel = getattr(trip, "parcel", None) if trip.service == "PARCEL" else None
         return ParcelSerializer(parcel, context=self.context).data if parcel else None
@@ -776,8 +784,15 @@ class TripViewSet(
     @extend_schema(responses={200: TripSerializer, 204: None})
     @action(detail=False, methods=["get"])
     def active(self, request):
-        """The signed-in rider's or driver's current trip, if any."""
-        trip = self.get_queryset().filter(status__in=ACTIVE_STATUSES).first()
+        """The signed-in rider's or driver's current trip, if any.
+
+        A driver on a shared ride gets the next trip to serve (pickups before drop-offs)."""
+        trips = self.get_queryset().filter(status__in=ACTIVE_STATUSES)
+        if request.user.is_driver:
+            from .pooling import driver_run
+
+            trips = driver_run(request.user.driver_profile.pk).filter(pk__in=trips.values("pk"))
+        trip = trips.first()
         if trip is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(TripSerializer(trip, context=self.get_serializer_context()).data)

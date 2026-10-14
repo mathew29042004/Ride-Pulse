@@ -48,6 +48,7 @@ from apps.riders.models import RiderProfile
 
 from . import bids, dispatch, parcels
 from .models import (
+    ACTIVE_DRIVER_STATUSES,
     CAR_ONLY_PREFERENCES,
     TERMINAL_STATUSES,
     CancelledBy,
@@ -188,6 +189,12 @@ def _set_availability(driver: DriverProfile, availability: str) -> None:
     driver.availability = availability
 
 
+def _release_driver(driver: DriverProfile) -> None:
+    """Back online, unless they're still carrying a co-rider on a shared ride."""
+    if not Trip.objects.filter(driver=driver, status__in=ACTIVE_DRIVER_STATUSES).exists():
+        _set_availability(driver, Availability.ONLINE)
+
+
 def _lock(trip: Trip) -> Trip:
     return (
         Trip.objects.select_for_update(of=("self",))
@@ -312,7 +319,10 @@ def estimate_options(
 def _suggest_alternatives(options: list[dict]) -> None:
     """For each ride type nobody can take right now, the closest one that's available: enough
     seats first (don't send a group to a bike), then similar price, then the quicker pickup."""
-    available = [o for o in options if o["availability"] == "AVAILABLE"]
+    # A shared ride is a different trip (a co-rider, an extra stop), so it's never suggested.
+    available = [
+        o for o in options if o["availability"] == "AVAILABLE" and o["ride_type"].code != "SHARE"
+    ]
     for option in options:
         option["suggestion"] = None
         if option["availability"] == "AVAILABLE" or not available:
@@ -520,6 +530,10 @@ def request_trip(
         "trip_requested",
         {"trip_id": trip.pk, "city": city.pk, "lat": trip.pickup_lat, "lng": trip.pickup_lng},
     )
+    from . import pooling
+
+    if pooling.try_match(trip, now=now):
+        return Trip.objects.get(pk=trip.pk)
     if dispatch_mode() == "SEQUENTIAL":
         dispatch.dispatch_trip(trip, now=now)
     return trip
@@ -846,7 +860,7 @@ def complete_trip(
 
         invoices.send_after_commit(trip)
 
-    _set_availability(driver, Availability.ONLINE)
+    _release_driver(driver)
     DriverProfile.objects.filter(pk=driver.pk).update(completed_trips=F("completed_trips") + 1)
     goals.reward_goals(driver, now=now)
     from . import eco
@@ -945,7 +959,7 @@ def _cancel(trip: Trip, *, by: str, reason: str, fee: Decimal, actor, now: datet
         payment_status=TripPaymentStatus.PAID if fee else TripPaymentStatus.NOT_APPLICABLE,
     )
     if driver:
-        _set_availability(driver, Availability.ONLINE)
+        _release_driver(driver)
     if fee:
         payments.charge_cancellation_fee(trip, fee, now=now)
     if by != CancelledBy.RIDER:
@@ -976,8 +990,9 @@ def _reassign(trip: Trip, *, reason: str, now: datetime) -> Trip:
         arrived_at=None,
         pickup_eta_min=None,
         dispatch_deadline=now + timedelta(seconds=request_timeout_seconds()),
+        pool_id="",
     )
-    _set_availability(driver, Availability.ONLINE)
+    _release_driver(driver)
     DriverProfile.objects.filter(pk=driver.pk).update(cancelled_trips=F("cancelled_trips") + 1)
     notify(
         trip.rider.user,

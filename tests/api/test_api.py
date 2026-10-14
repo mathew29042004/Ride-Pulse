@@ -101,6 +101,7 @@ def test_full_trip_over_the_api(api, rider, make_driver):
         "MINI",
         "SEDAN",
         "SUV",
+        "SHARE",
     }
     mini = next(o for o in estimate["options"] if o["ride_type"]["code"] == "MINI")
     assert mini["pickup_eta_min"] is not None

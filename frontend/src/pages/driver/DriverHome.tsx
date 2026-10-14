@@ -10,6 +10,7 @@ import { CallButton } from "@/components/CallButton";
 import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
 import { BreakCard, WellbeingChip } from "@/components/FairShare";
 import { DriverLostItems } from "@/components/LostItem";
+import { PoolBadge } from "@/components/PoolBadge";
 import { TripRecorder } from "@/components/TripRecorder";
 import { NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -601,6 +602,7 @@ export default function DriverHome() {
               </div>
 
               <NightSafeBar trip={trip} role="driver" />
+              <PoolBadge trip={trip} role="driver" />
               <TripRecorder trip={trip} />
               <div className="mt-4 space-y-2">
                 {trip.status === "DRIVER_ASSIGNED" && (
