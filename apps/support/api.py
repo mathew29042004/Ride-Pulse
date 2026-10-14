@@ -10,7 +10,13 @@ from apps.accounts.roles import Cap
 from apps.core.api import BaseViewSet
 
 from . import services
-from .models import OPEN_TICKET_STATUSES, SafetyIncident, SupportTicket, TicketMessage
+from .models import (
+    OPEN_TICKET_STATUSES,
+    SafetyIncident,
+    SafetyRecording,
+    SupportTicket,
+    TicketMessage,
+)
 
 
 class TicketMessageSerializer(serializers.ModelSerializer):
@@ -225,3 +231,43 @@ class IncidentViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseView
             note=serializer.validated_data["note"],
         )
         return Response(IncidentSerializer(incident).data)
+
+
+class RecordingSerializer(serializers.ModelSerializer):
+    trip_number = serializers.CharField(source="trip.trip_number", read_only=True)
+    uploaded_by_name = serializers.CharField(source="uploaded_by.get_full_name", read_only=True)
+
+    class Meta:
+        model = SafetyRecording
+        fields = [
+            "id",
+            "trip_id",
+            "trip_number",
+            "ticket_id",
+            "uploaded_by_name",
+            "mime_type",
+            "duration_seconds",
+            "size_bytes",
+            "created_at",
+        ]
+
+
+class RecordingViewSet(mixins.ListModelMixin, BaseViewSet):
+    """Trip audio recordings shared with the safety team. Playing one is audited."""
+
+    queryset = SafetyRecording.objects.select_related("trip", "uploaded_by")
+    serializer_class = RecordingSerializer
+    filterset_fields = ["ticket", "trip"]
+    capabilities = {"list": Cap.SAFETY_MANAGE, "audio": Cap.SAFETY_MANAGE}
+
+    @extend_schema(responses={(200, "audio/webm"): bytes})
+    @action(detail=True, methods=["get"])
+    def audio(self, request, pk=None):
+        from django.http import HttpResponse
+
+        from .recordings import play
+
+        audio, mime = play(get_object_or_404(SafetyRecording, pk=pk), actor=request.user)
+        response = HttpResponse(audio, content_type=mime)
+        response["Cache-Control"] = "no-store"
+        return response

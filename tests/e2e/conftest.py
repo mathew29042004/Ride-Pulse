@@ -27,3 +27,12 @@ def page(page):
     )
     page.set_default_timeout(15_000)
     return page
+
+
+@pytest.fixture(scope="session")
+def browser_type_launch_args(browser_type_launch_args):
+    # A fake microphone with automatic permission, so trip audio recording works headless.
+    return {
+        **browser_type_launch_args,
+        "args": ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+    }

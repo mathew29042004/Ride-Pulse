@@ -145,3 +145,45 @@ class SafetyIncident(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.incident_number
+
+
+class TripRecordingKey(models.Model):
+    """The key one trip participant's app encrypts its audio recording with. Stored wrapped
+    (encrypted with a key derived from the server secret), never in the clear."""
+
+    trip = models.ForeignKey("rides.Trip", on_delete=models.CASCADE, related_name="+")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    wrapped_key = models.BinaryField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["trip", "user"], name="one_recording_key_per_user"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Recording key for {self.user_id} on {self.trip_id}"
+
+
+class SafetyRecording(models.Model):
+    """An encrypted trip audio recording a rider or driver shared with the safety team."""
+
+    trip = models.ForeignKey("rides.Trip", on_delete=models.PROTECT, related_name="recordings")
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    ticket = models.ForeignKey(
+        SupportTicket, null=True, blank=True, on_delete=models.SET_NULL, related_name="recordings"
+    )
+    ciphertext = models.FileField(upload_to="safety-recordings/%Y/%m/")
+    iv = models.BinaryField()
+    mime_type = models.CharField(max_length=60, default="audio/webm")
+    duration_seconds = models.PositiveIntegerField(default=0)
+    size_bytes = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Recording {self.pk} on {self.trip_id}"

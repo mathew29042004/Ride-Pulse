@@ -105,6 +105,13 @@ class ParcelSerializer(serializers.ModelSerializer):
         return parcel.recipient_phone
 
 
+class RecordingShareSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    iv = serializers.CharField(max_length=32)
+    mime_type = serializers.CharField(max_length=60, required=False, default="audio/webm")
+    duration = serializers.IntegerField(required=False, default=0, min_value=0)
+
+
 class FareLockRequestSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=["UPI", "CARD", "WALLET"])
     weekdays = serializers.ListField(
@@ -639,6 +646,8 @@ RIDER = (
     "fair_share",
     "take_counter",
     "lock_fare",
+    "recording_start",
+    "recording_share",
 )
 DRIVER = (
     "list",
@@ -658,6 +667,8 @@ DRIVER = (
     "lost_item_answer",
     "lost_item_returned",
     "fair_share",
+    "recording_start",
+    "recording_share",
 )
 
 
@@ -883,6 +894,47 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="recording/start")
+    def recording_start(self, request, pk=None):
+        """Start a safety audio recording: returns this user's AES-256 key for the trip (the
+        app encrypts on the device) and tells the other person."""
+        import base64
+
+        from apps.support import recordings
+
+        key = recordings.start(self.get_object(), user=request.user)
+        return Response({"key": base64.b64encode(key).decode(), "share_days": 7})
+
+    @extend_schema(request=RecordingShareSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="recording/share")
+    def recording_share(self, request, pk=None):
+        """Send an encrypted recording to the safety team (opens a safety ticket)."""
+        import base64
+        import binascii
+
+        from apps.support import recordings
+
+        serializer = RecordingShareSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            iv = base64.b64decode(data["iv"])
+        except (binascii.Error, ValueError) as exc:
+            raise BusinessRuleViolation("Bad recording data.", field="iv") from exc
+        recording = recordings.share(
+            self.get_object(),
+            user=request.user,
+            ciphertext=data["file"].read(),
+            iv=iv,
+            mime_type=data.get("mime_type", "audio/webm"),
+            duration=data.get("duration", 0),
+        )
+        return Response(
+            {"id": recording.pk, "ticket_number": recording.ticket.ticket_number},
+            status=status.HTTP_201_CREATED,
+        )
 
     @extend_schema(request=FareLockRequestSerializer, responses={201: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"], url_path="lock-fare")

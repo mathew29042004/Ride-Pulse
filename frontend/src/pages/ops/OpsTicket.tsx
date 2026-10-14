@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { Badge, Button, Card, CardHeader, Field, Input, KeyValue, Modal, Spinner, StatusBadge, Textarea, Toggle } from "@/components/ui";
+import { SafetyRecordings } from "@/components/TripRecorder";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { dateTime, inr } from "@/lib/format";
@@ -122,6 +123,7 @@ export default function OpsTicket() {
               <KeyValue label="Opened">{dateTime(t.created_at)}</KeyValue>
             </div>
           </Card>
+          {t.category === "SAFETY" && <SafetyRecordings ticketId={t.id} />}
           {trip.data && (
             <Card>
               <CardHeader title="Trip" action={<Link className="text-xs font-semibold text-muted hover:text-fg" to={`/ops/trips/${trip.data.id}`}>Open →</Link>} />
