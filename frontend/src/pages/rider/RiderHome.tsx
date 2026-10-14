@@ -110,7 +110,8 @@ export default function RiderHome() {
         </button>
       </div>
 
-      <Sheet>
+      {/* Starts low so the map gets most of the screen; drag up for saved and recent places. */}
+      <Sheet height="46%">
         {active.data && (
           <Link to={`/ride/trips/${active.data.id}`} className="mb-4 flex items-center gap-3 rounded-2xl bg-ink p-4 text-ink-fg">
             <span className="relative flex size-3">
@@ -153,10 +154,9 @@ export default function RiderHome() {
             { to: "/ride/packages?service=RENTAL", icon: Timer, label: "Rentals", hint: "By the hour" },
             { to: "/ride/packages?service=INTERCITY", icon: MapPinned, label: "Intercity", hint: "Outstation" },
           ].map(({ to, icon: Icon, label, hint }) => (
-            <button key={to} onClick={() => navigate(to)} className="flex flex-col items-start gap-1 rounded-2xl border border-line px-3 py-2.5 text-left transition hover:bg-surface-2">
-              <Icon className="size-5 text-brand" />
-              <span className="text-sm font-semibold">{t(label)}</span>
-              <span className="text-[11px] text-muted">{t(hint)}</span>
+            <button key={to} onClick={() => navigate(to)} title={t(hint)} className="flex items-center justify-center gap-1.5 rounded-full border border-line px-2 py-2 text-xs font-semibold transition hover:bg-surface-2">
+              <Icon className="size-4 text-brand" />
+              {t(label)}
             </button>
           ))}
         </div>
