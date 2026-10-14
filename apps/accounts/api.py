@@ -131,6 +131,9 @@ class DriverRegistrationSerializer(_RegisterBase):
     )
     license_number = serializers.CharField(max_length=20)
     license_expiry = serializers.DateField()
+    gender = serializers.ChoiceField(
+        choices=["FEMALE", "MALE", "UNDISCLOSED"], required=False, default="UNDISCLOSED"
+    )
 
 
 class RegistrationResponseSerializer(serializers.Serializer):

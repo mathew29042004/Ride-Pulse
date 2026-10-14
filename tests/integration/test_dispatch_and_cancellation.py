@@ -313,3 +313,76 @@ def test_tip_promised_at_booking_is_collected_with_the_fare(
             tip=5,
             now=now,
         )
+
+
+def test_ride_preferences_and_favourite_drivers_shape_dispatch(rider, mini, make_driver, now):
+    from apps.pricing.models import RideType
+
+    near_man = make_driver(at=(T_NAGAR[0] + 0.002, T_NAGAR[1]), now=now)  # ~200 m
+    far_woman = make_driver(at=(T_NAGAR[0] + 0.02, T_NAGAR[1]), now=now)  # ~2.2 km
+    far_woman.gender = "FEMALE"
+    far_woman.save(update_fields=["gender"])
+
+    # Normally the nearest driver is asked first...
+    trip = book(rider, mini, now=now)
+    assert pending_offer(trip).driver == near_man
+    rides.cancel_trip(trip, user=rider.user, now=now)
+
+    # ...but "woman driver preferred" asks nearby women first, and the offer shows it.
+    trip = rides.request_trip(
+        rider=rider,
+        ride_type=mini,
+        pickup=T_NAGAR,
+        dropoff=MARINA,
+        payment_method="UPI",
+        preferences=["WOMAN_DRIVER", "QUIET", "QUIET", "AC"],
+        now=now,
+    )
+    assert trip.preferences == ["WOMAN_DRIVER", "QUIET", "AC"]
+    offer = pending_offer(trip)
+    assert (
+        offer.driver == far_woman
+        and dispatch.offer_payload(offer)["preferences"] == trip.preferences
+    )
+    # If she passes, the rider isn't stranded: the next driver is asked.
+    dispatch.decline_offer(offer, driver=far_woman, now=now)
+    assert pending_offer(trip).driver == near_man
+    rides.cancel_trip(trip, user=rider.user, now=now)
+
+    # AC and luggage don't apply to bikes and autos.
+    bike = RideType.objects.get(code="BIKE")
+    assert rides.clean_preferences(["AC", "LUGGAGE", "QUIET"], bike) == ["QUIET"]
+    with pytest.raises(BusinessRuleViolation):
+        rides.clean_preferences(["SMOKING"], mini)
+
+    # A favourite a few minutes further away is asked before a closer stranger.
+    update_location(far_woman, lat=T_NAGAR[0] + 0.009, lng=T_NAGAR[1], now=now)  # ~1 km
+    # (Her decline above dented her acceptance rate; undo that so only the favourite counts.)
+    type(far_woman).objects.filter(pk=far_woman.pk).update(acceptance_rate=100)
+    rider.favourite_drivers.add(far_woman)
+    trip = book(rider, mini, now=now)
+    assert pending_offer(trip).driver == far_woman
+
+
+def test_rider_saves_and_removes_a_favourite_driver(api, rider, mini, make_driver, now):
+    driver = make_driver(now=now)
+    trip = drive_to_completion(book(rider, mini, now=now), now=now)
+    client = api(rider.user)
+    assert client.get(f"/api/v1/trips/{trip.pk}/").json()["is_favourite_driver"] is False
+    assert client.post(f"/api/v1/trips/{trip.pk}/favourite/", {"favourite": True}).json() == {
+        "favourite": True
+    }
+    me = client.get("/api/v1/rider/me/").json()
+    assert [f["id"] for f in me["favourites"]] == [driver.pk]
+    assert client.get(f"/api/v1/trips/{trip.pk}/").json()["is_favourite_driver"] is True
+    assert client.patch(
+        "/api/v1/rider/me/", {"default_preferences": ["QUIET"]}, format="json"
+    ).json()["default_preferences"] == ["QUIET"]
+    assert client.delete(f"/api/v1/rider/favourites/{driver.pk}/").status_code == 204
+    assert client.get("/api/v1/rider/me/").json()["favourites"] == []
+    assert (
+        api(make_rider().user)
+        .post(f"/api/v1/trips/{trip.pk}/favourite/", {"favourite": True})
+        .status_code
+        == 404
+    )

@@ -134,6 +134,8 @@ export interface Trip {
   invoice_emailed_at: string | null;
   boost_amount: string;
   tip_pledged: string;
+  preferences: string[];
+  is_favourite_driver: boolean;
   rider: TripParty;
   driver: TripParty | null;
   driver_location: { lat: number; lng: number; heading: number | null } | null;
@@ -210,6 +212,7 @@ export interface Offer {
   boost: string;
   /** Tip the rider promised at booking (paid on top, 100% to the driver). */
   tip: string;
+  preferences: string[];
   payment_method: PaymentMethod;
   expires_at: string;
 }
@@ -285,6 +288,9 @@ export interface Rider {
   wallet_balance: string;
   /** Only on the rider's own profile. */
   referrals?: { joined: number; rewarded: number; bonus: string; earned: string };
+  /** Only on the rider's own profile. */
+  favourites?: { id: number; name: string; rating: string; vehicle: string }[];
+  default_preferences?: string[];
   created_at: string;
 }
 

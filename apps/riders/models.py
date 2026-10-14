@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Q
 
@@ -22,6 +23,12 @@ class RiderProfile(AuditedModel, TimeStampedModel):
     )
     # Set once both sides have been paid the referral bonus (after this rider's first trip).
     referral_rewarded_at = models.DateTimeField(null=True, blank=True)
+    # Ride preferences pre-selected when booking (see rides.models.RidePreference).
+    default_preferences = ArrayField(models.CharField(max_length=12), default=list, blank=True)
+    # Drivers this rider liked: offered their rides first when nearby.
+    favourite_drivers = models.ManyToManyField(
+        "drivers.DriverProfile", blank=True, related_name="favourited_by"
+    )
     default_payment_method = models.CharField(max_length=10, default="UPI")
     emergency_contact_name = models.CharField(max_length=80, blank=True)
     emergency_contact_phone = models.CharField(

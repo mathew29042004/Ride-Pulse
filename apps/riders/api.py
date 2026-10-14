@@ -59,12 +59,29 @@ class RiderSerializer(serializers.ModelSerializer):
 
 
 class RiderMeSerializer(RiderSerializer):
-    """The rider's own profile: adds their referral progress."""
+    """The rider's own profile: adds referral progress, ride preferences and favourites."""
 
     referrals = serializers.SerializerMethodField()
+    favourites = serializers.SerializerMethodField()
+    default_preferences = serializers.ListField(
+        child=serializers.ChoiceField(choices=["QUIET", "AC", "LUGGAGE", "WOMAN_DRIVER"]),
+        required=False,
+    )
 
     class Meta(RiderSerializer.Meta):
-        fields = [*RiderSerializer.Meta.fields, "referrals"]
+        fields = [*RiderSerializer.Meta.fields, "referrals", "favourites", "default_preferences"]
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_favourites(self, rider) -> list[dict]:
+        return [
+            {
+                "id": d.pk,
+                "name": d.name,
+                "rating": str(d.rating),
+                "vehicle": str(d.vehicles.filter(is_active=True).first() or ""),
+            }
+            for d in rider.favourite_drivers.select_related("user")
+        ]
 
     @extend_schema_field(serializers.DictField())
     def get_referrals(self, rider) -> dict:
@@ -143,6 +160,12 @@ class RiderProfileViewSet(ContextBindingMixin, GenericViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(RiderMeSerializer(profile).data)
+
+    @extend_schema(request=None, responses={204: None})
+    @action(detail=False, methods=["delete"], url_path=r"favourites/(?P<driver_id>\d+)")
+    def remove_favourite(self, request, driver_id=None):
+        request.user.rider_profile.favourite_drivers.remove(int(driver_id))
+        return Response(status=204)
 
 
 class SavedPlaceSerializer(serializers.ModelSerializer):

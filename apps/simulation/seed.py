@@ -193,12 +193,10 @@ class Seeder:
         vehicle=None,
         documents="approved",
     ) -> DriverProfile:
+        woman = False
         if first is None:
-            first = (
-                self.fake.first_name_male()
-                if self.rng.random() < 0.9
-                else self.fake.first_name_female()
-            )
+            woman = self.rng.random() >= 0.9  # about one driver in ten is a woman
+            first = self.fake.first_name_female() if woman else self.fake.first_name_male()
         last = last or self.fake.last_name()
         driver = drivers_svc.register_driver(
             email=email or self._email(first, last, "drivers.example.com"),
@@ -212,6 +210,7 @@ class Seeder:
                 f"{self.rng.randrange(10**6, 10**7)}"
             ),
             license_expiry=date(self.rng.randrange(2029, 2036), self.rng.randrange(1, 13), 1),
+            gender="FEMALE" if woman else "MALE",
         )
         code = ride_type or _weighted(self.rng, RIDE_TYPE_WEIGHTS)
         make, model, seats = vehicle or self.rng.choice(VEHICLES[code])

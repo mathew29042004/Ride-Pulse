@@ -27,6 +27,7 @@ from apps.support.api import IncidentSerializer
 from . import calls, dispatch, invoices, pickup, services
 from .models import (
     ACTIVE_STATUSES,
+    RidePreference,
     ScheduledRide,
     Trip,
     TripEvent,
@@ -66,6 +67,7 @@ class TripSerializer(serializers.ModelSerializer):
     promo_code = serializers.CharField(source="promo.code", default=None, read_only=True)
     has_rated = serializers.SerializerMethodField()
     stop = serializers.SerializerMethodField()
+    is_favourite_driver = serializers.SerializerMethodField()
 
     class Meta:
         model = Trip
@@ -123,6 +125,8 @@ class TripSerializer(serializers.ModelSerializer):
             "invoice_emailed_at",
             "boost_amount",
             "tip_pledged",
+            "preferences",
+            "is_favourite_driver",
         ]
 
     def _viewer(self):
@@ -146,6 +150,12 @@ class TripSerializer(serializers.ModelSerializer):
     def get_fare(self, trip) -> dict:
         return FareSerializer(trip.final_fare).data
 
+    def get_is_favourite_driver(self, trip) -> bool:
+        viewer = self._viewer()
+        if not (viewer and viewer.is_rider and trip.driver_id):
+            return False
+        return trip.rider.favourite_drivers.filter(pk=trip.driver_id).exists()
+
     @extend_schema_field(PointSerializer(allow_null=True))
     def get_stop(self, trip) -> dict | None:
         return services.stop_payload(trip)
@@ -167,6 +177,9 @@ class TripRequestSerializer(serializers.Serializer):
     stop = PointSerializer(required=False, allow_null=True)
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
     tip = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
+    preferences = serializers.ListField(
+        child=serializers.ChoiceField(choices=RidePreference.choices), required=False, default=list
+    )
     promo_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
 
 
@@ -184,6 +197,10 @@ class StartSerializer(serializers.Serializer):
         if not attrs.get("otp") and not attrs.get("qr"):
             raise serializers.ValidationError("Scan the rider's QR code or enter their PIN.")
         return attrs
+
+
+class FavouriteSerializer(serializers.Serializer):
+    favourite = serializers.BooleanField()
 
 
 class BoostSerializer(serializers.Serializer):
@@ -324,6 +341,7 @@ RIDER = (
     "invoice",
     "email_invoice",
     "boost",
+    "favourite",
 )
 DRIVER = (
     "list",
@@ -403,6 +421,7 @@ class TripViewSet(
             stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
             stop_address=(data.get("stop") or {}).get("address", ""),
             tip=data.get("tip") or 0,
+            preferences=data.get("preferences") or [],
         )
         return self._respond(trip, status.HTTP_201_CREATED)
 
@@ -521,6 +540,17 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=FavouriteSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def favourite(self, request, pk=None):
+        """Save (or unsave) this trip's driver: offered your rides first when nearby."""
+        serializer = FavouriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        saved = services.set_favourite(
+            self.get_object(), user=request.user, favourite=serializer.validated_data["favourite"]
+        )
+        return Response({"favourite": saved})
 
     @extend_schema(request=BoostSerializer, responses=TripSerializer)
     @action(detail=True, methods=["post"])

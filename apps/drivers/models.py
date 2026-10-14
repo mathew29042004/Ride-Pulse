@@ -24,6 +24,12 @@ class Availability(models.TextChoices):
     ON_TRIP = "ON_TRIP", "On a trip"
 
 
+class Gender(models.TextChoices):
+    FEMALE = "FEMALE", "Woman"
+    MALE = "MALE", "Man"
+    UNDISCLOSED = "UNDISCLOSED", "Prefer not to say"
+
+
 class DriverProfile(AuditedModel, TimeStampedModel):
     # Location fields change every few seconds; auditing them would flood the trail.
     audit_exclude = (
@@ -60,6 +66,8 @@ class DriverProfile(AuditedModel, TimeStampedModel):
     safety_score = models.PositiveSmallIntegerField(null=True, blank=True)
     approved_at = models.DateTimeField(null=True, blank=True)
     suspended_reason = models.CharField(max_length=255, blank=True)
+    # Used only to honour riders' "prefer a woman driver" choice.
+    gender = models.CharField(max_length=11, choices=Gender.choices, default=Gender.UNDISCLOSED)
 
     class Meta:
         ordering = ["-created_at"]

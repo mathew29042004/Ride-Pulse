@@ -16,6 +16,7 @@ import { buzz, chime } from "@/lib/alert";
 import { api, ApiError } from "@/lib/api";
 import { inr, km, minutes } from "@/lib/format";
 import { usePhoneGps } from "@/lib/gps";
+import { PREFERENCES } from "@/lib/preferences";
 import { clockIn, etaFromKm, haversineKm, useActiveTrip, useDriverMe, useNow } from "@/lib/hooks";
 import type { City, Earnings, Offer, Trip } from "@/lib/types";
 import { useSocket } from "@/lib/ws";
@@ -49,6 +50,7 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
         <div>
           <Badge tone="brand">New {offer.ride_type} request</Badge>
           <div className="mt-2 text-3xl font-bold tracking-tight">{inr(offer.estimated_earning)}</div>
+          {offer.preferences.length > 0 && <PreferenceChips values={offer.preferences} />}
           {(Number(offer.boost) > 0 || Number(offer.tip) > 0) && (
             <div className="mt-1 flex flex-wrap gap-1.5">
               {Number(offer.boost) > 0 && <Badge tone="warning">+₹{Number(offer.boost)} boost</Badge>}
@@ -109,6 +111,19 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
           Accept
         </Button>
       </div>
+    </div>
+  );
+}
+
+/** The rider's requests ("Quiet ride", "AC on", …) as small chips. */
+function PreferenceChips({ values }: { values: string[] }) {
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {PREFERENCES.filter((p) => values.includes(p.value)).map(({ value, driverLabel, icon: Icon }) => (
+        <span key={value} className="flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-semibold">
+          <Icon className="size-3" /> {driverLabel}
+        </span>
+      ))}
     </div>
   );
 }
@@ -500,6 +515,7 @@ export default function DriverHome() {
                   <div className="text-xs text-muted">
                     <Stars value={trip.rider.rating} size={10} /> · {trip.ride_type_name} · {trip.payment_method === "CASH" ? "collect cash" : trip.payment_method.toLowerCase()}
                   </div>
+                  {trip.preferences.length > 0 && <PreferenceChips values={trip.preferences} />}
                 </div>
                 <TripChat tripId={trip.id} me="DRIVER" otherName={trip.rider.name} canSend compact />
                 <CallButton tripId={trip.id} name={trip.rider.name} compact />

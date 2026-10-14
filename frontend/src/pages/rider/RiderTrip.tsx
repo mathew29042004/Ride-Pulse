@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, Download, LifeBuoy, LocateFixed, Mail, RotateCcw, Share2, ShieldAlert, X, Zap } from "lucide-react";
+import { ArrowLeft, Download, Heart, LifeBuoy, LocateFixed, Mail, RotateCcw, Share2, ShieldAlert, X, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -311,6 +311,7 @@ export default function RiderTrip() {
               </div>
             </div>
 
+            {trip.driver && <FavouriteDriver trip={trip} />}
             {!trip.has_rated ? (
               <div className="mt-5 rounded-2xl bg-surface-2 p-4">
                 <p className="mb-3 text-center text-sm font-semibold">How was your ride with {trip.driver?.name.split(" ")[0]}?</p>
@@ -522,5 +523,29 @@ function InvoiceCard({ trip }: { trip: Trip }) {
         {resend.isPending ? "Sending…" : "Email"}
       </button>
     </div>
+  );
+}
+
+/** Heart a driver you liked: they're offered your rides first when they're nearby. */
+function FavouriteDriver({ trip }: { trip: Trip }) {
+  const qc = useQueryClient();
+  const toggle = useMutation({
+    mutationFn: (favourite: boolean) => api.post(`trips/${trip.id}/favourite/`, { favourite }),
+    onSuccess: (_, favourite) => {
+      qc.invalidateQueries({ queryKey: ["trips"] });
+      qc.invalidateQueries({ queryKey: ["rider", "me"] });
+      if (favourite) toast.success(`${trip.driver!.name.split(" ")[0]} is a favourite. They'll be asked first when nearby.`);
+    },
+  });
+  const on = trip.is_favourite_driver;
+  return (
+    <button
+      onClick={() => toggle.mutate(!on)}
+      disabled={toggle.isPending}
+      className={clsx("mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border py-2.5 text-sm font-semibold transition", on ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-400/30 dark:bg-rose-400/10 dark:text-rose-200" : "border-line")}
+      aria-pressed={on}
+    >
+      <Heart className={clsx("size-4", on && "fill-current")} /> {on ? `${trip.driver!.name.split(" ")[0]} is a favourite driver` : `Add ${trip.driver!.name.split(" ")[0]} to favourite drivers`}
+    </button>
   );
 }

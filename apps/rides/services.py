@@ -45,11 +45,13 @@ from apps.riders.models import RiderProfile
 
 from . import dispatch
 from .models import (
+    CAR_ONLY_PREFERENCES,
     TERMINAL_STATUSES,
     CancelledBy,
     OfferStatus,
     PricingMode,
     RatingDirection,
+    RidePreference,
     ScheduledRide,
     ScheduledRideStatus,
     Trip,
@@ -299,9 +301,11 @@ def request_trip(
     stop: tuple[float, float] | None = None,
     stop_address: str = "",
     tip: Decimal | int = 0,
+    preferences: list[str] | tuple[str, ...] = (),
 ) -> Trip:
     now = now or timezone.now()
     tip = Decimal(tip or 0)
+    preferences = clean_preferences(preferences, ride_type)
     if tip and not payments.MIN_TIP <= tip <= payments.MAX_TIP:
         raise BusinessRuleViolation(
             f"Tips must be between ₹{payments.MIN_TIP} and ₹{payments.MAX_TIP}.", field="tip"
@@ -341,6 +345,7 @@ def request_trip(
         with transaction.atomic():
             trip = Trip.objects.create(
                 tip_pledged=tip,
+                preferences=preferences,
                 trip_number=_next_trip_number(now),
                 rider=rider,
                 ride_type=ride_type,
@@ -1287,3 +1292,35 @@ def _collect_pledged_tip(trip: Trip, *, payer_reference: str, now: datetime) -> 
     Trip.objects.filter(pk=trip.pk).update(tip_amount=F("tip_amount") + amount)
     trip.tip_amount += amount
     record_event(trip, "TIP", actor=trip.rider.user, message=message, at=now)
+
+
+# --- Ride preferences and favourite drivers ------------------------------------------------
+
+TWO_WHEELERS_AND_AUTOS = {"BIKE", "AUTO"}
+
+
+def clean_preferences(preferences, ride_type: RideType) -> list[str]:
+    """Known preferences, once each; AC and luggage are dropped for bikes and autos."""
+    chosen = []
+    for value in preferences or ():
+        if value not in RidePreference.values:
+            raise BusinessRuleViolation(f"Unknown ride preference: {value}", field="preferences")
+        if value in chosen:
+            continue
+        if value in CAR_ONLY_PREFERENCES and ride_type.code in TWO_WHEELERS_AND_AUTOS:
+            continue
+        chosen.append(value)
+    return chosen
+
+
+def set_favourite(trip: Trip, *, user, favourite: bool) -> bool:
+    """Heart (or un-heart) the driver of a finished trip."""
+    if not (user.is_rider and trip.rider.user_id == user.pk):
+        raise ActionNotPermitted("Only the rider can save their driver.")
+    if trip.driver_id is None or trip.status != TripStatus.COMPLETED:
+        raise InvalidStateTransition("You can save a driver after a completed trip.")
+    if favourite:
+        trip.rider.favourite_drivers.add(trip.driver_id)
+    else:
+        trip.rider.favourite_drivers.remove(trip.driver_id)
+    return favourite

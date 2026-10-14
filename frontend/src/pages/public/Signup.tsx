@@ -23,6 +23,7 @@ export default function Signup({ kind }: { kind: "rider" | "driver" }) {
     city: "chennai",
     license_number: "",
     license_expiry: "",
+    gender: "UNDISCLOSED",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ field: string | null; message: string } | null>(null);
@@ -41,7 +42,7 @@ export default function Signup({ kind }: { kind: "rider" | "driver" }) {
     const body =
       kind === "rider"
         ? { ...base, referral_code: form.referral_code }
-        : { ...base, city: form.city, license_number: form.license_number, license_expiry: form.license_expiry };
+        : { ...base, city: form.city, license_number: form.license_number, license_expiry: form.license_expiry, gender: form.gender };
     try {
       const data = await api.post<{ access: string; refresh: string; user: User }>(`auth/register/${kind}/`, body);
       acceptTokens(data);
@@ -105,6 +106,13 @@ export default function Signup({ kind }: { kind: "rider" | "driver" }) {
                 </Field>
                 <Field label="Licence expiry" error={fieldError("license_expiry")}>
                   <Input type="date" required value={form.license_expiry} onChange={set("license_expiry")} />
+                </Field>
+                <Field label="Gender (optional)" hint="Only used to match riders who prefer a woman driver.">
+                  <Select value={form.gender} onChange={set("gender")}>
+                    <option value="UNDISCLOSED">Prefer not to say</option>
+                    <option value="FEMALE">Woman</option>
+                    <option value="MALE">Man</option>
+                  </Select>
                 </Field>
               </div>
             </>

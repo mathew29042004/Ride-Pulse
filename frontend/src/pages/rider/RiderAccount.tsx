@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Copy, Gift, House, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Shield, Sun, Trash2 } from "lucide-react";
+import { Briefcase, ChevronRight, Copy, Gift, Heart, House, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Shield, Sun, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { PushToggle } from "@/components/PushToggle";
 import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { PREFERENCES } from "@/lib/preferences";
 import { useTheme } from "@/lib/theme";
 import type { Place, Rider, SavedPlace } from "@/lib/types";
 
@@ -99,6 +100,8 @@ export default function RiderAccount() {
 
       {rider && <InviteCard rider={rider} />}
       <InvoiceEmailRow />
+
+      {rider && <PreferencesAndFavourites rider={rider} />}
 
       <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Saved places</h2>
       <div className="divide-y divide-line">
@@ -295,6 +298,64 @@ function InvoiceEmailRow() {
         </Field>
         <p className="mt-2 text-xs text-muted">Invoices and receipts are sent here after each paid ride.</p>
       </Modal>
+    </>
+  );
+}
+
+/** Default ride preferences (pre-selected when booking) and favourite drivers. */
+function PreferencesAndFavourites({ rider }: { rider: Rider }) {
+  const qc = useQueryClient();
+  const defaults = rider.default_preferences ?? [];
+  const save = useMutation({
+    mutationFn: (values: string[]) => api.patch("rider/me/", { default_preferences: values }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rider", "me"] }),
+    onError: () => toast.error("Couldn't save your preferences."),
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => api.del(`rider/favourites/${id}/`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rider", "me"] }),
+  });
+  return (
+    <>
+      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Ride preferences</h2>
+      <p className="mb-2 text-xs text-muted">Selected for you every time you book. You can still change them per ride.</p>
+      <div className="flex flex-wrap gap-1.5">
+        {PREFERENCES.map(({ value, label, icon: Icon }) => {
+          const on = defaults.includes(value);
+          return (
+            <button
+              key={value}
+              onClick={() => save.mutate(on ? defaults.filter((v) => v !== value) : [...defaults, value])}
+              aria-pressed={on}
+              className={on ? "flex items-center gap-1.5 rounded-full border border-fg bg-ink px-3 py-1.5 text-xs font-semibold text-ink-fg" : "flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-muted"}
+            >
+              <Icon className="size-3.5" /> {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Favourite drivers</h2>
+      {(rider.favourites ?? []).length === 0 ? (
+        <p className="mt-1 text-xs text-muted">Tap the heart after a ride to save a driver. Favourites nearby are asked first.</p>
+      ) : (
+        <div className="divide-y divide-line">
+          {rider.favourites!.map((f) => (
+            <div key={f.id} className="flex items-center gap-3 py-3">
+              <Avatar name={f.name} size={36} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold">{f.name}</div>
+                <div className="truncate text-xs text-muted">
+                  ★ {Number(f.rating).toFixed(2)} · {f.vehicle}
+                </div>
+              </div>
+              <button onClick={() => remove.mutate(f.id)} className="rounded-full p-2 text-muted hover:bg-surface-3" aria-label={`Remove ${f.name} from favourites`}>
+                <Heart className="size-4 fill-rose-500 text-rose-500" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

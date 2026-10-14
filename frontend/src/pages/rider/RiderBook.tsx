@@ -31,7 +31,8 @@ import { api, ApiError } from "@/lib/api";
 import { inr, km, minutes } from "@/lib/format";
 import { useWallet } from "@/lib/hooks";
 import { useLayout } from "@/lib/layout";
-import type { Estimate, PaymentMethod, SavedPlace, Trip } from "@/lib/types";
+import { isCar, PREFERENCES } from "@/lib/preferences";
+import type { Estimate, PaymentMethod, Rider, SavedPlace, Trip } from "@/lib/types";
 
 import { useRiderLocation } from "./RiderHome";
 
@@ -85,6 +86,11 @@ export default function RiderBook() {
   const [payment, setPayment] = useState<PaymentMethod>("UPI");
   const [promoInput, setPromoInput] = useState("");
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
+  // Ride preferences: pre-selected from the rider's saved defaults, changeable per ride.
+  const me = useQuery({ queryKey: ["rider", "me"], queryFn: () => api.get<Rider>("rider/me/") });
+  const [prefs, setPrefs] = useState<string[] | null>(null);
+  const chosenPrefs = prefs ?? me.data?.default_preferences ?? [];
+  const togglePref = (value: string) => setPrefs(chosenPrefs.includes(value) ? chosenPrefs.filter((p) => p !== value) : [...chosenPrefs, value]);
   const [promo, setPromo] = useState("");
   const [showFare, setShowFare] = useState(false);
   // Book now, or schedule for later (opened straight from Home's "Later" button).
@@ -148,6 +154,7 @@ export default function RiderBook() {
         payment_method: payment,
         promo_code: promo,
         tip,
+        preferences: chosenPrefs.filter((p) => isCar(selected) || !PREFERENCES.find((x) => x.value === p)?.carsOnly),
       }),
     onSuccess: (trip) => {
       qc.invalidateQueries({ queryKey: ["trips"] });
@@ -467,6 +474,26 @@ export default function RiderBook() {
                   </div>
                 </div>
               )}
+
+              <div className="mt-3">
+                <div className="mb-1.5 text-xs font-semibold text-muted">Ride preferences</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {PREFERENCES.filter((p) => isCar(selected) || !p.carsOnly).map(({ value, label, icon: Icon }) => {
+                    const on = chosenPrefs.includes(value);
+                    return (
+                      <button
+                        key={value}
+                        onClick={() => togglePref(value)}
+                        aria-pressed={on}
+                        className={clsx("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition", on ? "border-fg bg-ink text-ink-fg" : "border-line text-muted")}
+                      >
+                        <Icon className="size-3.5" /> {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {chosenPrefs.includes("WOMAN_DRIVER") && <p className="mt-1.5 text-xs text-muted">Women drivers nearby are asked first. If none is free, we'll find you the next best driver.</p>}
+              </div>
 
               <div className="mt-3">
                 <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted">

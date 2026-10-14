@@ -51,6 +51,17 @@ class TripPaymentStatus(models.TextChoices):
     NOT_APPLICABLE = "NOT_APPLICABLE", "Not applicable"
 
 
+class RidePreference(models.TextChoices):
+    QUIET = "QUIET", "Quiet ride"
+    AC = "AC", "AC on"
+    LUGGAGE = "LUGGAGE", "Extra luggage"
+    WOMAN_DRIVER = "WOMAN_DRIVER", "Woman driver preferred"
+
+
+# AC and luggage only make sense in a car.
+CAR_ONLY_PREFERENCES = {RidePreference.AC, RidePreference.LUGGAGE}
+
+
 class PricingMode(models.TextChoices):
     UPFRONT = "UPFRONT", "Upfront price honoured"
     METERED = "METERED", "Re-priced on actual route"
@@ -129,6 +140,9 @@ class Trip(AuditedModel, TimeStampedModel):
     boosted_at = models.DateTimeField(null=True, blank=True)
     dispatch_round = models.PositiveSmallIntegerField(default=0)
     tip_pledged = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal(0))
+    preferences = ArrayField(
+        models.CharField(max_length=12, choices=RidePreference.choices), default=list, blank=True
+    )
     payment_method = models.CharField(max_length=6)
     promo = models.ForeignKey(
         "pricing.PromoCode", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"

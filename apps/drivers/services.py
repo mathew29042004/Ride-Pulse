@@ -49,6 +49,7 @@ def register_driver(
     city,
     license_number: str,
     license_expiry: date,
+    gender: str = "UNDISCLOSED",
 ) -> DriverProfile:
     from apps.payments.services import ensure_wallet
 
@@ -69,7 +70,11 @@ def register_driver(
         phone=phone,
     )
     driver = DriverProfile.objects.create(
-        user=user, city=city, license_number=license_number.upper(), license_expiry=license_expiry
+        gender=gender,
+        user=user,
+        city=city,
+        license_number=license_number.upper(),
+        license_expiry=license_expiry,
     )
     ensure_wallet(user)
     return driver

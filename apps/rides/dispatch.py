@@ -31,7 +31,7 @@ from apps.core.conf import (
     offer_timeout_seconds,
 )
 from apps.core.exceptions import ActionNotPermitted, InvalidStateTransition
-from apps.drivers.models import Availability, DriverProfile
+from apps.drivers.models import Availability, DriverProfile, Gender
 from apps.drivers.safety import dispatch_penalty_minutes
 from apps.drivers.services import nearby_available_drivers
 from apps.geo.distance import haversine_km
@@ -40,7 +40,7 @@ from apps.geo.routing import eta_minutes
 from apps.realtime import broadcast
 
 from . import hungarian
-from .models import OfferStatus, Trip, TripOffer, TripStatus
+from .models import OfferStatus, RidePreference, Trip, TripOffer, TripStatus
 
 RADIUS_EXPANSION_AFTER_ATTEMPTS = 2
 ACCEPTANCE_WINDOW = 50
@@ -52,6 +52,11 @@ class Candidate:
     distance_km: float
     eta_minutes: float
     score: float
+
+
+# How much a preference moves a driver up the queue, in minutes of pickup time.
+FAVOURITE_BONUS_MINUTES = 6.0
+WOMAN_DRIVER_BONUS_MINUTES = 30.0  # effectively "women first" among nearby drivers
 
 
 def rank_score(
@@ -85,24 +90,26 @@ def candidates_for(
         exclude_ids=[*already_offered, *_busy_driver_ids()],
         limit=limit,
     )
+    favourites = set(trip.rider.favourite_drivers.values_list("pk", flat=True))
+    wants_woman = RidePreference.WOMAN_DRIVER in trip.preferences
     ranked = []
     for driver in drivers:
         eta = eta_minutes(
             driver.current_lat, driver.current_lng, trip.pickup_lat, trip.pickup_lng, now
         )
-        ranked.append(
-            Candidate(
-                driver,
-                driver.distance_km,
-                eta,
-                rank_score(
-                    eta=eta,
-                    rating=driver.rating,
-                    acceptance_rate=driver.acceptance_rate,
-                    safety_score=driver.safety_score,
-                ),
-            )
+        score = rank_score(
+            eta=eta,
+            rating=driver.rating,
+            acceptance_rate=driver.acceptance_rate,
+            safety_score=driver.safety_score,
         )
+        # Preferences reorder nearby drivers but never leave the rider stranded: if no
+        # preferred driver is around, everyone else is still asked.
+        if driver.pk in favourites:
+            score -= FAVOURITE_BONUS_MINUTES
+        if wants_woman and driver.gender == Gender.FEMALE:
+            score -= WOMAN_DRIVER_BONUS_MINUTES
+        ranked.append(Candidate(driver, driver.distance_km, eta, score))
     return sorted(ranked, key=lambda c: c.score)
 
 
@@ -188,6 +195,7 @@ def offer_payload(offer: TripOffer) -> dict:
         "estimated_earning": trip.estimate.driver_earning,
         "boost": trip.boost_amount,
         "tip": trip.tip_pledged,
+        "preferences": trip.preferences,
         "surge": trip.surge_multiplier,
         "payment_method": trip.payment_method,
         "expires_at": offer.expires_at,
