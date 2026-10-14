@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { BaseMap, PinMarker } from "@/components/map";
+import { OpsRideChecks } from "@/components/SafetyPlus";
 import { Button, Card, CardHeader, EmptyState, KeyValue, PageHeader, StatusBadge, Textarea } from "@/components/ui";
 import { api } from "@/lib/api";
 import { ago, dateTime } from "@/lib/format";
@@ -92,6 +93,7 @@ export default function OpsSafety() {
           )}
         </div>
       )}
+      <OpsRideChecks />
     </>
   );
 }

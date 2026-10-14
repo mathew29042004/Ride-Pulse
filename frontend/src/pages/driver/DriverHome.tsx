@@ -9,6 +9,7 @@ import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLin
 import { CallButton } from "@/components/CallButton";
 import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
 import { DriverLostItems } from "@/components/LostItem";
+import { NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { NotificationBell } from "@/components/NotificationBell";
 import { usePush } from "@/components/PushToggle";
 import { QrScanner } from "@/components/QrScanner";
@@ -436,6 +437,7 @@ export default function DriverHome() {
 
       <div className="flex-1" />
 
+      {trip && <RideCheckPrompt trip={trip} role="driver" />}
       {!trip && !offer && <DriverLostItems />}
       <div className="rp-overlay relative z-[600] flex items-center justify-end gap-2 px-3 pb-2">
         {online && !trip && <GoingHomeButton driver={driver} />}
@@ -551,6 +553,7 @@ export default function DriverHome() {
                 </a>
               </div>
 
+              <NightSafeBar trip={trip} role="driver" />
               <div className="mt-4 space-y-2">
                 {trip.status === "DRIVER_ASSIGNED" && (
                   <>

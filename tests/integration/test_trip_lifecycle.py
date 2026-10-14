@@ -163,6 +163,9 @@ def test_safety_score_from_telemetry(mini, make_driver, now):
         trip = dispatch.accept_offer(pending_offer(trip), driver=driver, now=t)
         trip = rides.mark_arrived(trip, driver=driver, now=t, enforce_distance=False)
         trip = rides.start_trip(trip, driver=driver, otp=trip.otp, now=t + timedelta(minutes=1))
+        drivers.update_location(
+            driver, lat=trip.dropoff_lat, lng=trip.dropoff_lng, now=t + timedelta(minutes=19)
+        )
         rides.complete_trip(
             trip,
             driver=driver,

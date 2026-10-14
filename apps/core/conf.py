@@ -127,6 +127,25 @@ def ride_pass_terms() -> dict:
     }
 
 
+def app_url() -> str:
+    return str(_value("APP_URL")).rstrip("/")
+
+
+def night_safe_hours() -> tuple[int, int]:
+    """(start, end) local hours of Night Safe mode, e.g. (22, 6)."""
+    start, end = _value("NIGHT_SAFE_HOURS")
+    return int(start), int(end)
+
+
+def ride_check_rules(*, night: bool) -> dict:
+    i = 1 if night else 0
+    return {
+        "stop_minutes": int(_value("RIDE_CHECK_STOP_MINUTES")[i]),
+        "off_route_km": float(_value("RIDE_CHECK_OFF_ROUTE_KM")[i]),
+        "answer_minutes": int(_value("RIDE_CHECK_ANSWER_MINUTES")),
+    }
+
+
 def location_ping_retention_days() -> int:
     return int(_value("LOCATION_PING_RETENTION_DAYS"))
 

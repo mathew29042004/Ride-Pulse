@@ -73,6 +73,7 @@ class TripFlag(models.TextChoices):
     SOS = "SOS", "SOS raised"
     LOW_RATING = "LOW_RATING", "Rated 2 stars or less"
     GPS_JUMP = "GPS_JUMP", "GPS jumped impossibly far (glitch or spoofing)"
+    RIDE_CHECK = "RIDE_CHECK", "Ride Check escalated to the safety team"
 
 
 class Trip(AuditedModel, TimeStampedModel):
@@ -159,6 +160,11 @@ class Trip(AuditedModel, TimeStampedModel):
     route_polyline = models.TextField(blank=True, help_text="Encoded road route (Google)")
     # Secret for the public "follow my ride" page; set when the rider first shares the trip.
     share_token = models.CharField(max_length=32, null=True, blank=True, unique=True)
+    # Night Safe mode (see rides.safety): decided when the trip starts.
+    night_safe = models.BooleanField(default=False)
+    contacts_notified_at = models.DateTimeField(null=True, blank=True)
+    early_drop_confirmed = models.BooleanField(default=False)
+    home_safe_at = models.DateTimeField(null=True, blank=True)
     route_source = models.CharField(max_length=10, default="estimate")
 
     requested_at = models.DateTimeField(default=timezone.now)
@@ -521,3 +527,50 @@ class LostItemReport(models.Model):
 
     def __str__(self) -> str:
         return f"{self.trip_id}: {self.description[:30]} ({self.status})"
+
+
+class RideCheckKind(models.TextChoices):
+    LONG_STOP = "LONG_STOP", "The car hasn't moved for a while"
+    OFF_ROUTE = "OFF_ROUTE", "The car is far from the route"
+    RUNNING_LATE = "RUNNING_LATE", "The trip is taking much longer than expected"
+    SIGNAL_LOST = "SIGNAL_LOST", "We lost the car's location"
+
+
+class RideCheckStatus(models.TextChoices):
+    OPEN = "OPEN", "Waiting for the rider"
+    OK = "OK", "Rider is OK"
+    HELP = "HELP", "Rider asked for help"
+    ESCALATED = "ESCALATED", "No answer: sent to the safety team"
+    CLOSED = "CLOSED", "Trip ended normally before an answer"
+
+
+class RideCheck(models.Model):
+    """ "Is everything OK?": raised automatically when a trip looks wrong (see rides.safety)."""
+
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="ride_checks")
+    kind = models.CharField(max_length=12, choices=RideCheckKind.choices)
+    status = models.CharField(
+        max_length=9, choices=RideCheckStatus.choices, default=RideCheckStatus.OPEN
+    )
+    lat = models.FloatField(null=True, blank=True)
+    lng = models.FloatField(null=True, blank=True)
+    driver_ok = models.BooleanField(null=True, blank=True)
+    incident = models.ForeignKey(
+        "support.SafetyIncident", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["trip", "kind"], name="ride_check_once_per_kind"),
+        ]
+        indexes = [
+            models.Index(
+                fields=["created_at"], condition=Q(status="OPEN"), name="ride_check_open_idx"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.trip_id} {self.kind} ({self.status})"

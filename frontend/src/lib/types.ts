@@ -136,6 +136,12 @@ export interface Trip {
   tip_pledged: string;
   preferences: string[];
   is_favourite_driver: boolean;
+  night_safe: boolean;
+  early_drop_confirmed: boolean;
+  contacts_notified_at: string | null;
+  home_safe_at: string | null;
+  /** An "Is everything OK?" question waiting for this viewer. */
+  open_ride_check: RideCheck | null;
   rider: TripParty;
   driver: TripParty | null;
   driver_location: { lat: number; lng: number; heading: number | null } | null;
@@ -288,6 +294,7 @@ export interface Rider {
   default_payment_method: PaymentMethod;
   emergency_contact_name: string;
   emergency_contact_phone: string;
+  night_safety: boolean;
   is_blocked: boolean;
   blocked_reason: string;
   wallet_balance: string;
@@ -584,4 +591,30 @@ export interface ScheduledRide {
   trip_id: number | null;
   failure_reason: string;
   created_at: string;
+}
+
+export interface RideCheck {
+  id: number;
+  trip_id: number;
+  trip_number: string;
+  rider_name: string;
+  driver_name: string;
+  kind: "LONG_STOP" | "OFF_ROUTE" | "RUNNING_LATE" | "SIGNAL_LOST";
+  kind_label: string;
+  status: "OPEN" | "OK" | "HELP" | "ESCALATED" | "CLOSED";
+  status_label: string;
+  lat: number | null;
+  lng: number | null;
+  driver_ok: boolean | null;
+  incident_id: number | null;
+  created_at: string;
+  answered_at: string | null;
+}
+
+export interface TrustedContact {
+  id: number;
+  name: string;
+  phone: string;
+  share_mode: "ALWAYS" | "NIGHT" | "NEVER";
+  share_mode_label: string;
 }

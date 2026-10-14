@@ -1,12 +1,13 @@
 import { clsx } from "clsx";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Copy, Gift, Heart, House, Languages, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Shield, Sun, Trash2 } from "lucide-react";
+import { Briefcase, ChevronRight, Copy, Gift, Heart, House, Languages, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Sun, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { PushToggle } from "@/components/PushToggle";
 import { RidePassCard } from "@/components/RidePassCard";
+import { SafetySettings } from "@/components/SafetyPlus";
 import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -70,9 +71,7 @@ export default function RiderAccount() {
   const qc = useQueryClient();
   const profile = useQuery({ queryKey: ["rider", "me"], queryFn: () => api.get<Rider>("rider/me/") });
   const places = useQuery({ queryKey: ["places", "saved"], queryFn: () => api.get<SavedPlace[]>("rider/places/") });
-  const [emergency, setEmergency] = useState(false);
   const [placeOpen, setPlaceOpen] = useState(false);
-  const [contact, setContact] = useState({ emergency_contact_name: "", emergency_contact_phone: "" });
   const [place, setPlace] = useState({ label: "HOME", query: "", picked: null as Place | null });
 
   const search = useQuery({
@@ -81,15 +80,6 @@ export default function RiderAccount() {
     enabled: place.query.length >= 2 && !place.picked,
   });
 
-  const save = useMutation({
-    mutationFn: () => api.patch<Rider>("rider/me/", contact),
-    onSuccess: () => {
-      toast.success("Emergency contact saved");
-      setEmergency(false);
-      qc.invalidateQueries({ queryKey: ["rider", "me"] });
-    },
-    onError: (err) => toast.error((err as Error).message),
-  });
   const addPlace = useMutation({
     mutationFn: () =>
       api.post("rider/places/", {
@@ -153,20 +143,7 @@ export default function RiderAccount() {
       <h2 className="mt-4 text-xs font-semibold tracking-wide text-muted uppercase">Safety & help</h2>
       <div className="divide-y divide-line">
         <PushToggle audience="rider" />
-        <button
-          onClick={() => {
-            setContact({ emergency_contact_name: rider?.emergency_contact_name ?? "", emergency_contact_phone: rider?.emergency_contact_phone ?? "" });
-            setEmergency(true);
-          }}
-          className="flex w-full items-center gap-3 py-3.5 text-left"
-        >
-          <Shield className="size-5" />
-          <span className="flex-1">
-            <span className="block font-medium">Emergency contact</span>
-            <span className="block text-xs text-muted">{rider?.emergency_contact_name || "Not set"}</span>
-          </span>
-          <ChevronRight className="size-4 text-muted" />
-        </button>
+        <SafetySettings rider={rider} />
         <Link to="/ride/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
           <span className="flex-1 font-medium">Help & support tickets</span>
@@ -176,25 +153,6 @@ export default function RiderAccount() {
         <ThemeRow />
         <LogoutRow />
       </div>
-
-      <Modal
-        open={emergency}
-        onClose={() => setEmergency(false)}
-        title="Emergency contact"
-        footer={
-          <Button onClick={() => save.mutate()} loading={save.isPending}>
-            Save
-          </Button>
-        }
-      >
-        <p className="mb-3 text-sm text-muted">We'll share your trip with this person if you press SOS.</p>
-        <Field label="Name">
-          <Input value={contact.emergency_contact_name} onChange={(e) => setContact((c) => ({ ...c, emergency_contact_name: e.target.value }))} />
-        </Field>
-        <Field label="Phone" className="mt-3">
-          <Input value={contact.emergency_contact_phone} onChange={(e) => setContact((c) => ({ ...c, emergency_contact_phone: e.target.value }))} />
-        </Field>
-      </Modal>
 
       <Modal
         open={placeOpen}

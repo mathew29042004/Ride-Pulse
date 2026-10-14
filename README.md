@@ -278,6 +278,15 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Tamil and Hindi:** the rider and driver apps switch language from Account (kept on the
   device); anything not yet translated shows in English.
 
+* **Safety+ (Ride Check and Night Safe mode):** every minute the server watches trips in
+  progress and asks "Is everything OK?" when the car has stopped for a while, gone well off the
+  route, is running very late, or its location went silent (`rides.safety`). "Get help", or no
+  answer within 3 minutes, opens a safety incident like SOS and alerts the rider's trusted
+  contacts. Night Safe mode (10 pm – 6 am and "woman driver" rides) uses stricter limits,
+  texts the live link to trusted contacts (up to 3: every ride, night rides, or only when shared),
+  stops the driver ending the trip away from the drop unless the rider confirms, and adds an
+  "I'm home safe" check-in. Ops see every check in the Safety desk.
+
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the
   ledger (`DRIVER_GOALS`).

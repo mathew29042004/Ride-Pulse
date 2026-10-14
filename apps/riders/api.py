@@ -12,7 +12,7 @@ from apps.core.conf import referral_bonus
 from apps.payments.services import wallet_balance
 
 from . import services
-from .models import RiderProfile, SavedPlace
+from .models import RiderProfile, SavedPlace, TrustedContact
 
 
 class IsRider(BasePermission):
@@ -40,6 +40,7 @@ class RiderSerializer(serializers.ModelSerializer):
             "default_payment_method",
             "emergency_contact_name",
             "emergency_contact_phone",
+            "night_safety",
             "is_blocked",
             "blocked_reason",
             "wallet_balance",
@@ -202,6 +203,55 @@ class SavedPlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavedPlace
         fields = ["id", "label", "name", "address", "lat", "lng"]
+
+
+MAX_TRUSTED_CONTACTS = 3
+
+
+class TrustedContactSerializer(serializers.ModelSerializer):
+    share_mode_label = serializers.CharField(source="get_share_mode_display", read_only=True)
+    # Accept "+91 98765 43210" and the like; stored as 10 digits.
+    phone = serializers.CharField(max_length=20)
+
+    class Meta:
+        model = TrustedContact
+        fields = ["id", "name", "phone", "share_mode", "share_mode_label", "created_at"]
+        read_only_fields = ["created_at"]
+
+    def validate_phone(self, value: str) -> str:
+        from apps.core.validators import normalize_indian_mobile
+
+        try:
+            return normalize_indian_mobile(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+
+class TrustedContactViewSet(ContextBindingMixin, ModelViewSet):
+    """Up to three people who get the live trip link (and Ride Check alerts)."""
+
+    serializer_class = TrustedContactSerializer
+    permission_classes = [IsRider]
+    pagination_class = None
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return TrustedContact.objects.none()
+        return TrustedContact.objects.filter(rider__user=self.request.user)
+
+    def perform_create(self, serializer):
+        from django.db import IntegrityError, transaction
+
+        from apps.core.exceptions import BusinessRuleViolation, ConflictError
+
+        rider = self.request.user.rider_profile
+        if rider.contacts.count() >= MAX_TRUSTED_CONTACTS:
+            raise BusinessRuleViolation(f"You can add up to {MAX_TRUSTED_CONTACTS} contacts.")
+        try:
+            with transaction.atomic():
+                serializer.save(rider=rider)
+        except IntegrityError as exc:
+            raise ConflictError("That number is already one of your contacts.") from exc
 
 
 class SavedPlaceViewSet(ContextBindingMixin, ModelViewSet):

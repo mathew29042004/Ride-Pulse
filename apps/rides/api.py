@@ -24,11 +24,14 @@ from apps.pricing.api import FareSerializer, PointSerializer
 from apps.pricing.models import RideType
 from apps.support.api import IncidentSerializer
 
-from . import calls, dispatch, invoices, lost_items, pickup, services, splits
+from . import calls, dispatch, invoices, lost_items, pickup, safety, services, splits
 from .models import (
     ACTIVE_STATUSES,
     FareSplit,
     LostItemReport,
+    RideCheck,
+    RideCheckKind,
+    RideCheckStatus,
     RidePreference,
     ScheduledRide,
     Trip,
@@ -55,6 +58,39 @@ class TripPartySerializer(serializers.Serializer):
         return party.user.phone if viewer is not None and viewer.is_staff_member else None
 
 
+class RideCheckSerializer(serializers.ModelSerializer):
+    kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    trip_number = serializers.CharField(source="trip.trip_number", read_only=True)
+    rider_name = serializers.CharField(source="trip.rider.name", read_only=True)
+    driver_name = serializers.CharField(source="trip.driver.user.get_full_name", read_only=True)
+    incident_id = serializers.IntegerField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = RideCheck
+        fields = [
+            "id",
+            "trip_id",
+            "trip_number",
+            "rider_name",
+            "driver_name",
+            "kind",
+            "kind_label",
+            "status",
+            "status_label",
+            "lat",
+            "lng",
+            "driver_ok",
+            "incident_id",
+            "created_at",
+            "answered_at",
+        ]
+
+
+class RideCheckAnswerSerializer(serializers.Serializer):
+    ok = serializers.BooleanField()
+
+
 class TripSerializer(serializers.ModelSerializer):
     ride_type = serializers.SlugRelatedField(slug_field="code", read_only=True)
     ride_type_name = serializers.CharField(source="ride_type.name", read_only=True)
@@ -70,6 +106,7 @@ class TripSerializer(serializers.ModelSerializer):
     has_rated = serializers.SerializerMethodField()
     stop = serializers.SerializerMethodField()
     is_favourite_driver = serializers.SerializerMethodField()
+    open_ride_check = serializers.SerializerMethodField()
 
     class Meta:
         model = Trip
@@ -129,6 +166,11 @@ class TripSerializer(serializers.ModelSerializer):
             "tip_pledged",
             "preferences",
             "is_favourite_driver",
+            "night_safe",
+            "early_drop_confirmed",
+            "contacts_notified_at",
+            "home_safe_at",
+            "open_ride_check",
         ]
 
     def _viewer(self):
@@ -151,6 +193,21 @@ class TripSerializer(serializers.ModelSerializer):
 
     def get_fare(self, trip) -> dict:
         return FareSerializer(trip.final_fare).data
+
+    @extend_schema_field(RideCheckSerializer(allow_null=True))
+    def get_open_ride_check(self, trip) -> dict | None:
+        """The "Is everything OK?" question waiting for this viewer, if any."""
+        if trip.status != TripStatus.IN_PROGRESS:
+            return None
+        viewer = self._viewer()
+        checks = trip.ride_checks.filter(status=RideCheckStatus.OPEN)
+        if viewer and viewer.is_driver:
+            checks = checks.filter(
+                kind__in=[RideCheckKind.LONG_STOP, RideCheckKind.SIGNAL_LOST],
+                driver_ok__isnull=True,
+            )
+        check = checks.first()
+        return RideCheckSerializer(check).data if check else None
 
     def get_is_favourite_driver(self, trip) -> bool:
         viewer = self._viewer()
@@ -424,6 +481,8 @@ RIDER = (
     "split",
     "lost_item",
     "lost_item_returned",
+    "early_drop",
+    "home_safe",
 )
 DRIVER = (
     "list",
@@ -625,6 +684,18 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=None, responses=TripSerializer)
+    @action(detail=True, methods=["post"], url_path="early-drop")
+    def early_drop(self, request, pk=None):
+        """Night Safe ride: the rider confirms the driver may end the trip before the drop."""
+        return self._respond(safety.confirm_early_drop(self.get_object(), user=request.user))
+
+    @extend_schema(request=None, responses=TripSerializer)
+    @action(detail=True, methods=["post"], url_path="home-safe")
+    def home_safe(self, request, pk=None):
+        """ "I'm home safe": tells the trusted contacts who followed the ride."""
+        return self._respond(safety.home_safe(self.get_object(), user=request.user))
 
     @extend_schema(request=LostItemRequestSerializer, responses=LostItemSerializer)
     @action(detail=True, methods=["get", "post"], url_path="lost-item")
@@ -1051,3 +1122,26 @@ class FareSplitViewSet(mixins.ListModelMixin, BaseViewSet):
         return Response(
             FareSplitSerializer(splits.cancel_split(self.get_object(), user=request.user)).data
         )
+
+
+class RideCheckViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseViewSet):
+    """Ride Checks: "Is everything OK?" questions raised automatically during trips."""
+
+    queryset = RideCheck.objects.select_related("trip__rider__user", "trip__driver__user").order_by(
+        "status", "-created_at"
+    )
+    serializer_class = RideCheckSerializer
+    filterset_fields = ["status", "kind", "trip"]
+    rider_lookup = "trip__rider"
+    driver_lookup = "trip__driver"
+    rider_actions = ("list", "retrieve", "answer")
+    driver_actions = ("list", "retrieve", "answer")
+    capabilities = {"list": Cap.SAFETY_MANAGE, "retrieve": Cap.SAFETY_MANAGE}
+
+    @extend_schema(request=RideCheckAnswerSerializer, responses=RideCheckSerializer)
+    @action(detail=True, methods=["post"])
+    def answer(self, request, pk=None):
+        serializer = RideCheckAnswerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        check = safety.answer(self.get_object(), user=request.user, **serializer.validated_data)
+        return Response(RideCheckSerializer(check).data)

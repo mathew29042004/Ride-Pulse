@@ -511,15 +511,21 @@ def start_trip(
             else bool(otp) and secrets.compare_digest(str(otp).strip(), trip.otp)
         )
         if valid:
+            from . import safety
+
             waited = max((now - trip.arrived_at).total_seconds() / 60, 0) if trip.arrived_at else 0
-            return _change_status(
+            trip = _change_status(
                 trip,
                 TripStatus.IN_PROGRESS,
                 actor=driver.user,
                 at=now,
                 started_at=now,
                 waiting_minutes=_q(waited),
+                night_safe=safety.night_safe_for(trip, now),
             )
+            trip_id = trip.pk
+            transaction.on_commit(lambda: safety.share_with_contacts(trip_id, now=now))
+            return trip
         trip.pin_attempts += 1
         trip.save(update_fields=["pin_attempts", "updated_at"])
         left = MAX_PIN_ATTEMPTS - trip.pin_attempts
@@ -588,6 +594,9 @@ def complete_trip(
     trip = _lock(trip)
     _require_driver(trip, driver)
     assert_transition(trip.status, TripStatus.COMPLETED)
+    from . import safety
+
+    safety.assert_can_complete(trip, driver, now=now)
 
     duration = _q(max((now - trip.started_at).total_seconds() / 60, 1))
     skipped_jumps = Decimal(0)

@@ -134,6 +134,7 @@ def test_full_trip_over_the_api(api, rider, make_driver):
         ).json()["status"]
         == "IN_PROGRESS"
     )
+    drivers.update_location(driver, lat=MARINA[0], lng=MARINA[1])  # at the drop
     done = driver_client.post(
         f"/api/v1/trips/{trip['id']}/complete/", {"actual_distance_km": "6.9"}, format="json"
     ).json()
@@ -826,6 +827,7 @@ def test_lost_and_found(api, rider, make_driver, now):
     assert rider_client.post(call).status_code == 422  # closed again
 
     # Too late to report after 7 days.
+    drivers.update_location(driver, lat=T_NAGAR[0], lng=T_NAGAR[1], now=timezone.now())
     other = drive_to_completion(
         book(rider, rides.RideType.objects.get(code="MINI"), now=now), now=now
     )

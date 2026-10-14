@@ -9,7 +9,9 @@ from apps.rides.models import OfferStatus, Trip
 from ..conftest import MARINA, T_NAGAR
 
 
-def book(rider, ride_type, *, now, pickup=T_NAGAR, dropoff=MARINA, method="UPI", promo=""):
+def book(
+    rider, ride_type, *, now, pickup=T_NAGAR, dropoff=MARINA, method="UPI", promo="", preferences=()
+):
     return rides.request_trip(
         rider=rider,
         ride_type=ride_type,
@@ -17,6 +19,7 @@ def book(rider, ride_type, *, now, pickup=T_NAGAR, dropoff=MARINA, method="UPI",
         dropoff=dropoff,
         payment_method=method,
         promo_code=promo,
+        preferences=list(preferences),
         now=now,
     )
 
@@ -35,6 +38,8 @@ def drive_to_completion(trip: Trip, *, now, distance=None, payer_reference="") -
     )
     trip = rides.mark_arrived(trip, driver=driver, now=now + timedelta(minutes=4))
     trip = rides.start_trip(trip, driver=driver, otp=trip.otp, now=now + timedelta(minutes=5))
+    end = now + timedelta(minutes=5) + timedelta(minutes=float(trip.estimated_duration_min))
+    drivers.update_location(driver, lat=trip.dropoff_lat, lng=trip.dropoff_lng, now=end)
     return rides.complete_trip(
         trip,
         driver=driver,

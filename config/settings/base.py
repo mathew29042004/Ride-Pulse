@@ -232,6 +232,7 @@ CELERY_BEAT_SCHEDULE = {
     "scheduled-rides": {"task": "rides.dispatch_scheduled_rides", "schedule": timedelta(minutes=1)},
     "surge-recompute": {"task": "pricing.recompute_surge", "schedule": timedelta(minutes=2)},
     "price-alerts": {"task": "pricing.check_price_alerts", "schedule": timedelta(minutes=2)},
+    "ride-checks": {"task": "rides.run_ride_checks", "schedule": timedelta(minutes=1)},
     "stale-drivers-offline": {
         "task": "drivers.mark_stale_drivers_offline",
         "schedule": timedelta(minutes=5),
@@ -311,6 +312,13 @@ RIDE_PULSE = {
     "RIDE_PASS_PERCENT": "10",
     "RIDE_PASS_MAX_DISCOUNT": "30",
     # Driver daily goals: (trips completed today, bonus for reaching it). Bonuses add up.
+    # Public address of the site, used in links sent by SMS (trusted contacts).
+    "APP_URL": env("APP_URL", default="http://localhost:8000"),
+    # Night Safe mode (local hours) and Ride Check thresholds: (normal, night).
+    "NIGHT_SAFE_HOURS": [22, 6],
+    "RIDE_CHECK_STOP_MINUTES": [5, 3],
+    "RIDE_CHECK_OFF_ROUTE_KM": ["2.0", "1.0"],
+    "RIDE_CHECK_ANSWER_MINUTES": 3,
     "DRIVER_GOALS": [[5, "75"], [10, "125"]],
     "GOING_HOME_PER_DAY": 2,
     "GOING_HOME_MINUTES": 60,

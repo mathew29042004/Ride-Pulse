@@ -32,6 +32,7 @@ from apps.pricing import services as pricing
 from apps.pricing.models import RideType
 from apps.riders.models import RiderProfile
 from apps.rides import dispatch
+from apps.rides import safety as ride_safety
 from apps.rides import services as rides
 from apps.rides.models import (
     ACTIVE_STATUSES,
@@ -73,6 +74,7 @@ class Simulator:
         self.cities = list(City.objects.filter(slug__in=self.city_slugs, is_active=True))
         self.ride_types = {rt.code: rt for rt in RideType.objects.all()}
         self.last_surge = 0.0
+        self.last_ride_check = 0.0
         self.next_request: dict[int, float] = {}
         # Adopt bots left mid-trip by a previous run, so their riders aren't stranded.
         for pk in (
@@ -362,6 +364,10 @@ class Simulator:
                 self.log(f"  bot {bot.driver_id}: {exc.message}")
         dispatch.sweep()
         rides.dispatch_scheduled_rides()
+        if clock.monotonic() - self.last_ride_check > 30:
+            ride_safety.run_ride_checks()
+            ride_safety.answer_for_bots()
+            self.last_ride_check = clock.monotonic()
         self.rider_cancellations()
         if clock.monotonic() - self.last_surge > 60:
             pricing.recompute_surge()

@@ -10,6 +10,7 @@ import { RideTypeArt } from "@/components/RideTypeArt";
 import { CallButton } from "@/components/CallButton";
 import { CarCheck, StartCode } from "@/components/PickupVerification";
 import { LostItemCard } from "@/components/LostItem";
+import { HomeSafeButton, NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { SplitFareCard } from "@/components/SplitFare";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Modal, Sheet, Spinner, StarInput, Stars, Textarea } from "@/components/ui";
@@ -242,6 +243,7 @@ export default function RiderTrip() {
         </button>
       </div>
 
+      <RideCheckPrompt trip={trip} role="rider" />
       <Sheet height="70%">
         {trip.status === "REQUESTED" && (
           <>
@@ -269,6 +271,7 @@ export default function RiderTrip() {
               </div>
             </div>
             <DriverCard trip={trip} />
+            <NightSafeBar trip={trip} role="rider" />
             {trip.otp && trip.status !== "IN_PROGRESS" && (
               <>
                 <CarCheck trip={trip} />
@@ -314,6 +317,7 @@ export default function RiderTrip() {
               </div>
             </div>
 
+            <HomeSafeButton trip={trip} />
             {trip.driver && <FavouriteDriver trip={trip} />}
             {!trip.has_rated ? (
               <div className="mt-5 rounded-2xl bg-surface-2 p-4">

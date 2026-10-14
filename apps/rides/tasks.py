@@ -22,3 +22,10 @@ def email_invoice(trip_id: int, force: bool = False) -> bool:
 
     trip = Trip.objects.filter(pk=trip_id).first()
     return bool(trip) and send(trip, force=force)
+
+
+@shared_task(name="rides.run_ride_checks")
+def run_ride_checks() -> dict:
+    from .safety import run_ride_checks as run
+
+    return run()

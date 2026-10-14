@@ -38,6 +38,27 @@ def _send(request: urllib.request.Request) -> None:
         raise SMSError(f"Couldn't reach the SMS provider: {exc}") from exc
 
 
+def send_text(phone: str, message: str) -> None:
+    """A plain message (trip links for trusted contacts). MSG91 only sends DLT-approved
+    templates, so with that backend these are logged rather than sent."""
+    if backend() == "twilio":
+        sid = settings.TWILIO_ACCOUNT_SID
+        auth = base64.b64encode(f"{sid}:{settings.TWILIO_AUTH_TOKEN}".encode()).decode()
+        body = urllib.parse.urlencode(
+            {"To": f"+91{phone}", "From": settings.TWILIO_FROM, "Body": message}
+        ).encode()
+        _send(
+            urllib.request.Request(
+                f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json",
+                data=body,
+                headers={"Authorization": f"Basic {auth}"},
+                method="POST",
+            )
+        )
+    else:
+        logger.warning("SMS to +91%s: %s", phone, message)
+
+
 def send_login_code(phone: str, code: str) -> None:
     """Send a login code to a 10-digit Indian mobile number."""
     kind = backend()

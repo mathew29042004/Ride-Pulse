@@ -34,6 +34,8 @@ class RiderProfile(AuditedModel, TimeStampedModel):
     emergency_contact_phone = models.CharField(
         max_length=15, blank=True, validators=[phone_validator]
     )
+    # Night Safe mode: stricter Ride Checks, auto-share and drop control from 10 pm to 6 am.
+    night_safety = models.BooleanField(default=True)
     is_blocked = models.BooleanField(default=False)
     blocked_reason = models.CharField(max_length=255, blank=True)
 
@@ -75,3 +77,28 @@ class SavedPlace(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_label_display()}: {self.name}"
+
+
+class ShareMode(models.TextChoices):
+    ALWAYS = "ALWAYS", "Every ride"
+    NIGHT = "NIGHT", "Night rides"
+    NEVER = "NEVER", "Only when I share"
+
+
+class TrustedContact(models.Model):
+    """Someone who gets the rider's live trip link (and Ride Check alerts)."""
+
+    rider = models.ForeignKey(RiderProfile, on_delete=models.CASCADE, related_name="contacts")
+    name = models.CharField(max_length=80)
+    phone = models.CharField(max_length=15, validators=[phone_validator])
+    share_mode = models.CharField(max_length=6, choices=ShareMode.choices, default=ShareMode.NIGHT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["rider", "phone"], name="trusted_contact_once"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.phone})"
