@@ -2,7 +2,9 @@ import { clsx } from "clsx";
 import type { LucideIcon } from "lucide-react";
 import { NavLink } from "react-router";
 
-export function AppTabs({ tabs }: { tabs: { to: string; label: string; icon: LucideIcon; end?: boolean }[] }) {
+export type AppTab = { to: string; label: string; icon: LucideIcon; end?: boolean };
+
+export function AppTabs({ tabs }: { tabs: AppTab[] }) {
   return (
     <nav className="relative z-[600] grid shrink-0 border-t border-line bg-surface pb-[max(env(safe-area-inset-bottom),6px)]" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
       {tabs.map(({ to, label, icon: Icon, end }) => (

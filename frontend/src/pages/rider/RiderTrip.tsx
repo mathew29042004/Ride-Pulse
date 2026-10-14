@@ -220,7 +220,7 @@ export default function RiderTrip() {
         </BaseMap>
       </div>
 
-      <div className="relative z-[600] flex items-center justify-between p-3">
+      <div className="rp-overlay relative z-[600] flex items-center justify-between p-3">
         <button onClick={() => navigate(active ? "/ride" : "/ride/activity")} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Back">
           <ArrowLeft className="size-5" />
         </button>
@@ -233,7 +233,7 @@ export default function RiderTrip() {
 
       <div className="flex-1" />
 
-      <div className="relative z-[600] flex justify-end px-3 pb-2">
+      <div className="rp-overlay relative z-[600] flex justify-end px-3 pb-2">
         <button onClick={() => setRecenter((n) => n + 1)} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Re-centre map">
           <LocateFixed className="size-5" />
         </button>

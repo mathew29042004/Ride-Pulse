@@ -61,6 +61,8 @@ export default function TrackTrip() {
 
   return (
     <PhoneFrame
+      title="Follow a ride"
+      mapScreen
       aside={
         <FrameAside title="Follow a ride">
           <p>Riders can share a live link to their trip with family or friends. Anyone with the link can watch the car move, see the driver and the plate, and know when they've arrived, with no account needed.</p>
@@ -68,7 +70,7 @@ export default function TrackTrip() {
         </FrameAside>
       }
     >
-      <div className="relative flex min-h-0 flex-1 flex-col md:pt-11">
+      <>
         {shared.isLoading && (
           <div className="flex flex-1 items-center justify-center">
             <Spinner className="size-7" />
@@ -90,7 +92,7 @@ export default function TrackTrip() {
             onRecenter={() => setRecenter((n) => n + 1)}
           />
         )}
-      </div>
+      </>
     </PhoneFrame>
   );
 }
@@ -152,7 +154,7 @@ function TrackView({
         </BaseMap>
       </div>
 
-      <div className="relative z-[600] flex items-center gap-2 p-3">
+      <div className="rp-overlay relative z-[600] flex items-center gap-2 p-3">
         <div className="flex flex-1 items-center gap-2 rounded-full bg-surface/95 px-4 py-2 text-sm font-semibold shadow-[var(--shadow-float)] backdrop-blur">
           {live ? (
             <span className="relative flex size-2.5">

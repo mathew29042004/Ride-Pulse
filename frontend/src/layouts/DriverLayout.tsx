@@ -1,9 +1,7 @@
 import { FileCheck, IndianRupee, Navigation, User } from "lucide-react";
-import { Link, Outlet } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
 
 import { FrameAside, PhoneFrame } from "@/components/PhoneFrame";
-
-import { AppTabs } from "./AppTabs";
 
 const TABS = [
   { to: "/drive", label: "Drive", icon: Navigation, end: true },
@@ -13,8 +11,12 @@ const TABS = [
 ];
 
 export default function DriverLayout() {
+  const { pathname } = useLocation();
   return (
     <PhoneFrame
+      title="Driver"
+      tabs={TABS}
+      mapScreen={pathname === "/drive" || pathname === "/drive/"}
       aside={
         <FrameAside title="Driver app">
           <p>Go online to start receiving trip offers. Each offer shows the pickup distance, the trip and your estimated earnings, with 20 seconds to accept.</p>
@@ -29,10 +31,7 @@ export default function DriverLayout() {
         </FrameAside>
       }
     >
-      <div className="relative flex min-h-0 flex-1 flex-col md:pt-11">
-        <Outlet />
-      </div>
-      <AppTabs tabs={TABS} />
+      <Outlet />
     </PhoneFrame>
   );
 }

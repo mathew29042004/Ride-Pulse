@@ -6,6 +6,7 @@
 import { Map as GoogleMap, useMap } from "@vis.gl/react-google-maps";
 import { useEffect, useMemo, useRef } from "react";
 
+import { DESKTOP_PANEL_PX, useLayout } from "@/lib/layout";
 import { useTheme } from "@/lib/theme";
 
 import { useMapProvider } from "./provider";
@@ -249,6 +250,7 @@ export function MapDot({ center, radius = 6, color, label, onClick }: DotProps) 
 export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey }: FitBoundsProps) {
   const map = useMap();
   const key = fitKey ?? JSON.stringify(points.map(([a, b]) => [a.toFixed(3), b.toFixed(3)]));
+  const desktop = useLayout().mode === "desktop";
   useEffect(() => {
     if (!map || !points.length) return;
     if (points.length === 1) {
@@ -258,14 +260,20 @@ export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey }
     }
     const bounds = new google.maps.LatLngBounds();
     points.forEach((p) => bounds.extend(toLiteral(p)));
-    map.fitBounds(bounds, { top: padding, left: padding, right: padding, bottom: bottom ?? padding });
+    // Desktop: keep the route clear of the side panel on the left, not a bottom sheet.
+    map.fitBounds(bounds, {
+      top: padding,
+      left: padding + (desktop ? DESKTOP_PANEL_PX : 0),
+      right: padding,
+      bottom: desktop ? padding : (bottom ?? padding),
+    });
     const listener = map.addListener("idle", () => {
       if ((map.getZoom() ?? 0) > maxZoom) map.setZoom(maxZoom);
       listener.remove();
     });
     return () => listener.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, map, bottom]);
+  }, [key, map, bottom, desktop]);
   return null;
 }
 

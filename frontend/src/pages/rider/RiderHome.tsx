@@ -88,18 +88,18 @@ export default function RiderHome() {
         </BaseMap>
       </div>
 
-      <div className="relative z-[500] flex items-center justify-between p-4">
+      <div className="rp-overlay relative z-[500] flex items-center justify-between p-4">
         <div className="rounded-full bg-surface/95 px-4 py-2 text-sm font-semibold shadow-[var(--shadow-float)] backdrop-blur">
           {greeting()}, {user?.first_name || "there"} 👋
         </div>
-        <div className="rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
+        <div className="rp-phone-only rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
           <NotificationBell />
         </div>
       </div>
 
       <div className="flex-1" />
 
-      <div className="relative z-[500] px-4 pb-3">
+      <div className="rp-overlay relative z-[500] px-4 pb-3">
         <button
           onClick={() => setSpot(DEFAULT_SPOT)}
           className="ml-auto flex size-11 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]"

@@ -145,3 +145,28 @@
 .rp-tiles-dark {
   filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
+
+/* --- Desktop layout (lib/layout.tsx): full-screen map with a side panel on the left --------- */
+[data-layout="desktop"] .rp-phone-only {
+  display: none; /* e.g. the in-map notification bell: the header has one */
+}
+[data-layout="desktop"] .rp-overlay {
+  margin-left: 432px; /* clear of the 400px panel and its margins */
+}
+[data-layout="desktop"] .rp-compact {
+  flex: 0 1 auto; /* e.g. the driver's earnings pill: don't stretch across a wide map */
+}
+[data-layout="desktop"] .rp-offer,
+[data-layout="desktop"] .rp-chat {
+  left: 16px;
+  right: auto;
+  bottom: 16px;
+  width: 400px;
+}
+[data-layout="desktop"] .rp-chat {
+  top: 16px;
+  height: auto;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px -20px rgb(15 23 42 / 0.45);
+}

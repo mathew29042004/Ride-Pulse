@@ -14,6 +14,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
+import { DESKTOP_PANEL_PX, useLayout } from "@/lib/layout";
 import { useTheme } from "@/lib/theme";
 
 import {
@@ -166,11 +167,13 @@ export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey }
   const map = useMap();
   const key = fitKey ?? JSON.stringify(points.map(([a, b]) => [a.toFixed(3), b.toFixed(3)]));
   const first = useRef(true);
+  const desktop = useLayout().mode === "desktop";
   useEffect(() => {
     if (!points.length) return;
+    // Desktop: keep the route clear of the side panel on the left, not a bottom sheet.
     const options = {
-      paddingTopLeft: [padding, padding] as L.PointTuple,
-      paddingBottomRight: [padding, bottom ?? padding] as L.PointTuple,
+      paddingTopLeft: [padding + (desktop ? DESKTOP_PANEL_PX : 0), padding] as L.PointTuple,
+      paddingBottomRight: [padding, desktop ? padding : (bottom ?? padding)] as L.PointTuple,
       maxZoom,
       // The first fit jumps straight there; zooming out from the initial view looks like a glitch.
       animate: !first.current,
@@ -179,7 +182,7 @@ export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey }
     const bounds = points.length === 1 ? L.latLngBounds([points[0], points[0]]) : L.latLngBounds(points);
     map.fitBounds(bounds, points.length === 1 ? { ...options, maxZoom: Math.min(maxZoom, 15) } : options);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, map, bottom]);
+  }, [key, map, bottom, desktop]);
   return null;
 }
 

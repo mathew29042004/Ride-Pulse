@@ -179,7 +179,7 @@ function ChatPanel({
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{ type: "spring", stiffness: 380, damping: 38 }}
-      className="absolute inset-0 z-[890] flex flex-col bg-canvas"
+      className="rp-chat absolute inset-0 z-[890] flex flex-col bg-canvas"
       role="dialog"
       aria-label={`Chat with ${otherName}`}
     >

@@ -14,6 +14,7 @@ import {
 } from "react";
 
 import { initials } from "@/lib/format";
+import { useLayout } from "@/lib/layout";
 
 export { clsx as cx };
 
@@ -444,6 +445,7 @@ export function Sheet({
 }) {
   const [level, setLevel] = useState<SheetLevel>("normal");
   const y = useMotionValue(40);
+  const desktop = useLayout().mode === "desktop";
   const maxHeight = level === "peek" ? PEEK_HEIGHT : level === "full" ? FULL_HEIGHT : height;
   // The handle follows the finger, so releasing a drag also lands on it: don't count that as a tap.
   const panned = useRef(false);
@@ -459,6 +461,21 @@ export function Sheet({
     else if (travel < -60) setLevel((l) => (l === "peek" ? "normal" : "full"));
     animate(y, 0, { type: "spring", stiffness: 400, damping: 36 });
   };
+
+  if (desktop) {
+    // Big screens: a floating panel on the left of the full-screen map (no dragging needed).
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 32 }}
+        className="rp-panel absolute top-4 left-4 z-[500] flex max-h-[calc(100%-32px)] w-[400px] flex-col overflow-hidden rounded-3xl bg-surface shadow-[0_24px_60px_-20px_rgb(15_23_42/0.45)]"
+      >
+        <div className={clsx("min-h-0 flex-1 overflow-y-auto px-5 pt-5", !footer && "pb-5", className)}>{children}</div>
+        {footer && <div className="shrink-0 border-t border-line px-5 pt-3 pb-5">{footer}</div>}
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

@@ -30,6 +30,7 @@ import { Badge, Button, Input, Sheet } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { inr, km, minutes } from "@/lib/format";
 import { useWallet } from "@/lib/hooks";
+import { useLayout } from "@/lib/layout";
 import type { Estimate, PaymentMethod, SavedPlace, Trip } from "@/lib/types";
 
 import { useRiderLocation } from "./RiderHome";
@@ -91,6 +92,7 @@ export default function RiderBook() {
   const [pickingTime, setPickingTime] = useState(() => !!params.get("later"));
   const wallet = useWallet();
   const { provider: mapProvider } = useMapProvider();
+  const desktop = useLayout().mode === "desktop";
   const search = useDebounced(query);
 
   const saved = useQuery({ queryKey: ["places", "saved"], queryFn: () => api.get<SavedPlace[]>("rider/places/") });
@@ -210,36 +212,10 @@ export default function RiderBook() {
     [pickup, dropoff, stop],
   );
 
-  return (
-    <div className="relative flex h-full flex-col">
-      <div className="absolute inset-0">
-        <BaseMap center={[pickup.lat, pickup.lng]} zoom={14}>
-          {!pickOnMap && <FitBounds points={points} padding={50} bottom={380} />}
-          {!(pickOnMap && editing === "pickup") && <PinMarker lat={pickup.lat} lng={pickup.lng} kind="pickup" label={dropoff && !pickOnMap ? "Pickup" : undefined} />}
-          {dropoff && !(pickOnMap && editing === "dropoff") && (
-            <PinMarker lat={dropoff.lat} lng={dropoff.lng} kind="dropoff" label={option && !pickOnMap ? minutes(option.duration_minutes) : undefined} />
-          )}
-          {stop && !(pickOnMap && editing === "stop") && <PinMarker lat={stop.lat} lng={stop.lng} kind="stop" />}
-          {dropoff && !pickOnMap && (
-            <RouteLine from={[pickup.lat, pickup.lng]} to={[dropoff.lat, dropoff.lng]} encoded={option?.route_polyline} via={stop && [stop.lat, stop.lng]} />
-          )}
-          {pickOnMap && (
-            <>
-              <Recenter center={pickStart} zoom={16} />
-              <MapCenterWatch
-                onMoveStart={() => setMoving(true)}
-                onMoveEnd={(lat, lng) => {
-                  setMoving(false);
-                  setCandidate({ lat, lng, name: "" });
-                }}
-              />
-            </>
-          )}
-        </BaseMap>
-      </div>
-
-      {/* Location inputs */}
-      <div className="relative z-[600] m-3 rounded-2xl bg-surface p-3 shadow-[var(--shadow-float)]">
+  // Pickup / stop / drop fields: floating over the map on a phone, at the top of the side panel
+  // on desktop (like Uber's website).
+  const locationInputs = (
+      <div className={desktop ? "-mx-1 mb-4 rounded-2xl bg-surface-2 p-3" : "relative z-[600] m-3 rounded-2xl bg-surface p-3 shadow-[var(--shadow-float)]"}>
         <div className="flex items-start gap-2">
           <Link to="/ride" className="mt-1 rounded-full p-1.5 hover:bg-surface-3" aria-label="Back">
             <ArrowLeft className="size-5" />
@@ -294,6 +270,37 @@ export default function RiderBook() {
           </div>
         </div>
       </div>
+  );
+
+  return (
+    <div className="relative flex h-full flex-col">
+      <div className="absolute inset-0">
+        <BaseMap center={[pickup.lat, pickup.lng]} zoom={14}>
+          {!pickOnMap && <FitBounds points={points} padding={50} bottom={380} />}
+          {!(pickOnMap && editing === "pickup") && <PinMarker lat={pickup.lat} lng={pickup.lng} kind="pickup" label={dropoff && !pickOnMap ? "Pickup" : undefined} />}
+          {dropoff && !(pickOnMap && editing === "dropoff") && (
+            <PinMarker lat={dropoff.lat} lng={dropoff.lng} kind="dropoff" label={option && !pickOnMap ? minutes(option.duration_minutes) : undefined} />
+          )}
+          {stop && !(pickOnMap && editing === "stop") && <PinMarker lat={stop.lat} lng={stop.lng} kind="stop" />}
+          {dropoff && !pickOnMap && (
+            <RouteLine from={[pickup.lat, pickup.lng]} to={[dropoff.lat, dropoff.lng]} encoded={option?.route_polyline} via={stop && [stop.lat, stop.lng]} />
+          )}
+          {pickOnMap && (
+            <>
+              <Recenter center={pickStart} zoom={16} />
+              <MapCenterWatch
+                onMoveStart={() => setMoving(true)}
+                onMoveEnd={(lat, lng) => {
+                  setMoving(false);
+                  setCandidate({ lat, lng, name: "" });
+                }}
+              />
+            </>
+          )}
+        </BaseMap>
+      </div>
+
+      {!desktop && locationInputs}
 
       <div className="flex-1" />
 
@@ -311,7 +318,7 @@ export default function RiderBook() {
               </div>
             </div>
           </div>
-          <div className="relative z-[600] m-3 rounded-3xl bg-surface p-4 shadow-[var(--shadow-float)]">
+          <div className="rp-overlay relative z-[600] m-3 rounded-3xl bg-surface p-4 shadow-[var(--shadow-float)]">
             <div className="text-xs font-semibold tracking-wide text-muted uppercase">Set {fieldLabel}</div>
             <div className="mt-1 flex min-h-12 items-center gap-2">
               <MapPin className={clsx("size-5 shrink-0", editing === "pickup" ? "text-brand" : "text-fg")} />
@@ -334,6 +341,7 @@ export default function RiderBook() {
 
       {!choosing && !pickOnMap && (
         <Sheet height="60%">
+          {desktop && locationInputs}
           <button onClick={startPicking} className="flex w-full items-center gap-3 py-2.5 text-left">
             <span className="flex size-9 items-center justify-center rounded-full bg-surface-3">
               <Crosshair className="size-4" />
@@ -373,6 +381,7 @@ export default function RiderBook() {
             ))
           }
         >
+          {desktop && locationInputs}
           {estimate.isLoading && (
             <div className="space-y-3 py-2">
               {[0, 1, 2].map((i) => (

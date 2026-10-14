@@ -7,6 +7,7 @@ import { RouterProvider } from "react-router";
 import { Toaster } from "sonner";
 
 import { configQuery, MapsProvider } from "./components/map";
+import { LayoutProvider } from "./lib/layout";
 import { ApiError } from "./lib/api";
 import { AuthProvider } from "./lib/auth";
 import { router } from "./router";
@@ -31,7 +32,9 @@ queryClient
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <MapsProvider>
-              <RouterProvider router={router} />
+              <LayoutProvider>
+                <RouterProvider router={router} />
+              </LayoutProvider>
             </MapsProvider>
             <Toaster position="top-center" richColors closeButton />
           </AuthProvider>

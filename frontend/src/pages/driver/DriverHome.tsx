@@ -44,7 +44,7 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
     buzz();
   }, [offer.offer_id]);
   return (
-    <div className={clsx("absolute inset-x-3 bottom-3 z-[800] animate-[slide-up_0.35s_ease-out] rounded-3xl bg-surface p-5 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.45)] ring-2 transition", urgent ? "ring-amber-400/70" : "ring-transparent")}>
+    <div className={clsx("rp-offer absolute inset-x-3 bottom-3 z-[800] animate-[slide-up_0.35s_ease-out] rounded-3xl bg-surface p-5 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.45)] ring-2 transition", urgent ? "ring-amber-400/70" : "ring-transparent")}>
       <div className="flex items-start justify-between">
         <div>
           <Badge tone="brand">New {offer.ride_type} request</Badge>
@@ -385,8 +385,8 @@ export default function DriverHome() {
         </BaseMap>
       </div>
 
-      <div className="relative z-[600] flex items-center gap-2 p-3">
-        <div className="flex flex-1 items-center gap-2 rounded-full bg-surface/95 px-2 py-1.5 shadow-[var(--shadow-float)] backdrop-blur">
+      <div className="rp-overlay relative z-[600] flex items-center gap-2 p-3">
+        <div className="rp-compact flex flex-1 items-center gap-2 rounded-full bg-surface/95 px-2 py-1.5 shadow-[var(--shadow-float)] backdrop-blur">
           <Avatar name={driver.name} size={32} />
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-sm font-semibold">{inr(today.data?.earnings ?? 0)} today</div>
@@ -395,7 +395,7 @@ export default function DriverHome() {
             </div>
           </div>
         </div>
-        <div className="rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
+        <div className="rp-phone-only rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
           <NotificationBell />
         </div>
       </div>
@@ -403,7 +403,7 @@ export default function DriverHome() {
       {online && !trip && !offer && push.status === "off" && (
         <button
           onClick={push.toggle}
-          className="relative z-[600] mx-3 mt-1 flex items-center gap-2 rounded-2xl bg-surface px-4 py-2.5 text-left text-xs shadow-[var(--shadow-float)]"
+          className="rp-overlay relative z-[600] mx-3 mt-1 flex items-center gap-2 rounded-2xl bg-surface px-4 py-2.5 text-left text-xs shadow-[var(--shadow-float)]"
         >
           <BellRing className="size-4 shrink-0 text-brand" />
           <span className="flex-1">
@@ -412,12 +412,12 @@ export default function DriverHome() {
         </button>
       )}
       {!trip && online && !offer && !phoneGps && (
-        <div className="relative z-[600] mx-auto mt-1 rounded-full bg-ink/90 px-4 py-1.5 text-xs font-semibold text-ink-fg">Tap the map to move your car</div>
+        <div className="rp-overlay relative z-[600] mx-auto mt-1 rounded-full bg-ink/90 px-4 py-1.5 text-xs font-semibold text-ink-fg">Tap the map to move your car</div>
       )}
 
       <div className="flex-1" />
 
-      <div className="relative z-[600] flex items-center justify-end gap-2 px-3 pb-2">
+      <div className="rp-overlay relative z-[600] flex items-center justify-end gap-2 px-3 pb-2">
         {online && (
           <button
             onClick={toggleGps}

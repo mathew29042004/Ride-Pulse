@@ -73,6 +73,11 @@ turns amber, then red · chat with the rider · navigate, arrive (only within
 week and month · payouts · document upload and vehicle registration · safety score and
 acceptance rate.
 
+**On a laptop or desktop** the rider and driver apps switch to a web layout: a full-screen map
+with a side panel (booking, trip status, offers, chat), tabs in a header, and routes framed
+beside the panel. Other screens become a centred column. "Phone view" in the header shows the
+mobile design instead (remembered per device); phones always get the app layout.
+
 Both apps install as a **PWA** (manifest, icons, a service worker that serves the app shell
 offline and never caches live data). Regenerate the icons with `python scripts/make_icons.py`.
 

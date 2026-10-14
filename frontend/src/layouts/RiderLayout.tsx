@@ -3,8 +3,6 @@ import { Link, Outlet, useLocation } from "react-router";
 
 import { FrameAside, PhoneFrame } from "@/components/PhoneFrame";
 
-import { AppTabs } from "./AppTabs";
-
 const TABS = [
   { to: "/ride", label: "Ride", icon: House, end: true },
   { to: "/ride/activity", label: "Activity", icon: Clock },
@@ -15,8 +13,13 @@ const TABS = [
 export default function RiderLayout() {
   const { pathname } = useLocation();
   const immersive = pathname.startsWith("/ride/book") || pathname.startsWith("/ride/trips/");
+  const mapScreen = immersive || pathname === "/ride" || pathname === "/ride/";
   return (
     <PhoneFrame
+      title="Rider"
+      tabs={TABS}
+      hideTabs={immersive}
+      mapScreen={mapScreen}
       aside={
         <FrameAside title="Rider app">
           <p>Book a ride the way you would on a phone: pick a destination, compare upfront fares for each ride type, and track your driver live.</p>
@@ -32,10 +35,7 @@ export default function RiderLayout() {
         </FrameAside>
       }
     >
-      <div className="relative flex min-h-0 flex-1 flex-col md:pt-11">
-        <Outlet />
-      </div>
-      {!immersive && <AppTabs tabs={TABS} />}
+      <Outlet />
     </PhoneFrame>
   );
 }
