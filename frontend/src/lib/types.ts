@@ -278,6 +278,8 @@ export interface Offer {
   /** Counter-offer steps (+₹10/20/30), only when the rider bid. */
   counter_steps: string[];
   service: string;
+  /** Zero-commission day pass active: estimated_earning already includes the commission. */
+  day_pass?: boolean;
   parcel: { category: string; weight_kg: string | number; instructions: string } | null;
   package: { kind: "RENTAL"; hours: number; km: number } | { kind: "INTERCITY"; km: number | string; round_trip: boolean; days: number; destination: string } | null;
   expires_at: string;

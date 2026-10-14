@@ -41,7 +41,7 @@ from apps.payments import services as payments
 from apps.payments.models import PaymentMethod
 from apps.pricing import fare_locks, passes
 from apps.pricing import services as pricing
-from apps.pricing.fare import with_boost, with_fee, with_offer_adjustment
+from apps.pricing.fare import waive_commission, with_boost, with_fee, with_offer_adjustment
 from apps.pricing.models import RideType, Service
 from apps.realtime import broadcast
 from apps.riders.models import RiderProfile
@@ -784,6 +784,14 @@ def complete_trip(
             if line.code == bids.SURE_RIDE_CODE:
                 fare = with_fee(fare, line.code, line.label, line.amount)
 
+    # Zero-commission day pass: the driver keeps the commission; the rider's price is unchanged.
+    from apps.drivers import day_pass
+
+    commission_waived = Decimal(0)
+    if day_pass.active(driver, now) and fare.platform_commission:
+        commission_waived = fare.platform_commission
+        fare = waive_commission(fare)
+
     flags = list(trip.flags)
     if not package_trip and distance > trip.estimated_distance_km * ROUTE_DEVIATION_FACTOR:
         flags.append(TripFlag.ROUTE_DEVIATION)
@@ -804,6 +812,7 @@ def complete_trip(
         fare_total=fare.total,
         driver_earning=fare.driver_earning,
         platform_commission=fare.platform_commission,
+        commission_waived=commission_waived,
         gst_amount=fare.gst,
         discount_amount=fare.discount,
         flags=flags,

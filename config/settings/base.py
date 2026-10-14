@@ -364,6 +364,8 @@ RIDE_PULSE = {
     "INTERCITY_MIN_KM_PER_DAY": 250,
     "INTERCITY_DRIVER_ALLOWANCE": "300",
     "INTERCITY_RANGE_KM": [40, 600],
+    # Zero-commission day pass for drivers: flat price per day by vehicle.
+    "DRIVER_DAY_PASS": {"BIKE": "19", "AUTO": "29", "MINI": "49", "SEDAN": "49", "SUV": "59"},
     # Fare Lock: fix a commute's normal price for a week (±60 min of the time, chosen weekdays).
     "FARE_LOCK_FEE": "49",
     "FARE_LOCK_DAYS": 7,

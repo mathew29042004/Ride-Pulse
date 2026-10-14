@@ -296,3 +296,24 @@ class DriverGoalReward(models.Model):
 
     def __str__(self) -> str:
         return f"{self.driver_id} {self.day} {self.trips_target} trips"
+
+
+class DriverDayPass(models.Model):
+    """Zero-commission day pass (like Namma Yatri / Rapido): a flat fee, and the driver keeps
+    the whole fare on every trip that day (see drivers.day_pass)."""
+
+    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name="day_passes")
+    day = models.DateField()
+    price = models.DecimalField(max_digits=6, decimal_places=2)
+    payment_method = models.CharField(max_length=6)
+    reference = models.CharField(max_length=24, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-day"]
+        constraints = [
+            models.UniqueConstraint(fields=["driver", "day"], name="one_day_pass_per_day"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.reference} {self.driver_id} {self.day}"

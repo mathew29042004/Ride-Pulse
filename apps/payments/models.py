@@ -50,6 +50,7 @@ class TransactionKind(models.TextChoices):
     FARE_SPLIT = "FARE_SPLIT", "Fare split share"
     DRIVER_BONUS = "DRIVER_BONUS", "Driver goal bonus"
     FARE_LOCK = "FARE_LOCK", "Fare Lock purchase"
+    DRIVER_PASS = "DRIVER_PASS", "Driver day pass"
     ECO_REWARD = "ECO_REWARD", "Eco points reward"
 
 

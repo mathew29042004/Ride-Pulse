@@ -32,7 +32,7 @@ from apps.core.conf import (
     offer_timeout_seconds,
 )
 from apps.core.exceptions import ActionNotPermitted, InvalidStateTransition
-from apps.drivers import goals, wellbeing
+from apps.drivers import day_pass, goals, wellbeing
 from apps.drivers.models import Availability, DriverProfile, Gender
 from apps.drivers.safety import dispatch_penalty_minutes
 from apps.drivers.services import nearby_available_drivers
@@ -207,7 +207,9 @@ def offer_payload(offer: TripOffer) -> dict:
         "pickup_distance_km": offer.distance_km,
         "pickup_eta_min": offer.eta_minutes,
         "trip_distance_km": trip.estimated_distance_km,
-        "estimated_earning": trip.estimate.driver_earning,
+        "estimated_earning": trip.estimate.driver_earning
+        + (trip.estimate.platform_commission if day_pass.active(offer.driver) else 0),
+        "day_pass": day_pass.active(offer.driver),
         "boost": trip.boost_amount,
         "tip": trip.tip_pledged,
         "preferences": trip.preferences,

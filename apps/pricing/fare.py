@@ -104,6 +104,17 @@ BOOST_LABEL = "Boost (100% to your driver)"
 OFFER_LABEL = "Your fare offer"
 
 
+def waive_commission(fare: FareBreakdown) -> FareBreakdown:
+    """Zero-commission day pass: the commission goes to the driver; the rider pays the same."""
+    from dataclasses import replace
+
+    return replace(
+        fare,
+        driver_earning=fare.driver_earning + fare.platform_commission,
+        platform_commission=ZERO,
+    )
+
+
 def with_platform_discount(
     fare: FareBreakdown, code: str, label: str, amount: Decimal
 ) -> FareBreakdown:

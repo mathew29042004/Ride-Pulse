@@ -176,6 +176,8 @@ class Trip(AuditedModel, TimeStampedModel):
     fare_lock = models.ForeignKey(
         "pricing.FareLock", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"
     )
+    # Zero-commission day pass: the commission the driver kept on this trip.
+    commission_waived = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal(0))
     # Eco score: CO2 saved vs driving your own car, and the points it earned.
     co2_saved_g = models.PositiveIntegerField(default=0)
     # Hourly rentals and intercity trips (see rides.packages).

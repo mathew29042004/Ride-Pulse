@@ -5,6 +5,7 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { toast } from "sonner";
 
 import { GoalsCard } from "@/components/DriverGoals";
+import { DayPassCard } from "@/components/DayPass";
 import { RealEarningsCard } from "@/components/FairShare";
 import { Button, KeyValue, Segmented, Skeleton, StatusBadge } from "@/components/ui";
 import { api, newIdempotencyKey } from "@/lib/api";
@@ -52,6 +53,7 @@ export default function DriverEarnings() {
         />
       </div>
       <GoalsCard />
+      <DayPassCard />
       <RealEarningsCard />
 
       <div className="mt-4 rounded-3xl bg-[#0b0f19] p-5 text-white">

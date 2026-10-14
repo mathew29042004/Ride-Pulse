@@ -193,6 +193,11 @@ class EarningsSerializer(serializers.Serializer):
     daily = serializers.ListField(child=serializers.DictField())
 
 
+class DayPassSerializer(serializers.Serializer):
+    method = serializers.ChoiceField(choices=["WALLET", "UPI"])
+    payer_reference = serializers.CharField(required=False, allow_blank=True, max_length=60)
+
+
 class CounterSerializer(serializers.Serializer):
     extra = serializers.DecimalField(max_digits=5, decimal_places=2)
 
@@ -272,6 +277,19 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
             trip__driver=self.driver, status__in=[LostItemStatus.REPORTED, LostItemStatus.FOUND]
         ).select_related("trip__rider__user")
         return Response(LostItemSerializer(items, many=True).data)
+
+    @extend_schema(request=DayPassSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get", "post"], url_path="day-pass")
+    def day_pass(self, request):
+        """Zero-commission day pass: today's price and status (GET), or buy it (POST)."""
+        from . import day_pass
+
+        driver = self.driver
+        if request.method == "POST":
+            serializer = DayPassSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            day_pass.buy(driver, **serializer.validated_data)
+        return Response(day_pass.status(driver))
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])

@@ -306,6 +306,18 @@ const STRINGS: Record<string, [string, string]> = {
   ],
   "No cars are available for this right now.": ["இதற்கு இப்போது கார்கள் இல்லை.", "अभी इसके लिए कोई कार उपलब्ध नहीं है।"],
 
+  "Zero-commission day pass": ["பூஜ்ஜிய கமிஷன் தின பாஸ்", "ज़ीरो कमीशन डे पास"],
+  "Active today. You keep 100% of every fare.": ["இன்று செயலில். ஒவ்வொரு கட்டணத்திலும் 100% உங்களுக்கே.", "आज चालू है। हर किराये का 100% आपका।"],
+  "Kept so far: {amount}": ["இதுவரை சேமித்தது: {amount}", "अब तक बचाया: {amount}"],
+  "Pay {price} once and keep the whole fare on every trip until midnight. Riders pay the same.": [
+    "ஒருமுறை {price} செலுத்தி, நள்ளிரவு வரை ஒவ்வொரு பயணத்தின் முழுக் கட்டணமும் உங்களுக்கே. பயணிகள் அதே கட்டணம் செலுத்துவார்கள்.",
+    "एक बार {price} दें और आधी रात तक हर ट्रिप का पूरा किराया आपका। राइडर उतना ही देंगे।",
+  ],
+  "Pay from earnings": ["வருமானத்திலிருந்து செலுத்து", "कमाई से भुगतान"],
+  "Pay by UPI": ["UPI மூலம் செலுத்து", "UPI से भुगतान"],
+  "Day pass active: 0% commission today": ["தின பாஸ் செயலில்: இன்று 0% கமிஷன்", "डे पास चालू: आज 0% कमीशन"],
+  "Day pass: you keep 100%": ["தின பாஸ்: 100% உங்களுக்கே", "डे पास: 100% आपका"],
+
   // Safety+
   "Is everything OK?": ["எல்லாம் சரியாக இருக்கிறதா?", "क्या सब ठीक है?"],
   "Are you OK?": ["நீங்கள் நலமா?", "क्या आप ठीक हैं?"],

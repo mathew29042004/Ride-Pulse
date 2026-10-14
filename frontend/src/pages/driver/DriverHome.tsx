@@ -54,6 +54,7 @@ function OfferCard({ offer, onAccept, onDecline, onCounter, busy }: { offer: Off
       <div className="flex items-start justify-between">
         <div>
           <Badge tone="brand">{offer.service === "PARCEL" ? t("New parcel delivery") : `New ${offer.ride_type} request`}</Badge>
+          {offer.day_pass && <div className="mt-1 text-xs font-semibold text-brand-strong">{t("Day pass: you keep 100%")}</div>}
           {offer.package && (
             <div className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
               {offer.package.kind === "RENTAL"

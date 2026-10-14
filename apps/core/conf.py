@@ -187,6 +187,10 @@ def intercity_terms() -> dict:
     }
 
 
+def driver_day_pass_price(vehicle_code: str) -> Decimal:
+    return Decimal(str(_value("DRIVER_DAY_PASS").get(vehicle_code, "49")))
+
+
 def fare_lock_terms() -> dict:
     return {
         "fee": _decimal("FARE_LOCK_FEE"),
