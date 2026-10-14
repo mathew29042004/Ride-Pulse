@@ -76,6 +76,15 @@ class TripFlag(models.TextChoices):
     RIDE_CHECK = "RIDE_CHECK", "Ride Check escalated to the safety team"
 
 
+class ParcelCategory(models.TextChoices):
+    DOCUMENTS = "DOCUMENTS", "Documents"
+    FOOD = "FOOD", "Food"
+    ELECTRONICS = "ELECTRONICS", "Electronics"
+    CLOTHES = "CLOTHES", "Clothes"
+    KEYS = "KEYS", "Keys"
+    OTHER = "OTHER", "Other"
+
+
 class Trip(AuditedModel, TimeStampedModel):
     audit_exclude = (
         "created_at",
@@ -160,6 +169,8 @@ class Trip(AuditedModel, TimeStampedModel):
     route_polyline = models.TextField(blank=True, help_text="Encoded road route (Google)")
     # Secret for the public "follow my ride" page; set when the rider first shares the trip.
     share_token = models.CharField(max_length=32, null=True, blank=True, unique=True)
+    # Ride, parcel delivery, hourly rental or intercity (see pricing.models.Service).
+    service = models.CharField(max_length=10, default="RIDE")
     # Bid your fare (see rides.bids): the rider's offered total, and the agreed difference from
     # the usual fare (applied like a boost: all of it is the driver's).
     fare_offer = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)
@@ -585,3 +596,22 @@ class RideCheck(models.Model):
 
     def __str__(self) -> str:
         return f"{self.trip_id} {self.kind} ({self.status})"
+
+
+class ParcelDelivery(models.Model):
+    """The parcel on a PARCEL trip: who receives it, what it is, and the delivery code the
+    recipient gives the driver at the door (the delivery can't be completed without it)."""
+
+    trip = models.OneToOneField(Trip, on_delete=models.CASCADE, related_name="parcel")
+    recipient_name = models.CharField(max_length=80)
+    recipient_phone = models.CharField(max_length=15)
+    category = models.CharField(max_length=12, choices=ParcelCategory.choices)
+    weight_kg = models.DecimalField(max_digits=4, decimal_places=1)
+    instructions = models.CharField(max_length=200, blank=True)
+    delivery_code = models.CharField(max_length=4)
+    code_attempts = models.PositiveSmallIntegerField(default=0)
+    recipient_notified_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.trip_id} → {self.recipient_name}"

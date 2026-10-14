@@ -248,11 +248,13 @@ def estimate_fare(
     return FareEstimate(ride_type, route, fare, multiplier, pickup_zone, dropoff_zone)
 
 
-def active_ride_types(city: City) -> list[RideType]:
+def active_ride_types(city: City, *, service: str = "RIDE") -> list[RideType]:
     return list(
         RideType.objects.filter(
-            is_active=True, fare_rules__city=city, fare_rules__is_active=True
-        ).order_by("sort_order")
+            is_active=True, service=service, fare_rules__city=city, fare_rules__is_active=True
+        )
+        .select_related("vehicle_type")
+        .order_by("sort_order")
     )
 
 

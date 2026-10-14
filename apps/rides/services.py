@@ -42,11 +42,11 @@ from apps.payments.models import PaymentMethod
 from apps.pricing import passes
 from apps.pricing import services as pricing
 from apps.pricing.fare import with_boost, with_fee, with_offer_adjustment
-from apps.pricing.models import RideType
+from apps.pricing.models import RideType, Service
 from apps.realtime import broadcast
 from apps.riders.models import RiderProfile
 
-from . import bids, dispatch
+from . import bids, dispatch, parcels
 from .models import (
     CAR_ONLY_PREFERENCES,
     TERMINAL_STATUSES,
@@ -237,6 +237,7 @@ def estimate_options(
     promo_code: str = "",
     at: datetime | None = None,
     stop: tuple[float, float] | None = None,
+    service: str = Service.RIDE,
 ) -> dict:
     """Fare and pickup ETA for every ride type, as shown on the booking screen."""
     at = at or timezone.now()
@@ -244,7 +245,7 @@ def estimate_options(
     _validate_points(city, pickup, dropoff, stop)
     has_pass = bool(rider and passes.active_pass(rider, at))
     options, promo_error = [], ""
-    for ride_type in pricing.active_ride_types(city):
+    for ride_type in pricing.active_ride_types(city, service=service):
         promo = None
         if promo_code and rider:
             try:
@@ -349,6 +350,7 @@ def request_trip(
     boost: Decimal | int = 0,
     fare_offer: Decimal | int | None = None,
     sure_ride: bool = False,
+    parcel: dict | None = None,
 ) -> Trip:
     now = now or timezone.now()
     tip = Decimal(tip or 0)
@@ -357,6 +359,16 @@ def request_trip(
     if fare_offer and (boost or sure_ride):
         raise BusinessRuleViolation("A fare offer can't be combined with a boost or Sure Ride.")
     preferences = clean_preferences(preferences, ride_type)
+    parcel_details = None
+    if ride_type.service == Service.PARCEL:
+        if not parcel:
+            raise BusinessRuleViolation("Add the recipient and parcel details.", field="parcel")
+        parcel_details = parcels.clean(parcel)
+        preferences = []
+    elif ride_type.service != Service.RIDE:
+        raise BusinessRuleViolation("Choose a ride type.", field="ride_type")
+    elif parcel:
+        raise BusinessRuleViolation("Parcel details are only for parcel deliveries.")
     if not ride_type.is_open(now):
         raise BusinessRuleViolation(
             f"{ride_type.name} rides run {ride_type.service_hours_label}. "
@@ -463,6 +475,7 @@ def request_trip(
                 fare_estimate=fare.to_dict(),
                 boost_amount=boost,
                 boosted_at=now if boost else None,
+                service=ride_type.service,
                 fare_offer=fare_offer,
                 offer_adjustment=adjustment,
                 sure_ride_minutes=sure_minutes,
@@ -474,6 +487,8 @@ def request_trip(
             )
     except IntegrityError as exc:
         raise ConflictError("You already have a trip in progress.") from exc
+    if parcel_details:
+        parcels.create(trip, parcel_details)
     record_event(
         trip,
         "STATUS",
@@ -615,7 +630,10 @@ def start_trip(
                 night_safe=safety.night_safe_for(trip, now),
             )
             trip_id = trip.pk
-            transaction.on_commit(lambda: safety.share_with_contacts(trip_id, now=now))
+            if trip.service == Service.PARCEL:
+                transaction.on_commit(lambda: parcels.notify_recipient(trip_id))
+            else:
+                transaction.on_commit(lambda: safety.share_with_contacts(trip_id, now=now))
             return trip
         trip.pin_attempts += 1
         trip.save(update_fields=["pin_attempts", "updated_at"])
@@ -671,6 +689,13 @@ def _distance_from_pings(trip: Trip) -> tuple[Decimal | None, Decimal]:
     return _q(billed), _q(skipped)
 
 
+def complete_delivery(trip: Trip, *, driver: DriverProfile, delivery_code: str, **kwargs) -> Trip:
+    """Parcels: check the recipient's code (wrong tries are saved), then complete."""
+    _require_driver(trip, driver)
+    parcels.verify_code(trip, delivery_code)
+    return complete_trip(trip, driver=driver, **kwargs)
+
+
 @transaction.atomic
 def complete_trip(
     trip: Trip,
@@ -688,6 +713,8 @@ def complete_trip(
     from . import safety
 
     safety.assert_can_complete(trip, driver, now=now)
+    if trip.service == Service.PARCEL:
+        parcels.assert_delivered(trip)
 
     duration = _q(max((now - trip.started_at).total_seconds() / 60, 1))
     skipped_jumps = Decimal(0)

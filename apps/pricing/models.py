@@ -11,6 +11,13 @@ from apps.core.models import TimeStampedModel
 from .fare import FareCard, PromoTerms
 
 
+class Service(models.TextChoices):
+    RIDE = "RIDE", "Ride"
+    PARCEL = "PARCEL", "Parcel delivery"
+    RENTAL = "RENTAL", "Hourly rental"
+    INTERCITY = "INTERCITY", "Intercity"
+
+
 class RideType(models.Model):
     code = models.CharField(max_length=10, unique=True)
     name = models.CharField(max_length=40)
@@ -21,12 +28,22 @@ class RideType(models.Model):
     # Local hours this ride type runs (e.g. bike taxis 5 am – 11 pm). Blank = round the clock.
     service_start_hour = models.PositiveSmallIntegerField(null=True, blank=True)
     service_end_hour = models.PositiveSmallIntegerField(null=True, blank=True)
+    # What it's booked for (rides or parcels), and which vehicles serve it: a Parcel is carried
+    # by Bike drivers, so ``vehicle_type`` points at BIKE. Blank = vehicles of this type.
+    service = models.CharField(max_length=10, choices=Service.choices, default=Service.RIDE)
+    vehicle_type = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
 
     class Meta:
         ordering = ["sort_order"]
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def served_by(self) -> "RideType":
+        return self.vehicle_type or self
 
     def is_open(self, at) -> bool:
         from django.utils import timezone

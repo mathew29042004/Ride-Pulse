@@ -16,6 +16,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
+from functools import partial
 from itertools import pairwise
 
 from django.db import close_old_connections
@@ -46,6 +47,9 @@ from apps.rides.models import (
 )
 
 from .fleet_data import PAYMENT_WEIGHTS, RIDE_TYPE_WEIGHTS
+
+PARCEL_SHARE = 0.08  # of bot requests
+PARCEL_RECIPIENTS = ["Meena", "Arjun", "Fathima", "Rahul", "Divya", "Sanjay", "Kavya"]
 
 DEMO_EMAILS = {"driver@ridepulse.dev", "rider@ridepulse.dev"}
 BOT_RIDER_DOMAIN = "@example.com"  # the seeder's synthetic riders
@@ -193,7 +197,13 @@ class Simulator:
         elif trip.status == TripStatus.IN_PROGRESS and self._drive(
             driver, (trip.dropoff_lat, trip.dropoff_lng), self._route(trip)
         ):
-            trip = rides.complete_trip(
+            # Parcels: the recipient reads out their delivery code at the door.
+            finish = (
+                partial(rides.complete_delivery, delivery_code=trip.parcel.delivery_code)
+                if trip.service == "PARCEL"
+                else rides.complete_trip
+            )
+            trip = finish(
                 trip,
                 driver=driver,
                 telemetry={
@@ -331,16 +341,25 @@ class Simulator:
         if haversine_km(*pickup, *dropoff) < 1.5:
             return
         method = self.rng.choices(list(PAYMENT_WEIGHTS), weights=list(PAYMENT_WEIGHTS.values()))[0]
+        code = self.rng.choices(list(RIDE_TYPE_WEIGHTS), weights=list(RIDE_TYPE_WEIGHTS.values()))[
+            0
+        ]
+        parcel = None
+        if self.rng.random() < PARCEL_SHARE and "PARCEL" in self.ride_types:
+            code = "PARCEL"
+            parcel = {
+                "recipient_name": self.rng.choice(PARCEL_RECIPIENTS),
+                "recipient_phone": f"9{self.rng.randrange(10**8, 10**9)}",
+                "category": self.rng.choice(["DOCUMENTS", "FOOD", "CLOTHES", "KEYS", "OTHER"]),
+                "weight_kg": self.rng.choice([0.5, 1, 2, 3, 5]),
+            }
         try:
             if payments.wallet_balance(rider.user) < 0:
                 payments.pay_dues(rider.user, method="UPI", payer_reference="bot@upi")
             rides.request_trip(
                 rider=rider,
-                ride_type=self.ride_types[
-                    self.rng.choices(
-                        list(RIDE_TYPE_WEIGHTS), weights=list(RIDE_TYPE_WEIGHTS.values())
-                    )[0]
-                ],
+                ride_type=self.ride_types[code],
+                parcel=parcel,
                 pickup=pickup,
                 dropoff=dropoff,
                 pickup_address=a.name,

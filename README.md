@@ -299,6 +299,11 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Fair Share Meter:** every finished trip shows where the money went (driver, commission,
   each fee, discount, GST). Drivers see their real hourly earnings after estimated running costs.
 
+* **Parcel delivery (like Rapido Parcel):** "Send a parcel" on Home. Bike drivers carry
+  packages up to 10 kg (they can opt out). The sender adds the recipient, item type and weight;
+  at pickup the recipient gets an SMS with a live tracking link and a 4-digit delivery code, and
+  the driver can only mark it delivered with that code (wrong tries are counted and capped).
+
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the
   ledger (`DRIVER_GOALS`).

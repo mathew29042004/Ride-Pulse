@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { AlertTriangle, Banknote, BellRing, Bot, LocateFixed, MapPin, Navigation, Power, Satellite, ScanLine, ShieldAlert, Zap } from "lucide-react";
+import { AlertTriangle, Banknote, BellRing, Bot, LocateFixed, MapPin, Navigation, Package, Power, Satellite, ScanLine, ShieldAlert, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -53,7 +53,12 @@ function OfferCard({ offer, onAccept, onDecline, onCounter, busy }: { offer: Off
     <div className={clsx("rp-offer absolute inset-x-3 bottom-3 z-[800] animate-[slide-up_0.35s_ease-out] rounded-3xl bg-surface p-5 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.45)] ring-2 transition", urgent ? "ring-amber-400/70" : "ring-transparent")}>
       <div className="flex items-start justify-between">
         <div>
-          <Badge tone="brand">New {offer.ride_type} request</Badge>
+          <Badge tone="brand">{offer.service === "PARCEL" ? t("New parcel delivery") : `New ${offer.ride_type} request`}</Badge>
+          {offer.parcel && (
+            <div className="mt-1 flex items-center gap-1 text-xs font-semibold">
+              <Package className="size-3.5" /> {t(offer.parcel.category)} · {t("up to {n} kg", { n: Number(offer.parcel.weight_kg) })}
+            </div>
+          )}
           <div className="mt-2 text-3xl font-bold tracking-tight">{inr(offer.estimated_earning)}</div>
           {offer.fare_offer !== null && (
             <div className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
@@ -365,13 +370,16 @@ export default function DriverHome() {
     },
     onError,
   });
+  const [deliveryCode, setDeliveryCode] = useState("");
   const complete = useMutation({
     mutationFn: () =>
       api.post<Trip>(`trips/${trip!.id}/complete/`, {
+        delivery_code: deliveryCode,
         telemetry: { harsh_brakes: Math.round(Math.random() * 2), harsh_accelerations: Math.round(Math.random()), speeding_seconds: Math.round(Math.random() * 40) },
       }),
-    onSuccess: (t) => {
-      setCompleted(t);
+    onSuccess: (done) => {
+      setCompleted(done);
+      setDeliveryCode("");
       setAutopilot(false);
       refresh();
     },
@@ -607,8 +615,37 @@ export default function DriverHome() {
                         <Banknote className="size-4" /> Collect about {inr(trip.estimated_fare)} in cash at drop-off
                       </div>
                     )}
-                    <Button block size="lg" variant="primary" onClick={() => complete.mutate()} loading={complete.isPending}>
-                      {t("Complete trip")}
+                    {trip.service === "PARCEL" && trip.parcel && (
+                      <div className="rounded-2xl bg-surface-2 p-3 text-sm">
+                        <div className="flex items-center gap-2 font-semibold">
+                          <Package className="size-4" /> {t("Deliver to {name}", { name: trip.parcel.recipient_name })}
+                          {trip.parcel.recipient_phone && (
+                            <a href={`tel:${trip.parcel.recipient_phone}`} className="ml-auto text-xs font-semibold text-info">
+                              {trip.parcel.recipient_phone}
+                            </a>
+                          )}
+                        </div>
+                        {trip.parcel.instructions && <div className="mt-0.5 text-xs text-muted">“{trip.parcel.instructions}”</div>}
+                        <label className="label mt-2">{t("Delivery code from the recipient")}</label>
+                        <Input
+                          inputMode="numeric"
+                          maxLength={4}
+                          value={deliveryCode}
+                          onChange={(e) => setDeliveryCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                          placeholder="• • • •"
+                          className="text-center font-mono text-xl font-bold tracking-[0.5em]"
+                        />
+                      </div>
+                    )}
+                    <Button
+                      block
+                      size="lg"
+                      variant="primary"
+                      onClick={() => complete.mutate()}
+                      loading={complete.isPending}
+                      disabled={trip.service === "PARCEL" && deliveryCode.length !== 4}
+                    >
+                      {t(trip.service === "PARCEL" ? "Mark delivered" : "Complete trip")}
                     </Button>
                   </>
                 )}

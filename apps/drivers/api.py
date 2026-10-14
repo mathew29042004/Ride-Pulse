@@ -144,6 +144,7 @@ class DriverStatusSerializer(DriverSerializer):
             "home_address",
             "going_home_until",
             "going_home_uses_left",
+            "accepts_parcels",
         ]
 
     def get_going_home_uses_left(self, driver) -> int:
@@ -163,6 +164,10 @@ class HomeSerializer(serializers.Serializer):
 
 
 class GoingHomeSerializer(serializers.Serializer):
+    on = serializers.BooleanField()
+
+
+class ParcelsSerializer(serializers.Serializer):
     on = serializers.BooleanField()
 
 
@@ -216,6 +221,17 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
     @action(detail=False, methods=["get"])
     def me(self, request):
         return Response(DriverStatusSerializer(self.driver).data)
+
+    @extend_schema(request=ParcelsSerializer, responses=DriverStatusSerializer)
+    @action(detail=False, methods=["post"])
+    def parcels(self, request):
+        """Bike drivers: take parcel deliveries too (on by default)."""
+        serializer = ParcelsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        driver = self.driver
+        driver.accepts_parcels = serializer.validated_data["on"]
+        driver.save(update_fields=["accepts_parcels", "updated_at"])
+        return Response(DriverStatusSerializer(driver).data)
 
     @extend_schema(request=LocationSerializer, responses=DriverStatusSerializer)
     @action(detail=False, methods=["post"])

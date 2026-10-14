@@ -385,7 +385,13 @@ def nearby_available_drivers(
         .order_by("distance_km")
     )
     if ride_type is not None:
-        queryset = queryset.filter(vehicles__is_active=True, vehicles__ride_type=ride_type)
+        # A Parcel is carried by Bike drivers (who haven't opted out of parcels).
+        queryset = queryset.filter(
+            vehicles__is_active=True,
+            vehicles__ride_type_id=ride_type.vehicle_type_id or ride_type.pk,
+        )
+        if ride_type.service == "PARCEL":
+            queryset = queryset.filter(accepts_parcels=True)
     return list(queryset[:limit])
 
 

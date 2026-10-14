@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Clock, House, LocateFixed, MapPin, Search } from "lucide-react";
+import { Briefcase, ChevronRight, Clock, House, LocateFixed, MapPin, Package, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -145,6 +145,18 @@ export default function RiderHome() {
           >
             <Clock className="size-3.5" /> {t("Later")}
           </span>
+        </button>
+
+        <button
+          onClick={() => navigate("/ride/book?service=PARCEL")}
+          className="mt-2 flex w-full items-center gap-3 rounded-2xl border border-line px-4 py-2.5 text-left transition hover:bg-surface-2"
+        >
+          <Package className="size-5 text-brand" />
+          <span className="flex-1">
+            <span className="block text-sm font-semibold">{t("Send a parcel")}</span>
+            <span className="block text-xs text-muted">{t("Documents, keys, food: delivered by bike")}</span>
+          </span>
+          <ChevronRight className="size-4 text-muted" />
         </button>
 
         <div className="mt-2 text-xs text-muted">

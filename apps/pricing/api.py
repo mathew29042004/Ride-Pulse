@@ -59,6 +59,7 @@ class EstimateRequestSerializer(serializers.Serializer):
     dropoff = PointSerializer()
     stop = PointSerializer(required=False, allow_null=True)
     promo_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    service = serializers.ChoiceField(choices=["RIDE", "PARCEL"], required=False, default="RIDE")
 
 
 class AlternativeSerializer(serializers.Serializer):
@@ -146,6 +147,7 @@ class FareEstimateView(ContextBindingMixin, APIView):
             dropoff=(data["dropoff"]["lat"], data["dropoff"]["lng"]),
             promo_code=data.get("promo_code", ""),
             stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
+            service=data.get("service", "RIDE"),
         )
         return Response(EstimateResponseSerializer(serialize_options(result)).data)
 

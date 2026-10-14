@@ -30,6 +30,8 @@ from .models import (
     ACTIVE_STATUSES,
     FareSplit,
     LostItemReport,
+    ParcelCategory,
+    ParcelDelivery,
     RideCheck,
     RideCheckKind,
     RideCheckStatus,
@@ -57,6 +59,50 @@ class TripPartySerializer(serializers.Serializer):
         request = self.context.get("request")
         viewer = request.user if request else None
         return party.user.phone if viewer is not None and viewer.is_staff_member else None
+
+
+class ParcelInputSerializer(serializers.Serializer):
+    recipient_name = serializers.CharField(max_length=80)
+    recipient_phone = serializers.CharField(max_length=20)
+    category = serializers.ChoiceField(choices=ParcelCategory.choices)
+    weight_kg = serializers.DecimalField(max_digits=4, decimal_places=1)
+    instructions = serializers.CharField(required=False, allow_blank=True, max_length=200)
+
+
+class ParcelSerializer(serializers.ModelSerializer):
+    category_label = serializers.CharField(source="get_category_display", read_only=True)
+    delivery_code = serializers.SerializerMethodField()
+    recipient_phone = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ParcelDelivery
+        fields = [
+            "recipient_name",
+            "recipient_phone",
+            "category",
+            "category_label",
+            "weight_kg",
+            "instructions",
+            "delivery_code",
+            "recipient_notified_at",
+            "delivered_at",
+        ]
+
+    def _viewer(self):
+        request = self.context.get("request")
+        return request.user if request else None
+
+    def get_delivery_code(self, parcel) -> str | None:
+        """Only the sender sees the code (to pass on); the driver gets it from the recipient."""
+        viewer = self._viewer()
+        return parcel.delivery_code if viewer and viewer.is_rider else None
+
+    def get_recipient_phone(self, parcel) -> str | None:
+        """The driver gets the recipient's number once the parcel is on board."""
+        viewer = self._viewer()
+        if viewer and viewer.is_driver and parcel.trip.status != TripStatus.IN_PROGRESS:
+            return None
+        return parcel.recipient_phone
 
 
 class CounterOfferSerializer(serializers.ModelSerializer):
@@ -132,6 +178,7 @@ class TripSerializer(serializers.ModelSerializer):
     is_favourite_driver = serializers.SerializerMethodField()
     open_ride_check = serializers.SerializerMethodField()
     counter_offers = serializers.SerializerMethodField()
+    parcel = serializers.SerializerMethodField()
 
     class Meta:
         model = Trip
@@ -191,6 +238,8 @@ class TripSerializer(serializers.ModelSerializer):
             "tip_pledged",
             "preferences",
             "is_favourite_driver",
+            "service",
+            "parcel",
             "fare_offer",
             "offer_adjustment",
             "counter_offers",
@@ -224,6 +273,11 @@ class TripSerializer(serializers.ModelSerializer):
 
     def get_fare(self, trip) -> dict:
         return FareSerializer(trip.final_fare).data
+
+    @extend_schema_field(ParcelSerializer(allow_null=True))
+    def get_parcel(self, trip) -> dict | None:
+        parcel = getattr(trip, "parcel", None) if trip.service == "PARCEL" else None
+        return ParcelSerializer(parcel, context=self.context).data if parcel else None
 
     @extend_schema_field(CounterOfferSerializer(many=True))
     def get_counter_offers(self, trip) -> list:
@@ -284,6 +338,7 @@ class TripRequestSerializer(serializers.Serializer):
         max_digits=9, decimal_places=2, required=False, allow_null=True, default=None
     )
     sure_ride = serializers.BooleanField(required=False, default=False)
+    parcel = ParcelInputSerializer(required=False, allow_null=True, default=None)
     preferences = serializers.ListField(
         child=serializers.ChoiceField(choices=RidePreference.choices), required=False, default=list
     )
@@ -337,6 +392,7 @@ class CompleteSerializer(serializers.Serializer):
         max_digits=7, decimal_places=2, min_value=Decimal(0), required=False, allow_null=True
     )
     telemetry = TelemetrySerializer(required=False)
+    delivery_code = serializers.CharField(required=False, allow_blank=True, max_length=4)
 
 
 class RateSerializer(serializers.Serializer):
@@ -620,6 +676,7 @@ class TripViewSet(
             boost=data.get("boost") or 0,
             fare_offer=data.get("fare_offer"),
             sure_ride=data.get("sure_ride", False),
+            parcel=data.get("parcel"),
         )
         return self._respond(trip, status.HTTP_201_CREATED)
 
@@ -670,12 +727,18 @@ class TripViewSet(
         serializer = CompleteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        trip = services.complete_trip(
-            self.get_object(),
-            driver=self._driver(request),
-            actual_distance_km=data.get("actual_distance_km"),
-            telemetry=data.get("telemetry"),
-        )
+        trip = self.get_object()
+        kwargs = {
+            "driver": self._driver(request),
+            "actual_distance_km": data.get("actual_distance_km"),
+            "telemetry": data.get("telemetry"),
+        }
+        if trip.service == "PARCEL":
+            trip = services.complete_delivery(
+                trip, delivery_code=data.get("delivery_code", ""), **kwargs
+            )
+        else:
+            trip = services.complete_trip(trip, **kwargs)
         return self._respond(trip)
 
     @extend_schema(request=RateSerializer, responses=TripSerializer)

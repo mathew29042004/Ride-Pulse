@@ -213,6 +213,8 @@ SPECTACULAR_SETTINGS = {
         "OnboardingStatusEnum": "apps.drivers.models.OnboardingStatus",
         "TicketStatusEnum": "apps.support.models.TicketStatus",
         "OnlinePaymentMethodEnum": [("UPI", "UPI"), ("CARD", "CARD"), ("WALLET", "WALLET")],
+        "ParcelCategoryEnum": "apps.rides.models.ParcelCategory",
+        "TicketCategoryEnum": "apps.support.models.TicketCategory",
     },
 }
 

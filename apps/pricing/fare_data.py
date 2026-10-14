@@ -9,6 +9,7 @@ RIDE_TYPES = [
     ("MINI", "Mini", "Comfy hatchbacks at everyday prices", 4, 3),
     ("SEDAN", "Prime Sedan", "Spacious sedans with top-rated drivers", 4, 4),
     ("SUV", "Prime SUV", "Six-seaters for groups and luggage", 6, 5),
+    ("PARCEL", "Parcel", "Send packages up to 10 kg by bike", 0, 6),
 ]
 
 # Local service hours (start, end) for ride types that don't run all night.
@@ -20,6 +21,17 @@ def apply_service_hours(RideType) -> None:
         RideType.objects.filter(code=code).update(service_start_hour=start, service_end_hour=end)
 
 
+# Ride types for other services, and the vehicles that serve them.
+SERVICES = {"PARCEL": ("PARCEL", "BIKE")}
+
+
+def apply_services(RideType) -> None:
+    for code, (service, vehicle_code) in SERVICES.items():
+        RideType.objects.filter(code=code).update(
+            service=service, vehicle_type=RideType.objects.filter(code=vehicle_code).first()
+        )
+
+
 # code: base, per km, per min, minimum, booking fee, cancel fee, free wait, wait/min, airport
 FARE_CARDS = {
     "BIKE": ("20", "6", "0.50", "30", "5", "15", 3, "1", "0"),
@@ -27,6 +39,7 @@ FARE_CARDS = {
     "MINI": ("50", "12", "1.50", "80", "12", "50", 3, "2", "100"),
     "SEDAN": ("60", "15", "2", "100", "15", "60", 3, "2.50", "120"),
     "SUV": ("80", "20", "2.50", "150", "20", "75", 3, "3", "150"),
+    "PARCEL": ("25", "7", "0.50", "35", "5", "15", 5, "1", "0"),
 }
 
 

@@ -49,10 +49,11 @@ def reload_reference_data():
     """flush removes rows loaded by data migrations; put the reference data back."""
     from apps.geo.city_data import load_cities, load_landmarks
     from apps.geo.models import City, Landmark, Zone
-    from apps.pricing.fare_data import apply_service_hours, load_fares
+    from apps.pricing.fare_data import apply_service_hours, apply_services, load_fares
     from apps.pricing.models import FareRule, RideType
 
     load_cities(City, Zone)
     load_landmarks(City, Landmark)
     load_fares(City, RideType, FareRule)
     apply_service_hours(RideType)
+    apply_services(RideType)

@@ -145,6 +145,19 @@ export interface Trip {
   tip_pledged: string;
   preferences: string[];
   is_favourite_driver: boolean;
+  service: "RIDE" | "PARCEL" | "RENTAL" | "INTERCITY";
+  parcel: {
+    recipient_name: string;
+    recipient_phone: string | null;
+    category: string;
+    category_label: string;
+    weight_kg: string;
+    instructions: string;
+    /** Sender only. */
+    delivery_code: string | null;
+    recipient_notified_at: string | null;
+    delivered_at: string | null;
+  } | null;
   fare_offer: string | null;
   offer_adjustment: string;
   /** Drivers' counter-offers on the rider's bid (rider only, while searching). */
@@ -241,6 +254,8 @@ export interface Offer {
   usual_fare: string | number;
   /** Counter-offer steps (+₹10/20/30), only when the rider bid. */
   counter_steps: string[];
+  service: string;
+  parcel: { category: string; weight_kg: string | number; instructions: string } | null;
   expires_at: string;
 }
 

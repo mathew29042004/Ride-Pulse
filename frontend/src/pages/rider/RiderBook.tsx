@@ -27,6 +27,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
 import { BaseMap, FitBounds, MapCenterWatch, PinMarker, Recenter, RouteLine, useMapProvider } from "@/components/map";
+import { EMPTY_PARCEL, ParcelForm, parcelReady, type ParcelDetails } from "@/components/ParcelForm";
 import { describePoint, PlaceSuggestions } from "@/components/PlaceSuggestions";
 import { RideTypeArt } from "@/components/RideTypeArt";
 import { earliestSlot, formatWhen, SchedulePicker } from "@/components/SchedulePicker";
@@ -88,6 +89,8 @@ export default function RiderBook() {
   const [candidate, setCandidate] = useState<Spot | null>(null);
   const [moving, setMoving] = useState(false);
   const [selected, setSelected] = useState<string>(() => params.get("type") ?? "MINI");
+  const service = params.get("service") === "PARCEL" ? "PARCEL" : "RIDE";
+  const [parcel, setParcel] = useState<ParcelDetails>(EMPTY_PARCEL);
   const [boost, setBoost] = useState(0); // "search anyway" boost when nobody's nearby
   const [bidding, setBidding] = useState(false); // Bid your fare
   const [bid, setBid] = useState(0);
@@ -113,13 +116,14 @@ export default function RiderBook() {
   const saved = useQuery({ queryKey: ["places", "saved"], queryFn: () => api.get<SavedPlace[]>("rider/places/") });
 
   const estimate = useQuery({
-    queryKey: ["estimate", pickup.lat, pickup.lng, dropoff?.lat, dropoff?.lng, stop?.lat, stop?.lng, promo],
+    queryKey: ["estimate", service, pickup.lat, pickup.lng, dropoff?.lat, dropoff?.lng, stop?.lat, stop?.lng, promo],
     queryFn: () =>
       api.post<Estimate>("fares/estimate/", {
         pickup: { lat: pickup.lat, lng: pickup.lng },
         dropoff: { lat: dropoff!.lat, lng: dropoff!.lng },
         stop: stop && { lat: stop.lat, lng: stop.lng },
         promo_code: promo,
+        service,
       }),
     enabled: !!dropoff,
     retry: false,
@@ -179,10 +183,11 @@ export default function RiderBook() {
         payment_method: payment,
         promo_code: promo,
         tip,
+        parcel: service === "PARCEL" ? parcel : null,
         boost: option?.availability === "NONE" && !bidding ? boost : 0,
         fare_offer: bidding && !scheduleAt ? bid : null,
         sure_ride: sureRide && !bidding && !!option?.sure_ride && !scheduleAt,
-        preferences: chosenPrefs.filter((p) => isCar(selected) || !PREFERENCES.find((x) => x.value === p)?.carsOnly),
+        preferences: service === "PARCEL" ? [] : chosenPrefs.filter((p) => isCar(selected) || !PREFERENCES.find((x) => x.value === p)?.carsOnly),
       }),
     onSuccess: (trip) => {
       qc.invalidateQueries({ queryKey: ["trips"] });
@@ -414,7 +419,7 @@ export default function RiderBook() {
                 {t("Schedule {ride} · {when}", { ride: option?.ride_type.name ?? "", when: formatWhen(scheduleAt) })}
               </Button>
             ) : (
-              <Button size="lg" block loading={book.isPending} disabled={!option || option.availability === "CLOSED"} onClick={() => book.mutate()}>
+              <Button size="lg" block loading={book.isPending} disabled={!option || option.availability === "CLOSED" || (service === "PARCEL" && !parcelReady(parcel))} onClick={() => book.mutate()}>
                 {t("Book {ride} · {fare}", { ride: option?.ride_type.name ?? "", fare: inr(bookingTotal) })}
                 {tip > 0 && t(" + ₹{tip} tip", { tip })}
               </Button>
@@ -433,7 +438,7 @@ export default function RiderBook() {
           {estimate.data && (
             <>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <h2 className="font-semibold">{t("Choose a ride")}</h2>
+                <h2 className="font-semibold">{t(service === "PARCEL" ? "Send a parcel" : "Choose a ride")}</h2>
                 <button
                   onClick={() => setPickingTime((v) => !v)}
                   className="ml-auto flex items-center gap-1 rounded-full bg-surface-3 px-3 py-1 text-xs font-semibold"
@@ -481,10 +486,12 @@ export default function RiderBook() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 font-semibold">
                           {o.ride_type.name}
-                          <span className="flex items-center gap-0.5 text-xs font-medium text-muted">
-                            <Users className="size-3" />
-                            {o.ride_type.seats}
-                          </span>
+                          {o.ride_type.seats > 0 && (
+                            <span className="flex items-center gap-0.5 text-xs font-medium text-muted">
+                              <Users className="size-3" />
+                              {o.ride_type.seats}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-muted">
                           {o.availability === "CLOSED" ? t("Not running now") : o.pickup_eta_min !== null ? t("{n} min away", { n: o.pickup_eta_min }) : t("No cars nearby")} · {km(o.distance_km)}
@@ -526,7 +533,9 @@ export default function RiderBook() {
                 <PriceOptions option={option} bidding={bidding} bid={bid} sureRide={sureRide} onBidding={(on) => { setBidding(on); setBid(Math.round(Number(option.fare.total))); }} onBid={setBid} onSureRide={setSureRide} />
               )}
 
-              <div className="mt-3">
+              {service === "PARCEL" && <ParcelForm value={parcel} onChange={setParcel} />}
+
+              <div className={clsx("mt-3", service === "PARCEL" && "hidden")}>
                 <div className="mb-1.5 text-xs font-semibold text-muted">{t("Ride preferences")}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {PREFERENCES.filter((p) => isCar(selected) || !p.carsOnly).map(({ value, label, icon: Icon }) => {

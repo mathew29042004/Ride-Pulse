@@ -212,7 +212,21 @@ def offer_payload(offer: TripOffer) -> dict:
         "counter_steps": [str(s) for s in fare_offer_rules()["counter_steps"]]
         if trip.fare_offer
         else [],
+        "service": trip.service,
+        "parcel": parcel_summary(trip),
         "expires_at": offer.expires_at,
+    }
+
+
+def parcel_summary(trip: Trip) -> dict | None:
+    """What the driver sees before accepting a delivery (no recipient phone yet)."""
+    parcel = getattr(trip, "parcel", None) if trip.service == "PARCEL" else None
+    if parcel is None:
+        return None
+    return {
+        "category": parcel.get_category_display(),
+        "weight_kg": parcel.weight_kg,
+        "instructions": parcel.instructions,
     }
 
 
@@ -380,8 +394,10 @@ def batch_dispatch(
     for trip in trips:
         row = []
         for driver in drivers:
+            serves = trip.ride_type.vehicle_type_id or trip.ride_type_id
             if (
-                driver.active_vehicle.ride_type_id != trip.ride_type_id
+                driver.active_vehicle.ride_type_id != serves
+                or (trip.service == "PARCEL" and not driver.accepts_parcels)
                 or (trip.pk, driver.pk) in offered
             ):
                 row.append(math.inf)

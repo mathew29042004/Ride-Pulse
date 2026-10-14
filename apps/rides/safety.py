@@ -60,7 +60,7 @@ def is_night(now: datetime) -> bool:
 
 def night_safe_for(trip: Trip, now: datetime) -> bool:
     """Decided when the trip starts: at night, or on a "woman driver" ride, unless turned off."""
-    if not trip.rider.night_safety:
+    if not trip.rider.night_safety or trip.service != "RIDE":
         return False
     return is_night(now) or RidePreference.WOMAN_DRIVER in (trip.preferences or [])
 
@@ -309,7 +309,9 @@ def run_ride_checks(now: datetime | None = None) -> dict:
     """Raise new checks on trips in progress, then escalate the ones nobody answered."""
     now = now or timezone.now()
     raised = escalated = closed = 0
-    trips = Trip.objects.filter(status=TripStatus.IN_PROGRESS, started_at__isnull=False)
+    trips = Trip.objects.filter(
+        status=TripStatus.IN_PROGRESS, started_at__isnull=False, service="RIDE"
+    )
     for trip in trips.select_related("driver", "driver__user", "rider__user").prefetch_related(
         "ride_checks"
     ):

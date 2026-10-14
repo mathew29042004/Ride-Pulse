@@ -11,6 +11,7 @@ import { CounterOffers, SureRideBadge } from "@/components/Bids";
 import { CallButton } from "@/components/CallButton";
 import { CarCheck, StartCode } from "@/components/PickupVerification";
 import { FairShareCard } from "@/components/FairShare";
+import { ParcelCard } from "@/components/ParcelForm";
 import { LostItemCard } from "@/components/LostItem";
 import { HomeSafeButton, NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { SplitFareCard } from "@/components/SplitFare";
@@ -264,8 +265,8 @@ export default function RiderTrip() {
               <div>
                 <h2 className="text-xl font-bold">
                   {trip.status === "DRIVER_ASSIGNED" && t("Arriving in {time}", { time: minutes(toPickupEta) })}
-                  {trip.status === "DRIVER_ARRIVED" && t("Your driver is here")}
-                  {trip.status === "IN_PROGRESS" && t("{time} to drop", { time: minutes(toDropEta) })}
+                  {trip.status === "DRIVER_ARRIVED" && t(trip.service === "PARCEL" ? "Driver is here to pick up your parcel" : "Your driver is here")}
+                  {trip.status === "IN_PROGRESS" && t(trip.service === "PARCEL" ? "Parcel arriving in {time}" : "{time} to drop", { time: minutes(toDropEta) })}
                 </h2>
                 <p className="mt-0.5 text-sm text-muted">
                   {trip.status === "DRIVER_ASSIGNED" && (toPickupKm !== null ? t("{distance} away · meet at {place}", { distance: km(toPickupKm), place: trip.pickup_address }) : t("Meet at {place}", { place: trip.pickup_address }))}
@@ -275,6 +276,7 @@ export default function RiderTrip() {
               </div>
             </div>
             <DriverCard trip={trip} />
+            <ParcelCard trip={trip} />
             <SureRideBadge trip={trip} />
             <NightSafeBar trip={trip} role="rider" />
             {trip.otp && trip.status !== "IN_PROGRESS" && (
@@ -377,6 +379,7 @@ export default function RiderTrip() {
               </div>
             </details>
 
+            <ParcelCard trip={trip} />
             <FairShareCard trip={trip} />
             <InvoiceCard trip={trip} />
             <SplitFareCard trip={trip} />
