@@ -93,6 +93,8 @@ export interface EstimateOption {
   suggestion: { ride_type: string; name: string; pickup_eta_min: number | null; fare_total: string } | null;
   /** "Driver within N min or ₹30 back", when a driver is nearby. */
   sure_ride: { minutes: number; fee: string; refund: string } | null;
+  /** Priced by the rider's Fare Lock (surge doesn't apply). */
+  fare_lock: boolean;
   /** Bid your fare: the allowed range for an offer. */
   offer_range: { min: string; max: string };
   fare: Fare;
@@ -146,6 +148,8 @@ export interface Trip {
   preferences: string[];
   is_favourite_driver: boolean;
   service: "RIDE" | "PARCEL" | "RENTAL" | "INTERCITY";
+  co2_saved_g: number;
+  fare_lock: number | null;
   package_hours: number | null;
   package_km: number | null;
   round_trip: boolean;

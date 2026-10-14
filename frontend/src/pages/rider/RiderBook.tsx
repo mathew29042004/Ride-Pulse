@@ -448,6 +448,7 @@ export default function RiderBook() {
                   <ChevronDown className="size-3.5" />
                 </button>
                 {option?.fare.lines.some((l) => l.code === "RIDE_PASS") && <Badge tone="brand">Ride Pass</Badge>}
+                {option?.fare_lock && <Badge tone="brand">{t("Fare locked")}</Badge>}
                 {option && Number(option.fare.surge_multiplier) > 1 && (
                   <Badge tone="warning">
                     <Zap className="size-3" /> {t("{n}× high demand", { n: option.fare.surge_multiplier })}

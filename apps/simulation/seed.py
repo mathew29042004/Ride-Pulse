@@ -214,7 +214,7 @@ class Seeder:
         )
         code = ride_type or _weighted(self.rng, RIDE_TYPE_WEIGHTS)
         make, model, seats = vehicle or self.rng.choice(VEHICLES[code])
-        drivers_svc.register_vehicle(
+        vehicle_row = drivers_svc.register_vehicle(
             driver,
             ride_type=self.ride_types[code],
             make=make,
@@ -224,6 +224,10 @@ class Seeder:
             color=self.rng.choice(COLORS),
             seats=seats,
         )
+        fuel = {"AUTO": "CNG", "SUV": "DIESEL"}.get(code, "PETROL")
+        if code in ("BIKE", "MINI") and self.rng.random() < 0.15:
+            fuel = "EV"
+        type(vehicle_row).objects.filter(pk=vehicle_row.pk).update(fuel_type=fuel)
         submit = (
             list(REQUIRED_DOCUMENTS) if documents != "partial" else [DocumentType.DRIVING_LICENSE]
         )

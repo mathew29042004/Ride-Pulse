@@ -34,6 +34,9 @@ class RiderProfile(AuditedModel, TimeStampedModel):
     emergency_contact_phone = models.CharField(
         max_length=15, blank=True, validators=[phone_validator]
     )
+    # Eco score: points from CO2 saved (100 points = ₹10 in the wallet).
+    eco_points = models.PositiveIntegerField(default=0)
+    co2_saved_g = models.PositiveBigIntegerField(default=0)
     # Night Safe mode: stricter Ride Checks, auto-share and drop control from 10 pm to 6 am.
     night_safety = models.BooleanField(default=True)
     is_blocked = models.BooleanField(default=False)

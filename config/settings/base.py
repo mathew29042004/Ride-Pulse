@@ -359,6 +359,17 @@ RIDE_PULSE = {
     "INTERCITY_MIN_KM_PER_DAY": 250,
     "INTERCITY_DRIVER_ALLOWANCE": "300",
     "INTERCITY_RANGE_KM": [40, 600],
+    # Fare Lock: fix a commute's normal price for a week (±60 min of the time, chosen weekdays).
+    "FARE_LOCK_FEE": "49",
+    "FARE_LOCK_DAYS": 7,
+    "FARE_LOCK_WINDOW_MINUTES": 60,
+    "FARE_LOCK_MATCH_METERS": 400,
+    # Eco score: grams of CO2 per km for each vehicle (per trip, shared by its riders) vs the
+    # rider driving their own petrol car alone; 1 point per 100 g saved; 100 points = ₹10.
+    "ECO_BASELINE_G_PER_KM": 170,
+    "ECO_G_PER_KM": {"BIKE": 45, "AUTO": 70, "MINI": 120, "SEDAN": 140, "SUV": 180, "EV": 20},
+    "ECO_POINTS_PER_100G": 1,
+    "ECO_REDEEM": [100, "10"],
     "WELLBEING_MAX_DRIVING_MINUTES": 360,
     "WELLBEING_BREAK_MINUTES": 20,
     "WELLBEING_WARN_MINUTES": 30,
@@ -377,6 +388,8 @@ RIDE_PULSE = {
 # Browser key: Maps JavaScript API + Places in the React apps (restrict it by HTTP referrer).
 # Leave both empty to use OpenStreetMap tiles and built-in route estimates.
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
+# Language Bridge: free-text chat translation (the phrasebook works without it).
+GOOGLE_TRANSLATE_API_KEY = env("GOOGLE_TRANSLATE_API_KEY", default="")
 GOOGLE_MAPS_BROWSER_KEY = env("GOOGLE_MAPS_BROWSER_KEY", default="")
 GOOGLE_MAPS_MAP_ID = env("GOOGLE_MAPS_MAP_ID", default="DEMO_MAP_ID")
 GOOGLE_ROUTES_TRAFFIC_AWARE = env.bool("GOOGLE_ROUTES_TRAFFIC_AWARE", default=True)

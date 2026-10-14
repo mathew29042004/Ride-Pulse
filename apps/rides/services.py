@@ -39,7 +39,7 @@ from apps.notifications.models import Level
 from apps.notifications.services import notify, notify_role
 from apps.payments import services as payments
 from apps.payments.models import PaymentMethod
-from apps.pricing import passes
+from apps.pricing import fare_locks, passes
 from apps.pricing import services as pricing
 from apps.pricing.fare import with_boost, with_fee, with_offer_adjustment
 from apps.pricing.models import RideType, Service
@@ -264,6 +264,8 @@ def estimate_options(
             stop=stop,
             ride_pass=has_pass,
         )
+        lock = fare_locks.matching_lock(rider, ride_type, pickup, dropoff, at) if not stop else None
+        estimate.fare = fare_locks.apply(estimate.fare, lock)
         nearest = nearby_available_drivers(
             lat=pickup[0],
             lng=pickup[1],
@@ -285,6 +287,7 @@ def estimate_options(
                 "estimate": estimate,
                 "pickup_eta_min": round(eta) if eta is not None else None,
                 "sure_ride": bids.sure_ride_quote(eta),
+                "fare_lock": bool(lock),
                 "offer_range": {"min": low, "max": high},
                 "availability": "CLOSED" if not open_now else "AVAILABLE" if nearest else "NONE",
                 "unavailable_reason": (
@@ -409,6 +412,8 @@ def request_trip(
         stop=stop,
         ride_pass=has_pass,
     )
+    lock = fare_locks.matching_lock(rider, ride_type, pickup, dropoff, now) if not stop else None
+    estimate.fare = fare_locks.apply(estimate.fare, lock)
     fare = with_boost(estimate.fare, boost) if boost else estimate.fare
     adjustment = Decimal(0)
     if fare_offer:
@@ -476,6 +481,7 @@ def request_trip(
                 boost_amount=boost,
                 boosted_at=now if boost else None,
                 service=ride_type.service,
+                fare_lock=lock,
                 fare_offer=fare_offer,
                 offer_adjustment=adjustment,
                 sure_ride_minutes=sure_minutes,
@@ -765,6 +771,11 @@ def complete_trip(
             is None
         ):
             fare = price(None)
+        if trip.fare_lock:
+            before = fare.total
+            fare = fare_locks.apply(fare, trip.fare_lock)
+            if fare.total < before:
+                fare_locks.record_use(trip.fare_lock, before - fare.total)
         if trip.boost_amount:
             fare = with_boost(fare, trip.boost_amount)
         if trip.offer_adjustment:
@@ -813,6 +824,9 @@ def complete_trip(
     _set_availability(driver, Availability.ONLINE)
     DriverProfile.objects.filter(pk=driver.pk).update(completed_trips=F("completed_trips") + 1)
     goals.reward_goals(driver, now=now)
+    from . import eco
+
+    eco.award(trip, distance)
     goals.after_trip(driver, trip, now=now)
     wellbeing.enforce(driver, now=now)
     RiderProfile.objects.filter(pk=trip.rider_id).update(completed_trips=F("completed_trips") + 1)
@@ -1097,6 +1111,8 @@ def message_payload(message: TripMessage) -> dict:
         "trip_id": message.trip_id,
         "sender": message.sender,
         "body": message.body,
+        "language": message.language,
+        "translations": message.translations,
         "created_at": message.created_at,
     }
 
@@ -1114,7 +1130,18 @@ def send_message(trip: Trip, *, user, body: str) -> TripMessage:
         raise ActionNotPermitted("Only the rider and the driver can chat on a trip.")
     if trip.status not in CHAT_STATUSES:
         raise InvalidStateTransition("Chat is open from when a driver is assigned until drop-off.")
-    message = TripMessage.objects.create(trip=trip, sender=sender, author=user, body=body)
+    from .translate import translate
+
+    other = trip.driver.user if sender == TripMessage.Sender.RIDER else trip.rider.user
+    language, translations = translate(body, sender_language=user.language, target=other.language)
+    message = TripMessage.objects.create(
+        trip=trip,
+        sender=sender,
+        author=user,
+        body=body,
+        language=language,
+        translations=translations,
+    )
     broadcast.trip_event(trip.pk, "message", message_payload(message))
     return message
 

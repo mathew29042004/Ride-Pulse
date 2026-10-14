@@ -121,6 +121,13 @@ class DriverProfile(AuditedModel, TimeStampedModel):
         return self.current_lat is not None and self.current_lng is not None
 
 
+class FuelType(models.TextChoices):
+    PETROL = "PETROL", "Petrol"
+    DIESEL = "DIESEL", "Diesel"
+    CNG = "CNG", "CNG"
+    EV = "EV", "Electric"
+
+
 class Vehicle(AuditedModel, TimeStampedModel):
     driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name="vehicles")
     ride_type = models.ForeignKey(
@@ -134,6 +141,7 @@ class Vehicle(AuditedModel, TimeStampedModel):
     year = models.PositiveSmallIntegerField()
     color = models.CharField(max_length=30)
     seats = models.PositiveSmallIntegerField(default=4)
+    fuel_type = models.CharField(max_length=6, choices=FuelType.choices, default=FuelType.PETROL)
     is_active = models.BooleanField(default=True)
 
     class Meta:

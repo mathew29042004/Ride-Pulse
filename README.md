@@ -310,6 +310,17 @@ unmapped is denied. Riders and drivers only ever see their own records.
   trip for 1–7 days. Per-km pricing (minimum 100 km one-way, 250 km a day for round trips) plus
   a ₹300/day driver allowance that is all the driver's; car drivers can opt out of intercity.
 
+* **Fare Lock:** from a finished ride, lock that route's normal price for a week (₹49) on
+  chosen weekdays within an hour of the same time; surge never applies and Ride Pulse covers
+  the difference as a discount, so the driver earns the same.
+* **Language Bridge:** each user's app language is saved; chat messages arrive in the other
+  person's language. Quick replies and common phrases use a built-in English/Tamil/Hindi
+  phrasebook; free text is translated by Google Cloud Translation when
+  `GOOGLE_TRANSLATE_API_KEY` is set (otherwise the original is shown).
+* **Eco score:** each trip records CO₂ saved versus driving your own petrol car (by vehicle
+  and fuel; EVs save most). 1 eco point per 100 g; 100 points = ₹10 in the wallet. Riders can
+  prefer electric vehicles, which get a dispatch head start.
+
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the
   ledger (`DRIVER_GOALS`).

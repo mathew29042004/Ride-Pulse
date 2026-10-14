@@ -11,6 +11,7 @@ import { CounterOffers, SureRideBadge } from "@/components/Bids";
 import { CallButton } from "@/components/CallButton";
 import { CarCheck, StartCode } from "@/components/PickupVerification";
 import { FairShareCard } from "@/components/FairShare";
+import { LockFareButton, TripEcoLine } from "@/components/GreenAndLock";
 import { ParcelCard } from "@/components/ParcelForm";
 import { LostItemCard } from "@/components/LostItem";
 import { HomeSafeButton, NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
@@ -383,9 +384,11 @@ export default function RiderTrip() {
             </details>
 
             <ParcelCard trip={trip} />
+            <TripEcoLine trip={trip} />
             <FairShareCard trip={trip} />
             <InvoiceCard trip={trip} />
             <SplitFareCard trip={trip} />
+            <LockFareButton trip={trip} />
             <LostItemCard trip={trip} />
 
             <div className="mt-3 grid grid-cols-3 gap-2">

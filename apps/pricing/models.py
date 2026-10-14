@@ -292,3 +292,35 @@ class PriceAlert(models.Model):
 
     def __str__(self) -> str:
         return f"{self.rider_id} {self.ride_type_id} ({self.status})"
+
+
+class FareLock(models.Model):
+    """ "Lock today's price for my commute": a route, ride type, time of day and weekdays whose
+    price is fixed (surge never applies) for a week. Ride Pulse covers any difference."""
+
+    rider = models.ForeignKey(
+        "riders.RiderProfile", on_delete=models.CASCADE, related_name="fare_locks"
+    )
+    ride_type = models.ForeignKey(RideType, on_delete=models.PROTECT, related_name="+")
+    pickup_lat = models.FloatField()
+    pickup_lng = models.FloatField()
+    pickup_address = models.CharField(max_length=255, blank=True)
+    dropoff_lat = models.FloatField()
+    dropoff_lng = models.FloatField()
+    dropoff_address = models.CharField(max_length=255, blank=True)
+    depart_minute = models.PositiveSmallIntegerField(help_text="Local minutes after midnight")
+    weekdays = ArrayField(models.PositiveSmallIntegerField(), default=list)  # 0 = Monday
+    locked_total = models.DecimalField(max_digits=9, decimal_places=2)
+    fee = models.DecimalField(max_digits=6, decimal_places=2)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    uses = models.PositiveSmallIntegerField(default=0)
+    saved = models.DecimalField(max_digits=9, decimal_places=2, default=0)
+    reference = models.CharField(max_length=24, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-ends_at"]
+
+    def __str__(self) -> str:
+        return f"{self.reference}: {self.pickup_address} → {self.dropoff_address}"

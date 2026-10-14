@@ -105,6 +105,33 @@ class ParcelSerializer(serializers.ModelSerializer):
         return parcel.recipient_phone
 
 
+class FareLockRequestSerializer(serializers.Serializer):
+    method = serializers.ChoiceField(choices=["UPI", "CARD", "WALLET"])
+    weekdays = serializers.ListField(
+        child=serializers.IntegerField(min_value=0, max_value=6), required=False
+    )
+    payer_reference = serializers.CharField(required=False, allow_blank=True, max_length=60)
+
+
+def fare_lock_payload(lock) -> dict:
+    from django.utils import timezone as tz
+
+    return {
+        "id": lock.pk,
+        "reference": lock.reference,
+        "ride_type": lock.ride_type.name,
+        "pickup_address": lock.pickup_address,
+        "dropoff_address": lock.dropoff_address,
+        "time": f"{lock.depart_minute // 60:02d}:{lock.depart_minute % 60:02d}",
+        "weekdays": lock.weekdays,
+        "locked_total": str(lock.locked_total),
+        "ends_at": lock.ends_at,
+        "active": lock.ends_at > tz.now(),
+        "uses": lock.uses,
+        "saved": str(lock.saved),
+    }
+
+
 class CounterOfferSerializer(serializers.ModelSerializer):
     driver_name = serializers.CharField(source="driver.user.first_name", read_only=True)
     driver_rating = serializers.DecimalField(
@@ -240,6 +267,8 @@ class TripSerializer(serializers.ModelSerializer):
             "is_favourite_driver",
             "service",
             "parcel",
+            "co2_saved_g",
+            "fare_lock",
             "package_hours",
             "package_km",
             "round_trip",
@@ -448,8 +477,8 @@ class TripEventSerializer(serializers.ModelSerializer):
 class TripMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = TripMessage
-        fields = ["id", "trip_id", "sender", "body", "created_at"]
-        read_only_fields = ["id", "trip_id", "sender", "created_at"]
+        fields = ["id", "trip_id", "sender", "body", "language", "translations", "created_at"]
+        read_only_fields = ["id", "trip_id", "sender", "language", "translations", "created_at"]
 
 
 class TripOfferSerializer(serializers.ModelSerializer):
@@ -600,6 +629,7 @@ RIDER = (
     "home_safe",
     "fair_share",
     "take_counter",
+    "lock_fare",
 )
 DRIVER = (
     "list",
@@ -832,6 +862,17 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=FareLockRequestSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="lock-fare")
+    def lock_fare(self, request, pk=None):
+        """Lock this completed ride's normal price for the weekday commute (a week)."""
+        from apps.pricing.fare_locks import lock_from_trip
+
+        serializer = FareLockRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        lock = lock_from_trip(self.get_object(), user=request.user, **serializer.validated_data)
+        return Response(fare_lock_payload(lock), status=status.HTTP_201_CREATED)
 
     @extend_schema(request=TakeCounterSerializer, responses=TripSerializer)
     @action(detail=True, methods=["post"], url_path="take-counter")

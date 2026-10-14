@@ -104,6 +104,19 @@ BOOST_LABEL = "Boost (100% to your driver)"
 OFFER_LABEL = "Your fare offer"
 
 
+def with_platform_discount(
+    fare: FareBreakdown, code: str, label: str, amount: Decimal
+) -> FareBreakdown:
+    """Take ``amount`` off what the rider pays, funded by Ride Pulse (the driver's share stays)."""
+    from dataclasses import replace
+
+    amount = Decimal(amount).quantize(Decimal("0.01"))
+    if amount <= 0:
+        return fare
+    lines = [*fare.lines, FareLine(code, label, -amount, "DISCOUNT")]
+    return replace(fare, lines=lines, total=fare.total - amount, discount=fare.discount + amount)
+
+
 def with_fee(fare: FareBreakdown, code: str, label: str, amount: Decimal) -> FareBreakdown:
     """Add a flat platform fee after pricing (e.g. Sure Ride), GST-inclusive."""
     from dataclasses import replace

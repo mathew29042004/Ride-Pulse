@@ -49,6 +49,8 @@ class TransactionKind(models.TextChoices):
     RIDE_PASS = "RIDE_PASS", "Ride Pass purchase"
     FARE_SPLIT = "FARE_SPLIT", "Fare split share"
     DRIVER_BONUS = "DRIVER_BONUS", "Driver goal bonus"
+    FARE_LOCK = "FARE_LOCK", "Fare Lock purchase"
+    ECO_REWARD = "ECO_REWARD", "Eco points reward"
 
 
 class LedgerTransaction(models.Model):
@@ -116,6 +118,7 @@ class PaymentPurpose(models.TextChoices):
     DUES = "DUES", "Dues payment"
     PASS = "PASS", "Ride Pass"
     SPLIT = "SPLIT", "Fare split"
+    LOCK = "LOCK", "Fare Lock"
 
 
 class Payment(TimeStampedModel):

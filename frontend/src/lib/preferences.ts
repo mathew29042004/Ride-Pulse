@@ -1,6 +1,6 @@
-import { Briefcase, Snowflake, UserRound, VolumeX } from "lucide-react";
+import { Briefcase, Leaf, Snowflake, UserRound, VolumeX } from "lucide-react";
 
-export type RidePreference = "QUIET" | "AC" | "LUGGAGE" | "WOMAN_DRIVER";
+export type RidePreference = "QUIET" | "AC" | "LUGGAGE" | "WOMAN_DRIVER" | "ELECTRIC";
 
 /** Ride preferences, in the order shown. AC and luggage are for cars only. */
 export const PREFERENCES: { value: RidePreference; label: string; driverLabel: string; icon: typeof VolumeX; carsOnly?: boolean }[] = [
@@ -8,6 +8,7 @@ export const PREFERENCES: { value: RidePreference; label: string; driverLabel: s
   { value: "AC", label: "AC on", driverLabel: "AC on, please", icon: Snowflake, carsOnly: true },
   { value: "LUGGAGE", label: "Extra luggage", driverLabel: "Has extra luggage", icon: Briefcase, carsOnly: true },
   { value: "WOMAN_DRIVER", label: "Woman driver", driverLabel: "Woman driver preferred", icon: UserRound },
+  { value: "ELECTRIC", label: "Electric", driverLabel: "Prefers an electric vehicle", icon: Leaf },
 ];
 
 export const isCar = (rideType: string) => !["BIKE", "AUTO"].includes(rideType);

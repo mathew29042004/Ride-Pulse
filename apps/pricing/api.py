@@ -90,6 +90,7 @@ class EstimateOptionSerializer(serializers.Serializer):
     unavailable_reason = serializers.CharField(allow_blank=True)
     suggestion = AlternativeSerializer(allow_null=True)
     sure_ride = SureRideQuoteSerializer(allow_null=True)
+    fare_lock = serializers.BooleanField()
     offer_range = OfferRangeSerializer()
     fare = FareSerializer()
 
@@ -115,6 +116,7 @@ def serialize_options(result: dict) -> dict:
                 "unavailable_reason": option["unavailable_reason"],
                 "suggestion": option["suggestion"],
                 "sure_ride": option["sure_ride"],
+                "fare_lock": option["fare_lock"],
                 "offer_range": option["offer_range"],
                 "fare": option["estimate"].fare,
             }

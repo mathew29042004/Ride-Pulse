@@ -56,6 +56,7 @@ class RidePreference(models.TextChoices):
     AC = "AC", "AC on"
     LUGGAGE = "LUGGAGE", "Extra luggage"
     WOMAN_DRIVER = "WOMAN_DRIVER", "Woman driver preferred"
+    ELECTRIC = "ELECTRIC", "Electric vehicle preferred"
 
 
 # AC and luggage only make sense in a car.
@@ -171,6 +172,12 @@ class Trip(AuditedModel, TimeStampedModel):
     share_token = models.CharField(max_length=32, null=True, blank=True, unique=True)
     # Ride, parcel delivery, hourly rental or intercity (see pricing.models.Service).
     service = models.CharField(max_length=10, default="RIDE")
+    # Fare Lock that set this trip's price (see pricing.fare_locks).
+    fare_lock = models.ForeignKey(
+        "pricing.FareLock", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"
+    )
+    # Eco score: CO2 saved vs driving your own car, and the points it earned.
+    co2_saved_g = models.PositiveIntegerField(default=0)
     # Hourly rentals and intercity trips (see rides.packages).
     package_hours = models.PositiveSmallIntegerField(null=True, blank=True)
     package_km = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -435,6 +442,9 @@ class TripMessage(models.Model):
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
     )
     body = models.CharField(max_length=500)
+    # Language Bridge: the message in the other person's language (rides.translate).
+    language = models.CharField(max_length=2, blank=True)
+    translations = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

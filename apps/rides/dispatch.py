@@ -42,6 +42,7 @@ from apps.geo.routing import eta_minutes
 from apps.realtime import broadcast
 
 from . import hungarian, packages
+from .eco import ELECTRIC_BONUS_MINUTES
 from .models import OfferStatus, RidePreference, Trip, TripOffer, TripStatus
 
 RADIUS_EXPANSION_AFTER_ATTEMPTS = 2
@@ -94,6 +95,7 @@ def candidates_for(
     )
     favourites = set(trip.rider.favourite_drivers.values_list("pk", flat=True))
     wants_woman = RidePreference.WOMAN_DRIVER in trip.preferences
+    wants_electric = RidePreference.ELECTRIC in trip.preferences
     ranked = []
     for driver in drivers:
         # Going-home drivers only get trips that take them closer to home.
@@ -119,6 +121,9 @@ def candidates_for(
             score -= FAVOURITE_BONUS_MINUTES
         if wants_woman and driver.gender == Gender.FEMALE:
             score -= WOMAN_DRIVER_BONUS_MINUTES
+        vehicle = driver.active_vehicle
+        if wants_electric and vehicle is not None and vehicle.fuel_type == "EV":
+            score -= ELECTRIC_BONUS_MINUTES
         ranked.append(Candidate(driver, driver.distance_km, eta, score))
     return sorted(ranked, key=lambda c: c.score)
 

@@ -71,7 +71,9 @@ class RiderMeSerializer(RiderSerializer):
     referrals = serializers.SerializerMethodField()
     favourites = serializers.SerializerMethodField()
     default_preferences = serializers.ListField(
-        child=serializers.ChoiceField(choices=["QUIET", "AC", "LUGGAGE", "WOMAN_DRIVER"]),
+        child=serializers.ChoiceField(
+            choices=["QUIET", "AC", "LUGGAGE", "WOMAN_DRIVER", "ELECTRIC"]
+        ),
         required=False,
     )
 
@@ -191,6 +193,26 @@ class RiderProfileViewSet(ContextBindingMixin, GenericViewSet):
                 "savings": str(passes.savings(rider)),
             }
         )
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"], url_path="fare-locks")
+    def fare_locks(self, request):
+        """This rider's Fare Locks (active first)."""
+        from apps.rides.api import fare_lock_payload
+
+        locks = request.user.rider_profile.fare_locks.select_related("ride_type")[:10]
+        return Response([fare_lock_payload(lock) for lock in locks])
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get", "post"])
+    def eco(self, request):
+        """Eco score: CO2 saved and points (GET), or turn points into wallet money (POST)."""
+        from apps.rides import eco
+
+        rider = request.user.rider_profile
+        if request.method == "POST":
+            return Response(eco.redeem(rider))
+        return Response(eco.summary(rider))
 
     @extend_schema(request=None, responses={204: None})
     @action(detail=False, methods=["delete"], url_path=r"favourites/(?P<driver_id>\d+)")

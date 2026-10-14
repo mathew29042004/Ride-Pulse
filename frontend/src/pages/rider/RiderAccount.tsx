@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { PushToggle } from "@/components/PushToggle";
+import { EcoCard, FareLocks } from "@/components/GreenAndLock";
 import { RidePassCard } from "@/components/RidePassCard";
 import { SafetySettings } from "@/components/SafetyPlus";
 import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components/ui";
@@ -39,7 +40,11 @@ export function LanguageRow() {
             key={code}
             role="radio"
             aria-checked={language === code}
-            onClick={() => setLanguage(code)}
+            onClick={() => {
+              setLanguage(code);
+              // So chat messages reach this person in their language (Language Bridge).
+              api.patch("auth/me/", { language: code }).catch(() => undefined);
+            }}
             className={clsx("rounded-full px-3 py-1 text-xs font-semibold", language === code ? "bg-ink text-ink-fg" : "bg-surface-3 text-muted")}
           >
             {label}
@@ -116,6 +121,8 @@ export default function RiderAccount() {
       </div>
 
       <RidePassCard />
+      <EcoCard />
+      <FareLocks />
       {rider && <InviteCard rider={rider} />}
       <InvoiceEmailRow />
 

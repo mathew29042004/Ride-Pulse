@@ -187,6 +187,26 @@ def intercity_terms() -> dict:
     }
 
 
+def fare_lock_terms() -> dict:
+    return {
+        "fee": _decimal("FARE_LOCK_FEE"),
+        "days": int(_value("FARE_LOCK_DAYS")),
+        "window_minutes": int(_value("FARE_LOCK_WINDOW_MINUTES")),
+        "match_meters": int(_value("FARE_LOCK_MATCH_METERS")),
+    }
+
+
+def eco_terms() -> dict:
+    points, rupees = _value("ECO_REDEEM")
+    return {
+        "baseline": int(_value("ECO_BASELINE_G_PER_KM")),
+        "per_km": {k: int(v) for k, v in _value("ECO_G_PER_KM").items()},
+        "points_per_100g": int(_value("ECO_POINTS_PER_100G")),
+        "redeem_points": int(points),
+        "redeem_rupees": Decimal(rupees),
+    }
+
+
 def wellbeing_rules() -> dict:
     return {
         "max_minutes": int(_value("WELLBEING_MAX_DRIVING_MINUTES")),

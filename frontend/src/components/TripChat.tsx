@@ -6,7 +6,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, MessageCircle, SendHorizontal, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Languages, MessageCircle, SendHorizontal, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -16,6 +16,7 @@ import { Avatar } from "@/components/ui";
 import { buzz } from "@/lib/alert";
 import { api, ApiError } from "@/lib/api";
 import { time } from "@/lib/format";
+import { t, useLanguage } from "@/lib/i18n";
 import { useSocket } from "@/lib/ws";
 
 export type Sender = "RIDER" | "DRIVER";
@@ -25,6 +26,9 @@ export interface ChatMessage {
   trip_id: number;
   sender: Sender;
   body: string;
+  /** Language Bridge: the message's language and its translations ({ta: "...", hi: "..."}). */
+  language?: string;
+  translations?: Record<string, string>;
   created_at: string;
   pending?: boolean;
 }
@@ -159,6 +163,8 @@ function ChatPanel({
   onClose: () => void;
 }) {
   const [text, setText] = useState("");
+  const [original, setOriginal] = useState<Set<number>>(new Set());
+  const [language] = useLanguage();
   const bottom = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // Braces matter: newer browsers return a Promise from scrollIntoView, and an effect must
@@ -201,10 +207,20 @@ function ChatPanel({
         </div>
         {list.map((m) => {
           const mine = m.sender === me;
+          const translated = !mine && m.language && m.language !== language ? m.translations?.[language] : undefined;
+          const showOriginal = original.has(m.id);
           return (
             <div key={m.id} className={clsx("flex", mine ? "justify-end" : "justify-start")}>
               <div className={clsx("max-w-[78%] rounded-2xl px-3.5 py-2 text-sm", mine ? "rounded-br-md bg-ink text-ink-fg" : "rounded-bl-md bg-surface shadow-sm")}>
-                <div className="break-words">{m.body}</div>
+                <div className="break-words">{translated && !showOriginal ? translated : m.body}</div>
+                {translated && (
+                  <button
+                    onClick={() => setOriginal((s) => new Set(s.has(m.id) ? [...s].filter((x) => x !== m.id) : [...s, m.id]))}
+                    className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold text-brand-strong"
+                  >
+                    <Languages className="size-3" /> {showOriginal ? t("Show translation") : t("Translated · show original")}
+                  </button>
+                )}
                 <div className={clsx("mt-0.5 text-right text-[10px]", mine ? "opacity-60" : "text-muted")}>{m.pending ? "Sending…" : time(m.created_at)}</div>
               </div>
             </div>
@@ -218,8 +234,8 @@ function ChatPanel({
         <div className="border-t border-line bg-surface px-3 pt-2 pb-4">
           <div className="-mx-3 mb-2 flex gap-2 overflow-x-auto px-3 pb-1">
             {QUICK_REPLIES[me].map((reply) => (
-              <button key={reply} onClick={() => submit(reply)} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-2">
-                {reply}
+              <button key={reply} onClick={() => submit(t(reply))} className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-2">
+                {t(reply)}
               </button>
             ))}
           </div>
