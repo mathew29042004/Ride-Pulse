@@ -121,6 +121,8 @@ class TripSerializer(serializers.ModelSerializer):
             "car_confirmed_at",
             "invoice_number",
             "invoice_emailed_at",
+            "boost_amount",
+            "tip_pledged",
         ]
 
     def _viewer(self):
@@ -164,6 +166,7 @@ class TripRequestSerializer(serializers.Serializer):
     dropoff = PointSerializer()
     stop = PointSerializer(required=False, allow_null=True)
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
+    tip = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
     promo_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
 
 
@@ -181,6 +184,10 @@ class StartSerializer(serializers.Serializer):
         if not attrs.get("otp") and not attrs.get("qr"):
             raise serializers.ValidationError("Scan the rider's QR code or enter their PIN.")
         return attrs
+
+
+class BoostSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=5, decimal_places=2)
 
 
 class RiderLocationSerializer(serializers.Serializer):
@@ -316,6 +323,7 @@ RIDER = (
     "confirm_car",
     "invoice",
     "email_invoice",
+    "boost",
 )
 DRIVER = (
     "list",
@@ -394,6 +402,7 @@ class TripViewSet(
             promo_code=data.get("promo_code", ""),
             stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
             stop_address=(data.get("stop") or {}).get("address", ""),
+            tip=data.get("tip") or 0,
         )
         return self._respond(trip, status.HTTP_201_CREATED)
 
@@ -512,6 +521,17 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=BoostSerializer, responses=TripSerializer)
+    @action(detail=True, methods=["post"])
+    def boost(self, request, pk=None):
+        """Add ₹10/20/30/50 to find a driver faster (100% to the driver)."""
+        serializer = BoostSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        trip = services.boost_trip(
+            self.get_object(), user=request.user, amount=serializer.validated_data["amount"]
+        )
+        return self._respond(trip)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["get"], url_path="start-code")

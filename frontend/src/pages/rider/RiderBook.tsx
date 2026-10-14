@@ -8,6 +8,7 @@ import {
   Clock,
   CreditCard,
   Crosshair,
+  HandCoins,
   MapPin,
   Plus,
   Smartphone,
@@ -82,6 +83,7 @@ export default function RiderBook() {
   const [selected, setSelected] = useState<string>("MINI");
   const [payment, setPayment] = useState<PaymentMethod>("UPI");
   const [promoInput, setPromoInput] = useState("");
+  const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
   const [promo, setPromo] = useState("");
   const [showFare, setShowFare] = useState(false);
   // Book now, or schedule for later (opened straight from Home's "Later" button).
@@ -143,6 +145,7 @@ export default function RiderBook() {
         stop: stop && { lat: stop.lat, lng: stop.lng, address: stop.name },
         payment_method: payment,
         promo_code: promo,
+        tip,
       }),
     onSuccess: (trip) => {
       qc.invalidateQueries({ queryKey: ["trips"] });
@@ -365,6 +368,7 @@ export default function RiderBook() {
             ) : (
               <Button size="lg" block loading={book.isPending} disabled={!option} onClick={() => book.mutate()}>
                 Book {option?.ride_type.name} · {inr(option?.fare.total)}
+                {tip > 0 && ` + ₹${tip} tip`}
               </Button>
             ))
           }
@@ -454,6 +458,26 @@ export default function RiderBook() {
                   </div>
                 </div>
               )}
+
+              <div className="mt-3">
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                  <HandCoins className="size-3.5" /> Tip your driver <span className="font-normal">(optional, 100% to them)</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[0, 10, 20, 30].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => setTip(amount)}
+                      className={clsx(
+                        "rounded-xl border py-1.5 text-xs font-semibold transition",
+                        tip === amount ? "border-fg bg-surface-2" : "border-line text-muted",
+                      )}
+                    >
+                      {amount ? `₹${amount}` : "No tip"}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="mt-3 grid grid-cols-4 gap-1.5">
                 {PAYMENT.map(({ value, label, icon: Icon }) => (

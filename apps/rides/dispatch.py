@@ -72,7 +72,10 @@ def _busy_driver_ids() -> list[int]:
 def candidates_for(
     trip: Trip, *, now: datetime, radius_km: float, limit: int = 10
 ) -> list[Candidate]:
-    already_offered = trip.offers.values_list("driver_id", flat=True)
+    # A boost starts a new round: drivers who passed on the old fare get asked again.
+    already_offered = trip.offers.filter(round=trip.dispatch_round).values_list(
+        "driver_id", flat=True
+    )
     drivers = nearby_available_drivers(
         lat=trip.pickup_lat,
         lng=trip.pickup_lng,
@@ -123,6 +126,7 @@ def _create_offer(
                 eta_minutes=round(candidate.eta_minutes, 2),
                 rank_score=round(candidate.score, 3),
                 dispatch_mode=mode,
+                round=trip.dispatch_round,
             )
     except IntegrityError:
         return None  # the driver just received another offer; try someone else next sweep
@@ -182,6 +186,8 @@ def offer_payload(offer: TripOffer) -> dict:
         "pickup_eta_min": offer.eta_minutes,
         "trip_distance_km": trip.estimated_distance_km,
         "estimated_earning": trip.estimate.driver_earning,
+        "boost": trip.boost_amount,
+        "tip": trip.tip_pledged,
         "surge": trip.surge_multiplier,
         "payment_method": trip.payment_method,
         "expires_at": offer.expires_at,
@@ -205,7 +211,7 @@ def dispatch_trip(trip: Trip, *, now: datetime | None = None) -> TripOffer | Non
         return None
     radius = float(
         dispatch_max_radius_km()
-        if trip.dispatch_attempts >= RADIUS_EXPANSION_AFTER_ATTEMPTS
+        if trip.dispatch_attempts >= RADIUS_EXPANSION_AFTER_ATTEMPTS or trip.boost_amount > 0
         else dispatch_radius_km()
     )
     for candidate in candidates_for(trip, now=now, radius_km=radius):

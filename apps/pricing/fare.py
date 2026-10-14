@@ -97,6 +97,25 @@ class FareBreakdown:
         return cls(lines=lines, **values)
 
 
+BOOST_LABEL = "Boost (100% to your driver)"
+
+
+def with_boost(fare: FareBreakdown, amount: Decimal) -> FareBreakdown:
+    """Add (or change) the rider's boost: extra money to find a driver faster. It goes entirely
+    to the driver, outside commission and GST (like a tip)."""
+    from dataclasses import replace
+
+    amount = Decimal(amount).quantize(Decimal("0.01"))
+    previous = sum((line.amount for line in fare.lines if line.kind == "BOOST"), ZERO)
+    lines = [line for line in fare.lines if line.kind != "BOOST"]
+    if amount > 0:
+        lines.append(FareLine("boost", BOOST_LABEL, amount, "BOOST"))
+    delta = amount - previous
+    return replace(
+        fare, lines=lines, total=fare.total + delta, driver_earning=fare.driver_earning + delta
+    )
+
+
 def promo_discount(terms: PromoTerms, gross: Decimal) -> Decimal:
     if gross < terms.min_fare:
         return ZERO

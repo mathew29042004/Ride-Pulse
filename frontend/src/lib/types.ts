@@ -132,6 +132,8 @@ export interface Trip {
   car_confirmed_at: string | null;
   invoice_number: string;
   invoice_emailed_at: string | null;
+  boost_amount: string;
+  tip_pledged: string;
   rider: TripParty;
   driver: TripParty | null;
   driver_location: { lat: number; lng: number; heading: number | null } | null;
@@ -204,6 +206,10 @@ export interface Offer {
   trip_distance_km: string;
   estimated_earning: string;
   surge: string;
+  /** Extra the rider added while searching (already in estimated_earning). */
+  boost: string;
+  /** Tip the rider promised at booking (paid on top, 100% to the driver). */
+  tip: string;
   payment_method: PaymentMethod;
   expires_at: string;
 }

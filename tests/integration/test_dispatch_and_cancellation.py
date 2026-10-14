@@ -11,7 +11,7 @@ from apps.rides import services as rides
 from apps.rides.models import CancelledBy, OfferStatus, Trip, TripStatus
 
 from ..conftest import MARINA, T_NAGAR, make_rider
-from .helpers import book, pending_offer
+from .helpers import book, drive_to_completion, pending_offer
 
 pytestmark = pytest.mark.django_db
 
@@ -223,3 +223,93 @@ def test_scheduled_rides_api(api, rider, now):
     assert cancelled["status"] == "CANCELLED"
     # Other riders can't see it.
     assert api(make_rider().user).get(f"/api/v1/scheduled-rides/{ride['id']}/").status_code == 404
+
+
+def test_boost_reopens_the_request_and_goes_to_the_driver(rider, mini, make_driver, now):
+    from apps.payments.models import LedgerEntry
+
+    driver = make_driver(now=now)
+    trip = book(rider, mini, now=now)
+    plain_earning, plain_commission = (
+        trip.estimate.driver_earning,
+        trip.estimate.platform_commission,
+    )
+    dispatch.decline_offer(pending_offer(trip), driver=driver, now=now)
+    assert pending_offer(trip) is None  # the only nearby driver passed
+
+    deadline = Trip.objects.get(pk=trip.pk).dispatch_deadline
+    trip = rides.boost_trip(trip, user=rider.user, amount=20, now=now)
+    assert trip.boost_amount == 20 and trip.dispatch_deadline > deadline
+    assert trip.estimate.driver_earning == plain_earning + 20  # all of it to the driver...
+    assert trip.estimate.platform_commission == plain_commission  # ...none to the platform
+    offer = pending_offer(trip)
+    assert offer.driver == driver  # a boost is a new deal: asked again
+    assert dispatch.offer_payload(offer)["boost"] == 20
+
+    trip = rides.boost_trip(trip, user=rider.user, amount=10, now=now)
+    assert trip.boost_amount == 30
+    with pytest.raises(BusinessRuleViolation):
+        rides.boost_trip(trip, user=rider.user, amount=15, now=now)  # not a boost step
+    rides.boost_trip(trip, user=rider.user, amount=50, now=now)
+    with pytest.raises(BusinessRuleViolation, match="capped"):
+        rides.boost_trip(trip, user=rider.user, amount=50, now=now)
+
+    trip = drive_to_completion(Trip.objects.get(pk=trip.pk), now=now)
+    assert trip.fare_breakdown and any(
+        line["kind"] == "BOOST" for line in trip.fare_breakdown["lines"]
+    )
+    assert trip.driver_earning - trip.platform_commission >= 80  # boost landed with the driver
+    assert verify_ledger()["balanced"]
+    assert LedgerEntry.objects.filter(transaction__trip=trip).exists()
+    with pytest.raises(InvalidStateTransition):
+        rides.boost_trip(trip, user=rider.user, amount=10, now=now)  # too late
+    assert OfferStatus.DECLINED in trip.offers.values_list("status", flat=True)
+
+
+def test_tip_promised_at_booking_is_collected_with_the_fare(
+    make_driver, mini, now, django_capture_on_commit_callbacks
+):
+    from django.core import mail
+
+    online, cash = make_rider(), make_rider()
+    make_driver(now=now)
+    with django_capture_on_commit_callbacks(execute=True):
+        trip = rides.request_trip(
+            rider=online,
+            ride_type=mini,
+            pickup=T_NAGAR,
+            dropoff=MARINA,
+            payment_method="UPI",
+            tip=20,
+            now=now,
+        )
+        assert trip.tip_pledged == 20
+        trip = drive_to_completion(trip, now=now, payer_reference="priya@upi")
+    trip.refresh_from_db()
+    assert trip.tip_amount == 20 and trip.events.filter(kind="TIP").exists()
+    assert verify_ledger()["balanced"]
+    assert "Tip (100% to your driver)" in mail.outbox[-1].alternatives[0][0]  # on the invoice
+
+    make_driver(now=now)
+    trip = rides.request_trip(
+        rider=cash,
+        ride_type=mini,
+        pickup=T_NAGAR,
+        dropoff=MARINA,
+        payment_method="CASH",
+        tip=30,
+        now=now,
+    )
+    trip = drive_to_completion(trip, now=now)
+    trip.refresh_from_db()
+    assert trip.tip_amount == 30  # handed over in cash with the fare
+    with pytest.raises(BusinessRuleViolation):
+        rides.request_trip(
+            rider=make_rider(),
+            ride_type=mini,
+            pickup=T_NAGAR,
+            dropoff=MARINA,
+            payment_method="UPI",
+            tip=5,
+            now=now,
+        )

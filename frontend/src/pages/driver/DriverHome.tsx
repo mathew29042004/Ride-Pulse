@@ -49,8 +49,14 @@ function OfferCard({ offer, onAccept, onDecline, busy }: { offer: Offer; onAccep
         <div>
           <Badge tone="brand">New {offer.ride_type} request</Badge>
           <div className="mt-2 text-3xl font-bold tracking-tight">{inr(offer.estimated_earning)}</div>
+          {(Number(offer.boost) > 0 || Number(offer.tip) > 0) && (
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {Number(offer.boost) > 0 && <Badge tone="warning">+₹{Number(offer.boost)} boost</Badge>}
+              {Number(offer.tip) > 0 && <Badge tone="brand">+₹{Number(offer.tip)} tip</Badge>}
+            </div>
+          )}
           <div className="text-xs text-muted">
-            est. earning · {offer.payment_method.toLowerCase()}
+            est. earning{Number(offer.tip) > 0 ? " before tip" : ""} · {offer.payment_method.toLowerCase()}
             {Number(offer.surge) > 1 && (
               <span className="ml-1 font-semibold text-amber-600">
                 <Zap className="inline size-3" /> {offer.surge}×

@@ -38,6 +38,7 @@ from apps.notifications.services import notify, notify_role
 from apps.payments import services as payments
 from apps.payments.models import PaymentMethod
 from apps.pricing import services as pricing
+from apps.pricing.fare import with_boost
 from apps.pricing.models import RideType
 from apps.realtime import broadcast
 from apps.riders.models import RiderProfile
@@ -46,6 +47,7 @@ from . import dispatch
 from .models import (
     TERMINAL_STATUSES,
     CancelledBy,
+    OfferStatus,
     PricingMode,
     RatingDirection,
     ScheduledRide,
@@ -138,6 +140,7 @@ def trip_payload(trip: Trip) -> dict:
         "estimated_fare": trip.estimated_fare,
         "fare_total": trip.fare_total,
         "surge": trip.surge_multiplier,
+        "boost": trip.boost_amount,
     }
 
 
@@ -295,8 +298,14 @@ def request_trip(
     now: datetime | None = None,
     stop: tuple[float, float] | None = None,
     stop_address: str = "",
+    tip: Decimal | int = 0,
 ) -> Trip:
     now = now or timezone.now()
+    tip = Decimal(tip or 0)
+    if tip and not payments.MIN_TIP <= tip <= payments.MAX_TIP:
+        raise BusinessRuleViolation(
+            f"Tips must be between ₹{payments.MIN_TIP} and ₹{payments.MAX_TIP}.", field="tip"
+        )
     if rider.is_blocked:
         raise ActionNotPermitted("Your account is blocked. Please contact support.")
     if payment_method not in PaymentMethod.values:
@@ -323,7 +332,7 @@ def request_trip(
         promo=promo,
         stop=stop,
     )
-    if payment_method == PaymentMethod.WALLET and balance < estimate.fare.total:
+    if payment_method == PaymentMethod.WALLET and balance < estimate.fare.total + tip:
         raise BusinessRuleViolation(
             f"Your wallet balance (₹{balance:,.2f}) doesn't cover this fare.",
             field="payment_method",
@@ -331,6 +340,7 @@ def request_trip(
     try:
         with transaction.atomic():
             trip = Trip.objects.create(
+                tip_pledged=tip,
                 trip_number=_next_trip_number(now),
                 rider=rider,
                 ride_type=ride_type,
@@ -608,6 +618,8 @@ def complete_trip(
         is None
     ):
         fare = price(None)
+    if trip.boost_amount:
+        fare = with_boost(fare, trip.boost_amount)
 
     flags = list(trip.flags)
     if distance > trip.estimated_distance_km * ROUTE_DEVIATION_FACTOR:
@@ -639,6 +651,8 @@ def complete_trip(
     )
     trip.payment_status = payments.settle_trip(trip, payer_reference=payer_reference, now=now)
     trip.save(update_fields=["payment_status", "updated_at"])
+    if trip.tip_pledged and trip.payment_status == TripPaymentStatus.PAID:
+        _collect_pledged_tip(trip, payer_reference=payer_reference, now=now)
     if trip.payment_status == TripPaymentStatus.PAID:
         from . import invoices
 
@@ -1185,3 +1199,91 @@ def _fail_scheduled(ride: ScheduledRide, reason: str) -> None:
         level=Level.WARNING,
         link="/ride/book/",
     )
+
+
+# --- Boost and tips while booking ----------------------------------------------------------
+
+BOOST_STEPS = (Decimal(10), Decimal(20), Decimal(30), Decimal(50))
+MAX_BOOST = Decimal(100)
+BOOST_EXTRA_SEARCH = timedelta(seconds=60)
+
+
+def boost_trip(trip: Trip, *, user, amount: Decimal | int, now: datetime | None = None) -> Trip:
+    """Add money to a request that's still looking for a driver. It goes 100% to the driver,
+    re-opens the request to drivers who passed, searches wider and gives it another minute."""
+    from . import dispatch
+
+    now = now or timezone.now()
+    amount = Decimal(amount)
+    with transaction.atomic():
+        trip = _lock(trip)
+        if not (user.is_rider and trip.rider.user_id == user.pk):
+            raise ActionNotPermitted("Only the rider can boost their request.")
+        if trip.status != TripStatus.REQUESTED:
+            raise InvalidStateTransition("You can boost only while we're finding your driver.")
+        if amount not in BOOST_STEPS:
+            raise BusinessRuleViolation("Choose a boost of ₹10, ₹20, ₹30 or ₹50.", field="amount")
+        total = trip.boost_amount + amount
+        if total > MAX_BOOST:
+            raise BusinessRuleViolation(
+                f"Boosts are capped at ₹{MAX_BOOST} per ride.", field="amount"
+            )
+        fare = with_boost(trip.estimate, total)
+        if trip.payment_method == PaymentMethod.WALLET:
+            balance = payments.wallet_balance(trip.rider.user)
+            if balance < fare.total + trip.tip_pledged:
+                raise BusinessRuleViolation("Your wallet balance doesn't cover the boosted fare.")
+        trip.boost_amount = total
+        trip.boosted_at = now
+        trip.dispatch_round += 1
+        trip.fare_estimate = fare.to_dict()
+        trip.estimated_fare = fare.total
+        trip.dispatch_deadline = max(trip.dispatch_deadline, now) + BOOST_EXTRA_SEARCH
+        trip.save(
+            update_fields=[
+                "boost_amount",
+                "boosted_at",
+                "dispatch_round",
+                "fare_estimate",
+                "estimated_fare",
+                "dispatch_deadline",
+                "updated_at",
+            ]
+        )
+        record_event(
+            trip, "BOOST", actor=user, message=f"+₹{amount} boost (₹{total} in all)", at=now
+        )
+        broadcast.trip_event(trip.pk, "status", trip_payload(trip))
+        pending = trip.offers.filter(status=OfferStatus.PENDING).select_related("driver").first()
+        if pending:
+            # The driver looking at it right now sees the better offer at once.
+            broadcast.driver_event(pending.driver_id, "offer", dispatch.offer_payload(pending))
+    if not pending:
+        dispatch.dispatch_trip(trip, now=now)
+    trip.refresh_from_db()
+    return trip
+
+
+def _collect_pledged_tip(trip: Trip, *, payer_reference: str, now: datetime) -> None:
+    """Collect the tip the rider promised at booking, the same way as the fare: cash in hand
+    for cash rides, otherwise charged now. A failed charge never blocks the ride."""
+    amount = trip.tip_pledged
+    if trip.payment_method == PaymentMethod.CASH:
+        message = f"₹{amount} tip (paid in cash)"
+        notify(
+            trip.driver.user, f"₹{amount} tip from your rider", "Collect it in cash with the fare."
+        )
+    else:
+        try:
+            payments.add_tip(
+                trip, amount=amount, method=trip.payment_method, payer_reference=payer_reference
+            )
+        except BusinessRuleViolation as exc:
+            notify(
+                trip.rider.user, "Your tip couldn't be charged", exc.message, level=Level.WARNING
+            )
+            return
+        message = f"₹{amount} tip (promised at booking)"
+    Trip.objects.filter(pk=trip.pk).update(tip_amount=F("tip_amount") + amount)
+    trip.tip_amount += amount
+    record_event(trip, "TIP", actor=trip.rider.user, message=message, at=now)

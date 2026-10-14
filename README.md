@@ -14,7 +14,7 @@ so every screen has something happening the moment you open it.
 | **Data** | PostgreSQL 16 (partial unique indexes, BRIN, ArrayField, `generate_series` reporting) · Redis |
 | **Front end** | React 19 · TypeScript · Vite · Tailwind CSS · TanStack Query · Leaflet / Google Maps · Recharts |
 | **API** | 123 REST operations, JWT auth, OpenAPI 3 docs (Swagger UI and ReDoc) |
-| **Quality** | 147 tests (88% coverage) + Playwright browser tests + Locust load test · Ruff · strict TypeScript · GitHub Actions · Docker |
+| **Quality** | 149 tests (88% coverage) + Playwright browser tests + Locust load test · Ruff · strict TypeScript · GitHub Actions · Docker |
 | **Ops** | Render blueprint · Sentry · Prometheus `/metrics` · JSON logs · installable PWA |
 
 ---
@@ -247,6 +247,11 @@ unmapped is denied. Riders and drivers only ever see their own records.
   polylines are joined; bots drive through the stop.
 * **Referrals:** invite links pre-fill the code; after the friend's first ride both wallets get
   ₹50 from the promotions budget, as one balanced ledger transaction, exactly once.
+* **Boost and tips:** while searching, riders can add ₹10/20/30/50 (up to ₹100). It goes 100%
+  to the driver (no commission or GST), widens the search, starts a new dispatch round so
+  drivers who passed are asked again, and gives the request another minute. A tip promised at
+  booking shows on the driver's offer and is collected with the fare (cash in hand for cash
+  rides). Bot drivers say yes more often to boosted or tipped rides.
 * **Invoice email after payment** (like Rapido): a numbered GST invoice (`INV-<year>-000001`)
   with the fare breakdown, route and times, driver and plate, payment, and the PDF attached,
   sent when the fare is paid (or once unpaid dues are cleared). Riders can view it in the app
@@ -313,7 +318,7 @@ Celery worker and beat, simulator).
 
 ```bash
 make help        # all commands
-make test        # 147 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
+make test        # 149 tests (unit, integration on PostgreSQL, API, WebSocket, seed)
 make e2e         # browser tests: Playwright drives Chromium through a full trip
 make loadtest    # Locust: 50 riders browsing fares and cars for a minute
 make lint        # Ruff + TypeScript type-check

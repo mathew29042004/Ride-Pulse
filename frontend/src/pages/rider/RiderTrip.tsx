@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, Download, LifeBuoy, LocateFixed, Mail, RotateCcw, Share2, ShieldAlert, X } from "lucide-react";
+import { ArrowLeft, Download, LifeBuoy, LocateFixed, Mail, RotateCcw, Share2, ShieldAlert, X, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -36,6 +36,43 @@ function Searching({ trip }: { trip: Trip }) {
       </p>
       <div className="mx-auto mt-4 h-1 w-40 overflow-hidden rounded-full bg-surface-3">
         <div className="h-full w-1/3 animate-[indeterminate_1.3s_ease-in-out_infinite] rounded-full bg-brand" />
+      </div>
+      <BoostChips trip={trip} show={seconds >= 10 || Number(trip.boost_amount) > 0} />
+    </div>
+  );
+}
+
+/** "Taking a while? Add ₹10/20/30 to get a driver faster" (100% goes to the driver). */
+function BoostChips({ trip, show }: { trip: Trip; show: boolean }) {
+  const qc = useQueryClient();
+  const boost = useMutation({
+    mutationFn: (amount: number) => api.post<Trip>(`trips/${trip.id}/boost/`, { amount }),
+    onSuccess: (updated, amount) => {
+      qc.setQueryData(["trips", String(trip.id)], updated);
+      toast.success(`+₹${amount} boost added. Asking more drivers now.`);
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't add the boost."),
+  });
+  const boosted = Number(trip.boost_amount);
+  if (!show) return null;
+  return (
+    <div className="mt-5 rounded-2xl bg-amber-50 p-3 text-left dark:bg-amber-400/10">
+      <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+        <Zap className="size-4" />
+        {boosted > 0 ? `₹${boosted} boost added · new fare ${inr(trip.estimated_fare)}` : "Taking a while? Boost your request"}
+      </div>
+      <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/70">100% goes to your driver. More drivers see your ride, and those who passed get asked again.</p>
+      <div className="mt-2.5 grid grid-cols-3 gap-2">
+        {[10, 20, 30].map((amount) => (
+          <button
+            key={amount}
+            onClick={() => boost.mutate(amount)}
+            disabled={boost.isPending || boosted + amount > 100}
+            className="rounded-xl border border-amber-300 bg-surface py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100 disabled:opacity-40 dark:border-amber-400/30 dark:text-amber-100 dark:hover:bg-amber-400/20"
+          >
+            +₹{amount}
+          </button>
+        ))}
       </div>
     </div>
   );

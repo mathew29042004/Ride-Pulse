@@ -123,6 +123,12 @@ class Trip(AuditedModel, TimeStampedModel):
     # Invoice: numbered when the fare is paid, then emailed to the rider (once, unless resent).
     invoice_number = models.CharField(max_length=24, blank=True)
     invoice_emailed_at = models.DateTimeField(null=True, blank=True)
+    # Boost: extra the rider adds while searching (100% to the driver, widens dispatch), and a
+    # tip promised at booking, collected with the fare.
+    boost_amount = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal(0))
+    boosted_at = models.DateTimeField(null=True, blank=True)
+    dispatch_round = models.PositiveSmallIntegerField(default=0)
+    tip_pledged = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal(0))
     payment_method = models.CharField(max_length=6)
     promo = models.ForeignKey(
         "pricing.PromoCode", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"
@@ -310,6 +316,9 @@ class TripOffer(models.Model):
     rank_score = models.FloatField()
     dispatch_mode = models.CharField(max_length=10, default="SEQUENTIAL")
 
+    # Dispatch round: 0 for the original request, +1 after each boost.
+    round = models.PositiveSmallIntegerField(default=0)
+
     class Meta:
         ordering = ["-offered_at"]
         indexes = [
@@ -328,7 +337,10 @@ class TripOffer(models.Model):
                 condition=Q(status="PENDING"),
                 name="one_pending_offer_per_driver",
             ),
-            models.UniqueConstraint(fields=["trip", "driver"], name="offer_driver_once_per_trip"),
+            # Each driver is asked once per round; a boost starts a new round.
+            models.UniqueConstraint(
+                fields=["trip", "driver", "round"], name="offer_driver_once_per_round"
+            ),
         ]
 
     def __str__(self) -> str:

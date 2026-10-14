@@ -253,7 +253,9 @@ class Simulator:
         bot.next_action_at = None
         is_demo_rider = offer.trip.rider.user.email in DEMO_EMAILS
         try:
-            if is_demo_rider or self.rng.random() < bot.accept_rate:
+            # A boost or a promised tip makes a driver likelier to say yes (+1% per rupee).
+            sweetener = float(offer.trip.boost_amount + offer.trip.tip_pledged) / 100
+            if is_demo_rider or self.rng.random() < min(0.99, bot.accept_rate + sweetener):
                 dispatch.accept_offer(offer, driver=driver)
                 self.bump("offers_accepted")
             else:
