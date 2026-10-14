@@ -639,6 +639,10 @@ def complete_trip(
     )
     trip.payment_status = payments.settle_trip(trip, payer_reference=payer_reference, now=now)
     trip.save(update_fields=["payment_status", "updated_at"])
+    if trip.payment_status == TripPaymentStatus.PAID:
+        from . import invoices
+
+        invoices.send_after_commit(trip)
 
     _set_availability(driver, Availability.ONLINE)
     DriverProfile.objects.filter(pk=driver.pk).update(completed_trips=F("completed_trips") + 1)

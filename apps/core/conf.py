@@ -17,6 +17,18 @@ def company_name() -> str:
     return _value("COMPANY_NAME")
 
 
+def company_gstin() -> str:
+    return _value("COMPANY_GSTIN")
+
+
+def company_address() -> str:
+    return _value("COMPANY_ADDRESS")
+
+
+def support_email() -> str:
+    return _value("SUPPORT_EMAIL")
+
+
 def currency_symbol() -> str:
     return _value("CURRENCY_SYMBOL")
 

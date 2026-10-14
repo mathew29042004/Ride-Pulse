@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 import django_filters
@@ -16,14 +17,14 @@ from rest_framework.views import APIView
 
 from apps.accounts.roles import Cap
 from apps.core.api import BaseViewSet, CapabilityPermission, ContextBindingMixin
-from apps.core.exceptions import ActionNotPermitted
+from apps.core.exceptions import ActionNotPermitted, BusinessRuleViolation, ConflictError
 from apps.drivers.models import Availability, DriverProfile, Vehicle
 from apps.payments.models import PaymentMethod
 from apps.pricing.api import FareSerializer, PointSerializer
 from apps.pricing.models import RideType
 from apps.support.api import IncidentSerializer
 
-from . import calls, dispatch, pickup, services
+from . import calls, dispatch, invoices, pickup, services
 from .models import (
     ACTIVE_STATUSES,
     ScheduledRide,
@@ -31,6 +32,7 @@ from .models import (
     TripEvent,
     TripMessage,
     TripOffer,
+    TripPaymentStatus,
     TripStatus,
 )
 from .receipts import render_receipt
@@ -117,6 +119,8 @@ class TripSerializer(serializers.ModelSerializer):
             "has_rated",
             "stop",
             "car_confirmed_at",
+            "invoice_number",
+            "invoice_emailed_at",
         ]
 
     def _viewer(self):
@@ -310,6 +314,8 @@ RIDER = (
     "start_code",
     "rider_location",
     "confirm_car",
+    "invoice",
+    "email_invoice",
 )
 DRIVER = (
     "list",
@@ -358,6 +364,7 @@ class TripViewSet(
         "offers": Cap.TRIPS_VIEW,
         "route": Cap.TRIPS_VIEW,
         "receipt": Cap.TRIPS_VIEW,
+        "invoice": Cap.TRIPS_VIEW,
         "messages": Cap.TRIPS_VIEW,
         "cancel": Cap.TRIPS_MANAGE,
     }
@@ -575,6 +582,35 @@ class TripViewSet(
         response = HttpResponse(render_receipt(trip), content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{trip.trip_number}.pdf"'
         return response
+
+    def _paid_trip(self) -> Trip:
+        trip = self.get_object()
+        if trip.status != TripStatus.COMPLETED or trip.payment_status != TripPaymentStatus.PAID:
+            raise ActionNotPermitted("The invoice is ready once the fare has been paid.")
+        invoices.ensure_number(trip)
+        return trip
+
+    @extend_schema(responses={(200, "text/html"): str})
+    @action(detail=True, methods=["get"])
+    def invoice(self, request, pk=None):
+        """The invoice exactly as emailed, to view in the app."""
+        return HttpResponse(invoices.render_html(self._paid_trip()), content_type="text/html")
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="email-invoice")
+    def email_invoice(self, request, pk=None):
+        """Send the invoice to the rider's email again (a few times a day at most)."""
+        trip = self._paid_trip()
+        if not invoices.can_email(trip):
+            raise BusinessRuleViolation("Add an email address in your account to get invoices.")
+        today = timezone.now() - timedelta(days=1)
+        if trip.events.filter(kind="INVOICE_RESENT", created_at__gte=today).count() >= 3:
+            raise ConflictError(
+                "The invoice was already sent a few times today. Check your spam folder."
+            )
+        invoices.send(trip, force=True)
+        services.record_event(trip, "INVOICE_RESENT", actor=request.user, message="Invoice emailed")
+        return Response({"sent_to": trip.rider.user.email})
 
 
 class DispatchSweepView(ContextBindingMixin, APIView):

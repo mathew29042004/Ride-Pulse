@@ -10,7 +10,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from apps.core.conf import company_name
+from apps.core.conf import company_gstin, company_name
 
 from .models import Trip
 
@@ -48,7 +48,15 @@ def render_receipt(trip: Trip) -> bytes:
 
     story = [
         Paragraph("Ride Pulse", title),
-        Paragraph(f"{company_name()} · Trip receipt", small),
+        Paragraph(
+            f"{company_name()} · "
+            + (
+                f"Invoice {trip.invoice_number} · GSTIN {company_gstin()}"
+                if trip.invoice_number
+                else "Trip receipt"
+            ),
+            small,
+        ),
         Spacer(1, 6 * mm),
         Paragraph(
             f"<b>{_rs(trip.fare_total or trip.estimated_fare)}</b>",

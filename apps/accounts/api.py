@@ -36,7 +36,16 @@ class UserSerializer(serializers.ModelSerializer):
             "capabilities",
             "date_joined",
         ]
-        read_only_fields = ["id", "email", "role", "capabilities", "date_joined"]
+        read_only_fields = ["id", "role", "capabilities", "date_joined"]
+
+    def validate_email(self, value: str) -> str:
+        """Riders who signed up by phone add an address here (for invoices)."""
+        taken = User.objects.filter(email__iexact=value)
+        if self.instance is not None:
+            taken = taken.exclude(pk=self.instance.pk)
+        if taken.exists():
+            raise serializers.ValidationError("Another account already uses this email.")
+        return value.lower()
 
     def get_capabilities(self, user) -> list[str]:
         return sorted(user.capabilities)

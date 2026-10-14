@@ -272,6 +272,10 @@ LOGGING = {
 # --- Ride Pulse business configuration -----------------------------------------------------
 RIDE_PULSE = {
     "COMPANY_NAME": "Ride Pulse Mobility",
+    # Shown on invoices. Demo values: set the real GSTIN and registered address in production.
+    "COMPANY_GSTIN": env("COMPANY_GSTIN", default="33AABCR1234F1Z5"),
+    "COMPANY_ADDRESS": env("COMPANY_ADDRESS", default="Anna Salai, Chennai, Tamil Nadu 600002"),
+    "SUPPORT_EMAIL": env("SUPPORT_EMAIL", default="support@ridepulse.dev"),
     "CURRENCY_SYMBOL": "₹",
     "GST_RATE": "0.05",  # GST on ride-hailing services in India
     "PLATFORM_COMMISSION_PERCENT": "20",

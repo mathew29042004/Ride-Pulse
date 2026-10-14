@@ -515,7 +515,25 @@ def pay_dues(user, *, method: str, idempotency_key: str = "", payer_reference: s
             [(accounts.GATEWAY, -amount), (ensure_wallet(user), amount)],
             description=f"Dues cleared {payment.reference}",
         )
+        _mark_unpaid_trips_paid(user)
     return payment
+
+
+def _mark_unpaid_trips_paid(user) -> None:
+    """Dues are a rider's unpaid fares: once cleared, those trips are paid, and their invoices
+    can finally go out."""
+    from apps.rides import invoices
+    from apps.rides.models import Trip, TripPaymentStatus
+
+    if not user.is_rider:
+        return
+    trips = list(Trip.objects.filter(rider__user=user, payment_status=TripPaymentStatus.DUES))
+    Trip.objects.filter(pk__in=[t.pk for t in trips]).update(
+        payment_status=TripPaymentStatus.PAID, updated_at=timezone.now()
+    )
+    for trip in trips:
+        trip.payment_status = TripPaymentStatus.PAID
+        invoices.send_after_commit(trip)
 
 
 def wallet_statement(user, *, limit: int = 50):

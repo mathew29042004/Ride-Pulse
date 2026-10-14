@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Copy, Gift, House, LifeBuoy, LogOut, MapPin, Moon, Share2, Shield, Sun, Trash2 } from "lucide-react";
+import { Briefcase, ChevronRight, Copy, Gift, House, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Shield, Sun, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -98,6 +98,7 @@ export default function RiderAccount() {
       </div>
 
       {rider && <InviteCard rider={rider} />}
+      <InvoiceEmailRow />
 
       <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Saved places</h2>
       <div className="divide-y divide-line">
@@ -245,5 +246,55 @@ function InviteCard({ rider }: { rider: Rider }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Where ride invoices go. Riders who signed up by phone add an email here. */
+function InvoiceEmailRow() {
+  const { user, refreshUser } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const missing = !user?.email || user.email.endsWith(".invalid");
+  const save = useMutation({
+    mutationFn: () => api.patch("/api/v1/auth/me/", { email }),
+    onSuccess: async () => {
+      await refreshUser();
+      setOpen(false);
+      toast.success("Invoices will be emailed to " + email.toLowerCase());
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't save the email."),
+  });
+  return (
+    <>
+      <button
+        onClick={() => {
+          setEmail(missing ? "" : (user?.email ?? ""));
+          setOpen(true);
+        }}
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-line px-4 py-3 text-left"
+      >
+        <Mail className="size-5 shrink-0 text-muted" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{missing ? "Add an email for ride invoices" : "Ride invoices"}</span>
+          <span className="block truncate text-xs text-muted">{missing ? "We'll email a GST invoice after every ride" : `Sent to ${user?.email}`}</span>
+        </span>
+        <ChevronRight className="size-4 text-muted" />
+      </button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Invoice email"
+        footer={
+          <Button block onClick={() => save.mutate()} loading={save.isPending} disabled={!email.includes("@")}>
+            Save
+          </Button>
+        }
+      >
+        <Field label="Email address">
+          <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+        </Field>
+        <p className="mt-2 text-xs text-muted">Invoices and receipts are sent here after each paid ride.</p>
+      </Modal>
+    </>
   );
 }

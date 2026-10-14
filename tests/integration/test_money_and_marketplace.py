@@ -423,3 +423,119 @@ def test_referral_bonus_is_paid_once_after_the_first_trip(mini, make_driver, now
 
 def verify_ledger_balanced() -> bool:
     return payments.verify_ledger()["balanced"]
+
+
+# --- Invoices ----------------------------------------------------------------------------------
+
+
+def test_paid_trip_emails_one_invoice_with_pdf(
+    rider, mini, make_driver, now, django_capture_on_commit_callbacks
+):
+    from django.core import mail
+
+    make_driver(now=now)
+    with django_capture_on_commit_callbacks(execute=True):
+        trip = drive_to_completion(book(rider, mini, now=now), now=now, payer_reference="priya@upi")
+    trip.refresh_from_db()
+    assert (
+        trip.invoice_number.startswith(f"INV-{trip.completed_at.year}-") and trip.invoice_emailed_at
+    )
+    assert len(mail.outbox) == 1
+    email = mail.outbox[0]
+    assert (
+        email.to == [rider.user.email]
+        and "invoice" in email.subject
+        and f"₹{trip.fare_total}" in email.subject
+    )
+    html = email.alternatives[0][0]
+    for expected in (
+        trip.invoice_number,
+        trip.trip_number,
+        trip.vehicle.registration_display,
+        "GSTIN",
+        "Amount paid",
+    ):
+        assert expected in html
+    name, pdf, kind = email.attachments[0]
+    assert name.endswith(".pdf") and kind == "application/pdf" and pdf.startswith(b"%PDF")
+    assert trip.invoice_number in email.body  # plain-text version too
+
+    from apps.rides import invoices
+
+    assert invoices.send(trip) is False  # never twice by accident
+    assert len(mail.outbox) == 1
+
+
+def test_invoice_waits_until_unpaid_dues_are_cleared(
+    rider, mini, make_driver, now, django_capture_on_commit_callbacks
+):
+    from django.core import mail
+
+    from apps.rides.models import TripPaymentStatus
+
+    make_driver(now=now)
+    with django_capture_on_commit_callbacks(execute=True):
+        trip = drive_to_completion(book(rider, mini, now=now), now=now, payer_reference="fail@upi")
+    trip.refresh_from_db()
+    assert trip.payment_status == TripPaymentStatus.DUES and not mail.outbox
+    with django_capture_on_commit_callbacks(execute=True):
+        payments.pay_dues(rider.user, method="UPI", payer_reference="priya@upi")
+    trip.refresh_from_db()
+    assert trip.payment_status == TripPaymentStatus.PAID
+    assert len(mail.outbox) == 1 and trip.invoice_number in mail.outbox[0].alternatives[0][0]
+
+
+def test_phone_only_rider_gets_invoices_after_adding_an_email(
+    api, mini, make_driver, now, django_capture_on_commit_callbacks
+):
+    from django.core import mail
+
+    from apps.riders.services import register_rider
+
+    phone_rider = register_rider(
+        email="919840011111@phone.invalid", password=None, first_name="Ravi", phone="9840011111"
+    )
+    make_driver(now=now)
+    with django_capture_on_commit_callbacks(execute=True):
+        trip = drive_to_completion(book(phone_rider, mini, now=now), now=now)
+    assert not mail.outbox  # nowhere to send it yet
+    client = api(phone_rider.user)
+    url = f"/api/v1/trips/{trip.pk}/email-invoice/"
+    assert client.post(url).status_code == 422
+    assert (
+        client.patch("/api/v1/auth/me/", {"email": "Ravi@Mail.test"}, format="json").json()["email"]
+        == "ravi@mail.test"
+    )
+    assert client.post(url).json() == {"sent_to": "ravi@mail.test"}
+    assert mail.outbox[0].to == ["ravi@mail.test"]
+    # The invoice can be viewed in the app, but only by the rider (and staff).
+    view = client.get(f"/api/v1/trips/{trip.pk}/invoice/")
+    assert (
+        view.status_code == 200
+        and view["Content-Type"].startswith("text/html")
+        and b"Ravi" in view.content
+    )
+    assert api(make_rider().user).get(f"/api/v1/trips/{trip.pk}/invoice/").status_code == 404
+    # Resending is limited.
+    client.post(url)
+    client.post(url)
+    assert client.post(url).status_code == 409
+    # Someone else's address can't be taken.
+    assert (
+        client.patch(
+            "/api/v1/auth/me/", {"email": make_rider().user.email}, format="json"
+        ).status_code
+        == 400
+    )
+
+
+def test_invoice_explains_upfront_price_and_skips_synthetic_riders(mini, make_driver, now):
+    from apps.riders.services import register_rider
+    from apps.rides import invoices
+
+    bot = register_rider(email="asha.rao@example.com", password=None, first_name="Asha")
+    make_driver(now=now)
+    trip = drive_to_completion(book(bot, mini, now=now), now=now, distance=Decimal("5.40"))
+    assert not invoices.can_email(trip)  # reserved demo domain: never emailed
+    html = invoices.render_html(trip)
+    assert "Upfront price" in html and f"{trip.estimated_distance_km:.1f} km" in html

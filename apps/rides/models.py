@@ -120,6 +120,9 @@ class Trip(AuditedModel, TimeStampedModel):
     rider_location_at = models.DateTimeField(null=True, blank=True)
     car_confirmed_at = models.DateTimeField(null=True, blank=True)
     separation_alerted_at = models.DateTimeField(null=True, blank=True)
+    # Invoice: numbered when the fare is paid, then emailed to the rider (once, unless resent).
+    invoice_number = models.CharField(max_length=24, blank=True)
+    invoice_emailed_at = models.DateTimeField(null=True, blank=True)
     payment_method = models.CharField(max_length=6)
     promo = models.ForeignKey(
         "pricing.PromoCode", null=True, blank=True, on_delete=models.SET_NULL, related_name="trips"

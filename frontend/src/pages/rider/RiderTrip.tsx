@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, Download, LifeBuoy, LocateFixed, RotateCcw, Share2, ShieldAlert, X } from "lucide-react";
+import { ArrowLeft, Download, LifeBuoy, LocateFixed, Mail, RotateCcw, Share2, ShieldAlert, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { CarCheck, StartCode } from "@/components/PickupVerification";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Modal, Sheet, Spinner, StarInput, Stars, Textarea } from "@/components/ui";
 import { api, ApiError, newIdempotencyKey, openFile } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { dateTime, inr, km, minutes, time } from "@/lib/format";
 import { usePhoneGps } from "@/lib/gps";
 import { clockIn, etaFromKm, etaMinutes, haversineKm, isActive, useLiveTrip, useNow } from "@/lib/hooks";
@@ -326,9 +327,11 @@ export default function RiderTrip() {
               </div>
             </details>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            <InvoiceCard trip={trip} />
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
               <Button variant="secondary" icon={<Download className="size-4" />} onClick={() => openFile(`/api/v1/trips/${trip.id}/receipt/`)}>
-                Receipt
+                PDF
               </Button>
               <Button variant="secondary" icon={<LifeBuoy className="size-4" />} onClick={() => setHelpOpen(true)}>
                 Help
@@ -447,5 +450,40 @@ export function HelpModal({ open, onClose, tripId, base = "/ride" }: { open: boo
         Or see <Link to={`${base}/support`} className="font-semibold underline" onClick={onClose}>your tickets</Link>.
       </p>
     </Modal>
+  );
+}
+
+/** "Invoice sent to priya@…": view it, or have it emailed again. */
+function InvoiceCard({ trip }: { trip: Trip }) {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const hasEmail = !!user?.email && !user.email.endsWith(".invalid");
+  const resend = useMutation({
+    mutationFn: () => api.post<{ sent_to: string }>(`trips/${trip.id}/email-invoice/`),
+    onSuccess: ({ sent_to }) => {
+      toast.success(`Invoice sent to ${sent_to}`);
+      qc.invalidateQueries({ queryKey: ["trips"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't send the invoice."),
+  });
+  if (trip.payment_status !== "PAID") {
+    return <p className="mt-4 rounded-2xl bg-surface-2 px-4 py-3 text-xs text-muted">Your invoice will be emailed once the payment goes through.</p>;
+  }
+  return (
+    <div className="mt-4 flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3">
+      <Mail className="size-5 shrink-0 text-muted" />
+      <div className="min-w-0 flex-1 text-sm">
+        <div className="font-semibold">{trip.invoice_number ? `Invoice ${trip.invoice_number}` : "Invoice"}</div>
+        <div className="truncate text-xs text-muted">
+          {trip.invoice_emailed_at ? `Sent to ${hasEmail ? user!.email : "your email"}` : hasEmail ? "Tap Email to get a copy" : "Add an email in Account to receive it"}
+        </div>
+      </div>
+      <button onClick={() => openFile(`/api/v1/trips/${trip.id}/invoice/`)} className="text-xs font-semibold text-brand-strong">
+        View
+      </button>
+      <button onClick={() => resend.mutate()} disabled={resend.isPending} className="text-xs font-semibold text-brand-strong disabled:opacity-50">
+        {resend.isPending ? "Sending…" : "Email"}
+      </button>
+    </div>
   );
 }

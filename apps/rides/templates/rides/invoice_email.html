@@ -1,0 +1,133 @@
+{% load humanize %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>{{ company }} invoice {{ invoice_number }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0b0f19;">
+<div style="display:none;max-height:0;overflow:hidden;">Thanks for riding with Ride Pulse. You paid {{ currency }}{{ amount_paid|floatformat:2|intcomma }} for your {{ ride_type }} ride.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;">
+
+  <!-- Header -->
+  <tr><td style="background:#0b0f19;padding:28px 28px 24px;color:#ffffff;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:20px;font-weight:800;letter-spacing:-0.3px;">Ride<span style="color:#10b981;">Pulse</span></td>
+      <td align="right" style="font-size:12px;color:#94a3b8;">{{ issued_on|date:"j M Y, g:i A" }}</td>
+    </tr></table>
+    <p style="margin:22px 0 4px;font-size:15px;color:#cbd5e1;">Thanks for riding with us, {{ rider_first_name }}</p>
+    <p style="margin:0;font-size:40px;font-weight:800;letter-spacing:-1px;">{{ currency }}{{ amount_paid|floatformat:2|intcomma }}</p>
+    <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;">{{ ride_type }} &middot; {{ distance_km|floatformat:1 }} km &middot; {{ duration_min|floatformat:0 }} min &middot; Paid by {{ payment_method }}</p>
+  </td></tr>
+
+  <!-- Route -->
+  <tr><td style="padding:24px 28px 8px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="18" valign="top" style="padding-top:4px;"><div style="width:10px;height:10px;border-radius:10px;background:#10b981;"></div></td>
+        <td style="padding-bottom:14px;">
+          <div style="font-size:12px;color:#64748b;">{% if pickup_time %}{{ pickup_time|date:"g:i A" }} &middot; {% endif %}Pickup</div>
+          <div style="font-size:14px;font-weight:600;">{{ trip.pickup_address|default:"Pickup point" }}</div>
+        </td>
+      </tr>
+      {% if trip.stop_address %}
+      <tr>
+        <td width="18" valign="top" style="padding-top:4px;"><div style="width:8px;height:8px;border-radius:8px;background:#64748b;margin-left:1px;"></div></td>
+        <td style="padding-bottom:14px;">
+          <div style="font-size:12px;color:#64748b;">Stop</div>
+          <div style="font-size:14px;font-weight:600;">{{ trip.stop_address }}</div>
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td width="18" valign="top" style="padding-top:4px;"><div style="width:10px;height:10px;background:#0b0f19;"></div></td>
+        <td>
+          <div style="font-size:12px;color:#64748b;">{% if drop_time %}{{ drop_time|date:"g:i A" }} &middot; {% endif %}Drop</div>
+          <div style="font-size:14px;font-weight:600;">{{ trip.dropoff_address|default:"Drop point" }}</div>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- Driver -->
+  {% if driver_name %}
+  <tr><td style="padding:16px 28px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:14px;">
+      <tr>
+        <td style="padding:14px 16px;">
+          <div style="font-size:12px;color:#64748b;">Your driver</div>
+          <div style="font-size:15px;font-weight:700;">{{ driver_name }}</div>
+          <div style="font-size:12px;color:#64748b;">{{ vehicle_model }}</div>
+        </td>
+        <td align="right" style="padding:14px 16px;">
+          <span style="display:inline-block;background:#fde047;border:2px solid #0b0f19;border-radius:6px;padding:3px 8px;font-family:Menlo,Consolas,monospace;font-weight:800;font-size:13px;color:#000;">{{ vehicle_plate }}</span>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+  {% endif %}
+
+  <!-- Fare breakdown -->
+  <tr><td style="padding:24px 28px 0;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#64748b;padding-bottom:8px;">Fare breakdown</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;">
+      {% for line in lines %}
+      <tr>
+        <td style="padding:6px 0;color:{% if line.kind == 'DISCOUNT' %}#047857{% else %}#334155{% endif %};">{{ line.label }}</td>
+        <td align="right" style="padding:6px 0;color:{% if line.kind == 'DISCOUNT' %}#047857{% else %}#0b0f19{% endif %};">{% if line.amount < 0 %}&minus;{{ currency }}{{ line.amount|stringformat:".2f"|slice:"1:" }}{% else %}{{ currency }}{{ line.amount|floatformat:2|intcomma }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+      <tr><td colspan="2" style="border-top:1px solid #e2e8f0;padding-top:4px;"></td></tr>
+      <tr>
+        <td style="padding:6px 0;font-weight:700;">Trip fare</td>
+        <td align="right" style="padding:6px 0;font-weight:700;">{{ currency }}{{ total|floatformat:2|intcomma }}</td>
+      </tr>
+      {% if tip %}
+      <tr>
+        <td style="padding:6px 0;color:#334155;">Tip (100% to your driver)</td>
+        <td align="right" style="padding:6px 0;">{{ currency }}{{ tip|floatformat:2|intcomma }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td style="padding:10px 0 0;font-size:16px;font-weight:800;">Amount paid</td>
+        <td align="right" style="padding:10px 0 0;font-size:16px;font-weight:800;">{{ currency }}{{ amount_paid|floatformat:2|intcomma }}</td>
+      </tr>
+      <tr><td colspan="2" style="padding-top:2px;font-size:12px;color:#64748b;">Paid by {{ payment_method }}{% if promo_code %} &middot; Promo {{ promo_code }} applied{% endif %} &middot; Prices include GST</td></tr>
+      {% if upfront %}
+      <tr><td colspan="2" style="padding-top:10px;">
+        <div style="background:#ecfdf5;border-radius:10px;padding:10px 12px;font-size:12px;line-height:17px;color:#065f46;">
+          <b>Upfront price:</b> this fare was fixed before your ride for the planned {{ planned_km|floatformat:1 }} km, {{ planned_min|floatformat:0 }} min route, so it didn't change with traffic or the exact route taken.
+        </div>
+      </td></tr>
+      {% endif %}
+    </table>
+  </td></tr>
+
+  <!-- Invoice details -->
+  <tr><td style="padding:24px 28px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:12px;color:#64748b;background:#f8fafc;border-radius:14px;">
+      <tr><td style="padding:14px 16px 4px;">Invoice no.</td><td align="right" style="padding:14px 16px 4px;color:#0b0f19;font-weight:600;">{{ invoice_number }}</td></tr>
+      <tr><td style="padding:4px 16px;">Trip</td><td align="right" style="padding:4px 16px;color:#0b0f19;">{{ trip.trip_number }}</td></tr>
+      <tr><td style="padding:4px 16px;">Invoice date</td><td align="right" style="padding:4px 16px;color:#0b0f19;">{{ issued_on|date:"j M Y" }}</td></tr>
+      <tr><td style="padding:4px 16px 14px;">GSTIN</td><td align="right" style="padding:4px 16px 14px;color:#0b0f19;">{{ company_gstin }}</td></tr>
+    </table>
+    <p style="margin:14px 0 0;font-size:11px;line-height:16px;color:#94a3b8;">
+      The ride fare is collected by {{ company }} on behalf of your driver. The PDF copy of this invoice is attached.
+      This is a computer-generated invoice and needs no signature.
+    </p>
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#f8fafc;padding:18px 28px;font-size:12px;color:#64748b;border-top:1px solid #e2e8f0;">
+    Lost something or need help with this ride? Reply to this email or write to
+    <a href="mailto:{{ support_email }}" style="color:#047857;">{{ support_email }}</a>.<br>
+    {{ company }} &middot; {{ company_address }}
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

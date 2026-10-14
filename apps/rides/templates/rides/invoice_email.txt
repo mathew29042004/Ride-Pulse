@@ -1,0 +1,22 @@
+{% load humanize %}Thanks for riding with {{ company }}, {{ rider_first_name }}!
+
+Amount paid: {{ currency }}{{ amount_paid|floatformat:2|intcomma }} ({{ payment_method }})
+{{ ride_type }} · {{ distance_km|floatformat:1 }} km · {{ duration_min|floatformat:0 }} min
+
+From: {{ trip.pickup_address|default:"Pickup point" }}{% if pickup_time %} ({{ pickup_time|date:"g:i A" }}){% endif %}
+{% if trip.stop_address %}Stop: {{ trip.stop_address }}
+{% endif %}To:   {{ trip.dropoff_address|default:"Drop point" }}{% if drop_time %} ({{ drop_time|date:"g:i A" }}){% endif %}
+{% if driver_name %}
+Driver: {{ driver_name }} · {{ vehicle_model }} · {{ vehicle_plate }}{% endif %}
+
+Fare breakdown
+{% for line in lines %}  {{ line.label }}: {{ currency }}{{ line.amount|floatformat:2 }}
+{% endfor %}  Trip fare: {{ currency }}{{ total|floatformat:2 }}{% if tip %}
+  Tip (100% to your driver): {{ currency }}{{ tip|floatformat:2 }}{% endif %}
+  Amount paid: {{ currency }}{{ amount_paid|floatformat:2 }}
+
+Invoice {{ invoice_number }} · Trip {{ trip.trip_number }} · {{ issued_on|date:"j M Y" }} · GSTIN {{ company_gstin }}
+Prices include GST.{% if upfront %} Upfront price: fixed before the ride for the planned {{ planned_km|floatformat:1 }} km, {{ planned_min|floatformat:0 }} min route.{% endif %} The ride fare is collected by {{ company }} on behalf of your driver.
+
+Need help? Reply to this email or write to {{ support_email }}.
+{{ company }} · {{ company_address }}

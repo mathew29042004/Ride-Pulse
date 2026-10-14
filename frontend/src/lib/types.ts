@@ -130,6 +130,8 @@ export interface Trip {
   dropoff_address: string;
   stop: { lat: number; lng: number; address: string } | null;
   car_confirmed_at: string | null;
+  invoice_number: string;
+  invoice_emailed_at: string | null;
   rider: TripParty;
   driver: TripParty | null;
   driver_location: { lat: number; lng: number; heading: number | null } | null;
