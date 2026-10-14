@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.geo.models import City
+from apps.simulation.guard import require_demo_mode
 from apps.simulation.simulator import Simulator
 
 # The busiest cities in each state; pass --cities all to run bots everywhere.
@@ -45,6 +46,7 @@ class Command(BaseCommand):
         parser.add_argument("--quiet", action="store_true", help="Only print errors")
 
     def handle(self, *args, **options):
+        require_demo_mode("simulate")
         slugs = [s.strip() for s in options["cities"].split(",") if s.strip()]
         if slugs == ["all"]:
             slugs = list(City.objects.filter(is_active=True).values_list("slug", flat=True))

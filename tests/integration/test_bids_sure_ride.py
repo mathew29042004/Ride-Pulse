@@ -188,3 +188,12 @@ def test_api(api, mini, make_driver, now):
     taken = client.post(f"/api/v1/trips/{trip['id']}/take-counter/", {"offer_id": counter["id"]})
     assert taken.json()["status"] == "DRIVER_ASSIGNED"
     assert taken.json()["estimated_fare"] == counter["counter_amount"]
+
+
+def test_offer_floor_protects_the_drivers_share():
+    upfront, driver = Decimal(200), Decimal(40)  # e.g. a short airport trip: mostly fees
+    low, _ = bids.offer_bounds(upfront, driver)
+    assert low == 180  # 85% would be 170, taking 30 of the driver's 40
+    with pytest.raises(BusinessRuleViolation):
+        bids.check_offer(upfront, Decimal(175), driver)
+    assert bids.check_offer(upfront, Decimal(180), driver) == -20

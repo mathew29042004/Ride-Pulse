@@ -34,14 +34,24 @@ def _rupees(value: Decimal) -> Decimal:
     return Decimal(value).quantize(Decimal("1"))
 
 
-def offer_bounds(upfront: Decimal) -> tuple[Decimal, Decimal]:
+# A bid can lower the price, but never take more than this share of the driver's normal earning
+# (on short trips with big fixed fees, 85% of the fare would otherwise be mostly the driver's).
+MAX_DRIVER_CUT = Decimal("0.5")
+
+
+def offer_bounds(
+    upfront: Decimal, driver_earning: Decimal | None = None
+) -> tuple[Decimal, Decimal]:
     rules = fare_offer_rules()
-    return _rupees(upfront * rules["min_ratio"]), _rupees(upfront * rules["max_ratio"])
+    low = upfront * rules["min_ratio"]
+    if driver_earning is not None:
+        low = max(low, upfront - driver_earning * MAX_DRIVER_CUT)
+    return _rupees(low + Decimal("0.49")), _rupees(upfront * rules["max_ratio"])
 
 
-def check_offer(upfront: Decimal, offer: Decimal) -> Decimal:
+def check_offer(upfront: Decimal, offer: Decimal, driver_earning: Decimal | None = None) -> Decimal:
     """The adjustment (offer − upfront) if the offer is in range."""
-    low, high = offer_bounds(upfront)
+    low, high = offer_bounds(upfront, driver_earning)
     if not low <= offer <= high:
         raise BusinessRuleViolation(
             f"Offer between ₹{low} and ₹{high} for this ride.", field="fare_offer"

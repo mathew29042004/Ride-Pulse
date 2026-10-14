@@ -3,6 +3,7 @@ import time
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.simulation.guard import require_demo_mode
 from apps.simulation.seed import DEMO_PASSWORD, Seeder, demo_already_seeded
 
 
@@ -21,6 +22,7 @@ class Command(BaseCommand):
         parser.add_argument("--reset", action="store_true", help="Wipe ALL data first, then reseed")
 
     def handle(self, *args, **options):
+        require_demo_mode("seed_demo")
         if options["reset"]:
             self.stdout.write(self.style.WARNING("Flushing the database…"))
             call_command("flush", interactive=False, verbosity=0)

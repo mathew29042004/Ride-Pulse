@@ -13,6 +13,10 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-ride-pulse-key-change-me")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
+# Demo mode: the demo seeders (seed_demo, grow_network, generate_history) and the bot simulator
+# only run when this is on. They create logins with a published password and can wipe data, so
+# a real deployment must leave it off. On by default for local development (DEBUG).
+DEMO_MODE = env.bool("DEMO_MODE", default=DEBUG)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 INSTALLED_APPS = [

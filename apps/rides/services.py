@@ -280,7 +280,7 @@ def estimate_options(
             if nearest and open_now
             else None
         )
-        low, high = bids.offer_bounds(estimate.fare.total)
+        low, high = bids.offer_bounds(estimate.fare.total, estimate.fare.driver_earning)
         options.append(
             {
                 "ride_type": ride_type,
@@ -417,7 +417,7 @@ def request_trip(
     fare = with_boost(estimate.fare, boost) if boost else estimate.fare
     adjustment = Decimal(0)
     if fare_offer:
-        adjustment = bids.check_offer(estimate.fare.total, fare_offer)
+        adjustment = bids.check_offer(estimate.fare.total, fare_offer, estimate.fare.driver_earning)
         fare = with_offer_adjustment(fare, adjustment)
     sure_minutes = None
     if sure_ride:

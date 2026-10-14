@@ -2,6 +2,7 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.simulation.guard import require_demo_mode
 from apps.simulation.history import HistoryGenerator, LiveSimulatorRunning
 
 
@@ -22,6 +23,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        require_demo_mode("generate_history")
         started = time.monotonic()
         generator = HistoryGenerator(
             days=options["days"],

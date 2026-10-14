@@ -5,6 +5,8 @@ x-app: &app
   build: .
   environment: &env
     DJANGO_SETTINGS_MODULE: config.settings.prod
+    # This stack is a demo (seeded accounts, bot simulator). Never set this on a real deployment.
+    DEMO_MODE: "true"
     DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production-please-0123456789}
     DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,web
     CSRF_TRUSTED_ORIGINS: http://localhost:8000

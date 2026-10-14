@@ -22,6 +22,9 @@ services:
           property: connectionString
       - key: PORT
         value: "8000"
+      # A public demo: allows the seeder and bot simulator (never set on a real deployment).
+      - key: DEMO_MODE
+        value: "true"
       # Free instances block outbound SMTP, so notification emails go to the log instead.
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.console.EmailBackend
