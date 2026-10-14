@@ -7,6 +7,7 @@
 A schedule refreshes everything daily at 02:00 IST. Run the UI with ``make data-ui``.
 """
 
+import os
 from pathlib import Path
 
 from dagster import (
@@ -27,6 +28,8 @@ from pipeline import report as report_module
 
 DATA_DIR = Path(__file__).resolve().parent.parent
 DBT_DIR = DATA_DIR / "dbt"
+# dbt lives in this virtualenv; make sure Dagster (and dagster-dbt's dev parse) can find it.
+os.environ["PATH"] = f"{DATA_DIR / '.venv' / 'bin'}{os.pathsep}{os.environ.get('PATH', '')}"
 
 dbt_project = DbtProject(project_dir=DBT_DIR, profiles_dir=DBT_DIR)
 dbt_project.prepare_if_dev()
@@ -63,13 +66,13 @@ def warehouse(context: AssetExecutionContext, dbt: DbtCliResource):
 
 @asset(
     deps=[
-        AssetKey("rpt_city_daily"),
-        AssetKey("rpt_service_mix"),
-        AssetKey("rpt_hourly_demand"),
-        AssetKey("rpt_cancellations"),
-        AssetKey("rpt_driver_weekly"),
-        AssetKey("rpt_support_sla"),
-        AssetKey("rpt_org_coverage"),
+        AssetKey(["reporting", "rpt_city_daily"]),
+        AssetKey(["reporting", "rpt_service_mix"]),
+        AssetKey(["reporting", "rpt_hourly_demand"]),
+        AssetKey(["reporting", "rpt_cancellations"]),
+        AssetKey(["reporting", "rpt_driver_weekly"]),
+        AssetKey(["reporting", "rpt_support_sla"]),
+        AssetKey(["reporting", "rpt_org_coverage"]),
     ],
     group_name="insights",
 )

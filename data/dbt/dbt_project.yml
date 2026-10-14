@@ -15,6 +15,9 @@ vars:
 
 models:
   ridepulse:
+    +meta:
+      dagster:
+        group: warehouse
     staging:
       +materialized: view
       +schema: staging
