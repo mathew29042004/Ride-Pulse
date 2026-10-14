@@ -303,6 +303,10 @@ RIDE_PULSE = {
     "RIDE_PASS_DAYS": 30,
     "RIDE_PASS_PERCENT": "10",
     "RIDE_PASS_MAX_DISCOUNT": "30",
+    # Driver daily goals: (trips completed today, bonus for reaching it). Bonuses add up.
+    "DRIVER_GOALS": [[5, "75"], [10, "125"]],
+    "GOING_HOME_PER_DAY": 2,
+    "GOING_HOME_MINUTES": 60,
     "LOCATION_PING_RETENTION_DAYS": 7,
     "TICKET_SLA_HOURS": {"URGENT": 1, "HIGH": 4, "NORMAL": 24, "LOW": 72},
 }

@@ -109,6 +109,15 @@ def referral_bonus() -> Decimal:
     return _decimal("REFERRAL_BONUS")
 
 
+def driver_goals() -> list[tuple[int, Decimal]]:
+    return [(int(trips), Decimal(bonus)) for trips, bonus in _value("DRIVER_GOALS")]
+
+
+def going_home_rules() -> tuple[int, int]:
+    """(uses per day, minutes per use)."""
+    return int(_value("GOING_HOME_PER_DAY")), int(_value("GOING_HOME_MINUTES"))
+
+
 def ride_pass_terms() -> dict:
     return {
         "price": _decimal("RIDE_PASS_PRICE"),

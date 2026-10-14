@@ -19,7 +19,7 @@ from apps.core.validators import normalize_registration, registration_validator
 from apps.payments.services import driver_earnings, wallet_balance
 from apps.pricing.models import RideType
 
-from . import services
+from . import goals, services
 from .models import DocumentStatus, DriverDocument, DriverProfile, Vehicle
 
 
@@ -132,15 +132,38 @@ class DriverSerializer(serializers.ModelSerializer):
 class DriverStatusSerializer(DriverSerializer):
     missing_documents = serializers.SerializerMethodField()
     compliance_problems = serializers.SerializerMethodField()
+    going_home_uses_left = serializers.SerializerMethodField()
 
     class Meta(DriverSerializer.Meta):
-        fields = [*DriverSerializer.Meta.fields, "missing_documents", "compliance_problems"]
+        fields = [
+            *DriverSerializer.Meta.fields,
+            "missing_documents",
+            "compliance_problems",
+            "home_lat",
+            "home_lng",
+            "home_address",
+            "going_home_until",
+            "going_home_uses_left",
+        ]
+
+    def get_going_home_uses_left(self, driver) -> int:
+        return goals.uses_left(driver)
 
     def get_missing_documents(self, driver) -> list[str]:
         return services.missing_documents(driver)
 
     def get_compliance_problems(self, driver) -> list[str]:
         return services.compliance_problems(driver)
+
+
+class HomeSerializer(serializers.Serializer):
+    lat = serializers.FloatField(min_value=-90, max_value=90)
+    lng = serializers.FloatField(min_value=-180, max_value=180)
+    address = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+class GoingHomeSerializer(serializers.Serializer):
+    on = serializers.BooleanField()
 
 
 class LocationSerializer(serializers.Serializer):
@@ -205,6 +228,30 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
     def offline(self, request):
         services.go_offline(self.driver)
         return Response(DriverStatusSerializer(self.driver).data)
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def goals(self, request):
+        """Today's goals: trips completed and the bonus tiers reached."""
+        return Response(goals.progress(self.driver))
+
+    @extend_schema(request=HomeSerializer, responses=DriverStatusSerializer)
+    @action(detail=False, methods=["post"])
+    def home(self, request):
+        serializer = HomeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            DriverStatusSerializer(goals.set_home(self.driver, **serializer.validated_data)).data
+        )
+
+    @extend_schema(request=GoingHomeSerializer, responses=DriverStatusSerializer)
+    @action(detail=False, methods=["post"], url_path="going-home")
+    def going_home(self, request):
+        """Only offer trips that bring me closer to home (for an hour, twice a day)."""
+        serializer = GoingHomeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        driver = goals.set_going_home(self.driver, on=serializer.validated_data["on"])
+        return Response(DriverStatusSerializer(driver).data)
 
     @extend_schema(request=LocationSerializer, responses={204: None})
     @action(detail=False, methods=["post"], throttle_scope="location")

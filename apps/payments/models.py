@@ -48,6 +48,7 @@ class TransactionKind(models.TextChoices):
     REFERRAL_BONUS = "REFERRAL_BONUS", "Referral bonus"
     RIDE_PASS = "RIDE_PASS", "Ride Pass purchase"
     FARE_SPLIT = "FARE_SPLIT", "Fare split share"
+    DRIVER_BONUS = "DRIVER_BONUS", "Driver goal bonus"
 
 
 class LedgerTransaction(models.Model):

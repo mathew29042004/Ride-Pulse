@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLine, advanceAlong, routePath, snapToPath } from "@/components/map";
 import { CallButton } from "@/components/CallButton";
+import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
 import { NotificationBell } from "@/components/NotificationBell";
 import { usePush } from "@/components/PushToggle";
 import { QrScanner } from "@/components/QrScanner";
@@ -408,6 +409,7 @@ export default function DriverHome() {
             <div className="text-[11px] text-muted">
               <Stars value={driver.rating} size={10} /> · {today.data?.trips ?? 0} trips
             </div>
+            <GoalChip />
           </div>
         </div>
         <div className="rp-phone-only rounded-full bg-surface/95 shadow-[var(--shadow-float)] backdrop-blur">
@@ -433,6 +435,7 @@ export default function DriverHome() {
       <div className="flex-1" />
 
       <div className="rp-overlay relative z-[600] flex items-center justify-end gap-2 px-3 pb-2">
+        {online && !trip && <GoingHomeButton driver={driver} />}
         {online && (
           <button
             onClick={toggleGps}

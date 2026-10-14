@@ -269,6 +269,11 @@ export interface Driver {
   wallet_balance: string;
   missing_documents: string[];
   compliance_problems: string[];
+  home_lat: number | null;
+  home_lng: number | null;
+  home_address: string;
+  going_home_until: string | null;
+  going_home_uses_left: number;
 }
 
 export interface Rider {

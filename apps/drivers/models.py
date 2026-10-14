@@ -68,6 +68,13 @@ class DriverProfile(AuditedModel, TimeStampedModel):
     suspended_reason = models.CharField(max_length=255, blank=True)
     # Used only to honour riders' "prefer a woman driver" choice.
     gender = models.CharField(max_length=11, choices=Gender.choices, default=Gender.UNDISCLOSED)
+    # "Going home": only trips heading towards home, for an hour, twice a day.
+    home_lat = models.FloatField(null=True, blank=True)
+    home_lng = models.FloatField(null=True, blank=True)
+    home_address = models.CharField(max_length=255, blank=True)
+    going_home_until = models.DateTimeField(null=True, blank=True)
+    going_home_day = models.DateField(null=True, blank=True)
+    going_home_uses = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         ordering = ["-created_at"]
@@ -244,3 +251,24 @@ class LocationPing(models.Model):
 
     def __str__(self) -> str:
         return f"{self.driver_id} @ {self.lat:.5f},{self.lng:.5f}"
+
+
+class DriverGoalReward(models.Model):
+    """A daily goal reached ("5 trips today: ₹75"), paid once into the driver's wallet."""
+
+    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name="goal_rewards")
+    day = models.DateField()
+    trips_target = models.PositiveSmallIntegerField()
+    bonus = models.DecimalField(max_digits=8, decimal_places=2)
+    paid_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-day", "trips_target"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["driver", "day", "trips_target"], name="goal_reward_once_per_day"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.driver_id} {self.day} {self.trips_target} trips"

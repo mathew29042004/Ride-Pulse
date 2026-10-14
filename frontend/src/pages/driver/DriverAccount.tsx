@@ -1,10 +1,16 @@
-import { ChevronRight, Clock, LifeBuoy } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, Clock, Home, LifeBuoy } from "lucide-react";
 import { Link } from "react-router";
+import { toast } from "sonner";
 
+import { useMapProvider } from "@/components/map";
+import { describePoint } from "@/components/PlaceSuggestions";
 import { PushToggle } from "@/components/PushToggle";
-import { Avatar, Stars } from "@/components/ui";
+import { Avatar, Button, Stars } from "@/components/ui";
+import { api } from "@/lib/api";
 import { date } from "@/lib/format";
 import { useDriverMe } from "@/lib/hooks";
+import type { Driver } from "@/lib/types";
 
 import { LogoutRow, ThemeRow } from "../rider/RiderAccount";
 
@@ -48,6 +54,7 @@ export default function DriverAccount() {
 
       <div className="mt-6 divide-y divide-line">
         <PushToggle audience="driver" />
+        {d && <HomeRow driver={d} />}
         <Link to="/drive/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
           <span className="flex-1 font-medium">Help & support</span>
@@ -61,6 +68,36 @@ export default function DriverAccount() {
         <ThemeRow />
         <LogoutRow />
       </div>
+    </div>
+  );
+}
+
+/** Home location for going-home mode: set to where the car is now. */
+function HomeRow({ driver }: { driver: Driver }) {
+  const qc = useQueryClient();
+  const { provider } = useMapProvider();
+  const save = useMutation({
+    mutationFn: async () => {
+      if (driver.current_lat === null || driver.current_lng === null) throw new Error("Go online first so we know where you are.");
+      const address = await describePoint(driver.current_lat, driver.current_lng, provider);
+      return api.post<Driver>("driver/home/", { lat: driver.current_lat, lng: driver.current_lng, address });
+    },
+    onSuccess: (updated) => {
+      qc.setQueryData(["driver", "me"], updated);
+      toast.success(`Home set to ${updated.home_address}`);
+    },
+    onError: (err) => toast.error((err as Error).message),
+  });
+  return (
+    <div className="flex items-center gap-3 py-3.5">
+      <Home className="size-5" />
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">Home (for going-home mode)</div>
+        <div className="truncate text-xs text-muted">{driver.home_address || "Not set"}</div>
+      </div>
+      <Button size="sm" variant="outline" loading={save.isPending} onClick={() => save.mutate()}>
+        Set to here
+      </Button>
     </div>
   );
 }

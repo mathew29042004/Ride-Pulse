@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { toast } from "sonner";
 
+import { GoalsCard } from "@/components/DriverGoals";
 import { Button, KeyValue, Segmented, Skeleton, StatusBadge } from "@/components/ui";
 import { api, newIdempotencyKey } from "@/lib/api";
 import { date, inr, km } from "@/lib/format";
@@ -49,6 +50,7 @@ export default function DriverEarnings() {
           ]}
         />
       </div>
+      <GoalsCard />
 
       <div className="mt-4 rounded-3xl bg-[#0b0f19] p-5 text-white">
         <div className="text-xs font-medium tracking-wide text-white/60 uppercase">Total earnings</div>

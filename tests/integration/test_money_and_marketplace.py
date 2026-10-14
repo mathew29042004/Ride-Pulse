@@ -659,3 +659,56 @@ def test_price_drop_alert_notifies_once_when_surge_eases(rider, mini, now):
     assert alerts.check_alerts(now=now + timedelta(hours=3))["expired"] == 1
     stale.refresh_from_db()
     assert stale.status == PriceAlertStatus.EXPIRED
+
+
+# --- Driver goals and going home -----------------------------------------------------------------
+
+
+def test_daily_goal_bonuses_are_paid_once_per_tier(rider, mini, make_driver, now, settings):
+    from apps.drivers import goals
+
+    settings.RIDE_PULSE = {**settings.RIDE_PULSE, "DRIVER_GOALS": [[2, "75"], [3, "125"]]}
+    driver = make_driver(now=now)
+    for i in range(3):
+        at = now + timedelta(minutes=40 * i)
+        drivers.update_location(driver, lat=T_NAGAR[0], lng=T_NAGAR[1], now=at)
+        drive_to_completion(book(rider, mini, now=at), now=at)
+    progress = goals.progress(driver, at=now + timedelta(hours=2))
+    assert progress["completed_today"] == 3 and all(t["reached"] for t in progress["tiers"])
+    assert progress["earned_today"] == "200"
+    assert driver.goal_rewards.count() == 2
+    assert goals.reward_goals(driver, now=now + timedelta(hours=2)) == []  # never twice
+    assert payments.verify_ledger()["balanced"]
+
+
+def test_going_home_mode_only_offers_trips_towards_home(rider, mini, make_driver, now):
+    from apps.drivers import goals
+    from apps.rides import services as rides
+
+    driver = make_driver(now=now)  # near T. Nagar
+    with pytest.raises(BusinessRuleViolation):
+        goals.set_going_home(driver, on=True, now=now)  # no home yet
+    goals.set_home(driver, lat=12.9010, lng=80.2279, address="Sholinganallur")  # far south
+    goals.set_going_home(driver, on=True, now=now)
+    assert goals.going_home_active(driver, now) and goals.uses_left(driver, now) == 1
+
+    # Marina Beach is north-east, away from home: not offered.
+    away = book(rider, mini, now=now)
+    assert away.offers.count() == 0
+    rides.cancel_trip(away, user=rider.user, now=now)
+    # A trip south towards home is.
+    toward = rides.request_trip(
+        rider=rider,
+        ride_type=mini,
+        pickup=T_NAGAR,
+        dropoff=(12.9516, 80.2400),
+        payment_method="UPI",
+        now=now,
+    )
+    assert toward.offers.get().driver == driver
+
+    goals.set_going_home(driver, on=False, now=now)
+    goals.set_going_home(driver, on=True, now=now)  # the second use today
+    goals.set_going_home(driver, on=False, now=now)
+    with pytest.raises(ConflictError):
+        goals.set_going_home(driver, on=True, now=now)  # a third isn't allowed
