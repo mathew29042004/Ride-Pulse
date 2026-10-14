@@ -41,7 +41,7 @@ from apps.geo.models import City
 from apps.geo.routing import eta_minutes
 from apps.realtime import broadcast
 
-from . import hungarian
+from . import hungarian, packages
 from .models import OfferStatus, RidePreference, Trip, TripOffer, TripStatus
 
 RADIUS_EXPANSION_AFTER_ATTEMPTS = 2
@@ -101,6 +101,8 @@ def candidates_for(
             continue
         # Drivers past the driving limit rest before their next trip.
         if wellbeing.needs_break(driver, now):
+            continue
+        if trip.service == "INTERCITY" and not driver.accepts_intercity:
             continue
         eta = eta_minutes(
             driver.current_lat, driver.current_lng, trip.pickup_lat, trip.pickup_lng, now
@@ -214,6 +216,7 @@ def offer_payload(offer: TripOffer) -> dict:
         else [],
         "service": trip.service,
         "parcel": parcel_summary(trip),
+        "package": packages.offer_details(trip),
         "expires_at": offer.expires_at,
     }
 

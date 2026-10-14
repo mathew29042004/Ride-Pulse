@@ -304,6 +304,12 @@ unmapped is denied. Riders and drivers only ever see their own records.
   at pickup the recipient gets an SMS with a live tracking link and a 4-digit delivery code, and
   the driver can only mark it delivered with that code (wrong tries are counted and capped).
 
+* **Hourly rentals:** a car and driver for 1/2/4/8 hours (10 km per hour included); no fixed
+  drop, and extra km and minutes are added at the end (`rides.packages`).
+* **Intercity (outstation):** from a served city to anywhere 40–600 km away, one-way or round
+  trip for 1–7 days. Per-km pricing (minimum 100 km one-way, 250 km a day for round trips) plus
+  a ₹300/day driver allowance that is all the driver's; car drivers can opt out of intercity.
+
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the
   ledger (`DRIVER_GOALS`).

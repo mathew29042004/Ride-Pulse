@@ -146,6 +146,10 @@ export interface Trip {
   preferences: string[];
   is_favourite_driver: boolean;
   service: "RIDE" | "PARCEL" | "RENTAL" | "INTERCITY";
+  package_hours: number | null;
+  package_km: number | null;
+  round_trip: boolean;
+  trip_days: number;
   parcel: {
     recipient_name: string;
     recipient_phone: string | null;
@@ -256,6 +260,7 @@ export interface Offer {
   counter_steps: string[];
   service: string;
   parcel: { category: string; weight_kg: string | number; instructions: string } | null;
+  package: { kind: "RENTAL"; hours: number; km: number } | { kind: "INTERCITY"; km: number | string; round_trip: boolean; days: number; destination: string } | null;
   expires_at: string;
 }
 

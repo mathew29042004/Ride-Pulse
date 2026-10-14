@@ -266,7 +266,10 @@ export default function RiderTrip() {
                 <h2 className="text-xl font-bold">
                   {trip.status === "DRIVER_ASSIGNED" && t("Arriving in {time}", { time: minutes(toPickupEta) })}
                   {trip.status === "DRIVER_ARRIVED" && t(trip.service === "PARCEL" ? "Driver is here to pick up your parcel" : "Your driver is here")}
-                  {trip.status === "IN_PROGRESS" && t(trip.service === "PARCEL" ? "Parcel arriving in {time}" : "{time} to drop", { time: minutes(toDropEta) })}
+                  {trip.status === "IN_PROGRESS" &&
+                    (trip.service === "RENTAL"
+                      ? t("Rental · {h} h / {km} km", { h: trip.package_hours ?? 0, km: trip.package_km ?? 0 })
+                      : t(trip.service === "PARCEL" ? "Parcel arriving in {time}" : "{time} to drop", { time: minutes(toDropEta) }))}
                 </h2>
                 <p className="mt-0.5 text-sm text-muted">
                   {trip.status === "DRIVER_ASSIGNED" && (toPickupKm !== null ? t("{distance} away · meet at {place}", { distance: km(toPickupKm), place: trip.pickup_address }) : t("Meet at {place}", { place: trip.pickup_address }))}

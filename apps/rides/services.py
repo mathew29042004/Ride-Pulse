@@ -724,50 +724,57 @@ def complete_trip(
         measured, skipped_jumps = _distance_from_pings(trip)
         distance = measured or trip.estimated_distance_km
 
-    upfront = distance <= trip.estimated_distance_km * upfront_distance_tolerance() and (
-        duration <= trip.estimated_duration_min * upfront_duration_tolerance()
-    )
-    route = (
-        RouteEstimate(trip.estimated_distance_km, trip.estimated_duration_min)
-        if upfront
-        else RouteEstimate(distance, duration)
-    )
-    airport = bool(
-        (trip.pickup_zone and trip.pickup_zone.is_airport)
-        or (trip.dropoff_zone and trip.dropoff_zone.is_airport)
-    )
+    package_trip = trip.service in (Service.RENTAL, Service.INTERCITY)
+    if package_trip:
+        from . import packages
 
-    def price(promo):
-        return pricing.price_trip(
-            city=trip.city,
-            ride_type=trip.ride_type,
-            route=route,
-            surge_multiplier=trip.surge_multiplier,
-            airport=airport,
-            promo=promo,
-            waiting_minutes=trip.waiting_minutes or Decimal(0),
-            ride_pass=trip.ride_pass_applied,
+        fare = packages.final_fare(trip, distance=distance, duration=duration)
+        upfront = True
+    else:
+        upfront = distance <= trip.estimated_distance_km * upfront_distance_tolerance() and (
+            duration <= trip.estimated_duration_min * upfront_duration_tolerance()
+        )
+        route = (
+            RouteEstimate(trip.estimated_distance_km, trip.estimated_duration_min)
+            if upfront
+            else RouteEstimate(distance, duration)
+        )
+        airport = bool(
+            (trip.pickup_zone and trip.pickup_zone.is_airport)
+            or (trip.dropoff_zone and trip.dropoff_zone.is_airport)
         )
 
-    fare = price(trip.promo)
-    # The redemption is recorded only now; if the promo ran out meanwhile, drop it.
-    if (
-        trip.promo
-        and fare.discount
-        and pricing.redeem_promo(trip.promo, rider=trip.rider, trip=trip, amount=fare.discount)
-        is None
-    ):
-        fare = price(None)
-    if trip.boost_amount:
-        fare = with_boost(fare, trip.boost_amount)
-    if trip.offer_adjustment:
-        fare = with_offer_adjustment(fare, trip.offer_adjustment)
-    for line in trip.estimate.lines:  # Sure Ride fee, as agreed at booking
-        if line.code == bids.SURE_RIDE_CODE:
-            fare = with_fee(fare, line.code, line.label, line.amount)
+        def price(promo):
+            return pricing.price_trip(
+                city=trip.city,
+                ride_type=trip.ride_type,
+                route=route,
+                surge_multiplier=trip.surge_multiplier,
+                airport=airport,
+                promo=promo,
+                waiting_minutes=trip.waiting_minutes or Decimal(0),
+                ride_pass=trip.ride_pass_applied,
+            )
+
+        fare = price(trip.promo)
+        # The redemption is recorded only now; if the promo ran out meanwhile, drop it.
+        if (
+            trip.promo
+            and fare.discount
+            and pricing.redeem_promo(trip.promo, rider=trip.rider, trip=trip, amount=fare.discount)
+            is None
+        ):
+            fare = price(None)
+        if trip.boost_amount:
+            fare = with_boost(fare, trip.boost_amount)
+        if trip.offer_adjustment:
+            fare = with_offer_adjustment(fare, trip.offer_adjustment)
+        for line in trip.estimate.lines:  # Sure Ride fee, as agreed at booking
+            if line.code == bids.SURE_RIDE_CODE:
+                fare = with_fee(fare, line.code, line.label, line.amount)
 
     flags = list(trip.flags)
-    if distance > trip.estimated_distance_km * ROUTE_DEVIATION_FACTOR:
+    if not package_trip and distance > trip.estimated_distance_km * ROUTE_DEVIATION_FACTOR:
         flags.append(TripFlag.ROUTE_DEVIATION)
     if skipped_jumps:
         flags.append(TripFlag.GPS_JUMP)

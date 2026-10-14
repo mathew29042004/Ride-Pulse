@@ -145,6 +145,7 @@ class DriverStatusSerializer(DriverSerializer):
             "going_home_until",
             "going_home_uses_left",
             "accepts_parcels",
+            "accepts_intercity",
         ]
 
     def get_going_home_uses_left(self, driver) -> int:
@@ -231,6 +232,17 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
         driver = self.driver
         driver.accepts_parcels = serializer.validated_data["on"]
         driver.save(update_fields=["accepts_parcels", "updated_at"])
+        return Response(DriverStatusSerializer(driver).data)
+
+    @extend_schema(request=ParcelsSerializer, responses=DriverStatusSerializer)
+    @action(detail=False, methods=["post"])
+    def intercity(self, request):
+        """Car drivers: take intercity trips too (hours away from your city)."""
+        serializer = ParcelsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        driver = self.driver
+        driver.accepts_intercity = serializer.validated_data["on"]
+        driver.save(update_fields=["accepts_intercity", "updated_at"])
         return Response(DriverStatusSerializer(driver).data)
 
     @extend_schema(request=LocationSerializer, responses=DriverStatusSerializer)

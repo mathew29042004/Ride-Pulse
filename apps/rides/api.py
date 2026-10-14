@@ -240,6 +240,10 @@ class TripSerializer(serializers.ModelSerializer):
             "is_favourite_driver",
             "service",
             "parcel",
+            "package_hours",
+            "package_km",
+            "round_trip",
+            "trip_days",
             "fare_offer",
             "offer_adjustment",
             "counter_offers",
@@ -329,9 +333,16 @@ class TripRequestSerializer(serializers.Serializer):
         slug_field="code", queryset=RideType.objects.filter(is_active=True)
     )
     pickup = PointSerializer()
-    dropoff = PointSerializer()
+    # Not needed for an hourly rental (it ends wherever the rider finishes).
+    dropoff = PointSerializer(required=False, allow_null=True)
     stop = PointSerializer(required=False, allow_null=True)
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
+    service = serializers.ChoiceField(
+        choices=["RIDE", "PARCEL", "RENTAL", "INTERCITY"], required=False, default="RIDE"
+    )
+    package_hours = serializers.IntegerField(required=False, allow_null=True, default=None)
+    round_trip = serializers.BooleanField(required=False, default=False)
+    days = serializers.IntegerField(required=False, default=1, min_value=1, max_value=7)
     tip = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
     boost = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=0)
     fare_offer = serializers.DecimalField(
@@ -660,6 +671,26 @@ class TripViewSet(
         serializer = TripRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        dropoff = data.get("dropoff")
+        if data["service"] in ("RENTAL", "INTERCITY"):
+            from . import packages
+
+            trip = packages.request_package_trip(
+                rider=request.user.rider_profile,
+                service=data["service"],
+                ride_type=data["ride_type"],
+                pickup=(data["pickup"]["lat"], data["pickup"]["lng"]),
+                dropoff=(dropoff["lat"], dropoff["lng"]) if dropoff else None,
+                pickup_address=data["pickup"].get("address", ""),
+                dropoff_address=(dropoff or {}).get("address", ""),
+                payment_method=data["payment_method"],
+                hours=data.get("package_hours"),
+                round_trip=data.get("round_trip", False),
+                days=data.get("days", 1),
+            )
+            return self._respond(trip, status.HTTP_201_CREATED)
+        if not dropoff:
+            raise serializers.ValidationError({"dropoff": ["Where are you going?"]})
         trip = services.request_trip(
             rider=request.user.rider_profile,
             ride_type=data["ride_type"],
@@ -1285,3 +1316,59 @@ class RideCheckViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseVie
         serializer.is_valid(raise_exception=True)
         check = safety.answer(self.get_object(), user=request.user, **serializer.validated_data)
         return Response(RideCheckSerializer(check).data)
+
+
+class PackageQuoteRequestSerializer(serializers.Serializer):
+    service = serializers.ChoiceField(choices=["RENTAL", "INTERCITY"])
+    pickup = PointSerializer()
+    dropoff = PointSerializer(required=False, allow_null=True)
+    package_hours = serializers.IntegerField(required=False, allow_null=True, default=None)
+    round_trip = serializers.BooleanField(required=False, default=False)
+    days = serializers.IntegerField(required=False, default=1, min_value=1, max_value=7)
+
+
+class PackageOptionSerializer(serializers.Serializer):
+    ride_type = serializers.SerializerMethodField()
+    pickup_eta_min = serializers.IntegerField(allow_null=True)
+    fare = FareSerializer()
+
+    @extend_schema_field(serializers.DictField())
+    def get_ride_type(self, option) -> dict:
+        rt = option["ride_type"]
+        return {"code": rt.code, "name": rt.name, "seats": rt.seats, "description": rt.description}
+
+
+class PackageQuoteSerializer(serializers.Serializer):
+    city = serializers.CharField(source="city.slug")
+    distance_km = serializers.DecimalField(max_digits=7, decimal_places=2, allow_null=True)
+    packages = serializers.ListField(child=serializers.DictField())
+    options = PackageOptionSerializer(many=True)
+
+
+class PackageQuoteView(ContextBindingMixin, APIView):
+    """Hourly rental and intercity prices for each car type."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "fare_estimate"
+
+    @extend_schema(
+        request=PackageQuoteRequestSerializer, responses=PackageQuoteSerializer, tags=["fares"]
+    )
+    def post(self, request):
+        from . import packages
+
+        if not request.user.is_rider:
+            raise ActionNotPermitted("Only riders can get rental and intercity quotes.")
+        serializer = PackageQuoteRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        dropoff = data.get("dropoff")
+        result = packages.quotes(
+            service=data["service"],
+            pickup=(data["pickup"]["lat"], data["pickup"]["lng"]),
+            dropoff=(dropoff["lat"], dropoff["lng"]) if dropoff else None,
+            hours=data.get("package_hours"),
+            round_trip=data.get("round_trip", False),
+            days=data.get("days", 1),
+        )
+        return Response(PackageQuoteSerializer(result).data)

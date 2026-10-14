@@ -77,6 +77,8 @@ class DriverProfile(AuditedModel, TimeStampedModel):
     going_home_uses = models.PositiveSmallIntegerField(default=0)
     # Bike drivers carry parcels unless they opt out.
     accepts_parcels = models.BooleanField(default=True)
+    # Car drivers take intercity trips (hours away from home) only if they opt in.
+    accepts_intercity = models.BooleanField(default=True)
     # Driver Wellbeing (see drivers.wellbeing): enforced rest after long driving stretches.
     break_until = models.DateTimeField(null=True, blank=True)
     break_warned_at = models.DateTimeField(null=True, blank=True)

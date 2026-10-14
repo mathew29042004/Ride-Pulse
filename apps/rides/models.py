@@ -171,6 +171,11 @@ class Trip(AuditedModel, TimeStampedModel):
     share_token = models.CharField(max_length=32, null=True, blank=True, unique=True)
     # Ride, parcel delivery, hourly rental or intercity (see pricing.models.Service).
     service = models.CharField(max_length=10, default="RIDE")
+    # Hourly rentals and intercity trips (see rides.packages).
+    package_hours = models.PositiveSmallIntegerField(null=True, blank=True)
+    package_km = models.PositiveSmallIntegerField(null=True, blank=True)
+    round_trip = models.BooleanField(default=False)
+    trip_days = models.PositiveSmallIntegerField(default=1)
     # Bid your fare (see rides.bids): the rider's offered total, and the agreed difference from
     # the usual fare (applied like a boost: all of it is the driver's).
     fare_offer = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)

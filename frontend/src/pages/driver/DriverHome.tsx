@@ -54,6 +54,17 @@ function OfferCard({ offer, onAccept, onDecline, onCounter, busy }: { offer: Off
       <div className="flex items-start justify-between">
         <div>
           <Badge tone="brand">{offer.service === "PARCEL" ? t("New parcel delivery") : `New ${offer.ride_type} request`}</Badge>
+          {offer.package && (
+            <div className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+              {offer.package.kind === "RENTAL"
+                ? t("Rental · {h} h / {km} km", { h: offer.package.hours, km: offer.package.km })
+                : t("Intercity to {place} · {km} km · {how}", {
+                    place: offer.package.destination,
+                    km: Math.round(Number(offer.package.km)),
+                    how: offer.package.round_trip ? t("round trip, {n} days", { n: offer.package.days }) : t("one way"),
+                  })}
+            </div>
+          )}
           {offer.parcel && (
             <div className="mt-1 flex items-center gap-1 text-xs font-semibold">
               <Package className="size-3.5" /> {t(offer.parcel.category)} · {t("up to {n} kg", { n: Number(offer.parcel.weight_kg) })}

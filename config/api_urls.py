@@ -66,6 +66,7 @@ urlpatterns = [
     path("auth/", include(auth_urls)),
     path("analytics/", include(analytics_urls)),
     path("fares/estimate/", pricing.FareEstimateView.as_view(), name="fare-estimate"),
+    path("fares/packages/", rides.PackageQuoteView.as_view(), name="fare-packages"),
     path("fares/nearby-drivers/", rides.NearbyDriversView.as_view(), name="nearby-drivers"),
     path("track/<str:token>/", rides.SharedTripView.as_view(), name="shared-trip"),
     path("places/", geo.PlaceSearchView.as_view(), name="places"),

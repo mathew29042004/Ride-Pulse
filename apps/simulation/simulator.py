@@ -48,6 +48,7 @@ from apps.rides.models import (
 
 from .fleet_data import PAYMENT_WEIGHTS, RIDE_TYPE_WEIGHTS
 
+PACKAGE_TRIP_REAL_SECONDS = timedelta(minutes=2)
 PARCEL_SHARE = 0.08  # of bot requests
 PARCEL_RECIPIENTS = ["Meena", "Arjun", "Fathima", "Rahul", "Divya", "Sanjay", "Kavya"]
 
@@ -194,6 +195,21 @@ class Simulator:
                 # The bot "hears" the PIN from the rider, exactly as a real driver would.
                 rides.start_trip(trip, driver=driver, otp=trip.otp)
                 bot.next_action_at = None
+        elif trip.status == TripStatus.IN_PROGRESS and trip.service in ("RENTAL", "INTERCITY"):
+            # Hours-long trips: a bot "fast-forwards" after two real minutes and ends at the
+            # destination with the package's distance, so demos don't take all afternoon.
+            if now - trip.started_at >= PACKAGE_TRIP_REAL_SECONDS:
+                drivers_svc.update_location(
+                    driver, lat=trip.dropoff_lat, lng=trip.dropoff_lng, record=False
+                )
+                rides.complete_trip(
+                    trip,
+                    driver=driver,
+                    actual_distance_km=trip.estimated_distance_km,
+                    payer_reference="bot@upi",
+                )
+                bot.waypoint = None
+                self.bump("trips_completed")
         elif trip.status == TripStatus.IN_PROGRESS and self._drive(
             driver, (trip.dropoff_lat, trip.dropoff_lng), self._route(trip)
         ):

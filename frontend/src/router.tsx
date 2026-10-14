@@ -16,6 +16,7 @@ const RiderLayout = lazy(() => import("./layouts/RiderLayout"));
 const TrackTrip = lazy(() => import("./pages/public/TrackTrip"));
 const RiderHome = lazy(() => import("./pages/rider/RiderHome"));
 const RiderBook = lazy(() => import("./pages/rider/RiderBook"));
+const RiderPackages = lazy(() => import("./pages/rider/RiderPackages"));
 const RiderTrip = lazy(() => import("./pages/rider/RiderTrip"));
 const RiderActivity = lazy(() => import("./pages/rider/RiderActivity"));
 const RiderWallet = lazy(() => import("./pages/rider/RiderWallet"));
@@ -91,6 +92,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: lazyPage(<RiderHome />) },
       { path: "book", element: lazyPage(<RiderBook />) },
+      { path: "packages", element: lazyPage(<RiderPackages />) },
       { path: "trips/:id", element: lazyPage(<RiderTrip />) },
       { path: "activity", element: lazyPage(<RiderActivity />) },
       { path: "wallet", element: lazyPage(<RiderWallet />) },

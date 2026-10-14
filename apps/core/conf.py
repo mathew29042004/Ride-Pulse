@@ -165,6 +165,28 @@ def sure_ride_terms() -> dict:
     }
 
 
+def rental_terms() -> dict:
+    return {
+        "packages": [(int(h), int(k)) for h, k in _value("RENTAL_PACKAGES")],
+        "rates": {
+            code: {key: Decimal(value) for key, value in rates.items()}
+            for code, rates in _value("RENTAL_RATES").items()
+        },
+    }
+
+
+def intercity_terms() -> dict:
+    low, high = _value("INTERCITY_RANGE_KM")
+    return {
+        "per_km": {code: Decimal(v) for code, v in _value("INTERCITY_PER_KM").items()},
+        "min_km_one_way": int(_value("INTERCITY_MIN_KM_ONE_WAY")),
+        "min_km_per_day": int(_value("INTERCITY_MIN_KM_PER_DAY")),
+        "allowance": _decimal("INTERCITY_DRIVER_ALLOWANCE"),
+        "min_km": int(low),
+        "max_km": int(high),
+    }
+
+
 def wellbeing_rules() -> dict:
     return {
         "max_minutes": int(_value("WELLBEING_MAX_DRIVING_MINUTES")),

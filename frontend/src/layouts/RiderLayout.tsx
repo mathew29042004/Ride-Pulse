@@ -12,7 +12,7 @@ const TABS = [
 
 export default function RiderLayout() {
   const { pathname } = useLocation();
-  const immersive = pathname.startsWith("/ride/book") || pathname.startsWith("/ride/trips/");
+  const immersive = pathname.startsWith("/ride/book") || pathname.startsWith("/ride/packages") || pathname.startsWith("/ride/trips/");
   const mapScreen = immersive || pathname === "/ride" || pathname === "/ride/";
   return (
     <PhoneFrame

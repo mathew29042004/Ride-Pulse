@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Clock, House, LocateFixed, MapPin, Package, Search } from "lucide-react";
+import { Briefcase, ChevronRight, Clock, House, LocateFixed, MapPin, MapPinned, Package, Search, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -147,17 +147,19 @@ export default function RiderHome() {
           </span>
         </button>
 
-        <button
-          onClick={() => navigate("/ride/book?service=PARCEL")}
-          className="mt-2 flex w-full items-center gap-3 rounded-2xl border border-line px-4 py-2.5 text-left transition hover:bg-surface-2"
-        >
-          <Package className="size-5 text-brand" />
-          <span className="flex-1">
-            <span className="block text-sm font-semibold">{t("Send a parcel")}</span>
-            <span className="block text-xs text-muted">{t("Documents, keys, food: delivered by bike")}</span>
-          </span>
-          <ChevronRight className="size-4 text-muted" />
-        </button>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {[
+            { to: "/ride/book?service=PARCEL", icon: Package, label: "Parcel", hint: "Send by bike" },
+            { to: "/ride/packages?service=RENTAL", icon: Timer, label: "Rentals", hint: "By the hour" },
+            { to: "/ride/packages?service=INTERCITY", icon: MapPinned, label: "Intercity", hint: "Outstation" },
+          ].map(({ to, icon: Icon, label, hint }) => (
+            <button key={to} onClick={() => navigate(to)} className="flex flex-col items-start gap-1 rounded-2xl border border-line px-3 py-2.5 text-left transition hover:bg-surface-2">
+              <Icon className="size-5 text-brand" />
+              <span className="text-sm font-semibold">{t(label)}</span>
+              <span className="text-[11px] text-muted">{t(hint)}</span>
+            </button>
+          ))}
+        </div>
 
         <div className="mt-2 text-xs text-muted">
           <MapPin className="mr-1 inline size-3.5" />

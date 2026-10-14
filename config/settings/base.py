@@ -214,6 +214,14 @@ SPECTACULAR_SETTINGS = {
         "TicketStatusEnum": "apps.support.models.TicketStatus",
         "OnlinePaymentMethodEnum": [("UPI", "UPI"), ("CARD", "CARD"), ("WALLET", "WALLET")],
         "ParcelCategoryEnum": "apps.rides.models.ParcelCategory",
+        "ServiceEnum": [
+            ("RIDE", "RIDE"),
+            ("PARCEL", "PARCEL"),
+            ("RENTAL", "RENTAL"),
+            ("INTERCITY", "INTERCITY"),
+        ],
+        "PackageServiceEnum": [("RENTAL", "RENTAL"), ("INTERCITY", "INTERCITY")],
+        "EstimateServiceEnum": [("RIDE", "RIDE"), ("PARCEL", "PARCEL")],
         "TicketCategoryEnum": "apps.support.models.TicketCategory",
     },
 }
@@ -336,6 +344,21 @@ RIDE_PULSE = {
     "SURE_RIDE_REFUND": "30",
     "SURE_RIDE_BUFFER_MINUTES": 4,
     "SURE_RIDE_MIN_MINUTES": 6,
+    # Hourly rentals: (hours, km included) packages; per-hour price and overage per car type
+    # (scaled by the city's fare multiplier).
+    "RENTAL_PACKAGES": [[1, 10], [2, 20], [4, 40], [8, 80]],
+    "RENTAL_RATES": {
+        "MINI": {"hour": "280", "extra_km": "12", "extra_min": "2"},
+        "SEDAN": {"hour": "340", "extra_km": "14", "extra_min": "2.5"},
+        "SUV": {"hour": "450", "extra_km": "18", "extra_min": "3"},
+    },
+    # Intercity (outstation): per km, with minimum billed km, and a daily driver allowance
+    # (100% to the driver). Tolls and parking are paid by the rider on the way.
+    "INTERCITY_PER_KM": {"MINI": "11", "SEDAN": "13", "SUV": "17"},
+    "INTERCITY_MIN_KM_ONE_WAY": 100,
+    "INTERCITY_MIN_KM_PER_DAY": 250,
+    "INTERCITY_DRIVER_ALLOWANCE": "300",
+    "INTERCITY_RANGE_KM": [40, 600],
     "WELLBEING_MAX_DRIVING_MINUTES": 360,
     "WELLBEING_BREAK_MINUTES": 20,
     "WELLBEING_WARN_MINUTES": 30,
