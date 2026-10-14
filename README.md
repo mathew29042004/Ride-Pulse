@@ -264,6 +264,25 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Razorpay** for wallet top-ups (test or live keys in `.env`): the server creates the order,
   Checkout takes the payment, and the wallet is credited only after the HMAC signature is
   verified, by the browser callback or the `payment.captured` webhook, whichever is first.
+* **Ride preferences and favourite drivers:** quiet ride, AC on, extra luggage and "woman
+  driver preferred" (women drivers nearby are offered the trip first). Favourite drivers get a
+  head start in dispatch when they're close.
+* **Ride Pass:** ₹99 for 30 days; no booking fee and 10% off every ride (up to ₹30 a ride).
+* **Split fare:** after a paid ride, ask friends by phone number; their share lands in the
+  rider's wallet when they pay.
+* **Price-drop alerts:** during surge, "tell me when prices drop" notifies the rider once
+  (with a ready-to-book link) when the zone's surge ends, for up to 2 hours.
+* **Lost and found:** up to 7 days after a ride the rider reports an item; the driver answers
+  Found / Not in my car, masked calls reopen for 24 hours, and a support ticket tracks it until
+  the item is handed back.
+* **Tamil and Hindi:** the rider and driver apps switch language from Account (kept on the
+  device); anything not yet translated shows in English.
+
+### More driver features
+* **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the
+  ledger (`DRIVER_GOALS`).
+* **Going-home mode:** twice a day, for an hour, only trips that take the driver at least 1 km
+  closer to their saved home are offered.
 
 ### Production essentials
 * **Phone login with SMS codes** (`/api/v1/auth/otp/…`): 6-digit codes stored only as HMACs,
