@@ -592,3 +592,70 @@ def test_ride_pass_api(api, rider):
     ).json()
     mini = next(o for o in estimate["options"] if o["ride_type"]["code"] == "MINI")
     assert any(line["code"] == "RIDE_PASS" for line in mini["fare"]["lines"])
+
+
+# --- Price-drop alerts ---------------------------------------------------------------------------
+
+
+def test_price_drop_alert_notifies_once_when_surge_eases(rider, mini, now):
+    from apps.geo.models import Zone
+    from apps.notifications.models import Notification
+    from apps.pricing import alerts
+    from apps.pricing.models import PriceAlertStatus
+
+    zone = Zone.objects.get(name="T. Nagar")
+    with pytest.raises(BusinessRuleViolation, match="normal level"):
+        alerts.create_alert(
+            rider, ride_type=mini, pickup=T_NAGAR, dropoff=(13.05, 80.2824), now=now
+        )
+
+    SurgeSnapshot.objects.create(
+        zone=zone, multiplier=Decimal("1.8"), demand=20, supply=4, computed_at=now
+    )
+    alert = alerts.create_alert(
+        rider,
+        ride_type=mini,
+        pickup=T_NAGAR,
+        dropoff=(13.05, 80.2824),
+        dropoff_address="Marina Beach",
+        now=now,
+    )
+    assert alert.surge_when_set == Decimal("1.8")
+
+    # Still surging: nothing happens.
+    assert alerts.check_alerts(now=now + timedelta(minutes=2))["notified"] == 0
+    # Demand calms down: the rider hears about it once, with the new (lower) fare.
+    SurgeSnapshot.objects.create(
+        zone=zone,
+        multiplier=Decimal("1.0"),
+        demand=3,
+        supply=9,
+        computed_at=now + timedelta(minutes=4),
+    )
+    assert alerts.check_alerts(now=now + timedelta(minutes=5))["notified"] == 1
+    alert.refresh_from_db()
+    assert (
+        alert.status == PriceAlertStatus.NOTIFIED and alert.fare_when_notified < alert.fare_when_set
+    )
+    note = Notification.objects.get(user=rider.user, title__startswith="Prices dropped")
+    assert "/ride/book?to=13.05,80.2824" in note.link and "Marina%20Beach" in note.link
+    assert alerts.check_alerts(now=now + timedelta(minutes=7))["notified"] == 0
+
+    # Unanswered alerts expire after two hours.
+    SurgeSnapshot.objects.create(
+        zone=zone,
+        multiplier=Decimal("1.6"),
+        demand=20,
+        supply=4,
+        computed_at=now + timedelta(minutes=8),
+    )
+    stale = alerts.create_alert(
+        rider,
+        ride_type=mini,
+        pickup=T_NAGAR,
+        dropoff=(13.05, 80.2824),
+        now=now + timedelta(minutes=8),
+    )
+    assert alerts.check_alerts(now=now + timedelta(hours=3))["expired"] == 1
+    stale.refresh_from_db()
+    assert stale.status == PriceAlertStatus.EXPIRED

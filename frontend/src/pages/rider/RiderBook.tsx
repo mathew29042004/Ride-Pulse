@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import {
   ArrowLeft,
   Banknote,
+  BellRing,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -124,6 +125,22 @@ export default function RiderBook() {
       setSelected(estimate.data.options[0].ride_type.code);
     }
   }, [estimate.data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "Tell me when prices drop": watch this route while surge pricing is on.
+  const [watching, setWatching] = useState<string | null>(null);
+  const watchPrice = useMutation({
+    mutationFn: () =>
+      api.post("price-alerts/", {
+        ride_type: selected,
+        pickup: { lat: pickup.lat, lng: pickup.lng, address: pickup.name },
+        dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, address: dropoff!.name },
+      }),
+    onSuccess: () => {
+      setWatching(selected);
+      toast.success("We'll notify you when prices drop on this route.");
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't set the alert."),
+  });
 
   const schedule = useMutation({
     mutationFn: () =>
@@ -416,6 +433,16 @@ export default function RiderBook() {
                   </Badge>
                 )}
               </div>
+              {option && Number(option.fare.surge_multiplier) > 1 && !scheduleAt && (
+                <button
+                  onClick={() => watchPrice.mutate()}
+                  disabled={watchPrice.isPending || watching === selected}
+                  className="mb-2 flex w-full items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-left text-xs font-semibold text-amber-900 disabled:opacity-80 dark:bg-amber-400/10 dark:text-amber-200"
+                >
+                  <BellRing className="size-4 shrink-0" />
+                  {watching === selected ? "We'll tell you when prices drop (for the next 2 hours)" : "Prices are high right now. Tell me when they drop"}
+                </button>
+              )}
               {pickingTime && (
                 <div className="mb-3 rounded-2xl bg-surface-2 p-3">
                   <SchedulePicker value={scheduleAt} onChange={setScheduleAt} />

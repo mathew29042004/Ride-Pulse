@@ -209,3 +209,48 @@ class RidePass(models.Model):
 
     def __str__(self) -> str:
         return f"{self.reference} ({self.starts_at:%d %b} – {self.ends_at:%d %b})"
+
+
+class PriceAlertStatus(models.TextChoices):
+    ACTIVE = "ACTIVE", "Watching"
+    NOTIFIED = "NOTIFIED", "Prices dropped"
+    EXPIRED = "EXPIRED", "Expired"
+    CANCELLED = "CANCELLED", "Cancelled"
+
+
+class PriceAlert(models.Model):
+    """A rider's "tell me when prices drop": watches surge on a route, notifies when it eases."""
+
+    rider = models.ForeignKey(
+        "riders.RiderProfile", on_delete=models.CASCADE, related_name="price_alerts"
+    )
+    ride_type = models.ForeignKey(RideType, on_delete=models.CASCADE, related_name="+")
+    city = models.ForeignKey("geo.City", on_delete=models.CASCADE, related_name="+")
+    pickup_lat = models.FloatField()
+    pickup_lng = models.FloatField()
+    pickup_address = models.CharField(max_length=255, blank=True)
+    dropoff_lat = models.FloatField()
+    dropoff_lng = models.FloatField()
+    dropoff_address = models.CharField(max_length=255, blank=True)
+    fare_when_set = models.DecimalField(max_digits=10, decimal_places=2)
+    surge_when_set = models.DecimalField(max_digits=4, decimal_places=2)
+    status = models.CharField(
+        max_length=9, choices=PriceAlertStatus.choices, default=PriceAlertStatus.ACTIVE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    notified_at = models.DateTimeField(null=True, blank=True)
+    fare_when_notified = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["expires_at"],
+                name="price_alert_active_idx",
+                condition=models.Q(status="ACTIVE"),
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.rider_id} {self.ride_type_id} ({self.status})"

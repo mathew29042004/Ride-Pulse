@@ -224,6 +224,7 @@ CELERY_BEAT_SCHEDULE = {
     "dispatch-sweep": {"task": "rides.dispatch_sweep", "schedule": timedelta(seconds=10)},
     "scheduled-rides": {"task": "rides.dispatch_scheduled_rides", "schedule": timedelta(minutes=1)},
     "surge-recompute": {"task": "pricing.recompute_surge", "schedule": timedelta(minutes=2)},
+    "price-alerts": {"task": "pricing.check_price_alerts", "schedule": timedelta(minutes=2)},
     "stale-drivers-offline": {
         "task": "drivers.mark_stale_drivers_offline",
         "schedule": timedelta(minutes=5),

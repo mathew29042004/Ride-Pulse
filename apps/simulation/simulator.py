@@ -27,6 +27,7 @@ from apps.geo.distance import arc, bearing_degrees, haversine_km, move_along, mo
 from apps.geo.google import decode_polyline
 from apps.geo.models import City
 from apps.payments import services as payments
+from apps.pricing import alerts as price_alerts
 from apps.pricing import services as pricing
 from apps.pricing.models import RideType
 from apps.riders.models import RiderProfile
@@ -364,6 +365,7 @@ class Simulator:
         self.rider_cancellations()
         if clock.monotonic() - self.last_surge > 60:
             pricing.recompute_surge()
+            price_alerts.check_alerts()
             self.last_surge = clock.monotonic()
 
     def run(self, *, duration: float | None = None, report_every: float = 30) -> None:

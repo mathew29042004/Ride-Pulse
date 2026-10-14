@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import mixins, serializers, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -13,7 +13,7 @@ from apps.core.exceptions import ActionNotPermitted
 from apps.geo.models import City
 
 from . import services
-from .models import FareRule, PromoCode, RideType, SurgeOverride
+from .models import FareRule, PriceAlert, PriceAlertStatus, PromoCode, RideType, SurgeOverride
 
 
 class RideTypeSerializer(serializers.ModelSerializer):
@@ -276,3 +276,72 @@ class PromoCodeViewSet(
     filterset_fields = ["is_active", "discount_type", "city"]
     search_fields = ["code", "description"]
     http_method_names = ["get", "post", "patch"]
+
+
+class PriceAlertSerializer(serializers.ModelSerializer):
+    ride_type = serializers.SlugRelatedField(slug_field="code", read_only=True)
+    ride_type_name = serializers.CharField(source="ride_type.name", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = PriceAlert
+        fields = [
+            "id",
+            "ride_type",
+            "ride_type_name",
+            "pickup_address",
+            "dropoff_address",
+            "dropoff_lat",
+            "dropoff_lng",
+            "fare_when_set",
+            "surge_when_set",
+            "status",
+            "status_label",
+            "expires_at",
+            "notified_at",
+            "fare_when_notified",
+        ]
+
+
+class PriceAlertRequestSerializer(serializers.Serializer):
+    ride_type = serializers.SlugRelatedField(
+        slug_field="code", queryset=RideType.objects.filter(is_active=True)
+    )
+    pickup = PointSerializer()
+    dropoff = PointSerializer()
+
+
+class PriceAlertViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, BaseViewSet):
+    """Routes a rider asked to watch ("tell me when prices drop") while surge pricing is on."""
+
+    queryset = PriceAlert.objects.select_related("ride_type")
+    serializer_class = PriceAlertSerializer
+    rider_lookup = "rider"
+    rider_actions = ("list", "create", "cancel")
+    filterset_fields = ["status"]
+
+    @extend_schema(request=PriceAlertRequestSerializer, responses={201: PriceAlertSerializer})
+    def create(self, request, *args, **kwargs):
+        from . import alerts
+
+        serializer = PriceAlertRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        alert = alerts.create_alert(
+            request.user.rider_profile,
+            ride_type=data["ride_type"],
+            pickup=(data["pickup"]["lat"], data["pickup"]["lng"]),
+            dropoff=(data["dropoff"]["lat"], data["dropoff"]["lng"]),
+            pickup_address=data["pickup"].get("address", ""),
+            dropoff_address=data["dropoff"].get("address", ""),
+        )
+        return Response(PriceAlertSerializer(alert).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses=PriceAlertSerializer)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        alert = self.get_object()
+        if alert.status == PriceAlertStatus.ACTIVE:
+            alert.status = PriceAlertStatus.CANCELLED
+            alert.save(update_fields=["status"])
+        return Response(PriceAlertSerializer(alert).data)
