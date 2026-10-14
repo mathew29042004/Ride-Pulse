@@ -47,6 +47,7 @@ class TransactionKind(models.TextChoices):
     REFUND = "REFUND", "Refund"
     REFERRAL_BONUS = "REFERRAL_BONUS", "Referral bonus"
     RIDE_PASS = "RIDE_PASS", "Ride Pass purchase"
+    FARE_SPLIT = "FARE_SPLIT", "Fare split share"
 
 
 class LedgerTransaction(models.Model):
@@ -113,6 +114,7 @@ class PaymentPurpose(models.TextChoices):
     TOP_UP = "TOP_UP", "Wallet top-up"
     DUES = "DUES", "Dues payment"
     PASS = "PASS", "Ride Pass"
+    SPLIT = "SPLIT", "Fare split"
 
 
 class Payment(TimeStampedModel):

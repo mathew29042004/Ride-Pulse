@@ -463,3 +463,35 @@ class ScheduledRide(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.rider_id} at {self.scheduled_for:%Y-%m-%d %H:%M}"
+
+
+class FareSplitStatus(models.TextChoices):
+    REQUESTED = "REQUESTED", "Waiting for payment"
+    PAID = "PAID", "Paid"
+    DECLINED = "DECLINED", "Declined"
+    CANCELLED = "CANCELLED", "Cancelled"
+
+
+class FareSplit(models.Model):
+    """One friend's share of a ride the rider paid for. Paying it reimburses the rider's wallet."""
+
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="splits")
+    friend = models.ForeignKey(
+        "riders.RiderProfile", on_delete=models.CASCADE, related_name="split_requests"
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=10, choices=FareSplitStatus.choices, default=FareSplitStatus.REQUESTED
+    )
+    payment_method = models.CharField(max_length=6, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["trip", "friend"], name="fare_split_friend_once"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.trip_id} split with {self.friend_id} ({self.status})"

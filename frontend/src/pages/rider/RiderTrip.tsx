@@ -9,6 +9,7 @@ import { BaseMap, CarMarker, FitBounds, type LatLng, PinMarker, RouteLine, route
 import { RideTypeArt } from "@/components/RideTypeArt";
 import { CallButton } from "@/components/CallButton";
 import { CarCheck, StartCode } from "@/components/PickupVerification";
+import { SplitFareCard } from "@/components/SplitFare";
 import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Modal, Sheet, Spinner, StarInput, Stars, Textarea } from "@/components/ui";
 import { api, ApiError, newIdempotencyKey, openFile } from "@/lib/api";
@@ -366,6 +367,7 @@ export default function RiderTrip() {
             </details>
 
             <InvoiceCard trip={trip} />
+            <SplitFareCard trip={trip} />
 
             <div className="mt-3 grid grid-cols-3 gap-2">
               <Button variant="secondary" icon={<Download className="size-4" />} onClick={() => openFile(`/api/v1/trips/${trip.id}/receipt/`)}>

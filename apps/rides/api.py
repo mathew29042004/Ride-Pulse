@@ -24,9 +24,10 @@ from apps.pricing.api import FareSerializer, PointSerializer
 from apps.pricing.models import RideType
 from apps.support.api import IncidentSerializer
 
-from . import calls, dispatch, invoices, pickup, services
+from . import calls, dispatch, invoices, pickup, services, splits
 from .models import (
     ACTIVE_STATUSES,
+    FareSplit,
     RidePreference,
     ScheduledRide,
     Trip,
@@ -297,6 +298,53 @@ class TripOfferSerializer(serializers.ModelSerializer):
         ]
 
 
+class FareSplitSerializer(serializers.ModelSerializer):
+    trip_number = serializers.CharField(source="trip.trip_number", read_only=True)
+    rider_name = serializers.CharField(source="trip.rider.name", read_only=True)
+    friend_name = serializers.CharField(source="friend.name", read_only=True)
+    ride_type = serializers.CharField(source="trip.ride_type.name", read_only=True)
+    dropoff_address = serializers.CharField(source="trip.dropoff_address", read_only=True)
+    trip_fare = serializers.DecimalField(
+        source="trip.fare_total", max_digits=10, decimal_places=2, read_only=True
+    )
+    completed_at = serializers.DateTimeField(source="trip.completed_at", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    incoming = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FareSplit
+        fields = [
+            "id",
+            "trip_id",
+            "trip_number",
+            "rider_name",
+            "friend_name",
+            "ride_type",
+            "dropoff_address",
+            "trip_fare",
+            "completed_at",
+            "amount",
+            "status",
+            "status_label",
+            "incoming",
+            "created_at",
+        ]
+
+    def get_incoming(self, split) -> bool:
+        """True when the viewer is the friend asked to pay (not the rider who asked)."""
+        request = self.context.get("request")
+        return bool(request and split.friend.user_id == request.user.pk)
+
+
+class SplitRequestSerializer(serializers.Serializer):
+    phones = serializers.ListField(child=serializers.CharField(max_length=20), min_length=1)
+
+
+class SplitPaySerializer(serializers.Serializer):
+    method = serializers.ChoiceField(choices=["UPI", "CARD", "WALLET"])
+    payer_reference = serializers.CharField(required=False, allow_blank=True, max_length=60)
+
+
 class TripFilter(django_filters.FilterSet):
     since = django_filters.IsoDateTimeFilter(field_name="requested_at", lookup_expr="gte")
     until = django_filters.IsoDateTimeFilter(field_name="requested_at", lookup_expr="lt")
@@ -342,6 +390,7 @@ RIDER = (
     "email_invoice",
     "boost",
     "favourite",
+    "split",
 )
 DRIVER = (
     "list",
@@ -540,6 +589,20 @@ class TripViewSet(
             )
             return Response(TripMessageSerializer(message).data, status=status.HTTP_201_CREATED)
         return Response(TripMessageSerializer(trip.messages.all(), many=True).data)
+
+    @extend_schema(request=SplitRequestSerializer, responses=FareSplitSerializer(many=True))
+    @action(detail=True, methods=["get", "post"])
+    def split(self, request, pk=None):
+        """Split this ride's fare with friends (POST) or see who has paid (GET)."""
+        trip = self.get_object()
+        if request.method == "POST":
+            serializer = SplitRequestSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            splits.request_split(
+                trip, user=request.user, phones=serializer.validated_data["phones"]
+            )
+        rows = trip.splits.select_related("friend__user", "trip__rider__user", "trip__ride_type")
+        return Response(FareSplitSerializer(rows, many=True).data)
 
     @extend_schema(request=FavouriteSerializer, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])
@@ -875,3 +938,43 @@ class ScheduledRideViewSet(
     def cancel(self, request, pk=None):
         ride = services.cancel_scheduled_ride(self.get_object(), user=request.user)
         return Response(ScheduledRideSerializer(ride).data)
+
+
+class FareSplitViewSet(mixins.ListModelMixin, BaseViewSet):
+    """Fare-split requests: ones sent to me (to pay or decline) and ones I sent (to track)."""
+
+    serializer_class = FareSplitSerializer
+    rider_actions = ("list", "pay", "decline", "cancel")
+    filterset_fields = ["status"]
+
+    def get_queryset(self):
+        from django.db.models import Q
+
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_rider:
+            return FareSplit.objects.none()
+        me = self.request.user
+        return FareSplit.objects.select_related(
+            "trip__rider__user", "trip__ride_type", "friend__user"
+        ).filter(Q(friend__user=me) | Q(trip__rider__user=me))
+
+    @extend_schema(request=SplitPaySerializer, responses=FareSplitSerializer)
+    @action(detail=True, methods=["post"])
+    def pay(self, request, pk=None):
+        serializer = SplitPaySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        split = splits.pay_split(self.get_object(), user=request.user, **serializer.validated_data)
+        return Response(FareSplitSerializer(split).data)
+
+    @extend_schema(request=None, responses=FareSplitSerializer)
+    @action(detail=True, methods=["post"])
+    def decline(self, request, pk=None):
+        return Response(
+            FareSplitSerializer(splits.decline_split(self.get_object(), user=request.user)).data
+        )
+
+    @extend_schema(request=None, responses=FareSplitSerializer)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        return Response(
+            FareSplitSerializer(splits.cancel_split(self.get_object(), user=request.user)).data
+        )

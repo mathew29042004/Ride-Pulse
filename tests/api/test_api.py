@@ -719,3 +719,67 @@ def test_web_push_reaches_subscribed_devices(
     with mock.patch("pywebpush.webpush", side_effect=gone):
         assert push.send(rider.user.pk, title="x") == 0
     assert not PushSubscription.objects.filter(user=rider.user).exists()
+
+
+def test_split_fare_with_friends(api, rider, make_driver, now):
+    from decimal import Decimal
+
+    from apps.payments.services import verify_ledger, wallet_balance
+    from apps.rides import services as rides
+    from tests.integration.helpers import book, drive_to_completion
+
+    friend_a, friend_b = make_rider(), make_rider()
+    make_driver(now=now)
+    trip = drive_to_completion(
+        book(rider, rides.RideType.objects.get(code="MINI"), now=now), now=now
+    )
+    client = api(rider.user)
+    url = f"/api/v1/trips/{trip.pk}/split/"
+
+    assert client.post(url, {"phones": ["9999999999"]}, format="json").status_code == 422  # unknown
+    sent = client.post(
+        url, {"phones": [friend_a.user.phone, "+91 " + friend_b.user.phone]}, format="json"
+    ).json()
+    share = (trip.fare_total / 3).quantize(Decimal("0.01"), rounding="ROUND_DOWN")
+    assert [s["amount"] for s in sent] == [str(share)] * 2
+    assert (
+        client.post(url, {"phones": [friend_a.user.phone]}, format="json").status_code == 409
+    )  # once
+
+    # Friend A pays by UPI: the money lands in the rider's wallet.
+    before = wallet_balance(rider.user)
+    a_split = api(friend_a.user).get("/api/v1/fare-splits/").json()["results"][0]
+    assert a_split["rider_name"] == rider.name and a_split["status"] == "REQUESTED"
+    assert a_split["incoming"] is True  # sent to friend A to pay
+    assert all(not row["incoming"] for row in client.get("/api/v1/fare-splits/").json()["results"])
+    paid = (
+        api(friend_a.user)
+        .post(
+            f"/api/v1/fare-splits/{a_split['id']}/pay/",
+            {"method": "UPI", "payer_reference": "a@upi"},
+        )
+        .json()
+    )
+    assert paid["status"] == "PAID" and wallet_balance(rider.user) == before + share
+    assert (
+        api(friend_a.user)
+        .post(f"/api/v1/fare-splits/{a_split['id']}/pay/", {"method": "UPI"})
+        .status_code
+        == 409
+    )
+
+    # Friend B declines; the rider sees both outcomes.
+    b_split = api(friend_b.user).get("/api/v1/fare-splits/").json()["results"][0]
+    assert (
+        api(friend_b.user).post(f"/api/v1/fare-splits/{b_split['id']}/decline/").json()["status"]
+        == "DECLINED"
+    )
+    assert sorted(s["status"] for s in client.get(url).json()) == ["DECLINED", "PAID"]
+    # Strangers can't see or pay other people's splits.
+    assert (
+        api(make_rider().user)
+        .post(f"/api/v1/fare-splits/{a_split['id']}/pay/", {"method": "UPI"})
+        .status_code
+        == 404
+    )
+    assert verify_ledger()["balanced"]

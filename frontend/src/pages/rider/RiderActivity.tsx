@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { RideTypeArt } from "@/components/RideTypeArt";
 import { formatWhen } from "@/components/SchedulePicker";
+import { SplitRequests } from "@/components/SplitFare";
 import { Button, EmptyState, Skeleton, StatusBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { dateTime, inr } from "@/lib/format";
@@ -65,6 +66,7 @@ export default function TripHistory({ base = "/ride", title = "Activity" }: { ba
         <p className="text-sm text-muted">{trips.data ? `${trips.data.count} trips` : " "}</p>
       </div>
       <div className="flex-1 px-3">
+        {base === "/ride" && <SplitRequests />}
         {base === "/ride" && <Upcoming />}
         {trips.isLoading &&
           [0, 1, 2, 3].map((i) => <Skeleton key={i} className="mx-2 mb-3 h-20" />)}
