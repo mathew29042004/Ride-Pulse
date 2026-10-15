@@ -60,6 +60,14 @@ def api_exception_handler(exc, context):
     response = exception_handler(exc, context)
     if response is None:
         return None
+    if (
+        isinstance(exc, exceptions.Throttled)
+        and getattr(exc, "default_code", "") != "account_locked"
+    ):
+        from apps.reliability.security import throttled
+
+        view = context.get("view")
+        throttled(context.get("request"), getattr(view, "throttle_scope", "") or "", exc.wait)
 
     if isinstance(exc, exceptions.ValidationError):
         response.data = _envelope("validation_error", "Invalid input.", details=response.data)

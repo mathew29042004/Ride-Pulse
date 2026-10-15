@@ -5,10 +5,25 @@
  *   the app shell when offline. Every route serves the same index.html, so one copy covers all.
  * - Built assets (/static/app/assets/*): cache first. Their names contain a content hash, so a
  *   cached file can never be stale.
- * - Everything else (the API, WebSockets, map tiles) goes straight to the network: live data
- *   must never come from a cache.
+ * - A few read-only API screens (my profile, my active trip, earnings, quests, statements):
+ *   network first, with the last good copy as an offline fallback (marked with an
+ *   X-From-Cache header). Cleared on sign-out so a shared phone never shows the last user's data.
+ * - Everything else (other API calls, WebSockets, map tiles) goes straight to the network: live
+ *   data must never come from a cache.
  */
 const CACHE = "ride-pulse-v1";
+const API_CACHE = "ride-pulse-api-v1";
+const OFFLINE_READS = [
+  /^\/api\/v1\/(rider|driver)\/me\/$/,
+  /^\/api\/v1\/trips\/active\/$/,
+  /^\/api\/v1\/driver\/earnings\//,
+  /^\/api\/v1\/driver\/biz\/(quests|statements|vehicle)\/$/,
+  /^\/api\/v1\/wallet\/$/,
+];
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "clear-api-cache") event.waitUntil(caches.delete(API_CACHE));
+});
 const SHELL = "/__shell";
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -17,7 +32,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE && key !== API_CACHE).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -39,6 +54,30 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => caches.match(SHELL).then((cached) => cached || Response.error())),
+    );
+    return;
+  }
+
+  if (OFFLINE_READS.some((pattern) => pattern.test(url.pathname))) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(API_CACHE).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.open(API_CACHE).then((cache) =>
+            cache.match(request).then((cached) => {
+              if (!cached) return Response.error();
+              const headers = new Headers(cached.headers);
+              headers.set("X-From-Cache", "1");
+              return cached.blob().then((body) => new Response(body, { status: cached.status, headers }));
+            }),
+          ),
+        ),
     );
     return;
   }

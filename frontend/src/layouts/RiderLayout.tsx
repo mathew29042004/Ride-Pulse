@@ -1,6 +1,7 @@
 import { Clock, House, User, Wallet } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
 
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { FrameAside, PhoneFrame } from "@/components/PhoneFrame";
 
 const TABS = [
@@ -35,6 +36,7 @@ export default function RiderLayout() {
         </FrameAside>
       }
     >
+      <OfflineBanner />
       <Outlet />
     </PhoneFrame>
   );

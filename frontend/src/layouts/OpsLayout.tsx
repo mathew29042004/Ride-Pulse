@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { BadgeIndianRupee, BellRing, Building2, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, BellRing, Building2, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar, Badge, Select } from "@/components/ui";
@@ -74,6 +75,7 @@ const NAV = [
       { to: "/ops/support", label: "Support", icon: Headset, cap: "support.view" },
       { to: "/ops/safety", label: "Safety (SOS)", icon: ShieldAlert, cap: "safety.manage", badge: "sos" as const },
       { to: "/ops/audit", label: "Audit trail", icon: ScrollText, cap: "audit.view" },
+      { to: "/ops/platform", label: "Platform health", icon: Activity, cap: "audit.view" },
       { to: "/ops/work", label: "Work", icon: ClipboardList, cap: "work.use" },
       { to: "/ops/team", label: "Team", icon: Network, cap: "team.view" },
     ],
@@ -213,6 +215,7 @@ export default function OpsLayout() {
           </header>
           <main className="min-h-0 flex-1 overflow-y-auto">
             <div className={clsx(pathname === "/ops/live" ? "h-full" : "mx-auto max-w-7xl px-4 py-6 lg:px-8")}>
+              <OfflineBanner />
               <Outlet />
             </div>
           </main>

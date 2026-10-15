@@ -1,6 +1,7 @@
 import { FileCheck, IndianRupee, Navigation, User } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
 
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { FrameAside, PhoneFrame } from "@/components/PhoneFrame";
 
 const TABS = [
@@ -31,6 +32,7 @@ export default function DriverLayout() {
         </FrameAside>
       }
     >
+      <OfflineBanner />
       <Outlet />
     </PhoneFrame>
   );

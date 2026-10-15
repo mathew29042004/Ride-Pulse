@@ -295,6 +295,20 @@ def raise_sos(
             level=Level.DANGER,
             link=f"/ops/safety/{incident.pk}/",
         )
+    from apps.reliability.outbox import emit
+
+    emit(
+        "safety.sos",
+        {
+            "incident_number": incident.incident_number,
+            "trip_id": trip.pk,
+            "city": trip.city.slug,
+            "ambulance": ambulance,
+            "lat": incident.lat,
+            "lng": incident.lng,
+        },
+        aggregate=f"incident:{incident.pk}",
+    )
     broadcast.ops_event(
         "sos",
         {"incident_id": incident.pk, "trip_id": trip.pk, "lat": incident.lat, "lng": incident.lng},

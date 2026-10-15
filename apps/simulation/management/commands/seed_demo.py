@@ -49,6 +49,9 @@ class Command(BaseCommand):
         from apps.fleet import demo as fleet_demo
 
         stats.update(fleet_demo.seed(log=self.stdout.write))
+        from apps.reliability import demo as reliability_demo
+
+        stats.update(reliability_demo.seed(log=self.stdout.write))
         from apps.intelligence import demo as intelligence_demo
 
         stats.update(intelligence_demo.seed(log=self.stdout.write))

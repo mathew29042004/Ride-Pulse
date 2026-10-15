@@ -725,6 +725,14 @@ class TripViewSet(
             TripSerializer(trip, context=self.get_serializer_context()).data, status=code
         )
 
+    def get_throttles(self):
+        # Booking spam gets its own budget; SOS is never rate limited.
+        if self.action == "sos":
+            return []
+        if self.action == "create":
+            self.throttle_scope = "booking"
+        return super().get_throttles()
+
     @extend_schema(request=TripRequestSerializer, responses={201: TripSerializer})
     def create(self, request, *args, **kwargs):
         serializer = TripRequestSerializer(data=request.data)

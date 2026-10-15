@@ -71,9 +71,13 @@ format: ## Auto-format Python
 	$(PY) -m ruff check --fix .
 	$(PY) -m ruff format .
 
+contract: ## Refresh the API contract snapshot after a deliberate API change
+	$(MANAGE) api_contract --update
+
 check: lint test ## Everything CI runs
 	$(MANAGE) makemigrations --check --dry-run
 	$(MANAGE) spectacular --fail-on-warn --file /dev/null
+	$(MANAGE) api_contract
 
 docker-up: ## Full stack in Docker (Postgres, Redis, web, worker, beat, simulator)
 	docker compose up --build

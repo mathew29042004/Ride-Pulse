@@ -32,6 +32,7 @@ from apps.core.conf import (
     offer_timeout_seconds,
 )
 from apps.core.exceptions import ActionNotPermitted, InvalidStateTransition
+from apps.core.tasks import enqueue
 from apps.drivers import day_pass, goals, wellbeing
 from apps.drivers.models import Availability, DriverProfile, Gender
 from apps.drivers.safety import dispatch_penalty_minutes
@@ -196,7 +197,7 @@ def _push_offer(offer: TripOffer, driver: DriverProfile) -> None:
         "ttl": seconds,
         "urgent": True,
     }
-    transaction.on_commit(lambda: send_push.delay(driver.user_id, **message))
+    enqueue(send_push, driver.user_id, **message)
 
 
 def offer_payload(offer: TripOffer) -> dict:

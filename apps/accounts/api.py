@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, mixins, serializers, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import AuthenticationFailed, Throttled
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -55,6 +57,14 @@ class UserSerializer(serializers.ModelSerializer):
         return sorted(user.capabilities)
 
 
+class AccountLocked(Throttled):
+    default_detail = "Too many wrong passwords."
+    default_code = "account_locked"
+
+    def __init__(self, detail: str):
+        super().__init__(wait=None, detail=detail)
+
+
 class RidePulseTokenSerializer(TokenObtainPairSerializer):
     """Adds the role and name to the JWT and returns the user next to the tokens."""
 
@@ -66,15 +76,35 @@ class RidePulseTokenSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        data = super().validate(attrs)
+        from apps.reliability import security
+
+        email = str(attrs.get(self.username_field, ""))
+        request = self.context.get("request")
+        until = security.locked_until(email)
+        if until:
+            minutes = max(1, round((until - timezone.now()).total_seconds() / 60))
+            raise AccountLocked(
+                f"Too many wrong passwords. Try again in {minutes} min, "
+                "or sign in with a phone code."
+            )
+        try:
+            data = super().validate(attrs)
+        except AuthenticationFailed:
+            if security.login_failed(email, request=request):
+                raise AccountLocked(
+                    "Too many wrong passwords. Your account is locked for 15 minutes."
+                ) from None
+            raise
         data["user"] = UserSerializer(self.user).data
         return data
 
 
 class TokenView(TokenObtainPairView):
-    """Exchange email and password for an access token (30 min) and refresh token (7 days)."""
+    """Exchange email and password for an access token (30 min) and refresh token (7 days).
+    Five wrong passwords in 15 minutes lock the account for 15 minutes."""
 
     serializer_class = RidePulseTokenSerializer
+    throttle_scope = "login"
 
 
 def tokens_for(user) -> dict:

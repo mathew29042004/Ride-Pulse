@@ -13,6 +13,7 @@ GST G::
                                                                   and owes the platform's share)
 """
 
+import logging
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -50,6 +51,8 @@ MIN_TIP = Decimal(10)
 MAX_TIP = Decimal(500)
 
 Leg = tuple["Wallet | str", Decimal]
+
+logger = logging.getLogger(__name__)
 
 
 class UnbalancedTransaction(Exception):
@@ -161,7 +164,13 @@ def gateway_charge(
             if existing.user_id != user.pk or existing.amount != money(amount):
                 raise ConflictError("This idempotency key was already used for another payment.")
             return existing, False
-    result = gateway.charge(money(amount), method=method, payer_reference=payer_reference)
+    try:
+        result = gateway.charge(money(amount), method=method, payer_reference=payer_reference)
+    except Exception:  # gateway down or timing out: a failed payment, not a crashed request
+        logger.exception("Payment gateway unavailable")
+        result = gateway.GatewayResult(
+            succeeded=False, reference="", failure_reason="Payment gateway unavailable, try again."
+        )
     try:
         with transaction.atomic():
             payment = Payment.objects.create(
@@ -351,6 +360,19 @@ def refund_to_wallet(trip, amount: Decimal, *, reason: str, actor=None) -> Ledge
         trip=trip,
         description=f"Refund for {trip.trip_number}: {reason}",
         actor=actor,
+    )
+    from apps.reliability.outbox import emit
+
+    emit(
+        "payment.refunded",
+        {
+            "trip_id": trip.pk,
+            "trip_number": trip.trip_number,
+            "amount": amount,
+            "reason": reason,
+            "payment_profile_id": trip.payment_profile_id,
+        },
+        aggregate=f"trip:{trip.pk}",
     )
     notify(
         trip.rider.user,
@@ -607,6 +629,21 @@ def _fleet_owner_payouts(period_start, period_end, now) -> list[Payout]:
 
 
 def _send_payout(payout: Payout, wallet: Wallet, now) -> Payout:
+    from apps.reliability.outbox import emit
+
+    emit(
+        "payout.created",
+        {
+            "payout_number": payout.payout_number,
+            "amount": payout.amount,
+            "driver_id": payout.driver_id,
+            "fleet_owner_id": payout.fleet_owner_id,
+            "period_start": payout.period_start,
+            "period_end": payout.period_end,
+        },
+        aggregate=f"payout:{payout.pk}",
+        at=now,
+    )
     post(
         TransactionKind.PAYOUT,
         [(wallet, -payout.amount), (accounts.PAYOUTS_IN_TRANSIT, payout.amount)],

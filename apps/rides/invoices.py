@@ -9,7 +9,6 @@
 """
 
 from django.core.mail import EmailMultiAlternatives
-from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -21,6 +20,7 @@ from apps.core.conf import (
     support_email,
 )
 from apps.core.sequences import next_reference
+from apps.core.tasks import enqueue
 from apps.payments.models import PaymentMethod
 
 from .models import PricingMode, Trip, TripPaymentStatus, TripStatus
@@ -134,4 +134,4 @@ def send_after_commit(trip: Trip) -> None:
 
     ensure_number(trip)
     if can_email(trip):
-        transaction.on_commit(lambda: email_invoice.delay(trip.pk))
+        enqueue(email_invoice, trip.pk)

@@ -22,6 +22,7 @@ import { TripChat } from "@/components/TripChat";
 import { Avatar, Badge, Button, Input, Modal, Sheet, StarInput, Stars } from "@/components/ui";
 import { buzz, chime } from "@/lib/alert";
 import { api, ApiError } from "@/lib/api";
+import { sendLocation } from "@/lib/offline";
 import { inr, km, minutes } from "@/lib/format";
 import { usePhoneGps } from "@/lib/gps";
 import { PREFERENCES } from "@/lib/preferences";
@@ -285,18 +286,15 @@ export default function DriverHome() {
     else if (city) setPos({ lat: city.center_lat, lng: city.center_lng, heading: null });
   }, [driver, city, pos]);
 
-  const sendLocation = useCallback(async (next: Pos) => {
+  const pushLocation = useCallback(async (next: Pos) => {
     setPos(next);
     lastSent.current = Date.now();
-    try {
-      await api.post("driver/location/", { lat: next.lat, lng: next.lng, heading: next.heading ?? undefined });
-    } catch {
-      /* transient network errors are fine for GPS pings */
-    }
+    // Offline: the fix is kept with its time and replayed when the signal comes back.
+    await sendLocation({ lat: next.lat, lng: next.lng, heading: next.heading });
   }, []);
 
   const gpsState = usePhoneGps(phoneGps && online, (fix) => {
-    sendLocation({ lat: fix.lat, lng: fix.lng, heading: fix.heading ?? posRef.current?.heading ?? null });
+    pushLocation({ lat: fix.lat, lng: fix.lng, heading: fix.heading ?? posRef.current?.heading ?? null });
   });
   useEffect(() => {
     if (gpsState === "denied") toast.error("Location permission is blocked. Allow it in the browser to use phone GPS.");
@@ -334,13 +332,13 @@ export default function DriverHome() {
       if (!current) return;
       if (following) {
         const next = advanceAlong(route, [current.lat, current.lng], 0.18);
-        sendLocation({ lat: next.at[0], lng: next.at[1], heading: next.heading });
+        pushLocation({ lat: next.at[0], lng: next.at[1], heading: next.heading });
       } else {
-        sendLocation(stepTowards(current, target, 0.18));
+        pushLocation(stepTowards(current, target, 0.18));
       }
     }, 1200);
     return () => clearInterval(t);
-  }, [autopilot, target, following, route, sendLocation]);
+  }, [autopilot, target, following, route, pushLocation]);
 
   const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : "Something went wrong.");
   const refresh = () => {
@@ -448,7 +446,7 @@ export default function DriverHome() {
             />
           )}
           {offer && <PinMarker lat={offer.pickup.lat} lng={offer.pickup.lng} kind="pickup" label="Pickup" />}
-          {!autopilot && !phoneGps && <MapClick onClick={(lat, lng) => sendLocation({ lat, lng, heading: pos.heading })} />}
+          {!autopilot && !phoneGps && <MapClick onClick={(lat, lng) => pushLocation({ lat, lng, heading: pos.heading })} />}
         </BaseMap>
       </div>
 

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.workspace",
     "apps.intelligence",
     "apps.fleet",
+    "apps.reliability",
 ]
 
 MIDDLEWARE = [
@@ -183,6 +184,8 @@ REST_FRAMEWORK = {
         "location": "240/min",
         "registration": "10/hour",
         "otp": "10/min",
+        "login": "20/min",
+        "booking": "30/hour",
     },
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -248,6 +251,7 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BEAT_SCHEDULE = {
+    "outbox-relay": {"task": "reliability.relay_outbox", "schedule": timedelta(seconds=10)},
     "fleet-upkeep": {"task": "fleet.upkeep_sweep", "schedule": crontab(hour=7, minute=30)},
     "fleet-quests": {"task": "fleet.end_quests", "schedule": timedelta(minutes=15)},
     "intel-alerts": {"task": "intelligence.check_alerts", "schedule": timedelta(minutes=5)},

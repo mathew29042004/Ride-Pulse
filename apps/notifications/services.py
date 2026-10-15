@@ -5,7 +5,8 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 
 from django.contrib.auth import get_user_model
-from django.db import transaction
+
+from apps.core.tasks import enqueue
 
 from .models import Level, Notification
 
@@ -40,7 +41,7 @@ def notify(
     if email and user.email and not user.email.endswith(".invalid"):
         from .tasks import send_notification_email
 
-        transaction.on_commit(lambda: send_notification_email.delay(notification.pk))
+        enqueue(send_notification_email, notification.pk)
     _push(user, title=title[:160], body=body[:300], url=link or "/")
     return notification
 
@@ -53,7 +54,7 @@ def _push(user, **message) -> None:
     if push.enabled() and PushSubscription.objects.filter(user=user).exists():
         from .tasks import send_push
 
-        transaction.on_commit(lambda: send_push.delay(user.pk, **message))
+        enqueue(send_push, user.pk, **message)
 
 
 def notify_users(users: Iterable, title: str, body: str = "", **kwargs) -> int:

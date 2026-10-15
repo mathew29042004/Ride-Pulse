@@ -510,6 +510,37 @@ Sentry, metrics token) are set in the Render dashboard, never in git.
 **Anywhere with Docker:** `docker compose up --build` runs the full stack (Postgres, Redis, web,
 Celery worker and beat, simulator).
 
+### Reliability and security (`apps/reliability`)
+* **Transactional outbox:** trip requested/completed/cancelled, refunds, payouts, SOS and fraud
+  cases are written as events in the same database transaction as the change, so an event is
+  never lost after a commit and never sent for a change that rolled back. A relay (every 10 s,
+  `SELECT … FOR UPDATE SKIP LOCKED`) fans them out to **webhooks**: HMAC-SHA256 signed, an event
+  id for idempotent consumers, exponential backoff, a dead-letter queue with replay, and
+  endpoints switched off after 50 failures in a row. Deliveries are claimed with a lease and
+  sent outside any transaction (network calls never hold database locks). Events carry ids,
+  money and places, not personal data. Ops > Platform health shows lag, deliveries and the
+  built-in demo receiver.
+* **Abuse protection:** five wrong passwords in 15 minutes lock an account for 15 minutes
+  (state in PostgreSQL, so it holds across app servers; the owner is emailed; ops can unlock).
+  Rate limits per IP, per user and per endpoint (login, OTP, booking, GPS, fare estimates);
+  SOS is never rate limited. Every lock and rate-limit hit is in the security log.
+* **Works offline:** GPS fixes and chat messages taken without signal are kept on the phone
+  (IndexedDB) and replayed in order when it reconnects (`driver/location/batch/` keeps each
+  fix's own timestamp, up to 30 minutes old). Key screens (profile, active trip, earnings,
+  quests, statements, wallet) open from the last good copy; an offline banner says what's
+  pending; everything is wiped on sign-out or sign-in on a shared phone.
+* **API contract tests:** `docs/api/openapi.json` is the committed contract. The suite fails on a
+  breaking change (removed endpoint or response field, changed type, newly required request
+  field, removed enum value); additions are fine. `make contract` refreshes it on purpose.
+* **Chaos tests** (`tests/integration/test_chaos.py`) break one dependency at a time (the
+  real-time layer, the task broker, Google Maps and Translate, the payment gateway, a partner's
+  webhook) and check that rides still complete and money still balances. They found and fixed
+  three real bugs: a gateway outage crashed trip completion, a broker outage failed requests
+  after their data was saved, and a non-HTTP network error could crash webhook delivery.
+* **CI** (`.github/workflows/ci.yml`): lint, migrations, OpenAPI warnings, the API contract,
+  tests with coverage, the React build, Playwright browser tests, a dependency vulnerability
+  audit (pip-audit, npm audit), the dbt project, and the Docker image.
+
 ### Production checklist
 * `python manage.py check --deploy` passes with `config.settings.prod` (HSTS, secure cookies,
   SSL redirect, `X-Frame-Options`, content-type sniffing off).

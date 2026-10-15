@@ -430,6 +430,10 @@ class Simulator:
                 self.log(f"  bot {bot.driver_id}: {exc.message}")
         dispatch.sweep()
         rides.dispatch_scheduled_rides()
+        from apps.reliability import outbox
+
+        outbox.relay()
+        outbox.deliver_due()
         if clock.monotonic() - self.last_ride_check > 30:
             ride_safety.run_ride_checks()
             ride_safety.answer_for_bots()

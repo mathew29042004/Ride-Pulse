@@ -50,6 +50,7 @@ const OpsAudit = lazy(() => import("./pages/ops/OpsAudit"));
 const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
 const OpsWork = lazy(() => import("./pages/ops/work/OpsWork"));
 const FleetPortal = lazy(() => import("./pages/fleet/FleetPortal"));
+const OpsPlatform = lazy(() => import("./pages/ops/OpsPlatform"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
 const OpsQuests = lazy(() => opsFleet().then((m) => ({ default: m.OpsQuests })));
@@ -185,6 +186,7 @@ export const router = createBrowserRouter([
       { path: "team", element: lazyPage(<OpsTeam />) },
       { path: "work", element: lazyPage(<OpsWork />) },
       { path: "briefing", element: lazyPage(<OpsBriefing />) },
+      { path: "platform", element: lazyPage(<OpsPlatform />) },
       { path: "fleet-owners", element: lazyPage(<OpsFleetOwners />) },
       { path: "quests", element: lazyPage(<OpsQuests />) },
       { path: "upkeep", element: lazyPage(<OpsUpkeep />) },

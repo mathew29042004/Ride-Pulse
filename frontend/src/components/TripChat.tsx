@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui";
 import { buzz } from "@/lib/alert";
 import { api, ApiError } from "@/lib/api";
+import { sendMessage } from "@/lib/offline";
 import { time } from "@/lib/format";
 import { t, useLanguage } from "@/lib/i18n";
 import { useSocket } from "@/lib/ws";
@@ -53,7 +54,8 @@ function useTripChat(tripId: number, me: Sender) {
   });
 
   const send = useMutation({
-    mutationFn: (body: string) => api.post<ChatMessage>(`trips/${tripId}/messages/`, { body }),
+    // Offline: the message waits on the phone and goes out when the connection returns.
+    mutationFn: (body: string) => sendMessage<ChatMessage>(`trips/${tripId}/messages/`, { body }),
     onMutate: async (body) => {
       await qc.cancelQueries({ queryKey: key });
       const temp: ChatMessage = { id: -Date.now(), trip_id: tripId, sender: me, body, created_at: new Date().toISOString(), pending: true };
@@ -61,6 +63,10 @@ function useTripChat(tripId: number, me: Sender) {
       return { temp };
     },
     onSuccess: (saved, _body, ctx) => {
+      if (saved === false) {
+        toast.message(t("You're offline. The message will send when you're back online."));
+        return; // keep the pending bubble
+      }
       qc.setQueryData<ChatMessage[]>(key, (old = []) => {
         const rest = old.filter((m) => m.id !== ctx?.temp.id && m.id !== saved.id);
         return [...rest, saved].sort((a, b) => a.created_at.localeCompare(b.created_at));

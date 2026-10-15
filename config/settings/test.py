@@ -25,6 +25,8 @@ REST_FRAMEWORK = {
         "location": "10000/min",
         "registration": "10000/min",
         "otp": "10000/min",
+        "login": "10000/min",
+        "booking": "10000/min",
     },
 }
 

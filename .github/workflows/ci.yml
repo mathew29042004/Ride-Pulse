@@ -43,6 +43,8 @@ jobs:
         run: .venv/bin/python manage.py makemigrations --check --dry-run
       - name: OpenAPI schema has no warnings
         run: .venv/bin/python manage.py spectacular --fail-on-warn --file /dev/null
+      - name: No breaking API changes (against docs/api/openapi.json)
+        run: .venv/bin/python manage.py api_contract
       - name: Tests
         run: .venv/bin/python -m pytest --cov --cov-report=term-missing:skip-covered
 
@@ -101,6 +103,39 @@ jobs:
           .venv/bin/python -m playwright install --with-deps chromium
       - name: End-to-end tests
         run: .venv/bin/python -m pytest -m e2e
+
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Python packages with known vulnerabilities
+        run: uvx pip-audit -r requirements/base.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: npm packages with known vulnerabilities (production)
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  data:
+    name: Data platform · dbt project compiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install dbt (DuckDB adapter)
+        run: |
+          uv venv data/.venv
+          uv pip install --python data/.venv/bin/python dbt-core dbt-duckdb
+      - name: Parse and compile the models and tests
+        working-directory: data/dbt
+        run: ../.venv/bin/dbt parse --profiles-dir .
 
   docker:
     name: Docker image builds

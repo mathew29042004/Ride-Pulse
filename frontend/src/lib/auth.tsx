@@ -43,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (data: { access: string; refresh: string; user: User }) => {
       tokens.set(data.access, data.refresh);
       queryClient.clear();
+      // A new sign-in starts clean: no other account's offline queue or cached screens.
+      void import("@/lib/offline").then((m) => m.clearOffline());
       setUser(data.user);
     },
     [queryClient],
@@ -69,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     tokens.clear();
     queryClient.clear();
+    // Nothing from this account may linger on a shared phone: offline queue and cached screens.
+    void import("@/lib/offline").then((m) => m.clearOffline());
     setUser(null);
   }, [queryClient]);
 

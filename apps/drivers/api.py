@@ -177,6 +177,22 @@ class LocationSerializer(serializers.Serializer):
     lng = serializers.FloatField(min_value=-180, max_value=180)
     speed_kmh = serializers.FloatField(required=False, allow_null=True, min_value=0)
     heading = serializers.FloatField(required=False, allow_null=True, min_value=0, max_value=360)
+    # Set when the app replays fixes it saved while offline: when the phone took the fix.
+    recorded_at = serializers.DateTimeField(required=False)
+
+    def validate_recorded_at(self, value):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        now = timezone.now()
+        if value > now + timedelta(seconds=30) or value < now - timedelta(minutes=30):
+            raise serializers.ValidationError("Location fixes can be replayed for 30 minutes.")
+        return value
+
+
+class LocationBatchSerializer(serializers.Serializer):
+    fixes = LocationSerializer(many=True, max_length=200)
 
 
 class EarningsSerializer(serializers.Serializer):
@@ -343,7 +359,25 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
     def location(self, request):
         serializer = LocationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        services.update_location(self.driver, **serializer.validated_data)
+        data = dict(serializer.validated_data)
+        services.update_location(self.driver, now=data.pop("recorded_at", None), **data)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(request=LocationBatchSerializer, responses={204: None})
+    @action(detail=False, methods=["post"], url_path="location/batch", throttle_scope="location")
+    def location_batch(self, request):
+        """Fixes saved while the phone was offline, replayed in order once it reconnects. They
+        go into the GPS trail (distance, Ride Check); only the newest moves the car on the map."""
+        serializer = LocationBatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        fixes = sorted(
+            serializer.validated_data["fixes"],
+            key=lambda f: f.get("recorded_at") or timezone.now(),
+        )
+        driver = self.driver
+        for fix in fixes:
+            fix = dict(fix)
+            services.update_location(driver, now=fix.pop("recorded_at", None), **fix)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT, 204: None})

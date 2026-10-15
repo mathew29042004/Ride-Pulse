@@ -191,6 +191,34 @@ def _set_availability(driver: DriverProfile, availability: str) -> None:
     driver.availability = availability
 
 
+def _trip_event(trip: Trip, topic: str, **extra) -> None:
+    """Record a trip event in the outbox (same transaction as the change). No personal data:
+    ids, money and places only."""
+    from apps.reliability.outbox import emit
+
+    emit(
+        topic,
+        {
+            "trip_id": trip.pk,
+            "trip_number": trip.trip_number,
+            "status": trip.status,
+            "service": trip.service,
+            "ride_type": trip.ride_type.code,
+            "city": trip.city.slug,
+            "rider_id": trip.rider_id,
+            "driver_id": trip.driver_id,
+            "payment_profile_id": trip.payment_profile_id,
+            "trip_purpose": trip.trip_purpose,
+            "fare_total": trip.fare_total or trip.estimated_fare,
+            "distance_km": trip.actual_distance_km or trip.estimated_distance_km,
+            "pickup": trip.pickup_address,
+            "dropoff": trip.dropoff_address,
+            **extra,
+        },
+        aggregate=f"trip:{trip.pk}",
+    )
+
+
 def _release_driver(driver: DriverProfile) -> None:
     """Back online, unless they're still carrying a co-rider on a shared ride."""
     if not Trip.objects.filter(driver=driver, status__in=ACTIVE_DRIVER_STATUSES).exists():
@@ -528,6 +556,7 @@ def request_trip(
         + (f" (₹{boost} boost)" if boost else ""),
         at=now,
     )
+    _trip_event(trip, "trip.requested")
     broadcast.ops_event(
         "trip_requested",
         {"trip_id": trip.pk, "city": city.pk, "lat": trip.pickup_lat, "lng": trip.pickup_lng},
@@ -875,6 +904,7 @@ def complete_trip(
     from apps.fleet import hooks
 
     hooks.after_trip(trip)
+    _trip_event(trip, "trip.completed", payment_status=trip.payment_status)
     goals.after_trip(driver, trip, now=now)
     wellbeing.enforce(driver, now=now)
     RiderProfile.objects.filter(pk=trip.rider_id).update(completed_trips=F("completed_trips") + 1)
@@ -969,6 +999,7 @@ def _cancel(trip: Trip, *, by: str, reason: str, fee: Decimal, actor, now: datet
     )
     if driver:
         _release_driver(driver)
+    _trip_event(trip, "trip.cancelled", cancelled_by=by, cancellation_fee=fee)
     if fee:
         payments.charge_cancellation_fee(trip, fee, now=now)
     if by != CancelledBy.RIDER:

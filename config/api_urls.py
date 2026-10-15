@@ -14,6 +14,7 @@ from apps.intelligence import api as intelligence
 from apps.notifications.api import NotificationViewSet, PushSubscriptionView
 from apps.payments import api as payments
 from apps.pricing import api as pricing
+from apps.reliability import api as reliability
 from apps.riders import api as riders
 from apps.rides import api as rides
 from apps.support import api as support
@@ -43,6 +44,7 @@ router.register("intel/fraud", intelligence.FraudCaseViewSet, basename="intel-fr
 router.register("intel", intelligence.InsightsViewSet, basename="intel")
 router.register("fleet", fleet.FleetOwnerPortalViewSet, basename="fleet-owner")
 router.register("ops/fleet", fleet.FleetOpsViewSet, basename="ops-fleet")
+router.register("platform", reliability.PlatformViewSet, basename="platform")
 router.register("riders", riders.RiderViewSet, basename="rider")
 router.register("driver/biz", fleet.DriverBusinessViewSet, basename="driver-biz")
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")
@@ -90,6 +92,7 @@ urlpatterns = [
     path("ops/dispatch/sweep/", rides.DispatchSweepView.as_view(), name="dispatch-sweep"),
     path("ledger/", payments.LedgerView.as_view(), name="ledger"),
     path("push/subscription/", PushSubscriptionView.as_view(), name="push-subscription"),
+    path("webhooks/echo/", reliability.WebhookEchoView.as_view(), name="webhook-echo"),
     path(
         "payments/razorpay/webhook/",
         payments.RazorpayWebhookView.as_view(),

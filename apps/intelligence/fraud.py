@@ -178,6 +178,20 @@ def scan(*, now: datetime | None = None) -> dict:
             **key,
         )
         opened += 1
+        from apps.reliability.outbox import emit
+
+        emit(
+            "fraud.case_opened",
+            {
+                "case": case.number,
+                "kind": case.kind,
+                "score": case.score,
+                "driver_id": case.driver_id,
+                "rider_id": case.rider_id,
+            },
+            aggregate=f"fraud:{case.pk}",
+            at=now,
+        )
         if case.score >= 75:
             notify_role(
                 "ADMIN",
