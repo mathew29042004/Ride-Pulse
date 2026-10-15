@@ -28,6 +28,7 @@ class Cap:
     REPORTS_VIEW = "reports.view"
     AUDIT_VIEW = "audit.view"
     TEAM_VIEW = "team.view"
+    WORK_USE = "work.use"  # tasks, meetings and check-ins (every employee)
 
     @classmethod
     def all(cls) -> frozenset[str]:
@@ -127,6 +128,13 @@ ROLE_CAPABILITIES: dict[str, frozenset[str]] = {
     "FLEET_EXECUTIVE": frozenset(_FLEET_EXECUTIVE),
     "DRIVER": frozenset(),
     "RIDER": frozenset(),
+}
+
+
+# Every employee uses the workspace; who they can assign work to follows the org chart.
+ROLE_CAPABILITIES = {
+    role: frozenset(caps | {Cap.WORK_USE}) if role not in ("DRIVER", "RIDER") else caps
+    for role, caps in ROLE_CAPABILITIES.items()
 }
 
 

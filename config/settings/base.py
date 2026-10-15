@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.realtime",
     "apps.simulation",
     "apps.portal",
+    "apps.workspace",
 ]
 
 MIDDLEWARE = [
@@ -216,6 +217,9 @@ SPECTACULAR_SETTINGS = {
         "DriverAvailabilityEnum": "apps.drivers.models.Availability",
         "OnboardingStatusEnum": "apps.drivers.models.OnboardingStatus",
         "TicketStatusEnum": "apps.support.models.TicketStatus",
+        "WorkTaskStatusEnum": "apps.workspace.models.TaskStatus",
+        "MeetingStatusEnum": "apps.workspace.models.MeetingStatus",
+        "TaskUpdateStatusEnum": [("IN_PROGRESS", "IN_PROGRESS"), ("DONE", "DONE")],
         "OnlinePaymentMethodEnum": [("UPI", "UPI"), ("CARD", "CARD"), ("WALLET", "WALLET")],
         "ParcelCategoryEnum": "apps.rides.models.ParcelCategory",
         "ServiceEnum": [
@@ -242,6 +246,8 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BEAT_SCHEDULE = {
+    "work-overdue": {"task": "workspace.flag_overdue", "schedule": timedelta(minutes=5)},
+    "work-standups": {"task": "workspace.roll_daily_standups", "schedule": timedelta(minutes=15)},
     "dispatch-sweep": {"task": "rides.dispatch_sweep", "schedule": timedelta(seconds=10)},
     "scheduled-rides": {"task": "rides.dispatch_scheduled_rides", "schedule": timedelta(minutes=1)},
     "surge-recompute": {"task": "pricing.recompute_surge", "schedule": timedelta(minutes=2)},

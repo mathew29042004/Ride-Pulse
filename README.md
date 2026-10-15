@@ -21,7 +21,7 @@ screen is alive the moment you open it, and a nightly pipeline turns it all into
 | **Safety** | Ride PIN / QR start, **Ride Check** (long stops, off-route, late, lost signal), **Night Safe** mode, trusted contacts, SOS desk, masked calls |
 | **Drivers first** | Boosts and tips 100% to drivers, **Fair Share Meter**, real earnings after costs, daily goals, going-home mode, **wellbeing breaks** |
 | **Built for India** | ₹ and GST, UPI/cards/cash/wallet, Razorpay, English/Tamil/Hindi with a **chat translation** bridge, IST everywhere |
-| **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 13 roles |
+| **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 13 roles, manager workspace (tasks, stand-ups, scorecards) |
 | **Data platform** | PostgreSQL → privacy-filtered Parquet lake → DuckDB + dbt star schema with 68 data-quality tests → Dagster, daily |
 
 ## Screenshots
@@ -407,6 +407,15 @@ unmapped is denied. Riders and drivers only ever see their own records.
   ops console's **Team** page shows the org chart and staff directory. `manage.py grow_network`
   tops up drivers, riders and staff in every city (it also runs at the end of `make seed`), and
   `manage.py simulate --cities all` runs bots everywhere (the default is the 9 busiest cities).
+* **Manager workspace (Work page):** work flows down the org chart. Managers give tasks to one
+  person or their whole team (deadline, priority, an optional target like "verify 20 drivers"),
+  ask "what's the status?", give guidance in a check-in thread, move deadlines or hand work to
+  someone else. Overdue tasks alert both sides once. Daily stand-ups repeat every weekday;
+  afterwards the organiser records attendance and notes, and action items become tasks. The
+  team dashboard has scorecards built from real output (tickets resolved, driver documents
+  reviewed, tasks on time, meetings attended). Simulated staff accept invites, start work,
+  answer status requests and finish (some late); anyone who signed in recently is left alone.
+  `manage.py seed_work` adds a week of demo tasks and stand-ups to an existing database.
 
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the

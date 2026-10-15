@@ -15,6 +15,7 @@ from apps.pricing import api as pricing
 from apps.riders import api as riders
 from apps.rides import api as rides
 from apps.support import api as support
+from apps.workspace import api as workspace
 
 router = DefaultRouter()
 router.register("cities", geo.CityViewSet, basename="city")
@@ -32,6 +33,9 @@ router.register("rider/places", riders.SavedPlaceViewSet, basename="saved-place"
 router.register("rider/contacts", riders.TrustedContactViewSet, basename="trusted-contact")
 router.register("rider/profiles", riders.PaymentProfileViewSet, basename="payment-profile")
 router.register("team", accounts.TeamViewSet, basename="team")
+router.register("work/tasks", workspace.TaskViewSet, basename="work-task")
+router.register("work/meetings", workspace.MeetingViewSet, basename="work-meeting")
+router.register("work", workspace.WorkTeamViewSet, basename="work")
 router.register("riders", riders.RiderViewSet, basename="rider")
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")
 router.register("drivers", drivers.DriverViewSet, basename="driver")

@@ -83,6 +83,7 @@ class Simulator:
         self.ride_types = {rt.code: rt for rt in RideType.objects.all()}
         self.last_surge = 0.0
         self.last_ride_check = 0.0
+        self.last_staff = 0.0
         self.next_request: dict[int, float] = {}
         # Adopt bots left mid-trip by a previous run, so their riders aren't stranded.
         for pk in (
@@ -421,6 +422,16 @@ class Simulator:
             ride_safety.answer_for_bots()
             self.last_ride_check = clock.monotonic()
         self.rider_cancellations()
+        if clock.monotonic() - self.last_staff > 20:
+            from apps.workspace import bots as staff_bots
+            from apps.workspace import services as workspace
+
+            done = staff_bots.tick(rng=self.rng)
+            workspace.flag_overdue()
+            workspace.roll_daily_standups()
+            if any(done.values()):
+                self.log(f"  staff: {done}")
+            self.last_staff = clock.monotonic()
         if clock.monotonic() - self.last_surge > 60:
             pricing.recompute_surge()
             price_alerts.check_alerts()

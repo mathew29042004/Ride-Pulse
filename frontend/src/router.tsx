@@ -48,6 +48,9 @@ const OpsFinance = lazy(() => import("./pages/ops/OpsFinance"));
 const OpsAnalytics = lazy(() => import("./pages/ops/OpsAnalytics"));
 const OpsAudit = lazy(() => import("./pages/ops/OpsAudit"));
 const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
+const OpsWork = lazy(() => import("./pages/ops/work/OpsWork"));
+const WorkTaskPage = lazy(() => import("./pages/ops/work/WorkDetail").then((m) => ({ default: m.WorkTaskPage })));
+const WorkMeetingPage = lazy(() => import("./pages/ops/work/WorkDetail").then((m) => ({ default: m.WorkMeetingPage })));
 const OpsInsights = lazy(() => import("./pages/ops/OpsInsights"));
 
 function FullScreenSpinner() {
@@ -159,6 +162,9 @@ export const router = createBrowserRouter([
       { path: "analytics", element: lazyPage(<OpsAnalytics />) },
       { path: "audit", element: lazyPage(<OpsAudit />) },
       { path: "team", element: lazyPage(<OpsTeam />) },
+      { path: "work", element: lazyPage(<OpsWork />) },
+      { path: "work/tasks/:id", element: lazyPage(<WorkTaskPage />) },
+      { path: "work/meetings/:id", element: lazyPage(<WorkMeetingPage />) },
       { path: "insights", element: lazyPage(<OpsInsights />) },
     ],
   },
