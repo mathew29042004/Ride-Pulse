@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { GoalsCard } from "@/components/DriverGoals";
 import { DayPassCard } from "@/components/DayPass";
+import { QuestsCard, StatementsCard } from "@/components/DriverBusiness";
 import { RealEarningsCard } from "@/components/FairShare";
 import { Button, KeyValue, Segmented, Skeleton, StatusBadge } from "@/components/ui";
 import { api, newIdempotencyKey } from "@/lib/api";
@@ -53,6 +54,7 @@ export default function DriverEarnings() {
         />
       </div>
       <GoalsCard />
+      <QuestsCard />
       <DayPassCard />
       <RealEarningsCard />
 
@@ -105,6 +107,8 @@ export default function DriverEarnings() {
           <AlertTriangle className="size-3.5" /> Dues over ₹500 stop you from going online.
         </p>
       )}
+
+      <StatementsCard />
 
       <h2 className="mt-6 mb-2 text-sm font-semibold">Payouts</h2>
       <div className="divide-y divide-line">

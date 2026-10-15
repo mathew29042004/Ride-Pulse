@@ -8,6 +8,7 @@ from apps.accounts import api as accounts
 from apps.analytics import api as analytics
 from apps.audit.api import AuditLogViewSet
 from apps.drivers import api as drivers
+from apps.fleet import api as fleet
 from apps.geo import api as geo
 from apps.intelligence import api as intelligence
 from apps.notifications.api import NotificationViewSet, PushSubscriptionView
@@ -40,7 +41,10 @@ router.register("work", workspace.WorkTeamViewSet, basename="work")
 router.register("intel/alerts", intelligence.AlertViewSet, basename="intel-alert")
 router.register("intel/fraud", intelligence.FraudCaseViewSet, basename="intel-fraud")
 router.register("intel", intelligence.InsightsViewSet, basename="intel")
+router.register("fleet", fleet.FleetOwnerPortalViewSet, basename="fleet-owner")
+router.register("ops/fleet", fleet.FleetOpsViewSet, basename="ops-fleet")
 router.register("riders", riders.RiderViewSet, basename="rider")
+router.register("driver/biz", fleet.DriverBusinessViewSet, basename="driver-biz")
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")
 router.register("drivers", drivers.DriverViewSet, basename="driver")
 router.register("wallet", payments.WalletViewSet, basename="wallet")

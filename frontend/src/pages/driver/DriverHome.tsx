@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLine, advanceAlong, routePath, snapToPath } from "@/components/map";
 import { CallButton } from "@/components/CallButton";
 import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
+import { AirportQueueChip, EvCard } from "@/components/DriverBusiness";
 import { HotZones } from "@/components/HotZones";
 import { BreakCard, WellbeingChip } from "@/components/FairShare";
 import { DriverLostItems } from "@/components/LostItem";
@@ -518,6 +519,8 @@ export default function DriverHome() {
           {!trip && (
             <>
               <BreakCard />
+              {online && <AirportQueueChip />}
+              <EvCard />
               {online && <HotZones />}
               {blocked && (
                 <div className="mb-3 flex gap-2 rounded-2xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">

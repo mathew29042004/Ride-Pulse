@@ -3,6 +3,7 @@ import { ChevronRight, Clock, Home, LifeBuoy } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
+import { VehicleCare } from "@/components/DriverBusiness";
 import { useMapProvider } from "@/components/map";
 import { describePoint } from "@/components/PlaceSuggestions";
 import { PushToggle } from "@/components/PushToggle";
@@ -51,6 +52,8 @@ export default function DriverAccount() {
         <Meter label="Trips" value={d?.completed_trips ?? null} max={Math.max(100, d?.completed_trips ?? 0)} good={0} />
       </div>
       <p className="mt-2 text-xs text-muted">The safety score comes from braking, acceleration, speeding and night driving on your recent trips. Safer drivers rank higher in dispatch.</p>
+
+      <VehicleCare />
 
       <div className="mt-6 divide-y divide-line">
         <PushToggle audience="driver" />

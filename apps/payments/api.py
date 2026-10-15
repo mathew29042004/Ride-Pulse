@@ -206,7 +206,7 @@ class PaymentViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseViewS
 
 
 class PayoutSerializer(serializers.ModelSerializer):
-    driver_name = serializers.CharField(source="driver.name", read_only=True)
+    driver_name = serializers.CharField(source="payee_name", read_only=True)
 
     class Meta:
         model = Payout
@@ -234,7 +234,7 @@ class PayoutActionSerializer(serializers.Serializer):
 class PayoutViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseViewSet):
     """Weekly driver payouts. Drivers see their own; finance staff run and settle them."""
 
-    queryset = Payout.objects.select_related("driver__user")
+    queryset = Payout.objects.select_related("driver__user", "fleet_owner")
     serializer_class = PayoutSerializer
     filterset_fields = ["status", "driver"]
     driver_lookup = "driver"

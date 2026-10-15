@@ -259,6 +259,12 @@ def compliance_problems(driver: DriverProfile, *, on: date | None = None) -> lis
             problems.append(f"{label} is missing, pending review or expired.")
         elif document.expires_on and document.expires_on < on:
             problems.append(f"{label} has expired.")
+    vehicle = driver.vehicles.filter(is_active=True).first()
+    if vehicle and vehicle.insurance_expires_on and vehicle.insurance_expires_on < on:
+        problems.append(
+            f"Vehicle insurance expired on {vehicle.insurance_expires_on:%d %b %Y}; renew it to "
+            "go online."
+        )
     balance = wallet_balance(driver.user)
     if balance < -max_driver_dues():
         problems.append(
@@ -304,6 +310,9 @@ def go_offline(driver: DriverProfile, *, now: datetime | None = None) -> DriverP
     if driver.availability == Availability.ON_TRIP:
         raise InvalidStateTransition("Finish the current trip before going offline.")
     _close_session(driver, now)
+    from apps.fleet import airport
+
+    airport.leave_on_offline(driver, now)
     driver.availability = Availability.OFFLINE
     driver.save(update_fields=["availability", "updated_at"])
     withdraw_driver_offers(driver, now=now)
@@ -345,6 +354,10 @@ def update_location(
             heading=heading,
             recorded_at=now,
         )
+    if not trip_id:
+        from apps.fleet import airport
+
+        airport.on_location(driver, lat, lng, now)
     payload = {"driver_id": driver.pk, "lat": lat, "lng": lng, "heading": heading}
     if trip_id:
         broadcast.trip_event(trip_id, "driver_location", payload)

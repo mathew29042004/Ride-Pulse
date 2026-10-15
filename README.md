@@ -437,6 +437,29 @@ unmapped is denied. Riders and drivers only ever see their own records.
     suspend the driver or block the rider in one step) or dismiss. `manage.py seed_intel` plants
     demo patterns.
 
+### The driver business (`apps/fleet`)
+* **Weekly statements with TDS:** every Monday, before payouts, each driver who worked gets a
+  statement (trips, fares, commission, tips, bonuses, fleet share, net) and a PDF. Ride Pulse is
+  an e-commerce operator under section 194-O: 0.1% of gross fares is withheld as TDS (5% without
+  a PAN on file, section 206AA) into `tax:tds_payable`. Ops > TDS has the quarterly report and a
+  CSV for the return (Form 26Q).
+* **Fleet owners** (role `FLEET_OWNER`, portal at `/fleet`, demo `owner@ridepulse.dev`): partners
+  who own cars and employ drivers keep a share (15-25%) of their drivers' trip earnings, posted
+  through the ledger on every trip (boosts and tips stay with the driver) and paid weekly. 42
+  owners across all 33 cities, each with a fleet executive as account manager.
+* **Vehicle upkeep:** odometer from trips, service due by distance (bike 3,000 km, auto 5,000,
+  cars 10,000), insurance, permit and fitness expiry. Drivers and owners are warned ahead;
+  expired insurance keeps a car offline. Drivers and owners log services.
+* **EVs:** range-aware dispatch (a trip is offered only if the battery covers pickup + trip + a
+  15 km reserve), battery level from the driver app (the simulator drains and recharges), low
+  battery alerts with the nearest suitable chargers (123 stations: Tata Power, Statiq,
+  ChargeZone, Jio-bp, Zeon, Ather Grid, Kazam).
+* **Incentive quests:** ops create tiered quests (city or state, ride types, peak hours, minimum
+  rating, budget) without code. Rewards are paid into wallets as tiers are reached, and a quest
+  ends itself when the budget runs out.
+* **Airport queue:** drivers inside an airport zone join a virtual first-come-first-served line
+  (leaving for more than 5 minutes drops them); airport pickups are offered to the line first.
+
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the
   ledger (`DRIVER_GOALS`).

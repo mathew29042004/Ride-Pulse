@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { BadgeIndianRupee, BellRing, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Route, ScrollText, ShieldAlert, ShieldX, Sun, Sunrise, Tag, TrendingUp, Users, X } from "lucide-react";
+import { BadgeIndianRupee, BellRing, Building2, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -47,6 +47,16 @@ const NAV = [
       { to: "/ops/finance", label: "Payments & payouts", icon: BadgeIndianRupee, cap: "payments.view" },
       { to: "/ops/analytics", label: "Analytics", icon: ChartNoAxesCombined, cap: "reports.view" },
       { to: "/ops/insights", label: "Data insights", icon: Database, cap: "reports.view" },
+    ],
+  },
+  {
+    group: "Fleet & partners",
+    items: [
+      { to: "/ops/fleet-owners", label: "Fleet owners", icon: Building2, cap: "fleet.manage" },
+      { to: "/ops/quests", label: "Quests", icon: Target, cap: "fleet.manage" },
+      { to: "/ops/upkeep", label: "Vehicle upkeep", icon: Wrench, cap: "fleet.manage" },
+      { to: "/ops/airports", label: "Airports & EVs", icon: Plane, cap: "fleet.manage" },
+      { to: "/ops/tds", label: "TDS", icon: Receipt, cap: "payments.view" },
     ],
   },
   {

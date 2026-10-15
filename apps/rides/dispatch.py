@@ -93,6 +93,9 @@ def candidates_for(
         exclude_ids=[*already_offered, *_busy_driver_ids()],
         limit=limit,
     )
+    from apps.fleet import airport, ev
+
+    queue_cache: dict = {}
     favourites = set(trip.rider.favourite_drivers.values_list("pk", flat=True))
     wants_woman = RidePreference.WOMAN_DRIVER in trip.preferences
     wants_electric = RidePreference.ELECTRIC in trip.preferences
@@ -105,6 +108,9 @@ def candidates_for(
         if wellbeing.needs_break(driver, now):
             continue
         if trip.service == "INTERCITY" and not driver.accepts_intercity:
+            continue
+        # EVs only take trips their battery can finish, with a reserve to reach a charger.
+        if not ev.can_take(driver.active_vehicle, trip, pickup_km=driver.distance_km):
             continue
         eta = eta_minutes(
             driver.current_lat, driver.current_lng, trip.pickup_lat, trip.pickup_lng, now
@@ -124,6 +130,8 @@ def candidates_for(
         vehicle = driver.active_vehicle
         if wants_electric and vehicle is not None and vehicle.fuel_type == "EV":
             score -= ELECTRIC_BONUS_MINUTES
+        # Airport pickups go to the airport queue first, in order of arrival.
+        score -= airport.queue_bonus(trip, driver.pk, queue_cache)
         ranked.append(Candidate(driver, driver.distance_km, eta, score))
     return sorted(ranked, key=lambda c: c.score)
 

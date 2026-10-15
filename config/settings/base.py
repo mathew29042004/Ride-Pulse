@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "apps.portal",
     "apps.workspace",
     "apps.intelligence",
+    "apps.fleet",
 ]
 
 MIDDLEWARE = [
@@ -247,6 +248,8 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BEAT_SCHEDULE = {
+    "fleet-upkeep": {"task": "fleet.upkeep_sweep", "schedule": crontab(hour=7, minute=30)},
+    "fleet-quests": {"task": "fleet.end_quests", "schedule": timedelta(minutes=15)},
     "intel-alerts": {"task": "intelligence.check_alerts", "schedule": timedelta(minutes=5)},
     "intel-nudges": {"task": "intelligence.nudge_drivers", "schedule": timedelta(minutes=10)},
     "intel-fraud": {"task": "intelligence.fraud_scan", "schedule": timedelta(hours=1)},
@@ -402,6 +405,29 @@ RIDE_PULSE = {
     "GOING_HOME_MINUTES": 60,
     "LOCATION_PING_RETENTION_DAYS": 7,
     "TICKET_SLA_HOURS": {"URGENT": 1, "HIGH": 4, "NORMAL": 24, "LOW": 72},
+    # TDS under section 194-O (e-commerce operators): 0.1% of gross fares from 1 Oct 2024, or
+    # 5% when the driver has no PAN on file (section 206AA). Deducted with the weekly statement.
+    "TDS_RATE_WITH_PAN": "0.001",
+    "TDS_RATE_WITHOUT_PAN": "0.05",
+    # Fleet owners keep this share of their drivers' trip earnings (set per owner, default).
+    "FLEET_OWNER_SHARE_PERCENT": "20",
+    # Vehicle service interval (km) and how early to warn; documents warned 30 days ahead.
+    "SERVICE_INTERVAL_KM": {
+        "BIKE": 3000,
+        "AUTO": 5000,
+        "MINI": 10000,
+        "SEDAN": 10000,
+        "SUV": 10000,
+    },
+    "SERVICE_WARN_KM": 500,
+    "DOCUMENT_WARN_DAYS": 30,
+    # EVs: usable range on a full battery (km) by vehicle, and the reserve kept for reaching a
+    # charger after the trip.
+    "EV_RANGE_KM": {"BIKE": 90, "AUTO": 120, "MINI": 250, "SEDAN": 300, "SUV": 350},
+    "EV_RESERVE_KM": 15,
+    # Airport queue: drivers inside the airport zone wait in line; leaving it for longer than
+    # this drops them out.
+    "AIRPORT_QUEUE_GRACE_MINUTES": 5,
 }
 
 # --- Google Maps Platform (optional) ---------------------------------------------------------

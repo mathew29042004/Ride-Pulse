@@ -558,7 +558,10 @@ def create_weekly_payouts(*, now: datetime | None = None) -> list[Payout]:
     now = now or timezone.now()
     period_end = week_start(timezone.localdate(now)) - timedelta(days=1)
     period_start = period_end - timedelta(days=6)
-    pending = Payout.objects.filter(status=PayoutStatus.PENDING).values("driver_id")
+    # Non-null ids only: NOT IN over a list containing NULL matches nothing in SQL.
+    pending = Payout.objects.filter(status=PayoutStatus.PENDING, driver__isnull=False).values(
+        "driver_id"
+    )
     wallets = (
         Wallet.objects.select_for_update()
         .filter(user__driver_profile__isnull=False, balance__gte=payout_minimum())
@@ -574,21 +577,50 @@ def create_weekly_payouts(*, now: datetime | None = None) -> list[Payout]:
             period_start=period_start,
             period_end=period_end,
         )
-        post(
-            TransactionKind.PAYOUT,
-            [(wallet, -wallet.balance), (accounts.PAYOUTS_IN_TRANSIT, wallet.balance)],
-            description=f"Payout {payout.payout_number}",
-            at=now,
-        )
-        notify(
-            driver.user,
-            f"Payout of ₹{payout.amount} is on its way",
-            f"Earnings for {period_start:%d %b} – {period_end:%d %b}.",
-            level=Level.SUCCESS,
-            link="/drive/earnings/",
-        )
-        payouts.append(payout)
+        payouts.append(_send_payout(payout, wallet, now))
+    payouts += _fleet_owner_payouts(period_start, period_end, now)
     return payouts
+
+
+def _fleet_owner_payouts(period_start, period_end, now) -> list[Payout]:
+    """Fleet owners get their share of their drivers' earnings on the same weekly run."""
+    pending = Payout.objects.filter(status=PayoutStatus.PENDING, fleet_owner__isnull=False).values(
+        "fleet_owner_id"
+    )
+    wallets = (
+        Wallet.objects.select_for_update()
+        .filter(user__fleet_owner__isnull=False, balance__gte=payout_minimum())
+        .exclude(user__fleet_owner__in=pending)
+        .select_related("user__fleet_owner")
+    )
+    payouts = []
+    for wallet in wallets:
+        payout = Payout.objects.create(
+            payout_number=next_reference("PO", year=period_end.year),
+            fleet_owner=wallet.user.fleet_owner,
+            amount=wallet.balance,
+            period_start=period_start,
+            period_end=period_end,
+        )
+        payouts.append(_send_payout(payout, wallet, now))
+    return payouts
+
+
+def _send_payout(payout: Payout, wallet: Wallet, now) -> Payout:
+    post(
+        TransactionKind.PAYOUT,
+        [(wallet, -payout.amount), (accounts.PAYOUTS_IN_TRANSIT, payout.amount)],
+        description=f"Payout {payout.payout_number}",
+        at=now,
+    )
+    notify(
+        payout.payee,
+        f"Payout of ₹{payout.amount} is on its way",
+        f"Earnings for {payout.period_start:%d %b} – {payout.period_end:%d %b}.",
+        level=Level.SUCCESS,
+        link="/drive/earnings/" if payout.driver_id else "/fleet",
+    )
+    return payout
 
 
 @transaction.atomic
@@ -616,13 +648,13 @@ def mark_payout_failed(payout: Payout, *, reason: str, actor=None) -> Payout:
         TransactionKind.PAYOUT_REVERSAL,
         [
             (accounts.PAYOUTS_IN_TRANSIT, -payout.amount),
-            (ensure_wallet(payout.driver.user), payout.amount),
+            (ensure_wallet(payout.payee), payout.amount),
         ],
         description=f"Payout {payout.payout_number} failed: {reason}",
         actor=actor,
     )
     notify(
-        payout.driver.user,
+        payout.payee,
         "Your payout failed",
         f"{reason} The amount is back in your wallet.",
         level=Level.DANGER,

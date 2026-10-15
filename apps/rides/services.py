@@ -572,6 +572,9 @@ def assign_driver(trip: Trip, *, driver: DriverProfile, eta_minutes: float, now:
     except IntegrityError as exc:
         raise ConflictError("You're already on another trip.") from exc
     _set_availability(driver, Availability.ON_TRIP)
+    from apps.fleet import airport
+
+    airport.on_assigned(trip, driver, now)
     notify(
         trip.rider.user,
         f"{driver.name} is on the way",
@@ -869,6 +872,9 @@ def complete_trip(
     from . import eco
 
     eco.award(trip, distance)
+    from apps.fleet import hooks
+
+    hooks.after_trip(trip)
     goals.after_trip(driver, trip, now=now)
     wellbeing.enforce(driver, now=now)
     RiderProfile.objects.filter(pk=trip.rider_id).update(completed_trips=F("completed_trips") + 1)

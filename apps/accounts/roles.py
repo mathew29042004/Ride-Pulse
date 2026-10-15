@@ -30,6 +30,8 @@ class Cap:
     TEAM_VIEW = "team.view"
     FRAUD_REVIEW = "fraud.review"  # review fraud cases, suspend or block
     WORK_USE = "work.use"  # tasks, meetings and check-ins (every employee)
+    FLEET_OWN = "fleet.own"  # a fleet owner's own drivers, vehicles and earnings
+    FLEET_MANAGE = "fleet.manage"  # ops: fleet owners, quests, vehicle upkeep, airport queue
 
     @classmethod
     def all(cls) -> frozenset[str]:
@@ -67,7 +69,7 @@ _SUPPORT_AGENT = {
     Cap.SAFETY_MANAGE,
 }
 
-_MANAGERS = {*_OPS_MANAGER, Cap.TEAM_VIEW, Cap.FRAUD_REVIEW}
+_MANAGERS = {*_OPS_MANAGER, Cap.TEAM_VIEW, Cap.FRAUD_REVIEW, Cap.FLEET_MANAGE}
 
 # Associate managers: each runs one line of the business across their state.
 _ASSOC_RIDES = {
@@ -85,6 +87,7 @@ _ASSOC_RIDES = {
 }
 _ASSOC_SUPPORT = {*_SUPPORT_AGENT, Cap.REPORTS_VIEW, Cap.TEAM_VIEW}
 _ASSOC_MAINTENANCE = {
+    Cap.FLEET_MANAGE,
     Cap.DRIVERS_VIEW,
     Cap.DRIVERS_VERIFY,
     Cap.DRIVERS_MANAGE,
@@ -114,7 +117,7 @@ _ASSOC_PARCELS = {
     Cap.TEAM_VIEW,
 }
 _SUPPORT_LEAD = {*_SUPPORT_AGENT, Cap.TEAM_VIEW}
-_FLEET_EXECUTIVE = {Cap.DRIVERS_VIEW, Cap.DRIVERS_VERIFY, Cap.TRIPS_VIEW}
+_FLEET_EXECUTIVE = {Cap.DRIVERS_VIEW, Cap.DRIVERS_VERIFY, Cap.TRIPS_VIEW, Cap.FLEET_MANAGE}
 
 ROLE_CAPABILITIES: dict[str, frozenset[str]] = {
     "ADMIN": Cap.all(),
@@ -130,12 +133,15 @@ ROLE_CAPABILITIES: dict[str, frozenset[str]] = {
     "FLEET_EXECUTIVE": frozenset(_FLEET_EXECUTIVE),
     "DRIVER": frozenset(),
     "RIDER": frozenset(),
+    "FLEET_OWNER": frozenset({Cap.FLEET_OWN}),
 }
 
 
 # Every employee uses the workspace; who they can assign work to follows the org chart.
 ROLE_CAPABILITIES = {
-    role: frozenset(caps | {Cap.WORK_USE}) if role not in ("DRIVER", "RIDER") else caps
+    role: frozenset(caps | {Cap.WORK_USE})
+    if role not in ("DRIVER", "RIDER", "FLEET_OWNER")
+    else caps
     for role, caps in ROLE_CAPABILITIES.items()
 }
 

@@ -18,9 +18,11 @@ class Role(models.TextChoices):
     FLEET_EXECUTIVE = "FLEET_EXECUTIVE", "Fleet executive"
     DRIVER = "DRIVER", "Driver"
     RIDER = "RIDER", "Rider"
+    FLEET_OWNER = "FLEET_OWNER", "Fleet owner (partner)"
 
 
-END_USER_ROLES = (Role.RIDER, Role.DRIVER)
+# Partners and customers: they only ever see their own records.
+END_USER_ROLES = (Role.RIDER, Role.DRIVER, Role.FLEET_OWNER)
 
 
 class UserManager(BaseUserManager):

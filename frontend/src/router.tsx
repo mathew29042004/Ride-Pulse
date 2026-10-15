@@ -49,6 +49,13 @@ const OpsAnalytics = lazy(() => import("./pages/ops/OpsAnalytics"));
 const OpsAudit = lazy(() => import("./pages/ops/OpsAudit"));
 const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
 const OpsWork = lazy(() => import("./pages/ops/work/OpsWork"));
+const FleetPortal = lazy(() => import("./pages/fleet/FleetPortal"));
+const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
+const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
+const OpsQuests = lazy(() => opsFleet().then((m) => ({ default: m.OpsQuests })));
+const OpsUpkeep = lazy(() => opsFleet().then((m) => ({ default: m.OpsUpkeep })));
+const OpsAirportsEv = lazy(() => opsFleet().then((m) => ({ default: m.OpsAirportsEv })));
+const OpsTds = lazy(() => opsFleet().then((m) => ({ default: m.OpsTds })));
 const intel = () => import("./pages/ops/intel/OpsIntel");
 const OpsBriefing = lazy(() => intel().then((m) => ({ default: m.OpsBriefing })));
 const OpsAlerts = lazy(() => intel().then((m) => ({ default: m.OpsAlerts })));
@@ -141,6 +148,15 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    path: "/fleet",
+    errorElement: <ErrorPage />,
+    element: (
+      <RequireRole roles={["FLEET_OWNER"]}>
+        <FleetPortal />
+      </RequireRole>
+    ),
+  },
+  {
     path: "/ops",
     errorElement: <ErrorPage />,
     element: (
@@ -169,6 +185,11 @@ export const router = createBrowserRouter([
       { path: "team", element: lazyPage(<OpsTeam />) },
       { path: "work", element: lazyPage(<OpsWork />) },
       { path: "briefing", element: lazyPage(<OpsBriefing />) },
+      { path: "fleet-owners", element: lazyPage(<OpsFleetOwners />) },
+      { path: "quests", element: lazyPage(<OpsQuests />) },
+      { path: "upkeep", element: lazyPage(<OpsUpkeep />) },
+      { path: "airports", element: lazyPage(<OpsAirportsEv />) },
+      { path: "tds", element: lazyPage(<OpsTds />) },
       { path: "alerts", element: lazyPage(<OpsAlerts />) },
       { path: "demand", element: lazyPage(<OpsDemand />) },
       { path: "fraud", element: lazyPage(<OpsFraud />) },

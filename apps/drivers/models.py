@@ -151,6 +151,25 @@ class Vehicle(AuditedModel, TimeStampedModel):
     seats = models.PositiveSmallIntegerField(default=4)
     fuel_type = models.CharField(max_length=6, choices=FuelType.choices, default=FuelType.PETROL)
     is_active = models.BooleanField(default=True)
+    # Upkeep: the odometer when it joined (trips add to it) and at the last service.
+    odometer_base_km = models.PositiveIntegerField(default=0)
+    last_service_km = models.PositiveIntegerField(default=0)
+    insurance_expires_on = models.DateField(null=True, blank=True)
+    permit_expires_on = models.DateField(null=True, blank=True)
+    fitness_expires_on = models.DateField(null=True, blank=True)
+    # The fleet owner who owns the car (blank: the driver owns it).
+    owner = models.ForeignKey(
+        "fleet.FleetOwner",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="vehicles",
+    )
+    # EVs: battery level reported by the driver app (or the simulator).
+    battery_percent = models.PositiveSmallIntegerField(null=True, blank=True)
+    battery_updated_at = models.DateTimeField(null=True, blank=True)
+    # Wheelchair-accessible vehicle (ramp or lift, secured wheelchair space).
+    wheelchair_accessible = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-is_active", "-created_at"]

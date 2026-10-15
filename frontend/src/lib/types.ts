@@ -11,7 +11,8 @@ export type Role =
   | "SUPPORT_AGENT"
   | "FLEET_EXECUTIVE"
   | "DRIVER"
-  | "RIDER";
+  | "RIDER"
+  | "FLEET_OWNER";
 
 export interface User {
   id: number;

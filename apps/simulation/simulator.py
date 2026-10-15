@@ -186,6 +186,7 @@ class Simulator:
             if offer:
                 self._respond(bot, driver, offer, now)
             else:
+                self._charge_if_low(driver, now)
                 self._wander(bot, driver)
             return
         self._reply_to_chat(trip, driver, now)
@@ -403,6 +404,17 @@ class Simulator:
                     self.bump("rider_cancelled")
                 except DomainError:
                     pass
+
+    def _charge_if_low(self, driver: DriverProfile, now: datetime) -> None:
+        """EV bots top up while idle once the battery is low (a fast charger adds ~10%/tick)."""
+        vehicle = driver.active_vehicle
+        if vehicle is None or vehicle.fuel_type != "EV" or vehicle.battery_percent is None:
+            return
+        if vehicle.battery_percent < 30 and self.rng.random() < 0.3:
+            from apps.fleet import ev
+
+            ev.set_battery(driver, min(100, vehicle.battery_percent + 10), now=now)
+            self.bump("ev_charged")
 
     # --- Main loop ------------------------------------------------------------------------
 

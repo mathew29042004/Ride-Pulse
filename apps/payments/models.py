@@ -52,6 +52,9 @@ class TransactionKind(models.TextChoices):
     FARE_LOCK = "FARE_LOCK", "Fare Lock purchase"
     DRIVER_PASS = "DRIVER_PASS", "Driver day pass"
     ECO_REWARD = "ECO_REWARD", "Eco points reward"
+    TDS = "TDS", "Income tax withheld (TDS)"
+    INCENTIVE = "INCENTIVE", "Driver incentive"
+    FLEET_SHARE = "FLEET_SHARE", "Fleet owner share"
 
 
 class LedgerTransaction(models.Model):
@@ -164,9 +167,25 @@ class PayoutStatus(models.TextChoices):
 
 
 class Payout(TimeStampedModel):
+    @property
+    def payee(self):
+        return self.driver.user if self.driver_id else self.fleet_owner.user
+
+    @property
+    def payee_name(self) -> str:
+        return self.driver.name if self.driver_id else self.fleet_owner.company_name
+
     payout_number = models.CharField(max_length=24, unique=True)
+    # Paid to a driver, or to a fleet owner (their share of their drivers' earnings).
     driver = models.ForeignKey(
-        "drivers.DriverProfile", on_delete=models.PROTECT, related_name="payouts"
+        "drivers.DriverProfile",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="payouts",
+    )
+    fleet_owner = models.ForeignKey(
+        "fleet.FleetOwner", null=True, blank=True, on_delete=models.PROTECT, related_name="payouts"
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     period_start = models.DateField()
@@ -186,6 +205,16 @@ class Payout(TimeStampedModel):
                 fields=["driver"],
                 condition=Q(status="PENDING"),
                 name="one_pending_payout_per_driver",
+            ),
+            models.UniqueConstraint(
+                fields=["fleet_owner"],
+                condition=Q(status="PENDING"),
+                name="one_pending_payout_per_fleet_owner",
+            ),
+            models.CheckConstraint(
+                condition=Q(driver__isnull=False, fleet_owner__isnull=True)
+                | Q(driver__isnull=True, fleet_owner__isnull=False),
+                name="payout_has_one_payee",
             ),
         ]
 

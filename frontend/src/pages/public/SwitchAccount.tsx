@@ -9,10 +9,11 @@ import { homeFor, useAuth } from "@/lib/auth";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/demo";
 import type { Role } from "@/lib/types";
 
-const APP_NAMES: Record<string, string> = { "/ride": "rider app", "/drive": "driver app", "/ops": "operations console" };
+const APP_NAMES: Record<string, string> = { "/ride": "rider app", "/drive": "driver app", "/ops": "operations console", "/fleet": "fleet partner portal" };
 const DEMO_NOUN: Record<string, string> = { Operations: "operations manager", Support: "support agent" };
 const ROLE_NAMES: Record<Role, string> = {
   RIDER: "a rider",
+  FLEET_OWNER: "a fleet owner",
   DRIVER: "a driver",
   OPS_MANAGER: "a city operations manager",
   SUPPORT_AGENT: "a support agent",
@@ -36,7 +37,7 @@ export default function SwitchAccount({ app, roles }: { app: string; roles: Role
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const demo = DEMO_ACCOUNTS.filter((a) =>
-    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", Admin: "ADMIN" } as const)[a.label]),
+    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", "Fleet owner": "FLEET_OWNER", Admin: "ADMIN" } as const)[a.label]),
   );
 
   async function signIn(email: string) {
