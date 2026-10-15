@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 
 from apps.core.exceptions import BusinessRuleViolation, ConflictError
 from apps.drivers import day_pass
@@ -18,6 +19,9 @@ pytestmark = pytest.mark.django_db
 
 
 def test_day_pass_waives_commission_and_rider_pays_the_same(mini, make_driver, now):
+    # Today at midday: a pass lasts until midnight, so trips mustn't run into tomorrow (and the
+    # offer screen checks the pass against today's date).
+    now = timezone.localtime(now).replace(hour=12, minute=0)
     driver = make_driver(now=now)
     first = drive_to_completion(book(make_rider(), mini, now=now), now=now)
     assert first.platform_commission > 0 and first.commission_waived == 0
