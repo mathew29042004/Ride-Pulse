@@ -21,7 +21,7 @@ screen is alive the moment you open it, and a nightly pipeline turns it all into
 | **Safety** | Ride PIN / QR start, **Ride Check** (long stops, off-route, late, lost signal), **Night Safe** mode, trusted contacts, SOS desk, masked calls |
 | **Drivers first** | Boosts and tips 100% to drivers, **Fair Share Meter**, real earnings after costs, daily goals, going-home mode, **wellbeing breaks** |
 | **Built for India** | ₹ and GST, UPI/cards/cash/wallet, Razorpay, English/Tamil/Hindi with a **chat translation** bridge, IST everywhere |
-| **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 13 roles, manager workspace (tasks, stand-ups, scorecards) |
+| **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 13 roles, manager workspace (tasks, stand-ups, scorecards), alerts that create tasks, morning briefing, demand forecast, fraud review |
 | **Data platform** | PostgreSQL → privacy-filtered Parquet lake → DuckDB + dbt star schema with 68 data-quality tests → Dagster, daily |
 
 ## Screenshots
@@ -416,6 +416,26 @@ unmapped is denied. Riders and drivers only ever see their own records.
   reviewed, tasks on time, meetings attended). Simulated staff accept invites, start work,
   answer status requests and finish (some late); anyone who signed in recently is left alone.
   `manage.py seed_work` adds a week of demo tasks and stand-ups to an existing database.
+* **Ops intelligence** (`apps/intelligence`, the Intelligence section of the ops console):
+  * **Scorecards** add ticket reply time, SLA met, document review time and a "needs guidance"
+    flag (judged only once there's enough work: 3+ tasks or tickets).
+  * **Alerts that create tasks:** every 5 minutes each city's last hour is compared with its own
+    normal level (cancellations, riders finding no driver, SOS spikes, tickets past SLA). An
+    alert opens a task for the manager who owns the problem, assigned by their manager, and
+    closes itself when the numbers recover.
+  * **Morning briefing** at 8 am: yesterday's trips, bookings and commission against the same
+    day last week, the cities to watch, safety, support SLA, new drivers, open alerts, fraud
+    cases and how the team did on its tasks.
+  * **Demand forecast:** the next hour per zone, from the same hour on the same weekday over four
+    weeks (recent weeks weigh more) blended with the last hour's real demand. Zones short of
+    drivers are shown on a map, and free drivers nearby get a nudge (at most every 45 minutes;
+    the driver app shows "Busy in the next hour"). Accuracy is back-tested on the last 72 hours
+    against two simple guesses (history only, and "same as last hour").
+  * **Fraud review queue:** hourly rules over two weeks of trips: GPS spoofing, route padding,
+    the same rider and driver again and again, promos on very short trips, and referral
+    farming. Each case has a 0-100 score and the trips behind it; reviewers confirm (and can
+    suspend the driver or block the rider in one step) or dismiss. `manage.py seed_intel` plants
+    demo patterns.
 
 ### More driver features
 * **Daily goals:** ₹75 bonus at 5 trips and ₹125 more at 10, paid into earnings through the

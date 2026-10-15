@@ -28,6 +28,7 @@ class Cap:
     REPORTS_VIEW = "reports.view"
     AUDIT_VIEW = "audit.view"
     TEAM_VIEW = "team.view"
+    FRAUD_REVIEW = "fraud.review"  # review fraud cases, suspend or block
     WORK_USE = "work.use"  # tasks, meetings and check-ins (every employee)
 
     @classmethod
@@ -66,10 +67,11 @@ _SUPPORT_AGENT = {
     Cap.SAFETY_MANAGE,
 }
 
-_MANAGERS = {*_OPS_MANAGER, Cap.TEAM_VIEW}
+_MANAGERS = {*_OPS_MANAGER, Cap.TEAM_VIEW, Cap.FRAUD_REVIEW}
 
 # Associate managers: each runs one line of the business across their state.
 _ASSOC_RIDES = {
+    Cap.FRAUD_REVIEW,
     Cap.TRIPS_VIEW,
     Cap.TRIPS_MANAGE,
     Cap.DISPATCH_RUN,

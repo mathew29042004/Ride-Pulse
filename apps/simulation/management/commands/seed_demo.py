@@ -46,6 +46,9 @@ class Command(BaseCommand):
         from apps.workspace import demo as workspace_demo
 
         stats.update(workspace_demo.seed(seed=options["seed"], log=self.stdout.write))
+        from apps.intelligence import demo as intelligence_demo
+
+        stats.update(intelligence_demo.seed(log=self.stdout.write))
         self.stdout.write(self.style.SUCCESS(f"Done in {time.monotonic() - started:.0f}s: {stats}"))
         self.stdout.write(
             f"Demo logins (password {DEMO_PASSWORD}): "

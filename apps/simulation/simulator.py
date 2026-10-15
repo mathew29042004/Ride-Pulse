@@ -84,6 +84,7 @@ class Simulator:
         self.last_surge = 0.0
         self.last_ride_check = 0.0
         self.last_staff = 0.0
+        self.last_intel = 0.0
         self.next_request: dict[int, float] = {}
         # Adopt bots left mid-trip by a previous run, so their riders aren't stranded.
         for pk in (
@@ -432,6 +433,15 @@ class Simulator:
             if any(done.values()):
                 self.log(f"  staff: {done}")
             self.last_staff = clock.monotonic()
+        if clock.monotonic() - self.last_intel > 300:
+            from apps.intelligence import alerts, demand, fraud
+
+            raised = alerts.check()
+            nudged = demand.nudge_drivers()
+            cases = fraud.scan()
+            if raised["opened"] or nudged or cases["opened"]:
+                self.log(f"  intel: alerts {raised['opened']}, nudges {nudged}, fraud {cases}")
+            self.last_intel = clock.monotonic()
         if clock.monotonic() - self.last_surge > 60:
             pricing.recompute_surge()
             price_alerts.check_alerts()

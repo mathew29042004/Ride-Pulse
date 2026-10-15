@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "apps.simulation",
     "apps.portal",
     "apps.workspace",
+    "apps.intelligence",
 ]
 
 MIDDLEWARE = [
@@ -246,6 +247,13 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BEAT_SCHEDULE = {
+    "intel-alerts": {"task": "intelligence.check_alerts", "schedule": timedelta(minutes=5)},
+    "intel-nudges": {"task": "intelligence.nudge_drivers", "schedule": timedelta(minutes=10)},
+    "intel-fraud": {"task": "intelligence.fraud_scan", "schedule": timedelta(hours=1)},
+    "intel-briefing": {
+        "task": "intelligence.morning_briefing",
+        "schedule": crontab(hour=8, minute=0),
+    },
     "work-overdue": {"task": "workspace.flag_overdue", "schedule": timedelta(minutes=5)},
     "work-standups": {"task": "workspace.roll_daily_standups", "schedule": timedelta(minutes=15)},
     "dispatch-sweep": {"task": "rides.dispatch_sweep", "schedule": timedelta(seconds=10)},

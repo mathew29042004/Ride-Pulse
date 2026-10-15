@@ -88,6 +88,10 @@ export interface ScoreRow {
   tickets_resolved: number;
   documents_reviewed: number;
   meeting_attendance: number | null;
+  avg_response_minutes: number | null;
+  sla_met_rate: number | null;
+  avg_review_hours: number | null;
+  needs_guidance: boolean;
 }
 
 export interface Dashboard {
@@ -100,6 +104,8 @@ export interface Dashboard {
     on_time_rate: number | null;
     tickets_resolved: number;
     documents_reviewed: number;
+    needs_guidance: number;
+    avg_response_minutes: number | null;
   };
   departments: { department: string; people: number; open: number; overdue: number; done: number }[];
   people: ScoreRow[];

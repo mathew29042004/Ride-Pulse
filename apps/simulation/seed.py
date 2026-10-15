@@ -35,7 +35,7 @@ from apps.rides import dispatch
 from apps.rides import services as rides
 from apps.rides.models import OfferStatus, Trip, TripStatus
 from apps.support import services as support
-from apps.support.models import SafetyIncident, SupportTicket, TicketCategory
+from apps.support.models import SafetyIncident, SupportTicket, TicketCategory, TicketMessage
 
 from .fleet_data import (
     CITY_WEIGHTS,
@@ -634,7 +634,7 @@ class Seeder:
         SupportTicket.objects.filter(pk=ticket.pk).update(created_at=at)
         if at < self.now - timedelta(days=1) and self.rng.random() < 0.75:
             agent = ticket.assigned_to or self.support_agent
-            support.reply(
+            message = support.reply(
                 ticket,
                 author=agent,
                 body="Thanks for reaching out. We're looking into this trip now.",
@@ -650,7 +650,21 @@ class Seeder:
                 resolution="We've reviewed the trip and sorted it out. Sorry for the trouble!",
                 refund_amount=refund,
             )
+            self._backdate_ticket(ticket, message, at)
         self.count("tickets")
+
+    def _backdate_ticket(self, ticket, message, at: datetime) -> None:
+        """History happened in the past: first reply within minutes, resolved mostly in SLA."""
+        replied = at + timedelta(minutes=self.rng.triangular(3, 180, 20))
+        if message is not None:
+            TicketMessage.objects.filter(pk=message.pk).update(created_at=replied)
+        late = self.rng.random() < 0.15
+        resolved = (
+            ticket.sla_due_at + timedelta(hours=self.rng.uniform(1, 12))
+            if late
+            else replied + (ticket.sla_due_at - replied) * self.rng.uniform(0.1, 0.9)
+        )
+        SupportTicket.objects.filter(pk=ticket.pk).update(resolved_at=max(resolved, replied))
 
     def _sos(self, trip: Trip, *, resolve: bool) -> None:
         raised_at = trip.completed_at - timedelta(minutes=4)

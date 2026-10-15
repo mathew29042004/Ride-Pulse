@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { BadgeIndianRupee, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Route, ScrollText, ShieldAlert, Sun, Tag, Users, X } from "lucide-react";
+import { BadgeIndianRupee, BellRing, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Route, ScrollText, ShieldAlert, ShieldX, Sun, Sunrise, Tag, TrendingUp, Users, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -47,6 +47,15 @@ const NAV = [
       { to: "/ops/finance", label: "Payments & payouts", icon: BadgeIndianRupee, cap: "payments.view" },
       { to: "/ops/analytics", label: "Analytics", icon: ChartNoAxesCombined, cap: "reports.view" },
       { to: "/ops/insights", label: "Data insights", icon: Database, cap: "reports.view" },
+    ],
+  },
+  {
+    group: "Intelligence",
+    items: [
+      { to: "/ops/briefing", label: "Morning briefing", icon: Sunrise, cap: "reports.view" },
+      { to: "/ops/alerts", label: "Alerts", icon: BellRing, cap: "reports.view" },
+      { to: "/ops/demand", label: "Demand forecast", icon: TrendingUp, cap: "reports.view" },
+      { to: "/ops/fraud", label: "Fraud review", icon: ShieldX, cap: "fraud.review" },
     ],
   },
   {

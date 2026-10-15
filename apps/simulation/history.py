@@ -24,7 +24,7 @@ from apps.realtime import broadcast
 from apps.riders.models import RiderProfile
 from apps.rides import dispatch
 from apps.rides import services as rides
-from apps.rides.models import OfferStatus
+from apps.rides.models import OfferStatus, Trip
 
 from .fleet_data import HOURLY_DEMAND
 from .network import driver_target
@@ -45,8 +45,10 @@ class HistoryGenerator:
         days: int = 60,
         trips_per_day: int = 300,
         seed: int = 11,
+        fill_gaps: bool = False,
         log: Callable[[str], None] = print,
     ):
+        self.fill_gaps = fill_gaps
         self.days = days
         self.trips_per_day = trips_per_day
         self.log = log
@@ -173,6 +175,20 @@ class HistoryGenerator:
             s._offline(driver, t_end)
         self.count("parcels")
 
+    def _hour_counts(self, day) -> dict[int, int]:
+        """Trips already in the database per local hour of ``day``."""
+        from django.db.models import Count
+        from django.db.models.functions import ExtractHour
+
+        start = timezone.make_aware(datetime.combine(day, time.min))
+        rows = (
+            Trip.objects.filter(requested_at__gte=start, requested_at__lt=start + timedelta(days=1))
+            .annotate(hour=ExtractHour("requested_at"))
+            .values("hour")
+            .annotate(n=Count("pk"))
+        )
+        return {r["hour"]: r["n"] for r in rows} or {-1: 0}
+
     def run(self, *, force_offline: bool = False) -> dict:
         self._prepare(force_offline)
         s, rng = self.seeder, self.rng
@@ -183,8 +199,12 @@ class HistoryGenerator:
             factor = 1.15 if day.weekday() >= 5 else 1.0
             growth = 0.75 + 0.25 * (1 - d / self.days)  # the business grew over the period
             n = int(self.trips_per_day * factor * growth * rng.uniform(0.85, 1.15))
+            existing = self._hour_counts(day) if self.fill_gaps else {}
+            total_weight = sum(HOURLY_DEMAND)
             for _ in range(n):
                 hour = rng.choices(range(24), weights=HOURLY_DEMAND)[0]
+                if existing and existing.get(hour, 0) >= n * HOURLY_DEMAND[hour] / total_weight / 2:
+                    continue  # this hour already has its trips
                 at = timezone.make_aware(
                     datetime.combine(day, time(hour, rng.randrange(60), rng.randrange(60)))
                 )

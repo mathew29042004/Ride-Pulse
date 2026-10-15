@@ -5,7 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { AlarmClock, CalendarClock, CheckCircle2, ClipboardList, MessageCircleQuestion, Plus, Repeat, Users } from "lucide-react";
+import { AlarmClock, CalendarClock, CheckCircle2, ClipboardList, LifeBuoy, MessageCircleQuestion, Plus, Repeat, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -73,15 +73,17 @@ function TeamDashboard() {
   const [scope, setScope] = useState<"direct" | "all">("direct");
   const board = useQuery({ queryKey: ["work", "dashboard", days], queryFn: () => api.get<Dashboard>(`work/dashboard/?days=${days}`), refetchInterval: 20_000 });
   const d = board.data;
-  const rows = (d?.people ?? []).filter((r) => scope === "all" || r.direct_report);
+  const [onlyFlagged, setOnlyFlagged] = useState(false);
+  const rows = (d?.people ?? []).filter((r) => (scope === "all" || r.direct_report) && (!onlyFlagged || r.needs_guidance));
   const pct = (v: number | null) => (v === null ? "—" : `${v}%`);
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <Stat label="People in your team" value={d?.totals.people ?? "—"} icon={<Users className="size-4" />} tone="brand" />
         <Stat label="Open tasks" value={d?.totals.open_tasks ?? "—"} icon={<ClipboardList className="size-4" />} tone="info" />
         <Stat label="Overdue" value={d?.totals.overdue_tasks ?? "—"} icon={<AlarmClock className="size-4" />} tone={d?.totals.overdue_tasks ? "danger" : "neutral"} />
         <Stat label={`Done (${days} days)`} value={d?.totals.done_tasks ?? "—"} sub={`On time: ${pct(d?.totals.on_time_rate ?? null)}`} icon={<CheckCircle2 className="size-4" />} tone="brand" />
+        <Stat label="Need guidance" value={d?.totals.needs_guidance ?? "—"} sub={d?.totals.avg_response_minutes != null ? `Avg ticket reply ${d.totals.avg_response_minutes} min` : ""} icon={<LifeBuoy className="size-4" />} tone={d?.totals.needs_guidance ? "warning" : "neutral"} />
         <Stat label={`Output (${days} days)`} value={d ? d.totals.tickets_resolved + d.totals.documents_reviewed : "—"} sub={d ? `${d.totals.tickets_resolved} tickets · ${d.totals.documents_reviewed} documents` : ""} icon={<CheckCircle2 className="size-4" />} />
       </div>
 
@@ -107,6 +109,9 @@ function TeamDashboard() {
             <div className="font-semibold">Scorecards</div>
             <div className="text-xs text-muted">Real output from their work: tickets resolved, driver documents reviewed, tasks on time, meetings attended.</div>
           </div>
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <Toggle checked={onlyFlagged} onChange={setOnlyFlagged} label="Only people who need guidance" /> Needs guidance
+          </label>
           <Segmented value={scope} onChange={setScope} options={[{ value: "direct", label: "Direct reports" }, { value: "all", label: "Everyone below me" }]} />
           <Select value={days} onChange={(e) => setDays(e.target.value)} className="!w-auto">
             <option value="7">7 days</option>
@@ -123,7 +128,10 @@ function TeamDashboard() {
                 <Th className="text-right">Done</Th>
                 <Th className="text-right">On time</Th>
                 <Th className="text-right">Tickets</Th>
+                <Th className="text-right">Reply</Th>
+                <Th className="text-right">SLA met</Th>
                 <Th className="text-right">Documents</Th>
+                <Th className="text-right">Review time</Th>
                 <Th className="text-right">Meetings</Th>
               </tr>
             </thead>
@@ -131,7 +139,9 @@ function TeamDashboard() {
               {rows.map((r) => (
                 <tr key={r.user_id} className="border-t border-line">
                   <Td>
-                    <div className="font-semibold">{r.name}</div>
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      {r.name} {r.needs_guidance && <Badge tone="warning">Needs guidance</Badge>}
+                    </div>
                     <div className="text-xs text-muted">
                       {r.title}
                       {r.city && ` · ${r.city}`}
@@ -143,7 +153,10 @@ function TeamDashboard() {
                   <Td className="text-right">{r.done_tasks}</Td>
                   <Td className="text-right">{pct(r.on_time_rate)}</Td>
                   <Td className="text-right">{r.tickets_resolved || "—"}</Td>
+                  <Td className={clsx("text-right", (r.avg_response_minutes ?? 0) > 120 && "font-semibold text-danger")}>{r.avg_response_minutes != null ? `${r.avg_response_minutes}m` : "—"}</Td>
+                  <Td className="text-right">{pct(r.sla_met_rate)}</Td>
                   <Td className="text-right">{r.documents_reviewed || "—"}</Td>
+                  <Td className="text-right">{r.avg_review_hours != null ? `${r.avg_review_hours}h` : "—"}</Td>
                   <Td className="text-right">{pct(r.meeting_attendance)}</Td>
                 </tr>
               ))}

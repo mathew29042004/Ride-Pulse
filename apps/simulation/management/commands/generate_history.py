@@ -17,6 +17,11 @@ class Command(BaseCommand):
         parser.add_argument("--trips-per-day", type=int, default=300)
         parser.add_argument("--seed", type=int, default=11)
         parser.add_argument(
+            "--fill-gaps",
+            action="store_true",
+            help="Only generate days that are missing most of their trips",
+        )
+        parser.add_argument(
             "--force-offline",
             action="store_true",
             help="Take online drivers offline first (instead of refusing)",
@@ -27,6 +32,7 @@ class Command(BaseCommand):
         started = time.monotonic()
         generator = HistoryGenerator(
             days=options["days"],
+            fill_gaps=options["fill_gaps"],
             trips_per_day=options["trips_per_day"],
             seed=options["seed"],
             log=self.stdout.write,

@@ -49,6 +49,11 @@ const OpsAnalytics = lazy(() => import("./pages/ops/OpsAnalytics"));
 const OpsAudit = lazy(() => import("./pages/ops/OpsAudit"));
 const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
 const OpsWork = lazy(() => import("./pages/ops/work/OpsWork"));
+const intel = () => import("./pages/ops/intel/OpsIntel");
+const OpsBriefing = lazy(() => intel().then((m) => ({ default: m.OpsBriefing })));
+const OpsAlerts = lazy(() => intel().then((m) => ({ default: m.OpsAlerts })));
+const OpsDemand = lazy(() => intel().then((m) => ({ default: m.OpsDemand })));
+const OpsFraud = lazy(() => intel().then((m) => ({ default: m.OpsFraud })));
 const WorkTaskPage = lazy(() => import("./pages/ops/work/WorkDetail").then((m) => ({ default: m.WorkTaskPage })));
 const WorkMeetingPage = lazy(() => import("./pages/ops/work/WorkDetail").then((m) => ({ default: m.WorkMeetingPage })));
 const OpsInsights = lazy(() => import("./pages/ops/OpsInsights"));
@@ -163,6 +168,10 @@ export const router = createBrowserRouter([
       { path: "audit", element: lazyPage(<OpsAudit />) },
       { path: "team", element: lazyPage(<OpsTeam />) },
       { path: "work", element: lazyPage(<OpsWork />) },
+      { path: "briefing", element: lazyPage(<OpsBriefing />) },
+      { path: "alerts", element: lazyPage(<OpsAlerts />) },
+      { path: "demand", element: lazyPage(<OpsDemand />) },
+      { path: "fraud", element: lazyPage(<OpsFraud />) },
       { path: "work/tasks/:id", element: lazyPage(<WorkTaskPage />) },
       { path: "work/meetings/:id", element: lazyPage(<WorkMeetingPage />) },
       { path: "insights", element: lazyPage(<OpsInsights />) },
