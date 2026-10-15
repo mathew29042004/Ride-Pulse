@@ -21,7 +21,7 @@ from apps.core.api import BaseViewSet, CapabilityPermission, ContextBindingMixin
 from apps.core.exceptions import ActionNotPermitted, BusinessRuleViolation, ConflictError
 from apps.drivers.models import Availability, DriverProfile, Vehicle
 from apps.payments.models import PaymentMethod
-from apps.pricing.api import FareSerializer, PointSerializer
+from apps.pricing.api import FareSerializer, PointSerializer, split_stops
 from apps.pricing.models import RideType
 from apps.support.api import IncidentSerializer
 
@@ -217,6 +217,7 @@ class TripSerializer(serializers.ModelSerializer):
     )
     parcel = serializers.SerializerMethodField()
     co_riders = serializers.SerializerMethodField()
+    stops = serializers.SerializerMethodField()
 
     class Meta:
         model = Trip
@@ -280,8 +281,10 @@ class TripSerializer(serializers.ModelSerializer):
             "parcel",
             "payment_profile_name",
             "trip_purpose",
+            "cost_center",
             "pool_id",
             "co_riders",
+            "stops",
             "co2_saved_g",
             "fare_lock",
             "package_hours",
@@ -322,12 +325,16 @@ class TripSerializer(serializers.ModelSerializer):
     def get_fare(self, trip) -> dict:
         return FareSerializer(trip.final_fare).data
 
-    @extend_schema_field(ParcelSerializer(allow_null=True))
+    @extend_schema_field(PointSerializer(many=True))
+    def get_stops(self, trip) -> list[dict]:
+        return services.stops_payload(trip)
+
     def get_co_riders(self, trip) -> int:
         from .pooling import co_riders
 
         return co_riders(trip)
 
+    @extend_schema_field(ParcelSerializer(allow_null=True))
     def get_parcel(self, trip) -> dict | None:
         parcel = getattr(trip, "parcel", None) if trip.service == "PARCEL" else None
         return ParcelSerializer(parcel, context=self.context).data if parcel else None
@@ -385,6 +392,7 @@ class TripRequestSerializer(serializers.Serializer):
     # Not needed for an hourly rental (it ends wherever the rider finishes).
     dropoff = PointSerializer(required=False, allow_null=True)
     stop = PointSerializer(required=False, allow_null=True)
+    stops = PointSerializer(many=True, required=False, max_length=3)
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
     service = serializers.ChoiceField(
         choices=["RIDE", "PARCEL", "RENTAL", "INTERCITY"], required=False, default="RIDE"
@@ -403,6 +411,7 @@ class TripRequestSerializer(serializers.Serializer):
     trip_purpose = serializers.CharField(
         required=False, allow_blank=True, max_length=120, default=""
     )
+    cost_center = serializers.CharField(required=False, allow_blank=True, max_length=40)
     preferences = serializers.ListField(
         child=serializers.ChoiceField(choices=RidePreference.choices), required=False, default=list
     )
@@ -767,8 +776,7 @@ class TripViewSet(
             dropoff_address=data["dropoff"].get("address", ""),
             payment_method=data["payment_method"],
             promo_code=data.get("promo_code", ""),
-            stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
-            stop_address=(data.get("stop") or {}).get("address", ""),
+            **split_stops(data),
             tip=data.get("tip") or 0,
             preferences=data.get("preferences") or [],
             boost=data.get("boost") or 0,
@@ -777,6 +785,7 @@ class TripViewSet(
             parcel=data.get("parcel"),
             payment_profile=self._payment_profile(request, data.get("payment_profile")),
             trip_purpose=data.get("trip_purpose", ""),
+            cost_center=data.get("cost_center", ""),
         )
         return self._respond(trip, status.HTTP_201_CREATED)
 
@@ -1380,8 +1389,7 @@ class ScheduledRideViewSet(
             dropoff_address=data["dropoff"].get("address", ""),
             payment_method=data["payment_method"],
             promo_code=data.get("promo_code", ""),
-            stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
-            stop_address=(data.get("stop") or {}).get("address", ""),
+            **split_stops(data),
             scheduled_for=data["scheduled_for"],
         )
         return Response(ScheduledRideSerializer(ride).data, status=status.HTTP_201_CREATED)

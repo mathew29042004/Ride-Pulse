@@ -25,6 +25,7 @@ interface SharedTrip {
   pickup: { lat: number; lng: number; address: string };
   dropoff: { lat: number; lng: number; address: string };
   stop: { lat: number; lng: number; address: string } | null;
+  stops?: { lat: number; lng: number; address?: string }[];
   route_polyline: string;
   driver: { first_name: string; rating: string } | null;
   vehicle: string | null;
@@ -49,7 +50,7 @@ export default function TrackTrip() {
   const trip = shared.data;
 
   const route = useMemo<LatLng[]>(
-    () => (trip ? routePath([trip.pickup.lat, trip.pickup.lng], [trip.dropoff.lat, trip.dropoff.lng], trip.route_polyline, trip.stop && [trip.stop.lat, trip.stop.lng]) : []),
+    () => (trip ? routePath([trip.pickup.lat, trip.pickup.lng], [trip.dropoff.lat, trip.dropoff.lng], trip.route_polyline, (trip.stops ?? []).map((s) => [s.lat, s.lng] as [number, number])) : []),
     [trip?.pickup.lat, trip?.dropoff.lat, trip?.route_polyline], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const car = trip?.driver_location;
@@ -140,13 +141,15 @@ function TrackView({
         <BaseMap center={[trip.pickup.lat, trip.pickup.lng]} zoom={13}>
           <FitBounds points={points} padding={50} bottom={330} fitKey={`${trip.status}-${carAt ? 1 : 0}-${recenter}`} />
           <PinMarker lat={trip.pickup.lat} lng={trip.pickup.lng} kind="pickup" />
-          {trip.stop && <PinMarker lat={trip.stop.lat} lng={trip.stop.lng} kind="stop" />}
+          {(trip.stops ?? []).map((s, i) => (
+            <PinMarker key={i} lat={s.lat} lng={s.lng} kind="stop" />
+          ))}
           <PinMarker lat={trip.dropoff.lat} lng={trip.dropoff.lng} kind="dropoff" />
           <RouteLine
             from={[trip.pickup.lat, trip.pickup.lng]}
             to={[trip.dropoff.lat, trip.dropoff.lng]}
             encoded={trip.route_polyline}
-            via={trip.stop && [trip.stop.lat, trip.stop.lng]}
+            via={(trip.stops ?? []).map((s) => [s.lat, s.lng] as [number, number])}
             progress={trip.status === "IN_PROGRESS" ? carAt : null}
             dashed={trip.status !== "IN_PROGRESS"}
           />

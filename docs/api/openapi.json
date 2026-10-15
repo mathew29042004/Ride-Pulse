@@ -413,6 +413,71 @@
     ],
     "type": "object"
    },
+   "CityEventKindEnum": {
+    "description": "* `CRICKET` - Cricket match\n* `FOOTBALL` - Football match\n* `CONCERT` - Concert\n* `FESTIVAL` - Festival\n* `CONFERENCE` - Conference or expo\n* `OTHER` - Other",
+    "enum": [
+     "CRICKET",
+     "FOOTBALL",
+     "CONCERT",
+     "FESTIVAL",
+     "CONFERENCE",
+     "OTHER"
+    ],
+    "type": "string"
+   },
+   "CityEventRequest": {
+    "properties": {
+     "city": {
+      "type": "integer"
+     },
+     "ends_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "expected_attendance": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/CityEventKindEnum"
+     },
+     "lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+     },
+     "starts_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "venue": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "city",
+     "ends_at",
+     "expected_attendance",
+     "kind",
+     "lat",
+     "lng",
+     "name",
+     "starts_at",
+     "venue"
+    ],
+    "type": "object"
+   },
    "ClientConfig": {
     "properties": {
      "company_name": {
@@ -477,6 +542,83 @@
     },
     "required": [
      "is_my_car"
+    ],
+    "type": "object"
+   },
+   "CorporateEmployeeRequest": {
+    "properties": {
+     "default_cost_center": {
+      "maxLength": 40,
+      "type": "string"
+     },
+     "is_admin": {
+      "type": "boolean"
+     },
+     "member_id": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "member_id"
+    ],
+    "type": "object"
+   },
+   "CorporatePolicyRequest": {
+    "properties": {
+     "allowed_from_hour": {
+      "maximum": 23,
+      "minimum": 0,
+      "nullable": true,
+      "type": "integer"
+     },
+     "allowed_ride_types": {
+      "items": {
+       "maxLength": 10,
+       "minLength": 1,
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "allowed_to_hour": {
+      "maximum": 23,
+      "minimum": 0,
+      "nullable": true,
+      "type": "integer"
+     },
+     "cost_centers": {
+      "items": {
+       "maxLength": 40,
+       "minLength": 1,
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "max_fare_per_trip": {
+      "format": "decimal",
+      "nullable": true,
+      "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "CorporateWebhookRequest": {
+    "properties": {
+     "name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     },
+     "url": {
+      "format": "uri",
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "url"
     ],
     "type": "object"
    },
@@ -1324,6 +1466,12 @@
        }
       ],
       "nullable": true
+     },
+     "stops": {
+      "items": {
+       "$ref": "#/components/schemas/PointRequest"
+      },
+      "type": "array"
      }
     },
     "required": [
@@ -3948,6 +4096,14 @@
    "PatchedRiderMeRequest": {
     "description": "The rider's own profile: adds referral progress, ride preferences and favourites.",
     "properties": {
+     "accessibility": {
+      "items": {
+       "maxLength": 12,
+       "minLength": 1,
+       "type": "string"
+      },
+      "type": "array"
+     },
      "default_payment_method": {
       "maxLength": 10,
       "minLength": 1,
@@ -4167,6 +4323,14 @@
    },
    "PaymentProfile": {
     "properties": {
+     "cost_centers": {
+      "items": {
+       "maxLength": 40,
+       "type": "string"
+      },
+      "readOnly": true,
+      "type": "array"
+     },
      "credit_limit": {
       "format": "decimal",
       "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
@@ -4186,6 +4350,10 @@
       "readOnly": true,
       "type": "integer"
      },
+     "is_admin": {
+      "readOnly": true,
+      "type": "boolean"
+     },
      "kind": {
       "$ref": "#/components/schemas/PaymentProfileKindEnum"
      },
@@ -4199,6 +4367,10 @@
       },
       "readOnly": true,
       "type": "array"
+     },
+     "my_cost_center": {
+      "readOnly": true,
+      "type": "string"
      },
      "my_limit": {
       "nullable": true,
@@ -4223,12 +4395,15 @@
      }
     },
     "required": [
+     "cost_centers",
      "credit_limit",
      "id",
      "invitation_id",
+     "is_admin",
      "kind",
      "kind_label",
      "members",
+     "my_cost_center",
      "my_limit",
      "name",
      "owner_name",
@@ -4452,13 +4627,17 @@
     "type": "object"
    },
    "PreferencesEnum": {
-    "description": "* `QUIET` - Quiet ride\n* `AC` - AC on\n* `LUGGAGE` - Extra luggage\n* `WOMAN_DRIVER` - Woman driver preferred\n* `ELECTRIC` - Electric vehicle preferred",
+    "description": "* `QUIET` - Quiet ride\n* `AC` - AC on\n* `LUGGAGE` - Extra luggage\n* `WOMAN_DRIVER` - Woman driver preferred\n* `ELECTRIC` - Electric vehicle preferred\n* `WHEELCHAIR` - Wheelchair-accessible vehicle\n* `ASSIST` - Help getting in and out\n* `HEARING` - Deaf or hard of hearing: message, don't call\n* `LOW_VISION` - Blind or low vision: please find me",
     "enum": [
      "QUIET",
      "AC",
      "LUGGAGE",
      "WOMAN_DRIVER",
-     "ELECTRIC"
+     "ELECTRIC",
+     "WHEELCHAIR",
+     "ASSIST",
+     "HEARING",
+     "LOW_VISION"
     ],
     "type": "string"
    },
@@ -5373,6 +5552,13 @@
    },
    "Rider": {
     "properties": {
+     "accessibility": {
+      "items": {
+       "maxLength": 12,
+       "type": "string"
+      },
+      "type": "array"
+     },
      "blocked_reason": {
       "readOnly": true,
       "type": "string"
@@ -5494,6 +5680,13 @@
    "RiderMe": {
     "description": "The rider's own profile: adds referral progress, ride preferences and favourites.",
     "properties": {
+     "accessibility": {
+      "items": {
+       "maxLength": 12,
+       "type": "string"
+      },
+      "type": "array"
+     },
      "blocked_reason": {
       "readOnly": true,
       "type": "string"
@@ -5757,6 +5950,10 @@
       "pattern": "^-?\\d{0,4}(?:\\.\\d{0,2})?$",
       "type": "string"
      },
+     "cost_center": {
+      "maxLength": 40,
+      "type": "string"
+     },
      "days": {
       "default": 1,
       "maximum": 7,
@@ -5836,6 +6033,12 @@
        }
       ],
       "nullable": true
+     },
+     "stops": {
+      "items": {
+       "$ref": "#/components/schemas/PointRequest"
+      },
+      "type": "array"
      },
      "sure_ride": {
       "default": false,
@@ -6934,6 +7137,57 @@
     ],
     "type": "string"
    },
+   "TeenAcceptRequest": {
+    "properties": {
+     "birth_year": {
+      "maximum": 2030,
+      "minimum": 1990,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "birth_year"
+    ],
+    "type": "object"
+   },
+   "TeenCurfewRequest": {
+    "properties": {
+     "end": {
+      "maximum": 23,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "start": {
+      "maximum": 23,
+      "minimum": 0,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "end",
+     "start"
+    ],
+    "type": "object"
+   },
+   "TeenInviteRequest": {
+    "properties": {
+     "monthly_limit": {
+      "format": "decimal",
+      "nullable": true,
+      "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "phone": {
+      "maxLength": 15,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "phone"
+    ],
+    "type": "object"
+   },
    "TelemetryRequest": {
     "properties": {
      "harsh_accelerations": {
@@ -7246,13 +7500,8 @@
       "type": "integer"
      },
      "co_riders": {
-      "allOf": [
-       {
-        "$ref": "#/components/schemas/Parcel"
-       }
-      ],
-      "nullable": true,
-      "readOnly": true
+      "readOnly": true,
+      "type": "integer"
      },
      "completed_at": {
       "format": "date-time",
@@ -7262,6 +7511,10 @@
      "contacts_notified_at": {
       "format": "date-time",
       "nullable": true,
+      "type": "string"
+     },
+     "cost_center": {
+      "maxLength": 40,
       "type": "string"
      },
      "counter_offers": {
@@ -7415,10 +7668,13 @@
       "type": "integer"
      },
      "parcel": {
-      "additionalProperties": {},
+      "allOf": [
+       {
+        "$ref": "#/components/schemas/Parcel"
+       }
+      ],
       "nullable": true,
-      "readOnly": true,
-      "type": "object"
+      "readOnly": true
      },
      "payment_method": {
       "maxLength": 6,
@@ -7539,6 +7795,13 @@
       "nullable": true,
       "readOnly": true
      },
+     "stops": {
+      "items": {
+       "$ref": "#/components/schemas/Point"
+      },
+      "readOnly": true,
+      "type": "array"
+     },
      "sure_ride_deadline": {
       "format": "date-time",
       "nullable": true,
@@ -7622,6 +7885,7 @@
      "rider",
      "status_label",
      "stop",
+     "stops",
      "trip_number",
      "vehicle"
     ],
@@ -7832,6 +8096,10 @@
       "pattern": "^-?\\d{0,4}(?:\\.\\d{0,2})?$",
       "type": "string"
      },
+     "cost_center": {
+      "maxLength": 40,
+      "type": "string"
+     },
      "days": {
       "default": 1,
       "maximum": 7,
@@ -7907,6 +8175,12 @@
        }
       ],
       "nullable": true
+     },
+     "stops": {
+      "items": {
+       "$ref": "#/components/schemas/PointRequest"
+      },
+      "type": "array"
      },
      "sure_ride": {
       "default": false,
@@ -11996,6 +12270,56 @@
     ]
    }
   },
+  "/api/v1/intel/events/": {
+   "post": {
+    "description": "The morning briefing, the next-hour demand forecast and the driver app's hot zones.",
+    "operationId": "intel_events_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CityEventRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CityEventRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CityEventRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "intel"
+    ]
+   }
+  },
   "/api/v1/intel/fraud/": {
    "get": {
     "description": "The fraud review queue (``?status=OPEN|CONFIRMED|DISMISSED``).",
@@ -12225,6 +12549,84 @@
    "get": {
     "description": "The morning briefing, the next-hour demand forecast and the driver app's hot zones.",
     "operationId": "intel_hot_zones_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "intel"
+    ]
+   }
+  },
+  "/api/v1/intel/nearby/": {
+   "get": {
+    "description": "Rider Home: rain and big events near the rider today.",
+    "operationId": "intel_nearby_retrieve",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "lat",
+      "schema": {
+       "format": "double",
+       "type": "number"
+      }
+     },
+     {
+      "in": "query",
+      "name": "lng",
+      "schema": {
+       "format": "double",
+       "type": "number"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "intel"
+    ]
+   }
+  },
+  "/api/v1/intel/outlook/": {
+   "get": {
+    "description": "Ops: weather in every city and upcoming events.",
+    "operationId": "intel_outlook_retrieve",
     "responses": {
      "200": {
       "content": {
@@ -14728,6 +15130,277 @@
     ]
    }
   },
+  "/api/v1/rider/business/{id}/": {
+   "get": {
+    "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
+    "operationId": "rider_business_retrieve",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/business/{id}/employee/": {
+   "post": {
+    "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
+    "operationId": "rider_business_employee_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporateEmployeeRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporateEmployeeRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporateEmployeeRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/business/{id}/invoice/": {
+   "get": {
+    "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
+    "operationId": "rider_business_invoice_retrieve",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "month",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/pdf": {
+        "schema": {
+         "format": "binary",
+         "type": "string"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/business/{id}/policy/": {
+   "post": {
+    "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
+    "operationId": "rider_business_policy_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporatePolicyRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporatePolicyRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporatePolicyRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/business/{id}/webhook/": {
+   "post": {
+    "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
+    "operationId": "rider_business_webhook_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporateWebhookRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporateWebhookRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CorporateWebhookRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
   "/api/v1/rider/contacts/": {
    "get": {
     "description": "Up to three people who get the live trip link (and Ride Check alerts).",
@@ -15955,6 +16628,247 @@
      },
      "required": true
     },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/teens/": {
+   "get": {
+    "description": "Teen accounts: a parent's linked teens, and a teen's pending invitation.",
+    "operationId": "rider_teens_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   },
+   "post": {
+    "description": "Teen accounts: a parent's linked teens, and a teen's pending invitation.",
+    "operationId": "rider_teens_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenInviteRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenInviteRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenInviteRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/teens/{id}/accept/": {
+   "post": {
+    "description": "Teen accounts: a parent's linked teens, and a teen's pending invitation.",
+    "operationId": "rider_teens_accept_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this teen link.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenAcceptRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenAcceptRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenAcceptRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/teens/{id}/curfew/": {
+   "post": {
+    "description": "Teen accounts: a parent's linked teens, and a teen's pending invitation.",
+    "operationId": "rider_teens_curfew_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this teen link.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenCurfewRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenCurfewRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/TeenCurfewRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/teens/{id}/end/": {
+   "post": {
+    "description": "Teen accounts: a parent's linked teens, and a teen's pending invitation.",
+    "operationId": "rider_teens_end_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this teen link.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
     "responses": {
      "200": {
       "content": {

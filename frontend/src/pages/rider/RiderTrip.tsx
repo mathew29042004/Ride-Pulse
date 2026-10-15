@@ -180,7 +180,7 @@ export default function RiderTrip() {
   // The route the rider sees, and where the car is along it: the car is drawn on the line, the
   // part already driven disappears, and the ETA counts the road that's left.
   const route = useMemo<LatLng[]>(
-    () => (trip ? routePath([trip.pickup_lat, trip.pickup_lng], [trip.dropoff_lat, trip.dropoff_lng], trip.route_polyline, trip.stop && [trip.stop.lat, trip.stop.lng]) : []),
+    () => (trip ? routePath([trip.pickup_lat, trip.pickup_lng], [trip.dropoff_lat, trip.dropoff_lng], trip.route_polyline, (trip.stops ?? []).map((s) => [s.lat, s.lng] as [number, number])) : []),
     [trip?.id, trip?.route_polyline], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const onRoute = useMemo(() => {
@@ -203,7 +203,7 @@ export default function RiderTrip() {
   const toPickupKm = driverPos ? haversineKm(driverPos, pickup) * 1.3 : null;
   const toDropKm = onRoute ? onRoute.remainingKm : driverPos ? haversineKm(driverPos, dropoff) * 1.3 : Number(trip.estimated_distance_km);
   const toDropEta = onRoute || driverPos ? etaFromKm(toDropKm) : Number(trip.estimated_duration_min);
-  const stopAt: LatLng | null = trip.stop ? [trip.stop.lat, trip.stop.lng] : null;
+  const stopsAt: LatLng[] = (trip.stops ?? []).map((s) => [s.lat, s.lng]);
   const carAt: LatLng | null = onRoute ? onRoute.at : driverPos ? [driverPos.lat, driverPos.lng] : null;
   const waited = trip.arrived_at ? Math.max(0, Math.floor((now - new Date(trip.arrived_at).getTime()) / 60000)) : 0;
   const active = isActive(trip);
@@ -214,12 +214,14 @@ export default function RiderTrip() {
         <BaseMap center={[trip.pickup_lat, trip.pickup_lng]} zoom={14}>
           <FitBounds points={points} padding={50} bottom={380} fitKey={`${trip.status}-${driverPos ? 1 : 0}-${recenter}`} />
           <PinMarker lat={trip.pickup_lat} lng={trip.pickup_lng} kind={trip.status === "REQUESTED" ? "searching" : "pickup"} />
-          {stopAt && <PinMarker lat={stopAt[0]} lng={stopAt[1]} kind="stop" />}
+          {stopsAt.map(([lat, lng], i) => (
+            <PinMarker key={i} lat={lat} lng={lng} kind="stop" label={stopsAt.length > 1 ? String(i + 1) : undefined} />
+          ))}
           <PinMarker lat={trip.dropoff_lat} lng={trip.dropoff_lng} kind="dropoff" />
           {trip.status === "IN_PROGRESS" || !active ? (
-            <RouteLine from={[trip.pickup_lat, trip.pickup_lng]} to={[trip.dropoff_lat, trip.dropoff_lng]} encoded={trip.route_polyline} via={stopAt} progress={active ? carAt : null} />
+            <RouteLine from={[trip.pickup_lat, trip.pickup_lng]} to={[trip.dropoff_lat, trip.dropoff_lng]} encoded={trip.route_polyline} via={stopsAt} progress={active ? carAt : null} />
           ) : (
-            <RouteLine from={[trip.pickup_lat, trip.pickup_lng]} to={[trip.dropoff_lat, trip.dropoff_lng]} encoded={trip.route_polyline} via={stopAt} dashed />
+            <RouteLine from={[trip.pickup_lat, trip.pickup_lng]} to={[trip.dropoff_lat, trip.dropoff_lng]} encoded={trip.route_polyline} via={stopsAt} dashed />
           )}
           {driverPos && carAt && active && trip.status !== "REQUESTED" && (
             <>

@@ -202,9 +202,12 @@ export function decodePolyline(encoded: string): LatLng[] {
 }
 
 /** The route to draw: the road polyline if known, else gentle arcs (through the stop, if any). */
-export function routePath(from: LatLng, to: LatLng, encoded?: string | null, via?: LatLng | null): LatLng[] {
+export function routePath(from: LatLng, to: LatLng, encoded?: string | null, via?: LatLng | LatLng[] | null): LatLng[] {
   if (encoded) return decodePolyline(encoded);
-  return via ? [...arc(from, via), ...arc(via, to).slice(1)] : arc(from, to);
+  // `via` is one point ([lat, lng]) or a list of points (possibly empty: no stops).
+  const stops: LatLng[] = !via || via.length === 0 ? [] : Array.isArray(via[0]) ? (via as LatLng[]) : [via as LatLng];
+  const points = [from, ...stops, to];
+  return points.slice(1).reduce<LatLng[]>((path, point, i) => [...path, ...arc(points[i], point).slice(i ? 1 : 0)], []);
 }
 
 /** The part of `path` still ahead of `position` (the whole path if the car isn't on it). */
@@ -247,8 +250,8 @@ export interface RouteLineProps {
   encoded?: string | null;
   /** The car's position: the part of the route already driven is trimmed away. */
   progress?: LatLng | null;
-  /** A stop on the way (used when there's no road polyline). */
-  via?: LatLng | null;
+  /** Stops on the way, in order (used when there's no road polyline). */
+  via?: LatLng | LatLng[] | null;
   dashed?: boolean;
   color?: string;
 }

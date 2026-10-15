@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, BellRing, Building2, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, Building2, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -66,6 +66,7 @@ const NAV = [
       { to: "/ops/briefing", label: "Morning briefing", icon: Sunrise, cap: "reports.view" },
       { to: "/ops/alerts", label: "Alerts", icon: BellRing, cap: "reports.view" },
       { to: "/ops/demand", label: "Demand forecast", icon: TrendingUp, cap: "reports.view" },
+      { to: "/ops/outlook", label: "Weather & events", icon: CloudSun, cap: "reports.view" },
       { to: "/ops/fraud", label: "Fraud review", icon: ShieldX, cap: "fraud.review" },
     ],
   },

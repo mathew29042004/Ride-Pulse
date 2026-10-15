@@ -36,6 +36,21 @@ class PointSerializer(serializers.Serializer):
     address = serializers.CharField(required=False, allow_blank=True, max_length=255)
 
 
+def split_stops(data: dict) -> dict:
+    """``stops`` (up to 3, in order) or the older single ``stop``, as service arguments."""
+    stops = data.get("stops") or ([data["stop"]] if data.get("stop") else [])
+    if data.get("stops") and data.get("stop"):
+        raise serializers.ValidationError({"stops": ["Send either stop or stops, not both."]})
+    if not stops:
+        return {}
+    first = stops[0]
+    return {
+        "stop": (first["lat"], first["lng"]),
+        "stop_address": first.get("address", ""),
+        "extra_stops": [dict(s) for s in stops[1:]],
+    }
+
+
 class FareLineSerializer(serializers.Serializer):
     code = serializers.CharField()
     label = serializers.CharField()
@@ -58,6 +73,7 @@ class EstimateRequestSerializer(serializers.Serializer):
     pickup = PointSerializer()
     dropoff = PointSerializer()
     stop = PointSerializer(required=False, allow_null=True)
+    stops = PointSerializer(many=True, required=False, max_length=3)
     promo_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
     service = serializers.ChoiceField(choices=["RIDE", "PARCEL"], required=False, default="RIDE")
 
@@ -148,8 +164,8 @@ class FareEstimateView(ContextBindingMixin, APIView):
             pickup=(data["pickup"]["lat"], data["pickup"]["lng"]),
             dropoff=(data["dropoff"]["lat"], data["dropoff"]["lng"]),
             promo_code=data.get("promo_code", ""),
-            stop=(data["stop"]["lat"], data["stop"]["lng"]) if data.get("stop") else None,
             service=data.get("service", "RIDE"),
+            **{k: v for k, v in split_stops(data).items() if k != "stop_address"},
         )
         return Response(EstimateResponseSerializer(serialize_options(result)).data)
 

@@ -183,6 +183,7 @@ def _route_points(trip: Trip) -> list[tuple[float, float]]:
     points = [(trip.pickup_lat, trip.pickup_lng)]
     if trip.stop_lat is not None:
         points.append((trip.stop_lat, trip.stop_lng))
+    points += [(stop["lat"], stop["lng"]) for stop in trip.extra_stops or []]
     return [*points, (trip.dropoff_lat, trip.dropoff_lng)]
 
 

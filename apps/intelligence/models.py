@@ -138,3 +138,53 @@ class FraudCase(models.Model):
 
     def __str__(self) -> str:
         return f"{self.number} {self.get_kind_display()}"
+
+
+class WeatherReading(models.Model):
+    """The weather in a city: from Open-Meteo (no key needed), or simulated when offline."""
+
+    city = models.ForeignKey("geo.City", on_delete=models.CASCADE, related_name="weather")
+    observed_at = models.DateTimeField(db_index=True)
+    temperature_c = models.DecimalField(max_digits=4, decimal_places=1)
+    rain_mm = models.DecimalField(max_digits=5, decimal_places=1)  # last hour
+    rain_chance_next_3h = models.PositiveSmallIntegerField()  # percent
+    condition = models.CharField(max_length=40)
+    source = models.CharField(max_length=12)  # "open-meteo" or "simulated"
+
+    class Meta:
+        ordering = ["-observed_at"]
+
+    def __str__(self) -> str:
+        return f"{self.city_id} {self.condition} {self.observed_at:%H:%M}"
+
+
+class EventKind(models.TextChoices):
+    CRICKET = "CRICKET", "Cricket match"
+    FOOTBALL = "FOOTBALL", "Football match"
+    CONCERT = "CONCERT", "Concert"
+    FESTIVAL = "FESTIVAL", "Festival"
+    CONFERENCE = "CONFERENCE", "Conference or expo"
+    OTHER = "OTHER", "Other"
+
+
+class CityEvent(models.Model):
+    """A big event: riders flood the venue before it starts and after it ends."""
+
+    city = models.ForeignKey("geo.City", on_delete=models.CASCADE, related_name="events")
+    name = models.CharField(max_length=120)
+    kind = models.CharField(max_length=12, choices=EventKind.choices)
+    venue = models.CharField(max_length=120)
+    lat = models.FloatField()
+    lng = models.FloatField()
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    expected_attendance = models.PositiveIntegerField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["starts_at"]
+
+    def __str__(self) -> str:
+        return self.name

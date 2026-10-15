@@ -37,7 +37,7 @@ export default function SwitchAccount({ app, roles }: { app: string; roles: Role
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const demo = DEMO_ACCOUNTS.filter((a) =>
-    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", "Fleet owner": "FLEET_OWNER", Admin: "ADMIN" } as const)[a.label]),
+    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", Business: "RIDER", "Fleet owner": "FLEET_OWNER", Admin: "ADMIN" } as const)[a.label]),
   );
 
   async function signIn(email: string) {

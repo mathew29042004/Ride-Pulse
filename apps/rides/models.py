@@ -57,10 +57,24 @@ class RidePreference(models.TextChoices):
     LUGGAGE = "LUGGAGE", "Extra luggage"
     WOMAN_DRIVER = "WOMAN_DRIVER", "Woman driver preferred"
     ELECTRIC = "ELECTRIC", "Electric vehicle preferred"
+    # Accessibility: a wheelchair-accessible vehicle is a hard requirement; the others tell the
+    # driver how to help (and earn extra free waiting time).
+    WHEELCHAIR = "WHEELCHAIR", "Wheelchair-accessible vehicle"
+    ASSIST = "ASSIST", "Help getting in and out"
+    HEARING = "HEARING", "Deaf or hard of hearing: message, don't call"
+    LOW_VISION = "LOW_VISION", "Blind or low vision: please find me"
 
 
 # AC and luggage only make sense in a car.
-CAR_ONLY_PREFERENCES = {RidePreference.AC, RidePreference.LUGGAGE}
+CAR_ONLY_PREFERENCES = {RidePreference.AC, RidePreference.LUGGAGE, RidePreference.WHEELCHAIR}
+ACCESSIBILITY_NEEDS = {
+    RidePreference.WHEELCHAIR,
+    RidePreference.ASSIST,
+    RidePreference.HEARING,
+    RidePreference.LOW_VISION,
+}
+# Riders who need more time to board get this much extra free waiting at the pickup.
+ACCESSIBLE_EXTRA_WAIT_MINUTES = 5
 
 
 class PricingMode(models.TextChoices):
@@ -128,6 +142,8 @@ class Trip(AuditedModel, TimeStampedModel):
     stop_lat = LatitudeField(null=True, blank=True)
     stop_lng = LongitudeField(null=True, blank=True)
     stop_address = models.CharField(max_length=255, blank=True)
+    # Further stops after the first, in order: [{"lat", "lng", "address"}] (3 stops in all).
+    extra_stops = models.JSONField(default=list, blank=True)
 
     status = models.CharField(
         max_length=16, choices=TripStatus.choices, default=TripStatus.REQUESTED
@@ -185,9 +201,12 @@ class Trip(AuditedModel, TimeStampedModel):
         related_name="trips",
     )
     trip_purpose = models.CharField(max_length=120, blank=True)
+    cost_center = models.CharField(max_length=40, blank=True)
     # Shared rides: trips carried together by one driver share a pool id (the first trip's
     # number). Pooled trips are the only way a driver has more than one active trip.
     pool_id = models.CharField(max_length=20, blank=True, default="", db_index=True)
+    # A teen's ride: top-rated drivers only, followed live by the parent.
+    is_teen = models.BooleanField(default=False)
     # Zero-commission day pass: the commission the driver kept on this trip.
     commission_waived = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal(0))
     # Eco score: CO2 saved vs driving your own car, and the points it earned.
@@ -495,6 +514,8 @@ class ScheduledRide(TimeStampedModel):
     stop_lat = LatitudeField(null=True, blank=True)
     stop_lng = LongitudeField(null=True, blank=True)
     stop_address = models.CharField(max_length=255, blank=True)
+    # Further stops after the first, in order: [{"lat", "lng", "address"}] (3 stops in all).
+    extra_stops = models.JSONField(default=list, blank=True)
     payment_method = models.CharField(max_length=10)
     promo_code = models.CharField(max_length=20, blank=True)
     scheduled_for = models.DateTimeField()

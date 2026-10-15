@@ -41,6 +41,8 @@ class RiderProfile(AuditedModel, TimeStampedModel):
     co2_saved_g = models.PositiveBigIntegerField(default=0)
     # Night Safe mode: stricter Ride Checks, auto-share and drop control from 10 pm to 6 am.
     night_safety = models.BooleanField(default=True)
+    # Saved accessibility needs, added to every booking automatically.
+    accessibility = ArrayField(models.CharField(max_length=12), default=list, blank=True)
     is_blocked = models.BooleanField(default=False)
     blocked_reason = models.CharField(max_length=255, blank=True)
 
@@ -126,6 +128,12 @@ class PaymentProfile(models.Model):
     credit_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Business travel policy (corporate portal). Empty / blank = no restriction.
+    allowed_ride_types = ArrayField(models.CharField(max_length=10), default=list, blank=True)
+    allowed_from_hour = models.PositiveSmallIntegerField(null=True, blank=True)
+    allowed_to_hour = models.PositiveSmallIntegerField(null=True, blank=True)
+    max_fare_per_trip = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    cost_centers = ArrayField(models.CharField(max_length=40), default=list, blank=True)
 
     class Meta:
         ordering = ["kind", "name"]
@@ -149,6 +157,9 @@ class ProfileMember(models.Model):
     )
     # Monthly spending limit on this profile (blank = no limit).
     monthly_limit = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)
+    # Business: a travel admin can see the company dashboard and manage people and policy.
+    is_admin = models.BooleanField(default=False)
+    default_cost_center = models.CharField(max_length=40, blank=True)
     invited_at = models.DateTimeField(auto_now_add=True)
     joined_at = models.DateTimeField(null=True, blank=True)
 
@@ -160,3 +171,39 @@ class ProfileMember(models.Model):
 
     def __str__(self) -> str:
         return f"{self.rider_id} in {self.profile_id} ({self.status})"
+
+
+class TeenStatus(models.TextChoices):
+    INVITED = "INVITED", "Waiting for the teen"
+    ACTIVE = "ACTIVE", "Active"
+    ENDED = "ENDED", "Ended"
+
+
+class TeenLink(models.Model):
+    """A parent and their teenager (13-17): the parent pays (through a family profile with a
+    monthly limit) and follows every ride live; the teen rides with extra safety rules."""
+
+    guardian = models.ForeignKey(RiderProfile, on_delete=models.CASCADE, related_name="teens")
+    teen = models.ForeignKey(RiderProfile, on_delete=models.CASCADE, related_name="guardian_links")
+    birth_year = models.PositiveSmallIntegerField()
+    status = models.CharField(max_length=8, choices=TeenStatus.choices, default=TeenStatus.INVITED)
+    profile = models.ForeignKey(
+        "PaymentProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    # No rides between these local hours (default 10 pm to 6 am).
+    curfew_start = models.PositiveSmallIntegerField(default=22)
+    curfew_end = models.PositiveSmallIntegerField(default=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["teen"],
+                condition=models.Q(status__in=["INVITED", "ACTIVE"]),
+                name="one_guardian_per_teen",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.guardian_id} → {self.teen_id} ({self.status})"

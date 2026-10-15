@@ -77,12 +77,16 @@ export default function RiderBook() {
     const [lat, lng] = to.split(",").map(Number);
     return { lat, lng, name: params.get("name") ?? "Destination" };
   });
-  type Field = "pickup" | "stop" | "dropoff";
+  // "stop0".."stop2": up to three stops on the way, in order.
+  type Field = "pickup" | "dropoff" | `stop${number}`;
   const [editing, setEditing] = useState<Field>("dropoff");
-  // One optional stop on the way.
-  const [stop, setStop] = useState<Spot | null>(null);
-  const [showStop, setShowStop] = useState(false);
-  const fieldLabel = t({ pickup: "pickup", stop: "stop", dropoff: "drop" }[editing]);
+  const [stopSlots, setStopSlots] = useState<(Spot | null)[]>([]);
+  const stops = stopSlots.filter((s): s is Spot => !!s);
+  const stopIndex = (field: Field) => (field.startsWith("stop") ? Number(field.slice(4)) : -1);
+  const editingStop = stopIndex(editing);
+  const fieldLabel = editingStop >= 0 ? t("stop") : t({ pickup: "pickup", dropoff: "drop" }[editing as "pickup" | "dropoff"]);
+  const stopsBody = (withAddress: boolean) =>
+    stops.length ? stops.map((s) => ({ lat: s.lat, lng: s.lng, ...(withAddress ? { address: s.name } : {}) })) : undefined;
   const [query, setQuery] = useState("");
   const [pickOnMap, setPickOnMap] = useState(false);
   // "Move the map to set the pin": the pin stays in the middle and the map moves under it.
@@ -98,6 +102,7 @@ export default function RiderBook() {
   const [sureRide, setSureRide] = useState(false);
   const [billTo, setBillTo] = useState<number | null>(null); // family / business profile
   const [purpose, setPurpose] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("UPI");
   const [promoInput, setPromoInput] = useState("");
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
@@ -119,12 +124,12 @@ export default function RiderBook() {
   const saved = useQuery({ queryKey: ["places", "saved"], queryFn: () => api.get<SavedPlace[]>("rider/places/") });
 
   const estimate = useQuery({
-    queryKey: ["estimate", service, pickup.lat, pickup.lng, dropoff?.lat, dropoff?.lng, stop?.lat, stop?.lng, promo],
+    queryKey: ["estimate", service, pickup.lat, pickup.lng, dropoff?.lat, dropoff?.lng, stops.map((s) => `${s.lat},${s.lng}`).join("|"), promo],
     queryFn: () =>
       api.post<Estimate>("fares/estimate/", {
         pickup: { lat: pickup.lat, lng: pickup.lng },
         dropoff: { lat: dropoff!.lat, lng: dropoff!.lng },
-        stop: stop && { lat: stop.lat, lng: stop.lng },
+        stops: stopsBody(false),
         promo_code: promo,
         service,
       }),
@@ -163,7 +168,7 @@ export default function RiderBook() {
         ride_type: selected,
         pickup: { lat: pickup.lat, lng: pickup.lng, address: pickup.name },
         dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, address: dropoff!.name },
-        stop: stop && { lat: stop.lat, lng: stop.lng, address: stop.name },
+        stops: stopsBody(true),
         payment_method: payment,
         promo_code: promo,
         scheduled_for: scheduleAt!.toISOString(),
@@ -182,13 +187,14 @@ export default function RiderBook() {
         ride_type: selected,
         pickup: { lat: pickup.lat, lng: pickup.lng, address: pickup.name },
         dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, address: dropoff!.name },
-        stop: stop && { lat: stop.lat, lng: stop.lng, address: stop.name },
+        stops: stopsBody(true),
         payment_method: payment,
         promo_code: promo,
         tip,
         parcel: service === "PARCEL" ? parcel : null,
         payment_profile: billTo,
         trip_purpose: purpose,
+        cost_center: costCenter || undefined,
         boost: option?.availability === "NONE" && !bidding ? boost : 0,
         fare_offer: bidding && !scheduleAt ? bid : null,
         sure_ride: sureRide && !bidding && !!option?.sure_ride && !scheduleAt,
@@ -202,7 +208,7 @@ export default function RiderBook() {
   });
 
   function startPicking() {
-    const from = (editing === "dropoff" && dropoff) || (editing === "stop" && (stop ?? dropoff)) || pickup;
+    const from = (editing === "dropoff" && dropoff) || (editingStop >= 0 && (stopSlots[editingStop] ?? dropoff)) || pickup;
     setPickStart([from.lat, from.lng]);
     setCandidate(null);
     setPickOnMap(true);
@@ -238,15 +244,20 @@ export default function RiderBook() {
   /** Put a chosen spot into the field being edited, then move on to the drop. */
   function fill(spot: Spot) {
     if (editing === "pickup") setPickup(spot);
-    else if (editing === "stop") setStop(spot);
+    else if (editingStop >= 0) setStopSlots((slots) => slots.map((s, i) => (i === editingStop ? spot : s)));
     else setDropoff(spot);
     setEditing("dropoff");
   }
 
-  function removeStop() {
-    setStop(null);
-    setShowStop(false);
-    if (editing === "stop") setEditing("dropoff");
+  function removeStop(index: number) {
+    setStopSlots((slots) => slots.filter((_, i) => i !== index));
+    if (editingStop >= 0) setEditing("dropoff");
+  }
+
+  function addStop() {
+    setStopSlots((slots) => [...slots, null]);
+    setEditing(`stop${stopSlots.length}`);
+    setQuery("");
   }
 
   const option = estimate.data?.options.find((o) => o.ride_type.code === selected);
@@ -258,8 +269,8 @@ export default function RiderBook() {
   const choosing = !!dropoff && !pickOnMap && editing === "dropoff" && !query;
   const points = useMemo(
     () =>
-      [[pickup.lat, pickup.lng], ...(stop ? [[stop.lat, stop.lng]] : []), ...(dropoff ? [[dropoff.lat, dropoff.lng]] : [])] as [number, number][],
-    [pickup, dropoff, stop],
+      [[pickup.lat, pickup.lng], ...stops.map((s) => [s.lat, s.lng]), ...(dropoff ? [[dropoff.lat, dropoff.lng]] : [])] as [number, number][],
+    [pickup, dropoff, stops],
   );
 
   // Pickup / stop / drop fields: floating over the map on a phone, at the top of the side panel
@@ -272,16 +283,17 @@ export default function RiderBook() {
           </Link>
           <div className="relative flex-1 space-y-2">
             <div className="absolute top-[22px] bottom-[22px] left-[13px] w-0.5 bg-line" />
-            {(["pickup", ...(showStop ? ["stop"] : []), "dropoff"] as Field[]).map((field) => {
-              const value = field === "pickup" ? pickup.name : field === "stop" ? (stop?.name ?? "") : (dropoff?.name ?? "");
+            {(["pickup", ...stopSlots.map((_, i) => `stop${i}`), "dropoff"] as Field[]).map((field) => {
+              const slot = stopIndex(field);
+              const value = field === "pickup" ? pickup.name : slot >= 0 ? (stopSlots[slot]?.name ?? "") : (dropoff?.name ?? "");
               const isEditing = editing === field;
-              const placeholder = t(field === "pickup" ? "Pickup location" : field === "stop" ? "Add a stop" : "Where to?");
+              const placeholder = slot >= 0 ? t("Stop {n}", { n: slot + 1 }) : t(field === "pickup" ? "Pickup location" : "Where to?");
               return (
                 <div key={field} className="flex items-center gap-3">
                   <span
                     className={clsx(
                       "relative z-10 ml-2 size-3 shrink-0",
-                      field === "pickup" ? "rounded-full bg-brand" : field === "stop" ? "ml-[9px] size-2.5 rounded-full bg-slate-500" : "bg-ink",
+                      field === "pickup" ? "rounded-full bg-brand" : slot >= 0 ? "ml-[9px] size-2.5 rounded-full bg-slate-500" : "bg-ink",
                     )}
                   />
                   {isEditing ? (
@@ -297,24 +309,17 @@ export default function RiderBook() {
                       {value || <span className="text-muted">{placeholder}</span>}
                     </button>
                   )}
-                  {field === "stop" && (
-                    <button onClick={removeStop} className="shrink-0 rounded-full p-1 text-muted hover:bg-surface-3" aria-label="Remove stop">
+                  {slot >= 0 && (
+                    <button onClick={() => removeStop(slot)} className="shrink-0 rounded-full p-1 text-muted hover:bg-surface-3" aria-label={t("Remove stop {n}", { n: slot + 1 })}>
                       <X className="size-4" />
                     </button>
                   )}
                 </div>
               );
             })}
-            {dropoff && !showStop && (
-              <button
-                onClick={() => {
-                  setShowStop(true);
-                  setEditing("stop");
-                  setQuery("");
-                }}
-                className="ml-8 flex items-center gap-1 text-xs font-semibold text-brand-strong"
-              >
-                <Plus className="size-3.5" /> {t("Add a stop")}
+            {dropoff && stopSlots.length < 3 && stopSlots.every(Boolean) && service === "RIDE" && (
+              <button onClick={addStop} className="ml-8 flex items-center gap-1 text-xs font-semibold text-brand-strong">
+                <Plus className="size-3.5" /> {stopSlots.length ? t("Add another stop") : t("Add a stop")}
               </button>
             )}
           </div>
@@ -331,9 +336,9 @@ export default function RiderBook() {
           {dropoff && !(pickOnMap && editing === "dropoff") && (
             <PinMarker lat={dropoff.lat} lng={dropoff.lng} kind="dropoff" label={option && !pickOnMap ? minutes(option.duration_minutes) : undefined} />
           )}
-          {stop && !(pickOnMap && editing === "stop") && <PinMarker lat={stop.lat} lng={stop.lng} kind="stop" />}
+          {stopSlots.map((s, i) => s && !(pickOnMap && editingStop === i) && <PinMarker key={i} lat={s.lat} lng={s.lng} kind="stop" label={stopSlots.length > 1 ? String(i + 1) : undefined} />)}
           {dropoff && !pickOnMap && (
-            <RouteLine from={[pickup.lat, pickup.lng]} to={[dropoff.lat, dropoff.lng]} encoded={option?.route_polyline} via={stop && [stop.lat, stop.lng]} />
+            <RouteLine from={[pickup.lat, pickup.lng]} to={[dropoff.lat, dropoff.lng]} encoded={option?.route_polyline} via={stops.map((s) => [s.lat, s.lng] as [number, number])} />
           )}
           {pickOnMap && (
             <>
@@ -361,7 +366,7 @@ export default function RiderBook() {
             <div className="relative">
               <span className="absolute top-0 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/30 blur-[1px]" />
               <div className={clsx("absolute bottom-0 left-1/2 flex -translate-x-1/2 flex-col items-center transition-transform duration-200", moving && "-translate-y-3")}>
-                <span className={clsx("flex size-9 items-center justify-center rounded-full border-4 border-white shadow-lg", editing === "pickup" ? "bg-brand" : editing === "stop" ? "bg-slate-500" : "bg-ink")}>
+                <span className={clsx("flex size-9 items-center justify-center rounded-full border-4 border-white shadow-lg", editing === "pickup" ? "bg-brand" : editingStop >= 0 ? "bg-slate-500" : "bg-ink")}>
                   <span className="size-2.5 rounded-full bg-white" />
                 </span>
                 <span className="h-4 w-1 rounded-b bg-ink" />
@@ -584,7 +589,7 @@ export default function RiderBook() {
                 </div>
               </div>
 
-              <BillTo value={billTo} purpose={purpose} onChange={setBillTo} onPurpose={setPurpose} />
+              <BillTo value={billTo} purpose={purpose} onChange={setBillTo} onPurpose={setPurpose} costCenter={costCenter} onCostCenter={setCostCenter} />
               <div className={clsx("mt-3 grid grid-cols-4 gap-1.5", billTo !== null && "hidden")}>
                 {PAYMENT.map(({ value, label, icon: Icon }) => (
                   <button

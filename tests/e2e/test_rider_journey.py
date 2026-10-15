@@ -65,6 +65,8 @@ def test_rider_books_chats_and_completes_a_trip(page, live_server, make_driver, 
     expect(page.get_by_text("Your driver is here")).to_be_visible()
     rides.start_trip(trip, driver=driver, otp=trip.otp)
     expect(page.get_by_text("to drop")).to_be_visible()
+    # Drive to the drop first (at night, Night Safe mode refuses to end a ride anywhere else).
+    drivers.update_location(driver, lat=trip.dropoff_lat, lng=trip.dropoff_lng)
     rides.complete_trip(trip, driver=driver, payer_reference="asha@upi")
     expect(page.get_by_text("Trip completed")).to_be_visible()
     assert rides.Trip.objects.get(pk=trip.pk).status == TripStatus.COMPLETED

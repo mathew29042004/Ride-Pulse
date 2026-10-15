@@ -26,7 +26,8 @@ from apps.notifications.services import notify
 from .models import MemberStatus, PaymentProfile, ProfileKind, ProfileMember, RiderProfile
 
 MAX_PROFILES_PER_OWNER = 3
-MAX_MEMBERS = 20
+MAX_MEMBERS = 20  # a family
+MAX_EMPLOYEES = 500  # a company on the corporate portal
 
 
 def create_profile(owner: RiderProfile, *, kind: str, name: str, gstin: str = "") -> PaymentProfile:
@@ -63,8 +64,9 @@ def invite(profile: PaymentProfile, *, user, phone: str) -> ProfileMember:
         )
     if rider.pk == profile.owner_id:
         raise BusinessRuleViolation("You're the owner already.", field="phone")
-    if profile.members.exclude(status=MemberStatus.REMOVED).count() >= MAX_MEMBERS:
-        raise BusinessRuleViolation(f"A profile can have up to {MAX_MEMBERS} members.")
+    cap = MAX_EMPLOYEES if profile.kind == ProfileKind.BUSINESS else MAX_MEMBERS
+    if profile.members.exclude(status=MemberStatus.REMOVED).count() >= cap:
+        raise BusinessRuleViolation(f"A profile can have up to {cap} members.")
     member, created = ProfileMember.objects.get_or_create(profile=profile, rider=rider)
     if not created:
         if member.status in (MemberStatus.ACTIVE, MemberStatus.INVITED):
@@ -142,10 +144,45 @@ def spent_this_month(profile: PaymentProfile, rider: RiderProfile, at: datetime)
     return done + open_
 
 
+def check_policy(
+    profile: PaymentProfile, *, ride_type_code: str, fare: Decimal, at: datetime
+) -> None:
+    """A company's travel policy: ride types, hours and a per-trip fare cap."""
+    if profile.kind != ProfileKind.BUSINESS:
+        return
+    if profile.allowed_ride_types and ride_type_code not in profile.allowed_ride_types:
+        allowed = ", ".join(profile.allowed_ride_types)
+        raise BusinessRuleViolation(
+            f"{profile.name}'s travel policy allows {allowed}.", field="ride_type"
+        )
+    start, end = profile.allowed_from_hour, profile.allowed_to_hour
+    if start is not None and end is not None and start != end:
+        hour = timezone.localtime(at).hour
+        inside = start <= hour < end if start < end else hour >= start or hour < end
+        if not inside:
+            raise BusinessRuleViolation(
+                f"{profile.name} covers rides between {start}:00 and {end}:00.",
+                field="payment_profile",
+            )
+    if profile.max_fare_per_trip is not None and fare > profile.max_fare_per_trip:
+        raise BusinessRuleViolation(
+            f"Over {profile.name}'s ₹{profile.max_fare_per_trip:,.0f} limit per trip.",
+            field="payment_profile",
+        )
+
+
 def check_booking(
-    profile: PaymentProfile, rider: RiderProfile, *, fare: Decimal, purpose: str, at: datetime
-) -> str:
-    """Raise if this rider can't book this fare on the profile; return the cleaned purpose."""
+    profile: PaymentProfile,
+    rider: RiderProfile,
+    *,
+    fare: Decimal,
+    purpose: str,
+    at: datetime,
+    ride_type_code: str = "",
+    cost_center: str = "",
+) -> tuple[str, str]:
+    """Raise if this rider can't book this fare on the profile; return the cleaned purpose and
+    cost centre."""
     from apps.payments.services import wallet_balance
 
     if not profile.is_active:
@@ -165,6 +202,15 @@ def check_booking(
     purpose = " ".join(purpose.split())[:120]
     if profile.kind == ProfileKind.BUSINESS and len(purpose) < 3:
         raise BusinessRuleViolation("Add the purpose of this business trip.", field="trip_purpose")
+    check_policy(profile, ride_type_code=ride_type_code, fare=fare, at=at)
+    if profile.cost_centers:
+        if not cost_center:
+            member = profile.members.filter(rider=rider).first()
+            cost_center = member.default_cost_center if member else ""
+        if cost_center not in profile.cost_centers:
+            raise BusinessRuleViolation("Choose a cost centre for this trip.", field="cost_center")
+    else:
+        cost_center = ""
     balance = wallet_balance(profile.owner.user)
     if balance - fare < -profile.credit_limit:
         raise BusinessRuleViolation(
@@ -172,7 +218,7 @@ def check_booking(
             f"Ask {profile.owner.name} to top up.",
             field="payment_profile",
         )
-    return purpose
+    return purpose, cost_center
 
 
 def statement(profile: PaymentProfile, *, user, month: str | None = None) -> dict:

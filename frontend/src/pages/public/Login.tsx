@@ -1,4 +1,4 @@
-import { ArrowRight, Building2, Car, CarTaxiFront, Headset, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { ArrowRight, Briefcase, Building2, Car, CarTaxiFront, Headset, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/api";
 import { homeFor, useAuth } from "@/lib/auth";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/demo";
 
-const ICONS = { Rider: Car, Driver: CarTaxiFront, Operations: LayoutDashboard, Support: Headset, "Fleet owner": Building2, Admin: ShieldCheck };
+const ICONS = { Rider: Car, Driver: CarTaxiFront, Operations: LayoutDashboard, Support: Headset, Business: Briefcase, "Fleet owner": Building2, Admin: ShieldCheck };
 
 export default function Login() {
   const { user, login } = useAuth();

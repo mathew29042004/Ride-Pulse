@@ -254,6 +254,7 @@ CELERY_BEAT_SCHEDULE = {
     "outbox-relay": {"task": "reliability.relay_outbox", "schedule": timedelta(seconds=10)},
     "fleet-upkeep": {"task": "fleet.upkeep_sweep", "schedule": crontab(hour=7, minute=30)},
     "fleet-quests": {"task": "fleet.end_quests", "schedule": timedelta(minutes=15)},
+    "intel-weather": {"task": "intelligence.refresh_weather", "schedule": timedelta(minutes=30)},
     "intel-alerts": {"task": "intelligence.check_alerts", "schedule": timedelta(minutes=5)},
     "intel-nudges": {"task": "intelligence.nudge_drivers", "schedule": timedelta(minutes=10)},
     "intel-fraud": {"task": "intelligence.fraud_scan", "schedule": timedelta(hours=1)},

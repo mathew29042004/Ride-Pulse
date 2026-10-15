@@ -87,6 +87,8 @@ class DriverProfile(AuditedModel, TimeStampedModel):
     )
     # Car drivers take intercity trips (hours away from home) only if they opt in.
     accepts_intercity = models.BooleanField(default=True)
+    # Completed disability-awareness and boarding-assistance training.
+    assist_trained = models.BooleanField(default=False)
     # Driver Wellbeing (see drivers.wellbeing): enforced rest after long driving stretches.
     break_until = models.DateTimeField(null=True, blank=True)
     break_warned_at = models.DateTimeField(null=True, blank=True)

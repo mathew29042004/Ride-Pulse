@@ -25,7 +25,7 @@ import { api, ApiError } from "@/lib/api";
 import { sendLocation } from "@/lib/offline";
 import { inr, km, minutes } from "@/lib/format";
 import { usePhoneGps } from "@/lib/gps";
-import { PREFERENCES } from "@/lib/preferences";
+import { ACCESSIBILITY, PREFERENCES } from "@/lib/preferences";
 import { clockIn, etaFromKm, haversineKm, useActiveTrip, useDriverMe, useNow } from "@/lib/hooks";
 import type { City, Earnings, Offer, Trip } from "@/lib/types";
 import { t } from "@/lib/i18n";
@@ -163,6 +163,11 @@ function OfferCard({ offer, onAccept, onDecline, onCounter, busy }: { offer: Off
 function PreferenceChips({ values }: { values: string[] }) {
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {ACCESSIBILITY.filter((p) => values.includes(p.value)).map(({ value, driverLabel, icon: Icon }) => (
+        <span key={value} className="flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-500/15 dark:text-sky-300">
+          <Icon className="size-3" /> {driverLabel}
+        </span>
+      ))}
       {PREFERENCES.filter((p) => values.includes(p.value)).map(({ value, driverLabel, icon: Icon }) => (
         <span key={value} className="flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-semibold">
           <Icon className="size-3" /> {driverLabel}
@@ -313,7 +318,7 @@ export default function DriverHome() {
 
   // Demo autopilot: drive to the pickup, then along the trip's route to the drop, sending GPS as we go.
   const route = useMemo(
-    () => (trip ? routePath([trip.pickup_lat, trip.pickup_lng], [trip.dropoff_lat, trip.dropoff_lng], trip.route_polyline, trip.stop && [trip.stop.lat, trip.stop.lng]) : []),
+    () => (trip ? routePath([trip.pickup_lat, trip.pickup_lng], [trip.dropoff_lat, trip.dropoff_lng], trip.route_polyline, (trip.stops ?? []).map((s) => [s.lat, s.lng] as [number, number])) : []),
     [trip?.id, trip?.route_polyline], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const target = useMemo(() => {
@@ -433,7 +438,9 @@ export default function DriverHome() {
           ))}
           <CarMarker lat={pos.lat} lng={pos.lng} heading={pos.heading} rideType={driver.vehicle?.ride_type} />
           {trip && <PinMarker lat={trip.pickup_lat} lng={trip.pickup_lng} kind="pickup" />}
-          {trip?.stop && <PinMarker lat={trip.stop.lat} lng={trip.stop.lng} kind="stop" label="Stop" />}
+          {(trip?.stops ?? []).map((s, i, all) => (
+            <PinMarker key={i} lat={s.lat} lng={s.lng} kind="stop" label={all.length > 1 ? `Stop ${i + 1}` : "Stop"} />
+          ))}
           {trip && <PinMarker lat={trip.dropoff_lat} lng={trip.dropoff_lng} kind="dropoff" />}
           {trip && trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[pos.lat, pos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#10b981" />}
           {trip && trip.status !== "DRIVER_ASSIGNED" && (
@@ -441,7 +448,7 @@ export default function DriverHome() {
               from={[trip.pickup_lat, trip.pickup_lng]}
               to={[trip.dropoff_lat, trip.dropoff_lng]}
               encoded={trip.route_polyline}
-              via={trip.stop && [trip.stop.lat, trip.stop.lng]}
+              via={(trip.stops ?? []).map((s) => [s.lat, s.lng] as [number, number])}
               progress={following ? [pos.lat, pos.lng] : null}
             />
           )}
@@ -577,7 +584,7 @@ export default function DriverHome() {
                   {trip.preferences.length > 0 && <PreferenceChips values={trip.preferences} />}
                 </div>
                 <TripChat tripId={trip.id} me="DRIVER" otherName={trip.rider.name} canSend compact />
-                <CallButton tripId={trip.id} name={trip.rider.name} compact />
+                {!trip.preferences.includes("HEARING") && <CallButton tripId={trip.id} name={trip.rider.name} compact />}
               </div>
 
               <div className="mt-4 flex gap-3 rounded-2xl bg-surface-2 p-3 text-sm">

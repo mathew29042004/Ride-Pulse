@@ -41,6 +41,7 @@ from apps.geo.distance import haversine_km
 from apps.geo.models import City
 from apps.geo.routing import eta_minutes
 from apps.realtime import broadcast
+from apps.riders.teens import TEEN_MIN_RATING, TEEN_MIN_TRIPS
 
 from . import hungarian, packages
 from .eco import ELECTRIC_BONUS_MINUTES
@@ -60,7 +61,8 @@ class Candidate:
 
 # How much a preference moves a driver up the queue, in minutes of pickup time.
 FAVOURITE_BONUS_MINUTES = 6.0
-WOMAN_DRIVER_BONUS_MINUTES = 30.0  # effectively "women first" among nearby drivers
+WOMAN_DRIVER_BONUS_MINUTES = 30.0
+ASSIST_BONUS_MINUTES = 10.0  # effectively "women first" among nearby drivers
 
 
 def rank_score(
@@ -100,6 +102,11 @@ def candidates_for(
     favourites = set(trip.rider.favourite_drivers.values_list("pk", flat=True))
     wants_woman = RidePreference.WOMAN_DRIVER in trip.preferences
     wants_electric = RidePreference.ELECTRIC in trip.preferences
+    needs_wheelchair = RidePreference.WHEELCHAIR in trip.preferences
+    needs_help = bool(
+        {RidePreference.WHEELCHAIR, RidePreference.ASSIST, RidePreference.LOW_VISION}
+        & set(trip.preferences)
+    )
     ranked = []
     for driver in drivers:
         # Going-home drivers only get trips that take them closer to home.
@@ -109,6 +116,16 @@ def candidates_for(
         if wellbeing.needs_break(driver, now):
             continue
         if trip.service == "INTERCITY" and not driver.accepts_intercity:
+            continue
+        # Teens ride only with experienced, top-rated drivers.
+        if trip.is_teen and (
+            driver.rating < TEEN_MIN_RATING or driver.completed_trips < TEEN_MIN_TRIPS
+        ):
+            continue
+        # A wheelchair user only ever gets a wheelchair-accessible vehicle.
+        if needs_wheelchair and not (
+            driver.active_vehicle and driver.active_vehicle.wheelchair_accessible
+        ):
             continue
         # EVs only take trips their battery can finish, with a reserve to reach a charger.
         if not ev.can_take(driver.active_vehicle, trip, pickup_km=driver.distance_km):
@@ -131,6 +148,9 @@ def candidates_for(
         vehicle = driver.active_vehicle
         if wants_electric and vehicle is not None and vehicle.fuel_type == "EV":
             score -= ELECTRIC_BONUS_MINUTES
+        # Riders who need a hand get drivers trained in boarding assistance first.
+        if needs_help and driver.assist_trained:
+            score -= ASSIST_BONUS_MINUTES
         # Airport pickups go to the airport queue first, in order of arrival.
         score -= airport.queue_bonus(trip, driver.pk, queue_cache)
         ranked.append(Candidate(driver, driver.distance_km, eta, score))

@@ -669,6 +669,8 @@ def test_daily_goal_bonuses_are_paid_once_per_tier(rider, mini, make_driver, now
     from apps.drivers import goals
 
     settings.RIDE_PULSE = {**settings.RIDE_PULSE, "DRIVER_GOALS": [[2, "75"], [3, "125"]]}
+    # Midday, so the three trips land on the same day whatever time the suite runs.
+    now = timezone.localtime(now).replace(hour=12, minute=0) - timedelta(days=1)
     driver = make_driver(now=now)
     for i in range(3):
         at = now + timedelta(minutes=40 * i)

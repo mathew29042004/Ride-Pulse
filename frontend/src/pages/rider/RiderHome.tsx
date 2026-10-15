@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router";
 import { BaseMap, CarMarker, PinMarker, Recenter } from "@/components/map";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Sheet, StatusBadge } from "@/components/ui";
+import { ContextStrip } from "@/components/RiderExtras";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { greeting } from "@/lib/format";
@@ -128,6 +129,7 @@ export default function RiderHome() {
           </Link>
         )}
 
+        <ContextStrip lat={spot.lat} lng={spot.lng} />
         <button
           onClick={() => navigate("/ride/book")}
           className="flex w-full items-center gap-3 rounded-2xl bg-surface-3 px-4 py-4 text-left transition hover:bg-line"

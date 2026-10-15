@@ -48,6 +48,8 @@ from apps.riders.models import RiderProfile
 
 from . import bids, dispatch, parcels
 from .models import (
+    ACCESSIBILITY_NEEDS,
+    ACCESSIBLE_EXTRA_WAIT_MINUTES,
     ACTIVE_DRIVER_STATUSES,
     CAR_ONLY_PREFERENCES,
     TERMINAL_STATUSES,
@@ -108,6 +110,12 @@ def record_event(
     )
 
 
+def stops_payload(trip) -> list[dict]:
+    """Every stop on the way, in order."""
+    first = stop_payload(trip)
+    return [*([first] if first else []), *(trip.extra_stops or [])]
+
+
 def stop_payload(trip) -> dict | None:
     if trip.stop_lat is None:
         return None
@@ -132,6 +140,7 @@ def trip_payload(trip: Trip) -> dict:
             "address": trip.dropoff_address,
         },
         "stop": stop_payload(trip),
+        "stops": stops_payload(trip),
         "driver": (
             {
                 "id": driver.pk,
@@ -219,6 +228,15 @@ def _trip_event(trip: Trip, topic: str, **extra) -> None:
     )
 
 
+def _extra_wait(trip: Trip) -> int:
+    """Riders who need help boarding get extra free waiting time at the pickup."""
+    return ACCESSIBLE_EXTRA_WAIT_MINUTES if ACCESSIBILITY_NEEDS & set(trip.preferences) else 0
+
+
+def _billable_wait(trip: Trip) -> Decimal:
+    return max(Decimal(0), (trip.waiting_minutes or Decimal(0)) - _extra_wait(trip))
+
+
 def _release_driver(driver: DriverProfile) -> None:
     """Back online, unless they're still carrying a co-rider on a shared ride."""
     if not Trip.objects.filter(driver=driver, status__in=ACTIVE_DRIVER_STATUSES).exists():
@@ -245,7 +263,23 @@ def _q(value: float) -> Decimal:
 # --- Booking -----------------------------------------------------------------------------
 
 
-def _validate_points(city, pickup, dropoff, stop=None) -> None:
+MAX_STOPS = 3
+
+
+def _validate_points(city, pickup, dropoff, stop=None, extra_stops=()) -> None:
+    if extra_stops and stop is None:
+        raise BusinessRuleViolation("Add the first stop before the others.", field="stops")
+    if 1 + len(extra_stops) > MAX_STOPS and stop is not None:
+        raise BusinessRuleViolation(f"Up to {MAX_STOPS} stops per trip.", field="stops")
+    stops = [*([stop] if stop else []), *((s["lat"], s["lng"]) for s in extra_stops)]
+    for a, b in pairwise(stops):
+        if haversine_km(*a, *b) < 0.1:
+            raise BusinessRuleViolation("Two of your stops are in the same place.", field="stops")
+    for extra in stops[1:]:
+        if not city.contains(*extra):
+            raise BusinessRuleViolation(
+                f"A stop is outside our {city.name} service area.", field="stops"
+            )
     if not city.contains(*dropoff):
         raise BusinessRuleViolation(
             f"The drop location is outside our {city.name} service area.", field="dropoff"
@@ -275,12 +309,14 @@ def estimate_options(
     at: datetime | None = None,
     stop: tuple[float, float] | None = None,
     service: str = Service.RIDE,
+    extra_stops=(),
 ) -> dict:
     """Fare and pickup ETA for every ride type, as shown on the booking screen."""
     at = at or timezone.now()
     city = require_city(*pickup)
-    _validate_points(city, pickup, dropoff, stop)
+    _validate_points(city, pickup, dropoff, stop, extra_stops)
     has_pass = bool(rider and passes.active_pass(rider, at))
+    needs_wheelchair = bool(rider and RidePreference.WHEELCHAIR in (rider.accessibility or []))
     options, promo_error = [], ""
     for ride_type in pricing.active_ride_types(city, service=service):
         promo = None
@@ -300,6 +336,7 @@ def estimate_options(
             promo=promo,
             stop=stop,
             ride_pass=has_pass,
+            extra_stops=extra_stops,
         )
         lock = fare_locks.matching_lock(rider, ride_type, pickup, dropoff, at) if not stop else None
         estimate.fare = fare_locks.apply(estimate.fare, lock)
@@ -309,9 +346,12 @@ def estimate_options(
             radius_km=float(dispatch_max_radius_km()),
             ride_type=ride_type,
             now=at,
-            limit=1,
+            limit=25 if needs_wheelchair else 1,
         )
-        open_now = ride_type.is_open(at)
+        accessible_type = ride_type.served_by.code not in TWO_WHEELERS_AND_AUTOS
+        if needs_wheelchair:
+            nearest = [d for d in nearest if accessible_type and _wheelchair_ok(d)][:1]
+        open_now = ride_type.is_open(at) and (accessible_type or not needs_wheelchair)
         eta = (
             eta_minutes(nearest[0].current_lat, nearest[0].current_lng, *pickup, at)
             if nearest and open_now
@@ -328,10 +368,14 @@ def estimate_options(
                 "offer_range": {"min": low, "max": high},
                 "availability": "CLOSED" if not open_now else "AVAILABLE" if nearest else "NONE",
                 "unavailable_reason": (
-                    f"{ride_type.name} rides run {ride_type.service_hours_label}"
+                    f"{ride_type.name} isn't wheelchair accessible"
+                    if needs_wheelchair and not accessible_type
+                    else f"{ride_type.name} rides run {ride_type.service_hours_label}"
                     if not open_now
                     else ""
                     if nearest
+                    else f"No wheelchair-accessible {ride_type.name} near you right now"
+                    if needs_wheelchair
                     else f"No {ride_type.name} drivers near you right now"
                 ),
             }
@@ -344,6 +388,11 @@ def estimate_options(
         if promo_code and not any(o["estimate"].fare.discount for o in options)
         else "",
     }
+
+
+def _wheelchair_ok(driver) -> bool:
+    vehicle = driver.active_vehicle
+    return bool(vehicle and vehicle.wheelchair_accessible)
 
 
 def _suggest_alternatives(options: list[dict]) -> None:
@@ -396,14 +445,27 @@ def request_trip(
     parcel: dict | None = None,
     payment_profile=None,
     trip_purpose: str = "",
+    extra_stops: list[dict] | tuple = (),
+    cost_center: str = "",
 ) -> Trip:
     now = now or timezone.now()
+    extra_stops = [
+        {"lat": s["lat"], "lng": s["lng"], "address": (s.get("address") or "")[:255]}
+        for s in extra_stops
+    ]
     tip = Decimal(tip or 0)
     boost = Decimal(boost or 0)
     fare_offer = Decimal(fare_offer) if fare_offer else None
     if fare_offer and (boost or sure_ride):
         raise BusinessRuleViolation("A fare offer can't be combined with a boost or Sure Ride.")
-    preferences = clean_preferences(preferences, ride_type)
+    # Saved accessibility needs come with every booking.
+    preferences = clean_preferences([*(preferences or ()), *(rider.accessibility or [])], ride_type)
+    if RidePreference.WHEELCHAIR in (rider.accessibility or []) and (
+        RidePreference.WHEELCHAIR not in preferences
+    ):
+        raise BusinessRuleViolation(
+            f"{ride_type.name} isn't wheelchair accessible. Choose a car.", field="ride_type"
+        )
     parcel_details = None
     if ride_type.service == Service.PARCEL:
         if not parcel:
@@ -437,7 +499,7 @@ def request_trip(
             field="payment_method",
         )
     city = require_city(*pickup)
-    _validate_points(city, pickup, dropoff, stop)
+    _validate_points(city, pickup, dropoff, stop, extra_stops)
     promo = (
         pricing.validate_promo(promo_code, rider=rider, city=city, ride_type=ride_type, now=now)
         if promo_code
@@ -452,6 +514,7 @@ def request_trip(
         at=now,
         promo=promo,
         stop=stop,
+        extra_stops=extra_stops,
         ride_pass=has_pass,
     )
     lock = fare_locks.matching_lock(rider, ride_type, pickup, dropoff, now) if not stop else None
@@ -483,12 +546,23 @@ def request_trip(
             f"Sure Ride ({sure_minutes}-min pickup promise)",
             sure_ride_terms()["fee"],
         )
+    from apps.riders import teens
+
+    payment_profile, is_teen = teens.booking_rules(
+        rider, ride_type=ride_type, payment_profile=payment_profile, now=now
+    )
     if payment_profile is not None:
         from apps.riders import profiles
 
         # Paid from the family/business owner's wallet, not the rider's.
-        trip_purpose = profiles.check_booking(
-            payment_profile, rider, fare=fare.total + tip, purpose=trip_purpose, at=now
+        trip_purpose, cost_center = profiles.check_booking(
+            payment_profile,
+            rider,
+            fare=fare.total + tip,
+            purpose=trip_purpose,
+            at=now,
+            ride_type_code=ride_type.code,
+            cost_center=cost_center,
         )
         payment_method = PaymentMethod.WALLET
     elif payment_method == PaymentMethod.WALLET and balance < fare.total + tip:
@@ -520,6 +594,7 @@ def request_trip(
                 stop_lat=stop[0] if stop else None,
                 stop_lng=stop[1] if stop else None,
                 stop_address=stop_address[:255] if stop else "",
+                extra_stops=extra_stops,
                 otp=generate_otp(rider),
                 payment_method=payment_method,
                 promo=promo,
@@ -533,6 +608,8 @@ def request_trip(
                 service=ride_type.service,
                 payment_profile=payment_profile,
                 trip_purpose=trip_purpose,
+                cost_center=cost_center,
+                is_teen=is_teen,
                 fare_lock=lock,
                 fare_offer=fare_offer,
                 offer_adjustment=adjustment,
@@ -604,6 +681,10 @@ def assign_driver(trip: Trip, *, driver: DriverProfile, eta_minutes: float, now:
     from apps.fleet import airport
 
     airport.on_assigned(trip, driver, now)
+    if trip.is_teen:
+        from apps.riders import teens
+
+        teens.tell_guardian(trip, "assigned")
     notify(
         trip.rider.user,
         f"{driver.name} is on the way",
@@ -696,6 +777,10 @@ def start_trip(
                 night_safe=safety.night_safe_for(trip, now),
             )
             trip_id = trip.pk
+            if trip.is_teen:
+                from apps.riders import teens
+
+                teens.tell_guardian(trip, "started")
             if trip.service == Service.PARCEL:
                 transaction.on_commit(lambda: parcels.notify_recipient(trip_id))
             else:
@@ -819,7 +904,7 @@ def complete_trip(
                 surge_multiplier=trip.surge_multiplier,
                 airport=airport,
                 promo=promo,
-                waiting_minutes=trip.waiting_minutes or Decimal(0),
+                waiting_minutes=_billable_wait(trip),
                 ride_pass=trip.ride_pass_applied,
             )
 
@@ -904,6 +989,10 @@ def complete_trip(
     from apps.fleet import hooks
 
     hooks.after_trip(trip)
+    if trip.is_teen:
+        from apps.riders import teens
+
+        teens.tell_guardian(trip, "arrived")
     _trip_event(trip, "trip.completed", payment_status=trip.payment_status)
     goals.after_trip(driver, trip, now=now)
     wellbeing.enforce(driver, now=now)
@@ -966,7 +1055,10 @@ def cancel_trip(trip: Trip, *, user, reason: str = "", now: datetime | None = No
         if trip.status == TripStatus.IN_PROGRESS:
             raise InvalidStateTransition("Complete the trip or contact support.")
         waited = (now - trip.arrived_at).total_seconds() / 60 if trip.arrived_at else 0
-        if trip.status == TripStatus.DRIVER_ARRIVED and waited >= rule.free_wait_minutes + 2:
+        if (
+            trip.status == TripStatus.DRIVER_ARRIVED
+            and waited >= rule.free_wait_minutes + 2 + _extra_wait(trip)
+        ):
             return _cancel(
                 trip,
                 by=by,
@@ -1310,6 +1402,7 @@ def shared_trip_view(token: str, *, now: datetime | None = None) -> dict | None:
             "address": trip.dropoff_address,
         },
         "stop": stop_payload(trip),
+        "stops": stops_payload(trip),
         "route_polyline": trip.route_polyline,
         "driver": (
             {"first_name": driver.user.first_name, "rating": driver.rating} if driver else None
@@ -1352,8 +1445,13 @@ def schedule_ride(
     now: datetime | None = None,
     stop: tuple[float, float] | None = None,
     stop_address: str = "",
+    extra_stops: list[dict] | tuple = (),
 ) -> ScheduledRide:
     now = now or timezone.now()
+    extra_stops = [
+        {"lat": s["lat"], "lng": s["lng"], "address": (s.get("address") or "")[:255]}
+        for s in extra_stops
+    ]
     if rider.is_blocked:
         raise ActionNotPermitted("Your account is blocked. Please contact support.")
     if payment_method not in PaymentMethod.values:
@@ -1378,7 +1476,7 @@ def schedule_ride(
     ).exists():
         raise ConflictError("You already have a ride scheduled around that time.")
     city = require_city(*pickup)
-    _validate_points(city, pickup, dropoff, stop)
+    _validate_points(city, pickup, dropoff, stop, extra_stops)
     promo = (
         pricing.validate_promo(promo_code, rider=rider, city=city, ride_type=ride_type, now=now)
         if promo_code
@@ -1392,6 +1490,7 @@ def schedule_ride(
         at=scheduled_for,
         promo=promo,
         stop=stop,
+        extra_stops=extra_stops,
     )
     ride = ScheduledRide.objects.create(
         rider=rider,
@@ -1406,6 +1505,7 @@ def schedule_ride(
         stop_lat=stop[0] if stop else None,
         stop_lng=stop[1] if stop else None,
         stop_address=stop_address[:255] if stop else "",
+        extra_stops=extra_stops,
         payment_method=payment_method,
         promo_code=promo_code,
         scheduled_for=scheduled_for,
@@ -1472,6 +1572,7 @@ def dispatch_scheduled_rides(*, now: datetime | None = None) -> dict:
                         now=now,
                         stop=(ride.stop_lat, ride.stop_lng) if ride.stop_lat is not None else None,
                         stop_address=ride.stop_address,
+                        extra_stops=ride.extra_stops,
                     )
             except DomainError as exc:
                 _fail_scheduled(ride, exc.message)

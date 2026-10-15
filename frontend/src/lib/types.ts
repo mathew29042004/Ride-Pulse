@@ -165,6 +165,7 @@ export interface Trip {
   is_favourite_driver: boolean;
   service: "RIDE" | "PARCEL" | "RENTAL" | "INTERCITY";
   pool_id: string;
+  stops?: { lat: number; lng: number; address?: string }[];
   co_riders: number;
   co2_saved_g: number;
   fare_lock: number | null;
@@ -361,6 +362,7 @@ export interface Rider {
   emergency_contact_phone: string;
   night_safety: boolean;
   ride_pin: string;
+  accessibility?: string[];
   is_blocked: boolean;
   blocked_reason: string;
   wallet_balance: string;

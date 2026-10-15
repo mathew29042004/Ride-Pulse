@@ -1,6 +1,6 @@
 from celery import shared_task
 
-from . import alerts, briefing, demand, fraud
+from . import alerts, briefing, context, demand, fraud
 
 
 @shared_task(name="intelligence.check_alerts")
@@ -21,3 +21,8 @@ def nudge_drivers() -> int:
 @shared_task(name="intelligence.fraud_scan")
 def fraud_scan() -> dict:
     return fraud.scan()
+
+
+@shared_task(name="intelligence.refresh_weather")
+def refresh_weather() -> dict:
+    return context.refresh_weather()

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_field
-from rest_framework import mixins, serializers
+from rest_framework import mixins, serializers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
@@ -19,6 +19,8 @@ from .models import (
     ProfileMember,
     RiderProfile,
     SavedPlace,
+    TeenLink,
+    TeenStatus,
     TrustedContact,
 )
 
@@ -50,6 +52,7 @@ class RiderSerializer(serializers.ModelSerializer):
             "emergency_contact_phone",
             "night_safety",
             "ride_pin",
+            "accessibility",
             "is_blocked",
             "blocked_reason",
             "wallet_balance",
@@ -64,6 +67,14 @@ class RiderSerializer(serializers.ModelSerializer):
             "blocked_reason",
             "created_at",
         ]
+
+    def validate_accessibility(self, value: list[str]) -> list[str]:
+        from apps.rides.models import ACCESSIBILITY_NEEDS
+
+        unknown = set(value) - set(ACCESSIBILITY_NEEDS)
+        if unknown:
+            raise serializers.ValidationError(f"Unknown need: {', '.join(sorted(unknown))}")
+        return sorted(set(value))
 
     def validate_ride_pin(self, value: str) -> str:
         if value and (len(value) != 4 or not value.isdigit()):
@@ -325,6 +336,8 @@ class PaymentProfileSerializer(serializers.ModelSerializer):
     spent_this_month = serializers.SerializerMethodField()
     my_limit = serializers.SerializerMethodField()
     invitation_id = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+    my_cost_center = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentProfile
@@ -341,8 +354,11 @@ class PaymentProfileSerializer(serializers.ModelSerializer):
             "spent_this_month",
             "my_limit",
             "invitation_id",
+            "is_admin",
+            "cost_centers",
+            "my_cost_center",
         ]
-        read_only_fields = ["credit_limit"]
+        read_only_fields = ["credit_limit", "cost_centers"]
 
     def _rider(self):
         return self.context["request"].user.rider_profile
@@ -373,6 +389,14 @@ class PaymentProfileSerializer(serializers.ModelSerializer):
     def get_my_limit(self, profile) -> str | None:
         member = self._membership(profile)
         return str(member.monthly_limit) if member and member.monthly_limit is not None else None
+
+    def get_is_admin(self, profile) -> bool:
+        member = self._membership(profile)
+        return bool(member and member.is_admin and member.status == MemberStatus.ACTIVE)
+
+    def get_my_cost_center(self, profile) -> str:
+        member = self._membership(profile)
+        return member.default_cost_center if member else ""
 
     def get_invitation_id(self, profile) -> int | None:
         member = self._membership(profile)
@@ -525,4 +549,195 @@ class PaymentProfileViewSet(ContextBindingMixin, ModelViewSet):
             writer.writerow([row[c] for c in columns])
         writer.writerow([])
         writer.writerow(["Total", "", "", "", "", "", "", data["total"], data["gst"]])
+        return response
+
+
+class TeenInviteSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=15)
+    monthly_limit = serializers.DecimalField(
+        max_digits=8, decimal_places=2, required=False, allow_null=True, min_value=0
+    )
+
+
+class TeenAcceptSerializer(serializers.Serializer):
+    birth_year = serializers.IntegerField(min_value=1990, max_value=2030)
+
+
+class TeenCurfewSerializer(serializers.Serializer):
+    start = serializers.IntegerField(min_value=0, max_value=23)
+    end = serializers.IntegerField(min_value=0, max_value=23)
+
+
+class TeenViewSet(ContextBindingMixin, GenericViewSet):
+    """Teen accounts: a parent's linked teens, and a teen's pending invitation."""
+
+    permission_classes = [IsRider]
+    queryset = TeenLink.objects.none()
+
+    def _state(self, rider):
+        from . import teens
+
+        invitation = (
+            TeenLink.objects.filter(teen=rider, status__in=[TeenStatus.INVITED, TeenStatus.ACTIVE])
+            .select_related("guardian__user")
+            .first()
+        )
+        return {
+            "teens": teens.guardian_view(rider),
+            "my_guardian": {
+                "id": invitation.pk,
+                "name": invitation.guardian.user.get_full_name(),
+                "status": invitation.status,
+                "curfew": [invitation.curfew_start, invitation.curfew_end],
+            }
+            if invitation
+            else None,
+        }
+
+    def _link(self, pk):
+        from django.db.models import Q
+
+        rider = self.request.user.rider_profile
+        return get_object_or_404(TeenLink.objects.filter(Q(guardian=rider) | Q(teen=rider)), pk=pk)
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def list(self, request):
+        return Response(self._state(request.user.rider_profile))
+
+    @extend_schema(request=TeenInviteSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from . import teens
+
+        data = TeenInviteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        teens.invite(request.user.rider_profile, **data.validated_data)
+        return Response(self._state(request.user.rider_profile), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=TeenAcceptSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def accept(self, request, pk=None):
+        from . import teens
+
+        data = TeenAcceptSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        teens.accept(self._link(pk), user=request.user, **data.validated_data)
+        return Response(self._state(request.user.rider_profile))
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def end(self, request, pk=None):
+        from . import teens
+
+        teens.decline_or_end(self._link(pk), user=request.user)
+        return Response(self._state(request.user.rider_profile))
+
+    @extend_schema(request=TeenCurfewSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def curfew(self, request, pk=None):
+        from . import teens
+
+        data = TeenCurfewSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        teens.set_curfew(self._link(pk), user=request.user, **data.validated_data)
+        return Response(self._state(request.user.rider_profile))
+
+
+class CorporatePolicySerializer(serializers.Serializer):
+    allowed_ride_types = serializers.ListField(
+        child=serializers.CharField(max_length=10), required=False
+    )
+    allowed_from_hour = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=23
+    )
+    allowed_to_hour = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=23
+    )
+    max_fare_per_trip = serializers.DecimalField(
+        max_digits=8, decimal_places=2, required=False, allow_null=True, min_value=0
+    )
+    cost_centers = serializers.ListField(child=serializers.CharField(max_length=40), required=False)
+
+
+class CorporateEmployeeSerializer(serializers.Serializer):
+    member_id = serializers.IntegerField()
+    is_admin = serializers.BooleanField(required=False)
+    default_cost_center = serializers.CharField(required=False, allow_blank=True, max_length=40)
+
+
+class CorporateWebhookSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=80)
+    url = serializers.URLField(max_length=300)
+
+
+class CorporateViewSet(ContextBindingMixin, GenericViewSet):
+    """The corporate portal: dashboard, travel policy, employees, invoice and webhooks."""
+
+    permission_classes = [IsRider]
+    queryset = PaymentProfile.objects.none()
+
+    def _profile(self, pk):
+        from . import corporate
+
+        profile = get_object_or_404(PaymentProfile, pk=pk, kind="BUSINESS", is_active=True)
+        corporate.require_manager(profile, self.request.user.rider_profile)
+        return profile
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def retrieve(self, request, pk=None):
+        from . import corporate
+
+        return Response(corporate.dashboard(self._profile(pk)))
+
+    @extend_schema(request=CorporatePolicySerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def policy(self, request, pk=None):
+        from . import corporate
+
+        data = CorporatePolicySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        profile = corporate.update_policy(
+            self._profile(pk), rider=request.user.rider_profile, **data.validated_data
+        )
+        return Response(corporate.dashboard(profile))
+
+    @extend_schema(request=CorporateEmployeeSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def employee(self, request, pk=None):
+        from . import corporate
+
+        data = CorporateEmployeeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        profile = self._profile(pk)
+        corporate.update_employee(profile, rider=request.user.rider_profile, **data.validated_data)
+        return Response(corporate.dashboard(profile))
+
+    @extend_schema(request=CorporateWebhookSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def webhook(self, request, pk=None):
+        from . import corporate
+
+        data = CorporateWebhookSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        endpoint = corporate.add_webhook(
+            self._profile(pk), rider=request.user.rider_profile, **data.validated_data
+        )
+        return Response(
+            {"id": endpoint.pk, "secret": endpoint.secret}, status=status.HTTP_201_CREATED
+        )
+
+    @extend_schema(
+        parameters=[OpenApiParameter("month", str, required=False)],
+        responses={(200, "application/pdf"): OpenApiTypes.BINARY},
+    )
+    @action(detail=True, methods=["get"])
+    def invoice(self, request, pk=None):
+        from django.http import HttpResponse
+
+        from . import corporate
+
+        pdf, number = corporate.invoice_pdf(
+            self._profile(pk), month=request.query_params.get("month")
+        )
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{number}.pdf"'
         return response

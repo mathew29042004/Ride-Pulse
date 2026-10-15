@@ -14,6 +14,7 @@ import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { PREFERENCES } from "@/lib/preferences";
+import { AccessibilitySettings, BusinessLinks, TeenAccounts } from "@/components/RiderExtras";
 import { useTheme } from "@/lib/theme";
 import { LANGUAGES, t, useLanguage } from "@/lib/i18n";
 import type { Place, Rider, SavedPlace } from "@/lib/types";
@@ -125,10 +126,13 @@ export default function RiderAccount() {
       <EcoCard />
       <FareLocks />
       <ProfilesSection />
+      <BusinessLinks />
+      <TeenAccounts />
       {rider && <InviteCard rider={rider} />}
       <InvoiceEmailRow />
 
       {rider && <PreferencesAndFavourites rider={rider} />}
+      {rider && <AccessibilitySettings rider={rider} />}
 
       <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Saved places</h2>
       <div className="divide-y divide-line">

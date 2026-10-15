@@ -85,6 +85,8 @@ class Simulator:
         self.last_ride_check = 0.0
         self.last_staff = 0.0
         self.last_intel = 0.0
+        self.last_weather = -1e9
+        self.rain: dict[int, float] = {}
         self.next_request: dict[int, float] = {}
         # Adopt bots left mid-trip by a previous run, so their riders aren't stranded.
         for pk in (
@@ -350,7 +352,9 @@ class Simulator:
         due = self.next_request.get(city.pk, now_ts)
         if now_ts < due:
             return
-        self.next_request[city.pk] = now_ts + self.rng.expovariate(1 / self.request_interval)
+        # Rain brings more requests (people who'd walk or ride a scooter book a cab).
+        interval = self.request_interval / self.rain.get(city.pk, 1.0)
+        self.next_request[city.pk] = now_ts + self.rng.expovariate(1 / interval)
         rider = self.pick_bot_rider()
         if rider is None:
             return
@@ -373,6 +377,9 @@ class Simulator:
                 "category": self.rng.choice(["DOCUMENTS", "FOOD", "CLOTHES", "KEYS", "OTHER"]),
                 "weight_kg": self.rng.choice([0.5, 1, 2, 3, 5]),
             }
+        billing = self._business_billing(rider, code) if parcel is None else {}
+        if billing.get("ride_type"):
+            code = billing.pop("ride_type")
         try:
             if payments.wallet_balance(rider.user) < 0:
                 payments.pay_dues(rider.user, method="UPI", payer_reference="bot@upi")
@@ -380,6 +387,7 @@ class Simulator:
                 rider=rider,
                 ride_type=self.ride_types[code],
                 parcel=parcel,
+                **billing,
                 pickup=pickup,
                 dropoff=dropoff,
                 pickup_address=a.name,
@@ -389,6 +397,42 @@ class Simulator:
             self.bump("requests")
         except DomainError:
             self.bump("request_rejected")
+
+    PURPOSES = [
+        "Client meeting",
+        "Site visit",
+        "Office commute",
+        "Airport transfer",
+        "Team offsite",
+    ]
+
+    def _business_billing(self, rider, code: str) -> dict:
+        """Employees of a company book about half their rides on it, within its policy."""
+        from apps.riders.models import MemberStatus, ProfileMember
+
+        member = (
+            ProfileMember.objects.filter(
+                rider=rider,
+                status=MemberStatus.ACTIVE,
+                profile__kind="BUSINESS",
+                profile__is_active=True,
+            )
+            .select_related("profile")
+            .first()
+        )
+        if member is None or self.rng.random() > 0.5:
+            return {}
+        profile = member.profile
+        allowed = [c for c in profile.allowed_ride_types if c in self.ride_types]
+        billing = {
+            "payment_profile": profile,
+            "trip_purpose": self.rng.choice(self.PURPOSES),
+            "cost_center": member.default_cost_center
+            or (self.rng.choice(profile.cost_centers) if profile.cost_centers else ""),
+        }
+        if allowed and code not in allowed:
+            billing["ride_type"] = self.rng.choice(allowed)
+        return billing
 
     def rider_cancellations(self) -> None:
         """A few impatient bot riders give up while waiting."""
@@ -449,6 +493,14 @@ class Simulator:
             if any(done.values()):
                 self.log(f"  staff: {done}")
             self.last_staff = clock.monotonic()
+        if clock.monotonic() - self.last_weather > 1800:
+            from apps.intelligence import context
+
+            context.refresh_weather()
+            self.rain = {
+                c.pk: context.weather_factor(context.current_weather(c.pk)) for c in self.cities
+            }
+            self.last_weather = clock.monotonic()
         if clock.monotonic() - self.last_intel > 300:
             from apps.intelligence import alerts, demand, fraud
 

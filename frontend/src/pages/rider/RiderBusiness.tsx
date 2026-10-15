@@ -1,0 +1,213 @@
+/** Corporate portal: spend, travel policy, employees, the monthly GST invoice and webhooks. */
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Download, Webhook } from "lucide-react";
+import { useState } from "react";
+import { Link, useParams } from "react-router";
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { toast } from "sonner";
+
+import { Button, Input } from "@/components/ui";
+import { api, ApiError, openFile } from "@/lib/api";
+import { inr } from "@/lib/format";
+import { t } from "@/lib/i18n";
+
+interface Board {
+  id: number;
+  company: string;
+  gstin: string;
+  balance: string;
+  credit_limit: string;
+  policy: { allowed_ride_types: string[]; allowed_from_hour: number | null; allowed_to_hour: number | null; max_fare_per_trip: string | null; cost_centers: string[] };
+  this_month: { spend: string; rides: number };
+  by_month: { month: string; spend: string; rides: number }[];
+  by_employee: { rider_id: number; name: string; spend: string; rides: number }[];
+  by_cost_center: { cost_center: string; spend: string; rides: number }[];
+  by_ride_type: { ride_type: string; spend: string; rides: number }[];
+  employees: { member_id: number; name: string; status: string; is_admin: boolean; monthly_limit: string | null; default_cost_center: string }[];
+  recent: { trip_number: string; employee: string; when: string; route: string; ride_type: string; fare: string; purpose: string; cost_center: string }[];
+  webhooks: { id: number; name: string; url: string; is_active: boolean }[];
+}
+
+const TYPES = ["AUTO", "MINI", "SEDAN", "SUV", "SHARE", "BIKE"];
+
+export default function RiderBusiness() {
+  const { id } = useParams();
+  const qc = useQueryClient();
+  const key = ["business", id];
+  const q = useQuery({ queryKey: key, queryFn: () => api.get<Board>(`rider/business/${id}/`), refetchInterval: 60_000 });
+  const done = (data: Board) => qc.setQueryData(key, data);
+  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : t("Something went wrong."));
+  const policy = useMutation({ mutationFn: (body: object) => api.post<Board>(`rider/business/${id}/policy/`, body), onSuccess: (d) => { done(d); toast.success(t("Travel policy saved")); }, onError });
+  const employee = useMutation({ mutationFn: (body: object) => api.post<Board>(`rider/business/${id}/employee/`, body), onSuccess: done, onError });
+  const [hook, setHook] = useState({ name: "", url: "" });
+  const [secret, setSecret] = useState<string | null>(null);
+  const webhook = useMutation({
+    mutationFn: () => api.post<{ secret: string }>(`rider/business/${id}/webhook/`, hook),
+    onSuccess: (r) => {
+      setSecret(r.secret);
+      setHook({ name: "", url: "" });
+      qc.invalidateQueries({ queryKey: key });
+    },
+    onError,
+  });
+  const b = q.data;
+  const [centres, setCentres] = useState<string | null>(null);
+  const [cap, setCap] = useState<string | null>(null);
+  if (!b) return <div className="p-5 text-sm text-muted">{t("Loading…")}</div>;
+  const month = new Date().toISOString().slice(0, 7);
+  return (
+    <div className="h-full overflow-y-auto px-5 pt-5 pb-8">
+      <Link to="/ride/account" className="mb-3 inline-flex items-center gap-1 text-sm text-muted">
+        <ArrowLeft className="size-4" /> {t("Account")}
+      </Link>
+      <h1 className="text-2xl font-bold">{b.company}</h1>
+      <p className="text-sm text-muted">
+        {b.gstin && `GSTIN ${b.gstin} · `}
+        {t("Balance {balance} · credit up to {credit}", { balance: inr(b.balance), credit: inr(b.credit_limit, { whole: true }) })}
+      </p>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-2xl bg-surface-2 p-3">
+          <div className="text-xs text-muted">{t("Spend this month")}</div>
+          <div className="text-xl font-bold">{inr(b.this_month.spend, { whole: true })}</div>
+          <div className="text-xs text-muted">{t("{n} rides", { n: b.this_month.rides })}</div>
+        </div>
+        <button onClick={() => openFile(`/api/v1/rider/business/${id}/invoice/?month=${month}`)} className="flex flex-col items-start justify-between rounded-2xl bg-surface-2 p-3 text-left">
+          <span className="text-xs text-muted">{t("GST invoice")}</span>
+          <span className="flex items-center gap-1 text-sm font-semibold">
+            <Download className="size-4" /> {t("This month (PDF)")}
+          </span>
+        </button>
+      </div>
+
+      {b.by_month.length > 0 && (
+        <div className="mt-4 h-36 rounded-2xl border border-line p-2">
+          <ResponsiveContainer>
+            <BarChart data={b.by_month.map((m) => ({ ...m, spend: Number(m.spend) }))}>
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(v) => inr(Number(v), { whole: true })} />
+              <Bar dataKey="spend" fill="var(--color-brand)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      <Section title={t("By employee")}>
+        {b.by_employee.length === 0 && <p className="text-sm text-muted">{t("No rides on the company yet this month.")}</p>}
+        {b.by_employee.map((e) => (
+          <Row key={e.rider_id} left={e.name} right={`${inr(e.spend, { whole: true })} · ${e.rides}`} />
+        ))}
+      </Section>
+      <Section title={t("By cost centre")}>
+        {b.by_cost_center.length === 0 && <p className="text-sm text-muted">—</p>}
+        {b.by_cost_center.map((c) => (
+          <Row key={c.cost_center} left={c.cost_center} right={`${inr(c.spend, { whole: true })} · ${c.rides}`} />
+        ))}
+      </Section>
+
+      <Section title={t("Travel policy")}>
+        <div className="flex flex-wrap gap-1.5">
+          {TYPES.map((code) => {
+            const on = b.policy.allowed_ride_types.includes(code);
+            return (
+              <button
+                key={code}
+                onClick={() => policy.mutate({ allowed_ride_types: on ? b.policy.allowed_ride_types.filter((x) => x !== code) : [...b.policy.allowed_ride_types, code] })}
+                className={on ? "rounded-full border border-fg bg-ink px-2.5 py-1 text-xs font-semibold text-ink-fg" : "rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-muted"}
+              >
+                {code}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-1 text-xs text-muted">{b.policy.allowed_ride_types.length ? t("Only these ride types.") : t("Every ride type allowed.")}</p>
+        <div className="mt-2 flex gap-2">
+          <Input inputMode="numeric" value={cap ?? b.policy.max_fare_per_trip ?? ""} onChange={(e) => setCap(e.target.value.replace(/\D/g, ""))} placeholder={t("Max fare per trip (₹)")} className="!py-2" />
+          <Button size="sm" variant="secondary" onClick={() => policy.mutate({ max_fare_per_trip: cap ? Number(cap) : null })}>
+            {t("Save")}
+          </Button>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <Input value={centres ?? b.policy.cost_centers.join(", ")} onChange={(e) => setCentres(e.target.value)} placeholder={t("Cost centres, comma separated")} className="!py-2" />
+          <Button size="sm" variant="secondary" onClick={() => policy.mutate({ cost_centers: (centres ?? "").split(",").map((c) => c.trim()).filter(Boolean) })}>
+            {t("Save")}
+          </Button>
+        </div>
+        {b.policy.allowed_from_hour != null && <p className="mt-1 text-xs text-muted">{t("Rides covered {from}:00 – {to}:00", { from: b.policy.allowed_from_hour, to: b.policy.allowed_to_hour ?? 0 })}</p>}
+      </Section>
+
+      <Section title={t("Employees ({n})", { n: b.employees.length })}>
+        {b.employees.map((e) => (
+          <div key={e.member_id} className="flex items-center gap-2 py-1.5 text-sm">
+            <span className="min-w-0 flex-1 truncate">
+              {e.name} {e.is_admin && <span className="text-xs font-semibold text-brand-strong">· {t("travel admin")}</span>}
+            </span>
+            <select
+              value={e.default_cost_center}
+              onChange={(ev) => employee.mutate({ member_id: e.member_id, default_cost_center: ev.target.value })}
+              className="rounded-lg border border-line bg-surface px-1.5 py-1 text-xs"
+              aria-label={t("Cost centre for {name}", { name: e.name })}
+            >
+              <option value="">—</option>
+              {b.policy.cost_centers.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </Section>
+
+      <Section title={t("Recent rides")}>
+        {b.recent.map((r) => (
+          <div key={r.trip_number} className="border-t border-line py-2 text-xs first:border-0">
+            <div className="flex justify-between font-semibold">
+              <span>{r.employee}</span>
+              <span>{inr(r.fare)}</span>
+            </div>
+            <div className="truncate text-muted">{r.route}</div>
+            <div className="text-muted">
+              {r.purpose}
+              {r.cost_center && ` · ${r.cost_center}`} · {r.ride_type}
+            </div>
+          </div>
+        ))}
+      </Section>
+
+      <Section title={t("Webhooks")}>
+        <p className="text-xs text-muted">{t("Get your employees' trips in your own systems (expense tools, HR). Signed, retried, at least once.")}</p>
+        {b.webhooks.map((w) => (
+          <div key={w.id} className="mt-1 flex items-center gap-2 text-xs">
+            <Webhook className="size-3.5" /> <span className="truncate">{w.url}</span>
+          </div>
+        ))}
+        <div className="mt-2 grid gap-2">
+          <Input value={hook.name} onChange={(e) => setHook({ ...hook, name: e.target.value })} placeholder={t("Name")} className="!py-2" />
+          <Input value={hook.url} onChange={(e) => setHook({ ...hook, url: e.target.value })} placeholder="https://…" className="!py-2" />
+          <Button size="sm" variant="secondary" disabled={!hook.name || !hook.url} onClick={() => webhook.mutate()}>
+            {t("Add webhook")}
+          </Button>
+        </div>
+        {secret && <code className="mt-2 block rounded-xl bg-surface-2 p-2 text-[11px] break-all">{t("Signing secret (shown once):")} {secret}</code>}
+      </Section>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-5">
+      <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function Row({ left, right }: { left: string; right: string }) {
+  return (
+    <div className="flex justify-between py-1 text-sm">
+      <span className="truncate">{left}</span>
+      <span className="shrink-0 font-semibold">{right}</span>
+    </div>
+  );
+}

@@ -50,6 +50,7 @@ const OpsAudit = lazy(() => import("./pages/ops/OpsAudit"));
 const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
 const OpsWork = lazy(() => import("./pages/ops/work/OpsWork"));
 const FleetPortal = lazy(() => import("./pages/fleet/FleetPortal"));
+const RiderBusiness = lazy(() => import("./pages/rider/RiderBusiness"));
 const OpsPlatform = lazy(() => import("./pages/ops/OpsPlatform"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
@@ -62,6 +63,7 @@ const OpsBriefing = lazy(() => intel().then((m) => ({ default: m.OpsBriefing }))
 const OpsAlerts = lazy(() => intel().then((m) => ({ default: m.OpsAlerts })));
 const OpsDemand = lazy(() => intel().then((m) => ({ default: m.OpsDemand })));
 const OpsFraud = lazy(() => intel().then((m) => ({ default: m.OpsFraud })));
+const OpsOutlook = lazy(() => intel().then((m) => ({ default: m.OpsOutlook })));
 const WorkTaskPage = lazy(() => import("./pages/ops/work/WorkDetail").then((m) => ({ default: m.WorkTaskPage })));
 const WorkMeetingPage = lazy(() => import("./pages/ops/work/WorkDetail").then((m) => ({ default: m.WorkMeetingPage })));
 const OpsInsights = lazy(() => import("./pages/ops/OpsInsights"));
@@ -127,6 +129,7 @@ export const router = createBrowserRouter([
       { path: "activity", element: lazyPage(<RiderActivity />) },
       { path: "wallet", element: lazyPage(<RiderWallet />) },
       { path: "account", element: lazyPage(<RiderAccount />) },
+      { path: "business/:id", element: lazyPage(<RiderBusiness />) },
       { path: "support", element: lazyPage(<SupportList base="/ride" />) },
       { path: "support/:id", element: lazyPage(<TicketThread base="/ride" />) },
     ],
@@ -195,6 +198,7 @@ export const router = createBrowserRouter([
       { path: "alerts", element: lazyPage(<OpsAlerts />) },
       { path: "demand", element: lazyPage(<OpsDemand />) },
       { path: "fraud", element: lazyPage(<OpsFraud />) },
+      { path: "outlook", element: lazyPage(<OpsOutlook />) },
       { path: "work/tasks/:id", element: lazyPage(<WorkTaskPage />) },
       { path: "work/meetings/:id", element: lazyPage(<WorkMeetingPage />) },
       { path: "insights", element: lazyPage(<OpsInsights />) },

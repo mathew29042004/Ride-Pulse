@@ -437,6 +437,30 @@ unmapped is denied. Riders and drivers only ever see their own records.
     suspend the driver or block the rider in one step) or dismiss. `manage.py seed_intel` plants
     demo patterns.
 
+### More for riders: stops, accessibility, teens, companies, weather
+* **Up to three stops** per trip (`stops` in the API; the older single `stop` still works), priced
+  over the whole route, shown on every map and covered by Ride Check.
+* **Accessible rides:** riders save their needs in Account. Wheelchair users are only ever sent
+  wheelchair-accessible cars (bikes and autos show as unavailable, with the reason); riders who
+  need help boarding, or are blind or low vision, get drivers trained in boarding assistance
+  first and 5 extra minutes of free waiting; deaf riders' drivers see "message, don't call"
+  (the call button is hidden).
+* **Teen accounts** (13-17): a parent links their teen's account; rides are paid by the parent
+  (a family profile with a monthly limit), blocked during a curfew (10 pm - 6 am by default),
+  cars and autos only, matched only with experienced top-rated drivers (4.8+, 100+ trips), and
+  shared with the parent live (assigned with the tracking link, started, arrived).
+* **Corporate portal** (`/ride/business/<id>`, demo `business@ridepulse.dev`): travel policy
+  (ride types, hours, a fare cap), cost centres with per-employee defaults, travel admins, spend
+  by month, employee, cost centre and ride type, a consolidated monthly GST invoice (PDF), and
+  the company's own webhook for its employees' trips. 12 companies in the demo; simulated
+  employees book about half their rides on their company.
+* **Weather and events:** live weather from Open-Meteo (no key) every 30 minutes, or a seasonal
+  simulation offline (north-east monsoon for Tamil Nadu and Andhra, south-west for Kerala and
+  Karnataka). Rain lifts the demand forecast (up to +40%) and the simulator's request rate; big
+  events (matches, concerts, festivals) add the crowd's trips near the venue before the start
+  and after the end. Riders see rain and event alerts on Home; drivers see why a zone will be
+  busy; ops manage events on Weather & events.
+
 ### The driver business (`apps/fleet`)
 * **Weekly statements with TDS:** every Monday, before payouts, each driver who worked gets a
   statement (trips, fares, commission, tips, bonuses, fleet share, net) and a PDF. Ride Pulse is

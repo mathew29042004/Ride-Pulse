@@ -23,6 +23,9 @@ export interface PaymentProfile {
   spent_this_month: string;
   my_limit: string | null;
   invitation_id: number | null;
+  is_admin?: boolean;
+  cost_centers?: string[];
+  my_cost_center?: string;
 }
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
@@ -37,11 +40,15 @@ export function BillTo({
   purpose,
   onChange,
   onPurpose,
+  costCenter,
+  onCostCenter,
 }: {
   value: number | null;
   purpose: string;
   onChange: (id: number | null) => void;
   onPurpose: (text: string) => void;
+  costCenter?: string;
+  onCostCenter?: (centre: string) => void;
 }) {
   const usable = (useProfiles().data ?? []).filter((p) => p.role !== "INVITED");
   if (!usable.length) return null;
@@ -69,6 +76,15 @@ export function BillTo({
         </p>
       )}
       {chosen?.kind === "BUSINESS" && <Input value={purpose} onChange={(e) => onPurpose(e.target.value)} maxLength={120} placeholder={t("Purpose of this trip (required)")} className="mt-2 !py-2" />}
+      {chosen?.kind === "BUSINESS" && (chosen.cost_centers?.length ?? 0) > 0 && onCostCenter && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {chosen.cost_centers!.map((c) => (
+            <button key={c} onClick={() => onCostCenter(c)} className={clsx("rounded-full border px-2.5 py-1 text-xs font-semibold", (costCenter || chosen.my_cost_center) === c ? "border-fg bg-ink text-ink-fg" : "border-line text-muted")}>
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

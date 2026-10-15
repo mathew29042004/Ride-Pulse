@@ -11,7 +11,7 @@ import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
 import { BaseMap, FitBounds, type LatLng, MapDot } from "@/components/map";
-import { Badge, Button, Card, CardHeader, EmptyState, Input, PageHeader, Segmented, Select, Stat, Table, Td, Th } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, EmptyState, Input, Modal, PageHeader, Segmented, Select, Stat, Table, Td, Th } from "@/components/ui";
 import { useOps } from "@/layouts/OpsLayout";
 import { api, ApiError } from "@/lib/api";
 import { ago, dateTime, inr } from "@/lib/format";
@@ -410,6 +410,148 @@ export function OpsFraud() {
         ))}
         {!cases.isLoading && list.length === 0 && <EmptyState icon={<ShieldCheck className="size-6" />} title="Nothing here" />}
       </div>
+    </>
+  );
+}
+
+// --- Weather and events ----------------------------------------------------------------------
+
+interface Outlook {
+  weather: { city: string; condition: string; temperature_c: string; rain_mm: string; rain_chance_next_3h: number; demand_factor: number; source: string; observed_at: string }[];
+  events: { id: number; name: string; kind: string; city: string; venue: string; starts_at: string; ends_at: string; expected_attendance: number; peak_extra_trips: number }[];
+}
+
+export function OpsOutlook() {
+  const qc = useQueryClient();
+  const { cities } = useOps();
+  const q = useQuery({ queryKey: ["intel", "outlook"], queryFn: () => api.get<Outlook>("intel/outlook/"), refetchInterval: 5 * 60_000 });
+  const [open, setOpen] = useState(false);
+  const blank = { city: "", name: "", kind: "CONCERT", venue: "", lat: "", lng: "", starts: "", hours: "3", crowd: "10000" };
+  const [f, setF] = useState(blank);
+  const create = useMutation({
+    mutationFn: () => {
+      const start = new Date(f.starts);
+      return api.post("intel/events/", {
+        city: Number(f.city),
+        name: f.name,
+        kind: f.kind,
+        venue: f.venue,
+        lat: Number(f.lat),
+        lng: Number(f.lng),
+        starts_at: start.toISOString(),
+        ends_at: new Date(start.getTime() + Number(f.hours) * 3_600_000).toISOString(),
+        expected_attendance: Number(f.crowd),
+      });
+    },
+    onSuccess: () => {
+      toast.success("Event added: the forecast and driver nudges now include it");
+      qc.invalidateQueries({ queryKey: ["intel"] });
+      setOpen(false);
+      setF(blank);
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+  const o = q.data;
+  const raining = (o?.weather ?? []).filter((w) => w.demand_factor > 1);
+  const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  return (
+    <>
+      <PageHeader
+        title="Weather & events"
+        subtitle="Rain and big events move demand. Both feed the next-hour forecast, driver nudges and rider alerts; surge already follows the demand they create."
+        actions={<Button onClick={() => setOpen(true)}>Add event</Button>}
+      />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Cities with rain" value={raining.length} sub={raining.map((w) => w.city).slice(0, 3).join(", ")} icon={<TrendingUp className="size-4" />} tone={raining.length ? "info" : "neutral"} />
+        <Stat label="Upcoming events (14 days)" value={o?.events.length ?? "—"} tone="brand" />
+        <Stat label="Biggest crowd" value={o?.events.length ? Math.max(...o.events.map((e) => e.expected_attendance)).toLocaleString("en-IN") : "—"} />
+        <Stat label="Weather source" value={o?.weather[0]?.source === "open-meteo" ? "Live" : "Simulated"} sub={o?.weather[0]?.source === "open-meteo" ? "Open-Meteo" : "Offline: seasonal model"} />
+      </div>
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <Card className="overflow-x-auto">
+          <div className="p-4 pb-0">
+            <CardHeader title="Events" />
+          </div>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Event</Th>
+                <Th>When</Th>
+                <Th className="text-right">Crowd</Th>
+                <Th className="text-right">Peak extra trips</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {(o?.events ?? []).map((e) => (
+                <tr key={e.id} className="border-t border-line">
+                  <Td>
+                    <div className="font-semibold">{e.name}</div>
+                    <div className="text-xs text-muted">
+                      {e.kind} · {e.venue}, {e.city}
+                    </div>
+                  </Td>
+                  <Td className="text-xs">
+                    {when(e.starts_at)}
+                    <div className="text-muted">ends {new Date(e.ends_at).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}</div>
+                  </Td>
+                  <Td className="text-right">{e.expected_attendance.toLocaleString("en-IN")}</Td>
+                  <Td className="text-right font-semibold">+{e.peak_extra_trips}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
+        <Card className="max-h-[520px] overflow-y-auto">
+          <Table>
+            <thead>
+              <tr>
+                <Th>City</Th>
+                <Th>Now</Th>
+                <Th className="text-right">Rain chance (3 h)</Th>
+                <Th className="text-right">Demand</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {(o?.weather ?? []).map((w) => (
+                <tr key={w.city} className="border-t border-line">
+                  <Td className="font-semibold">{w.city}</Td>
+                  <Td className="text-xs">
+                    {w.condition} · {Number(w.temperature_c).toFixed(0)}°C{Number(w.rain_mm) > 0 && ` · ${w.rain_mm} mm`}
+                  </Td>
+                  <Td className="text-right">{w.rain_chance_next_3h}%</Td>
+                  <Td className="text-right">{w.demand_factor > 1 ? <Badge tone="info">+{Math.round((w.demand_factor - 1) * 100)}%</Badge> : "—"}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
+      </div>
+      <Modal open={open} onClose={() => setOpen(false)} title="Add an event" footer={<Button block loading={create.isPending} disabled={!f.city || !f.name || !f.starts || !f.lat} onClick={() => create.mutate()}>Add</Button>}>
+        <div className="grid grid-cols-2 gap-2">
+          <Select value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })}>
+            <option value="">City…</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+          <Select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>
+            {["CRICKET", "FOOTBALL", "CONCERT", "FESTIVAL", "CONFERENCE", "OTHER"].map((k) => (
+              <option key={k}>{k}</option>
+            ))}
+          </Select>
+        </div>
+        <Input className="mt-2" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Event name" />
+        <Input className="mt-2" value={f.venue} onChange={(e) => setF({ ...f, venue: e.target.value })} placeholder="Venue" />
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Input value={f.lat} onChange={(e) => setF({ ...f, lat: e.target.value })} placeholder="Latitude" />
+          <Input value={f.lng} onChange={(e) => setF({ ...f, lng: e.target.value })} placeholder="Longitude" />
+          <Input type="datetime-local" value={f.starts} onChange={(e) => setF({ ...f, starts: e.target.value })} />
+          <Input type="number" value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} placeholder="Hours" />
+        </div>
+        <Input className="mt-2" type="number" value={f.crowd} onChange={(e) => setF({ ...f, crowd: e.target.value })} placeholder="Expected attendance" />
+      </Modal>
     </>
   );
 }

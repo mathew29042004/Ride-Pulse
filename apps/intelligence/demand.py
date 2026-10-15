@@ -73,7 +73,7 @@ def _baseline(hour: datetime, city_id: int | None) -> dict[int, float]:
     return {zone: value / weight_seen for zone, value in totals.items()}
 
 
-def predict(*, city_id: int | None = None, now: datetime | None = None) -> dict[int, float]:
+def _base_predict(*, city_id: int | None = None, now: datetime | None = None) -> dict[int, float]:
     """Expected trips per zone in the hour starting at the next full hour."""
     now = now or timezone.now()
     next_hour = _hour_start(now) + timedelta(hours=1)
@@ -97,6 +97,39 @@ def predict(*, city_id: int | None = None, now: datetime | None = None) -> dict[
     }
 
 
+def predict(
+    *, city_id: int | None = None, now: datetime | None = None, with_context: bool = True
+) -> dict[int, float]:
+    """The forecast, lifted by rain (per city) and by events near each zone."""
+    now = now or timezone.now()
+    base = _base_predict(city_id=city_id, now=now)
+    if not with_context:
+        return base
+    from . import context
+
+    next_hour = _hour_start(now) + timedelta(hours=1)
+    zones = {z.pk: z for z in Zone.objects.filter(pk__in=base)}
+    event_zones = Zone.objects.filter(
+        city_id__in=context.events_in_window(
+            next_hour, next_hour + timedelta(hours=1), city_id=city_id
+        ).values("city_id")
+    )
+    for zone in event_zones:
+        zones.setdefault(zone.pk, zone)
+    factors: dict[int, float] = {}
+    result = {}
+    for pk, zone in zones.items():
+        if zone.city_id not in factors:
+            factors[zone.city_id] = context.weather_factor(
+                context.current_weather(zone.city_id, now=now)
+            )
+        extra, _ = context.event_extra_trips(zone, next_hour)
+        value = base.get(pk, 0.0) * factors[zone.city_id] + extra
+        if value > 0:
+            result[pk] = value
+    return result
+
+
 def _free_drivers(city_id: int | None):
     drivers = DriverProfile.objects.filter(
         availability=Availability.ONLINE,
@@ -115,6 +148,9 @@ def forecast(*, city_id: int | None = None, now: datetime | None = None, limit: 
     zones = Zone.objects.filter(pk__in=expected).select_related("city")
     drivers = _free_drivers(city_id)
     rows = []
+    from . import context
+
+    next_hour = _hour_start(now) + timedelta(hours=1)
     for zone in zones:
         trips = expected[zone.pk]
         near = sum(
@@ -137,6 +173,7 @@ def forecast(*, city_id: int | None = None, now: datetime | None = None, limit: 
                 "drivers_nearby": near,
                 "shortage": round(shortage, 2),
                 "status": "SHORT" if shortage >= 1.5 else "TIGHT" if shortage >= 1 else "OK",
+                "reasons": context.event_extra_trips(zone, next_hour)[1],
             }
         )
     rows.sort(key=lambda r: (-r["shortage"], -r["expected_trips"]))

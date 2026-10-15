@@ -13,6 +13,7 @@ interface HotZone {
   drivers_nearby: number;
   distance_km: number;
   status: "SHORT" | "TIGHT" | "OK";
+  reasons?: string[];
 }
 
 export function HotZones() {
@@ -26,7 +27,10 @@ export function HotZones() {
       </div>
       {list.map((z) => (
         <div key={z.zone_id} className="flex items-center justify-between py-1 text-sm">
-          <span className="font-semibold">{z.zone}</span>
+          <span className="font-semibold">
+            {z.zone}
+            {z.reasons?.length ? <span className="block text-[11px] font-normal text-muted">{z.reasons[0]}</span> : null}
+          </span>
           <span className="text-xs text-muted">
             {t("~{n} trips · {km} km away", { n: Math.round(z.expected_trips), km: z.distance_km })}
           </span>

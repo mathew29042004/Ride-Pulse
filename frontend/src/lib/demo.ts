@@ -6,6 +6,7 @@ export const DEMO_ACCOUNTS = [
   { label: "Driver", email: "driver@ridepulse.dev", description: "Go online, accept trip offers, start with the ride PIN, see earnings." },
   { label: "Operations", email: "ops@ridepulse.dev", description: "Live map, dispatch, surge pricing, driver verification, analytics." },
   { label: "Support", email: "support@ridepulse.dev", description: "Ticket queue, refunds and the SOS safety desk." },
+  { label: "Business", email: "business@ridepulse.dev", description: "Acme Technologies' travel admin: spend dashboard, travel policy, GST invoice, webhooks." },
   { label: "Fleet owner", email: "owner@ridepulse.dev", description: "Your drivers and cars: trips, your share of earnings, vehicle upkeep, payouts." },
   { label: "Admin", email: "admin@ridepulse.dev", description: "Everything, including the audit trail and staff accounts." },
 ] as const;

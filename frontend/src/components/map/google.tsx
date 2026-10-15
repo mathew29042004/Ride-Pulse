@@ -208,7 +208,7 @@ export function MapPolyline({ positions, color, weight = 4, opacity = 1, dashed 
 
 export function RouteLine({ from, to, encoded, dashed = false, color, progress, via }: RouteLineProps) {
   const [theme] = useTheme();
-  const path = useMemo(() => routePath(from, to, encoded, via), [from[0], from[1], to[0], to[1], encoded, via?.[0], via?.[1]]); // eslint-disable-line react-hooks/exhaustive-deps
+  const path = useMemo(() => routePath(from, to, encoded, via), [from[0], from[1], to[0], to[1], encoded, JSON.stringify(via ?? null)]); // eslint-disable-line react-hooks/exhaustive-deps
   const positions = useMemo(() => remainingPath(path, progress), [path, progress?.[0], progress?.[1]]); // eslint-disable-line react-hooks/exhaustive-deps
   const stroke = color ?? (theme === "dark" ? "#f2f4f7" : "#0b0f19");
   return (

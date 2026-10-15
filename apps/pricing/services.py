@@ -226,12 +226,14 @@ def estimate_fare(
     promo: PromoCode | None = None,
     stop: tuple[float, float] | None = None,
     ride_pass: bool = False,
+    extra_stops=(),
 ) -> FareEstimate:
     at = at or timezone.now()
     zones = list(city.zones.all())
     pickup_zone = zone_for_point(city, *pickup, zones)
     dropoff_zone = zone_for_point(city, *dropoff, zones)
-    route = estimate_route_via([pickup, *([stop] if stop else []), dropoff], at)
+    via = [*([stop] if stop else []), *((s["lat"], s["lng"]) for s in extra_stops)]
+    route = estimate_route_via([pickup, *via, dropoff], at)
     multiplier = current_surge(pickup_zone, now=at)
     airport = bool(
         (pickup_zone and pickup_zone.is_airport) or (dropoff_zone and dropoff_zone.is_airport)

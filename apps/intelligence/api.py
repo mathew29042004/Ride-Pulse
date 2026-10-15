@@ -127,11 +127,40 @@ class FraudCaseViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseVie
         return Response(fraud.summary())
 
 
+class CityEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import CityEvent
+
+        model = CityEvent
+        fields = [
+            "city",
+            "name",
+            "kind",
+            "venue",
+            "lat",
+            "lng",
+            "starts_at",
+            "ends_at",
+            "expected_attendance",
+        ]
+
+    def validate(self, attrs):
+        if attrs["ends_at"] <= attrs["starts_at"]:
+            raise serializers.ValidationError({"ends_at": "The event must end after it starts."})
+        return attrs
+
+
 class InsightsViewSet(BaseViewSet):
     """The morning briefing, the next-hour demand forecast and the driver app's hot zones."""
 
-    capabilities = {"briefing": Cap.REPORTS_VIEW, "demand": Cap.REPORTS_VIEW}
+    capabilities = {
+        "briefing": Cap.REPORTS_VIEW,
+        "demand": Cap.REPORTS_VIEW,
+        "outlook": Cap.REPORTS_VIEW,
+        "events": Cap.PRICING_MANAGE,
+    }
     driver_actions = ("hot_zones",)
+    rider_actions = ("nearby",)
 
     @extend_schema(
         parameters=[OpenApiParameter("day", OpenApiTypes.DATE, required=False)],
@@ -174,3 +203,34 @@ class InsightsViewSet(BaseViewSet):
     @action(detail=False, methods=["get"])
     def hot_zones(self, request):
         return Response(demand.hot_zones_for(request.user.driver_profile))
+
+    @extend_schema(
+        parameters=[OpenApiParameter("lat", float), OpenApiParameter("lng", float)],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=False, methods=["get"])
+    def nearby(self, request):
+        """Rider Home: rain and big events near the rider today."""
+        from . import context
+
+        try:
+            lat, lng = float(request.query_params["lat"]), float(request.query_params["lng"])
+        except (KeyError, ValueError):
+            return Response({"weather": None, "events": [], "messages": []})
+        return Response(context.for_rider(lat, lng))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def outlook(self, request):
+        """Ops: weather in every city and upcoming events."""
+        from . import context
+
+        return Response(context.overview())
+
+    @extend_schema(request=CityEventSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def events(self, request):
+        data = CityEventSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        event = data.save(created_by=request.user)
+        return Response({"id": event.pk}, status=201)
