@@ -55,6 +55,7 @@ class TransactionKind(models.TextChoices):
     TDS = "TDS", "Income tax withheld (TDS)"
     INCENTIVE = "INCENTIVE", "Driver incentive"
     FLEET_SHARE = "FLEET_SHARE", "Fleet owner share"
+    INSURANCE = "INSURANCE", "Insurance claim payout"
 
 
 class LedgerTransaction(models.Model):

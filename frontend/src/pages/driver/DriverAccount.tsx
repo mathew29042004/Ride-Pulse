@@ -3,6 +3,7 @@ import { ChevronRight, Clock, Home, LifeBuoy } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
+import { TrustLinks } from "@/components/TrustLinks";
 import { VehicleCare } from "@/components/DriverBusiness";
 import { useMapProvider } from "@/components/map";
 import { describePoint } from "@/components/PlaceSuggestions";
@@ -58,6 +59,7 @@ export default function DriverAccount() {
       <div className="mt-6 divide-y divide-line">
         <PushToggle audience="driver" />
         {d && <HomeRow driver={d} />}
+        <TrustLinks base="/drive" />
         <Link to="/drive/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
           <span className="flex-1 font-medium">Help & support</span>

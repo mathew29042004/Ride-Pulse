@@ -534,6 +534,27 @@ Sentry, metrics token) are set in the Render dashboard, never in git.
 **Anywhere with Docker:** `docker compose up --build` runs the full stack (Postgres, Redis, web,
 Celery worker and beat, simulator).
 
+### Trust and compliance (`apps/trust`)
+* **Personal data rights** (built along the lines of India's DPDP Act, 2023): optional uses
+  (offers, sharing trips with trusted contacts) are opt-in, as easy to withdraw, and every change
+  is kept with the notice version. "Download my data" builds a JSON archive (7-day link).
+  "Delete my account" waits 7 days (cancellable), then erases personal details; trips, fares and
+  ledger entries stay without a name because tax law needs them, and deletion is refused while a
+  trip is active or money is owed. Corrections and grievances get a reference and a 30-day
+  deadline in the ops privacy queue. A daily job removes data past its retention period (chats
+  after 180 days, recordings after 90 unless a case is open, notifications and the security log
+  after a year, expired export files).
+* **Appeals:** suspended drivers, blocked riders and anyone judged in a fraud case can appeal.
+  The **reviewer must be someone other than the person who made the decision**; accepting an
+  appeal reverses it in the same step (reinstate, unblock, fraud case dismissed), audited.
+* **Insurance claims:** every ride carries accident cover. The rider or driver files within 7
+  days with photos; the claims desk sends it to the insurer and approves (paid to the wallet from
+  `external:insurer` in the ledger) or rejects, never on their own claim.
+* **Support quality:** riders rate resolved tickets 1-5 (CSAT, also on agent scorecards and the
+  "needs guidance" flag); agents insert saved replies with the name, ticket and trip filled in;
+  a help centre for riders and drivers with search, "was this helpful?" and a count of questions
+  solved without a ticket. Promotions go only to riders who opted in.
+
 ### Reliability and security (`apps/reliability`)
 * **Transactional outbox:** trip requested/completed/cancelled, refunds, payouts, SOS and fraud
   cases are written as events in the same database transaction as the change, so an event is

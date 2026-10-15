@@ -33,6 +33,7 @@ class TicketSerializer(serializers.ModelSerializer):
     assigned_to = serializers.StringRelatedField()
     trip_number = serializers.CharField(source="trip.trip_number", default=None, read_only=True)
     messages = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = SupportTicket
@@ -55,7 +56,12 @@ class TicketSerializer(serializers.ModelSerializer):
             "refund_amount",
             "created_at",
             "messages",
+            "rating",
         ]
+
+    def get_rating(self, ticket) -> int | None:
+        rating = getattr(ticket, "rating", None)
+        return rating.score if rating else None
 
     def get_messages(self, ticket) -> list[dict]:
         request = self.context.get("request")

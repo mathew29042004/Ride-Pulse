@@ -32,6 +32,7 @@ class Cap:
     WORK_USE = "work.use"  # tasks, meetings and check-ins (every employee)
     FLEET_OWN = "fleet.own"  # a fleet owner's own drivers, vehicles and earnings
     FLEET_MANAGE = "fleet.manage"  # ops: fleet owners, quests, vehicle upkeep, airport queue
+    PRIVACY_MANAGE = "privacy.manage"  # data requests (DPDP), appeals, insurance claims
 
     @classmethod
     def all(cls) -> frozenset[str]:
@@ -69,7 +70,7 @@ _SUPPORT_AGENT = {
     Cap.SAFETY_MANAGE,
 }
 
-_MANAGERS = {*_OPS_MANAGER, Cap.TEAM_VIEW, Cap.FRAUD_REVIEW, Cap.FLEET_MANAGE}
+_MANAGERS = {*_OPS_MANAGER, Cap.TEAM_VIEW, Cap.FRAUD_REVIEW, Cap.FLEET_MANAGE, Cap.PRIVACY_MANAGE}
 
 # Associate managers: each runs one line of the business across their state.
 _ASSOC_RIDES = {
@@ -85,7 +86,7 @@ _ASSOC_RIDES = {
     Cap.REPORTS_VIEW,
     Cap.TEAM_VIEW,
 }
-_ASSOC_SUPPORT = {*_SUPPORT_AGENT, Cap.REPORTS_VIEW, Cap.TEAM_VIEW}
+_ASSOC_SUPPORT = {*_SUPPORT_AGENT, Cap.REPORTS_VIEW, Cap.TEAM_VIEW, Cap.PRIVACY_MANAGE}
 _ASSOC_MAINTENANCE = {
     Cap.FLEET_MANAGE,
     Cap.DRIVERS_VIEW,
@@ -116,7 +117,7 @@ _ASSOC_PARCELS = {
     Cap.REPORTS_VIEW,
     Cap.TEAM_VIEW,
 }
-_SUPPORT_LEAD = {*_SUPPORT_AGENT, Cap.TEAM_VIEW}
+_SUPPORT_LEAD = {*_SUPPORT_AGENT, Cap.TEAM_VIEW, Cap.PRIVACY_MANAGE}
 _FLEET_EXECUTIVE = {Cap.DRIVERS_VIEW, Cap.DRIVERS_VERIFY, Cap.TRIPS_VIEW, Cap.FLEET_MANAGE}
 
 ROLE_CAPABILITIES: dict[str, frozenset[str]] = {

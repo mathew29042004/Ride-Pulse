@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
+import { TrustLinks } from "@/components/TrustLinks";
 import { PushToggle } from "@/components/PushToggle";
 import { EcoCard, FareLocks } from "@/components/GreenAndLock";
 import { ProfilesSection } from "@/components/Profiles";
@@ -157,6 +158,7 @@ export default function RiderAccount() {
       <div className="divide-y divide-line">
         <PushToggle audience="rider" />
         <SafetySettings rider={rider} />
+        <TrustLinks base="/ride" />
         <Link to="/ride/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
           <span className="flex-1 font-medium">Help & support tickets</span>

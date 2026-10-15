@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "apps.intelligence",
     "apps.fleet",
     "apps.reliability",
+    "apps.trust",
 ]
 
 MIDDLEWARE = [
@@ -224,6 +225,8 @@ SPECTACULAR_SETTINGS = {
         "TicketStatusEnum": "apps.support.models.TicketStatus",
         "WorkTaskStatusEnum": "apps.workspace.models.TaskStatus",
         "MeetingStatusEnum": "apps.workspace.models.MeetingStatus",
+        "DataRequestKindEnum": "apps.trust.models.RequestKind",
+        "ClaimKindEnum": "apps.trust.models.ClaimKind",
         "TaskUpdateStatusEnum": [("IN_PROGRESS", "IN_PROGRESS"), ("DONE", "DONE")],
         "OnlinePaymentMethodEnum": [("UPI", "UPI"), ("CARD", "CARD"), ("WALLET", "WALLET")],
         "ParcelCategoryEnum": "apps.rides.models.ParcelCategory",
@@ -252,6 +255,7 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BEAT_SCHEDULE = {
     "outbox-relay": {"task": "reliability.relay_outbox", "schedule": timedelta(seconds=10)},
+    "trust-privacy": {"task": "trust.privacy_daily", "schedule": crontab(hour=3, minute=15)},
     "fleet-upkeep": {"task": "fleet.upkeep_sweep", "schedule": crontab(hour=7, minute=30)},
     "fleet-quests": {"task": "fleet.end_quests", "schedule": timedelta(minutes=15)},
     "intel-weather": {"task": "intelligence.refresh_weather", "schedule": timedelta(minutes=30)},
@@ -433,6 +437,8 @@ RIDE_PULSE = {
     # Airport queue: drivers inside the airport zone wait in line; leaving it for longer than
     # this drops them out.
     "AIRPORT_QUEUE_GRACE_MINUTES": 5,
+    # Privacy requests (access, correction, grievances) are answered within this many days.
+    "PRIVACY_RESPONSE_DAYS": 30,
 }
 
 # --- Google Maps Platform (optional) ---------------------------------------------------------

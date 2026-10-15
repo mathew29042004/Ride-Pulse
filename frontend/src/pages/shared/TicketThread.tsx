@@ -54,6 +54,7 @@ export default function TicketThread({ base }: { base: string }) {
             <div className="font-semibold">Resolved</div>
             <div className="text-muted">{t.resolution}</div>
             {Number(t.refund_amount) > 0 && <div className="mt-1 font-semibold text-brand-strong">{inr(t.refund_amount)} refunded to your wallet</div>}
+            <RateHelp ticketId={t.id} rating={t.rating ?? null} />
           </div>
         )}
       </div>
@@ -71,6 +72,38 @@ export default function TicketThread({ base }: { base: string }) {
           </button>
         </form>
       )}
+    </div>
+  );
+}
+
+
+/** CSAT: one tap, 1 to 5, once the ticket is resolved. */
+function RateHelp({ ticketId, rating }: { ticketId: number; rating: number | null }) {
+  const qc = useQueryClient();
+  const [score, setScore] = useState<number | null>(rating);
+  const send = useMutation({
+    mutationFn: (value: number) => api.post(`me/tickets/${ticketId}/rate/`, { score: value }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["support"] }),
+  });
+  return (
+    <div className="mt-3 border-t border-brand/30 pt-2">
+      <div className="text-xs font-semibold">{rating || send.isSuccess ? "Thanks for rating us" : "How was the help you got?"}</div>
+      <div className="mt-1 flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            disabled={!!rating || send.isSuccess || send.isPending}
+            onClick={() => {
+              setScore(n);
+              send.mutate(n);
+            }}
+            className={clsx("text-2xl leading-none", (score ?? 0) >= n ? "text-amber-500" : "text-muted/40")}
+            aria-label={`${n} star${n > 1 ? "s" : ""}`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

@@ -137,6 +137,11 @@ def share_with_contacts(trip_id: int, *, now: datetime | None = None) -> int:
     trip = Trip.objects.select_related("rider__user", "ride_type", "vehicle").get(pk=trip_id)
     if trip.contacts_notified_at or trip.status != TripStatus.IN_PROGRESS:
         return 0
+    from apps.trust.models import ConsentPurpose
+    from apps.trust.privacy import has_consent
+
+    if not has_consent(trip.rider.user, ConsentPurpose.CONTACT_SHARING):
+        return 0  # the rider switched sharing off in their privacy settings
     contacts = list(contacts_for(trip))
     if not contacts:
         return 0

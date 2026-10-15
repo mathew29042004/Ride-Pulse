@@ -9,6 +9,7 @@ GST_PAYABLE = "tax:gst_payable"
 TDS_PAYABLE = "tax:tds_payable"  # income tax withheld from drivers (section 194-O)
 GATEWAY = "external:gateway"
 PAYOUTS_IN_TRANSIT = "external:payouts_in_transit"
+INSURER = "external:insurer"  # partner insurer funding accident claims
 
 PLATFORM_ACCOUNTS = (
     PLATFORM_COMMISSION,
@@ -20,4 +21,5 @@ PLATFORM_ACCOUNTS = (
     TDS_PAYABLE,
     GATEWAY,
     PAYOUTS_IN_TRANSIT,
+    INSURER,
 )

@@ -192,7 +192,9 @@ def resolve(
     notify(
         ticket.raised_by,
         f"{ticket.ticket_number} resolved",
-        resolution + (f" ₹{refund} was refunded to your wallet." if refund else ""),
+        resolution
+        + (f" ₹{refund} was refunded to your wallet." if refund else "")
+        + " Tap to rate the help you got.",
         level=Level.SUCCESS,
         link=_ticket_link(ticket, ticket.raised_by),
         email=True,

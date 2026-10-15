@@ -55,6 +55,9 @@ def scorecards(manager, *, days: int = 7, now: datetime | None = None) -> dict:
         .annotate(t=Avg(F("reviewed_at") - F("created_at")))
         .values_list("reviewed_by_id", "t")
     )
+    from apps.trust.support_quality import csat_by_agent
+
+    csat = csat_by_agent(people, since)
     invites = MeetingAttendee.objects.filter(
         user_id__in=people, attended__isnull=False, meeting__starts_at__gte=since
     )
@@ -97,6 +100,8 @@ def scorecards(manager, *, days: int = 7, now: datetime | None = None) -> dict:
                 "sla_met_rate": round(100 * sla.get(uid, 0) / tickets[uid])
                 if tickets.get(uid)
                 else None,
+                "csat_percent": csat[uid]["csat"] if uid in csat else None,
+                "csat_ratings": csat[uid]["n"] if uid in csat else 0,
                 "avg_review_hours": round(review_hours[uid].total_seconds() / 3600, 1)
                 if review_hours.get(uid)
                 else None,
@@ -144,6 +149,7 @@ GUIDANCE_RULES = {
     "on_time_rate": lambda r: r["done_tasks"] >= 3 and r["on_time_rate"] < 60,
     "sla_met_rate": lambda r: r["tickets_resolved"] >= 3 and r["sla_met_rate"] < 70,
     "avg_response_minutes": lambda r: (r["avg_response_minutes"] or 0) > 120,
+    "csat_percent": lambda r: r["csat_ratings"] >= 3 and r["csat_percent"] < 60,
 }
 
 

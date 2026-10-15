@@ -106,6 +106,7 @@ export default function OpsTicket() {
               <label className="flex items-center gap-2 text-xs font-medium whitespace-nowrap text-muted">
                 <Toggle checked={internal} onChange={setInternal} label="Internal note" /> Internal
               </label>
+              <MacroPicker category={t.category} name={t.raised_by} trip={t.trip_number} ticket={t.ticket_number} onPick={setBody} />
               <Input value={body} onChange={(e) => setBody(e.target.value)} placeholder={internal ? "Note for the team (not visible to the customer)" : "Reply to the customer"} />
               <Button type="submit" icon={<Send className="size-4" />} loading={reply.isPending}>
                 Send
@@ -161,5 +162,34 @@ export default function OpsTicket() {
         )}
       </Modal>
     </>
+  );
+}
+
+
+/** Saved replies: picking one fills the reply box (placeholders filled in) for a final edit. */
+function MacroPicker({ category, name, trip, ticket, onPick }: { category: string; name: string; trip: string | null; ticket: string; onPick: (text: string) => void }) {
+  const macros = useQuery({ queryKey: ["macros", category], queryFn: () => api.get<{ id: number; title: string; body: string }[]>(`ops/trust/macros/?category=${category}`) });
+  if (!macros.data?.length) return null;
+  return (
+    <select
+      defaultValue=""
+      onChange={(e) => {
+        const macro = macros.data!.find((m) => String(m.id) === e.target.value);
+        if (macro) {
+          const first = (name || "there").split(" ")[0];
+          onPick(macro.body.replaceAll("{name}", first).replaceAll("{trip}", trip ?? "your trip").replaceAll("{ticket}", ticket));
+        }
+        e.target.value = "";
+      }}
+      className="w-36 shrink-0 rounded-xl border border-line bg-surface px-2 py-2 text-xs"
+      aria-label="Saved replies"
+    >
+      <option value="">Saved replies…</option>
+      {macros.data.map((m) => (
+        <option key={m.id} value={m.id}>
+          {m.title}
+        </option>
+      ))}
+    </select>
   );
 }

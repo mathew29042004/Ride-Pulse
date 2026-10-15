@@ -18,6 +18,7 @@ from apps.reliability import api as reliability
 from apps.riders import api as riders
 from apps.rides import api as rides
 from apps.support import api as support
+from apps.trust import api as trust
 from apps.workspace import api as workspace
 
 router = DefaultRouter()
@@ -47,6 +48,9 @@ router.register("intel", intelligence.InsightsViewSet, basename="intel")
 router.register("fleet", fleet.FleetOwnerPortalViewSet, basename="fleet-owner")
 router.register("ops/fleet", fleet.FleetOpsViewSet, basename="ops-fleet")
 router.register("platform", reliability.PlatformViewSet, basename="platform")
+router.register("me", trust.MyTrustViewSet, basename="me-trust")
+router.register("help", trust.HelpViewSet, basename="help")
+router.register("ops/trust", trust.TrustOpsViewSet, basename="ops-trust")
 router.register("riders", riders.RiderViewSet, basename="rider")
 router.register("driver/biz", fleet.DriverBusinessViewSet, basename="driver-biz")
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")

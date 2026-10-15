@@ -154,6 +154,95 @@
     ],
     "type": "object"
    },
+   "Appeal": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "decided_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "decision_note": {
+      "type": "string"
+     },
+     "due_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "number": {
+      "maxLength": 20,
+      "type": "string"
+     },
+     "original_decided_by": {
+      "nullable": true,
+      "type": "integer"
+     },
+     "original_decided_by_name": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "original_reason": {
+      "maxLength": 255,
+      "type": "string"
+     },
+     "reviewed_by_name": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "statement": {
+      "type": "string"
+     },
+     "status": {
+      "$ref": "#/components/schemas/AppealStatusEnum"
+     },
+     "status_label": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "subject": {
+      "$ref": "#/components/schemas/SubjectEnum"
+     },
+     "subject_label": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "user_name": {
+      "readOnly": true,
+      "type": "string"
+     }
+    },
+    "required": [
+     "created_at",
+     "due_at",
+     "id",
+     "number",
+     "original_decided_by_name",
+     "original_reason",
+     "reviewed_by_name",
+     "statement",
+     "status_label",
+     "subject",
+     "subject_label",
+     "user_name"
+    ],
+    "type": "object"
+   },
+   "AppealStatusEnum": {
+    "description": "* `OPEN` - Waiting for review\n* `UPHELD` - Appeal accepted: decision reversed\n* `DENIED` - Appeal rejected: decision stands",
+    "enum": [
+     "OPEN",
+     "UPHELD",
+     "DENIED"
+    ],
+    "type": "string"
+   },
    "AssignRequest": {
     "properties": {
      "agent": {
@@ -192,6 +281,15 @@
      "user"
     ],
     "type": "object"
+   },
+   "AudienceEnum": {
+    "description": "* `RIDER` - Riders\n* `DRIVER` - Drivers\n* `ALL` - Everyone",
+    "enum": [
+     "RIDER",
+     "DRIVER",
+     "ALL"
+    ],
+    "type": "string"
    },
    "AuditLog": {
     "properties": {
@@ -478,6 +576,126 @@
     ],
     "type": "object"
    },
+   "Claim": {
+    "properties": {
+     "amount_approved": {
+      "format": "decimal",
+      "nullable": true,
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "amount_claimed": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "claimant_name": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "created_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "decided_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "decision_note": {
+      "type": "string"
+     },
+     "description": {
+      "type": "string"
+     },
+     "documents": {
+      "items": {
+       "additionalProperties": {},
+       "type": "object"
+      },
+      "readOnly": true,
+      "type": "array"
+     },
+     "happened_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "insurer_reference": {
+      "maxLength": 40,
+      "type": "string"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/ClaimKindEnum"
+     },
+     "kind_label": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "number": {
+      "maxLength": 20,
+      "type": "string"
+     },
+     "paid_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ClaimStatusEnum"
+     },
+     "status_label": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "trip": {
+      "type": "integer"
+     },
+     "trip_number": {
+      "readOnly": true,
+      "type": "string"
+     }
+    },
+    "required": [
+     "amount_claimed",
+     "claimant_name",
+     "created_at",
+     "description",
+     "documents",
+     "happened_at",
+     "id",
+     "kind",
+     "kind_label",
+     "number",
+     "status_label",
+     "trip",
+     "trip_number"
+    ],
+    "type": "object"
+   },
+   "ClaimKindEnum": {
+    "description": "* `ACCIDENT` - Accident\n* `INJURY` - Injury\n* `PROPERTY` - Damaged belongings",
+    "enum": [
+     "ACCIDENT",
+     "INJURY",
+     "PROPERTY"
+    ],
+    "type": "string"
+   },
+   "ClaimStatusEnum": {
+    "description": "* `SUBMITTED` - Submitted\n* `UNDER_REVIEW` - With the insurer\n* `APPROVED` - Approved\n* `REJECTED` - Rejected\n* `PAID` - Paid",
+    "enum": [
+     "SUBMITTED",
+     "UNDER_REVIEW",
+     "APPROVED",
+     "REJECTED",
+     "PAID"
+    ],
+    "type": "string"
+   },
    "ClientConfig": {
     "properties": {
      "company_name": {
@@ -542,6 +760,29 @@
     },
     "required": [
      "is_my_car"
+    ],
+    "type": "object"
+   },
+   "ConsentPurposeEnum": {
+    "description": "* `MARKETING` - Offers and promotions\n* `CONTACT_SHARING` - Share my live trips with my trusted contacts",
+    "enum": [
+     "MARKETING",
+     "CONTACT_SHARING"
+    ],
+    "type": "string"
+   },
+   "ConsentRequest": {
+    "properties": {
+     "granted": {
+      "type": "boolean"
+     },
+     "purpose": {
+      "$ref": "#/components/schemas/ConsentPurposeEnum"
+     }
+    },
+    "required": [
+     "granted",
+     "purpose"
     ],
     "type": "object"
    },
@@ -818,6 +1059,98 @@
     ],
     "type": "object"
    },
+   "DataRequest": {
+    "properties": {
+     "completed_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "created_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "details": {
+      "type": "string"
+     },
+     "download": {
+      "readOnly": true,
+      "type": "boolean"
+     },
+     "due_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "execute_after": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/DataRequestKindEnum"
+     },
+     "kind_label": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "number": {
+      "maxLength": 20,
+      "type": "string"
+     },
+     "outcome": {
+      "type": "string"
+     },
+     "status": {
+      "$ref": "#/components/schemas/DataStatusEnum"
+     },
+     "status_label": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "user_label": {
+      "maxLength": 80,
+      "type": "string"
+     }
+    },
+    "required": [
+     "created_at",
+     "download",
+     "due_at",
+     "id",
+     "kind",
+     "kind_label",
+     "number",
+     "status_label",
+     "user_label"
+    ],
+    "type": "object"
+   },
+   "DataRequestKindEnum": {
+    "description": "* `EXPORT` - Copy of my data\n* `ERASURE` - Delete my account\n* `CORRECTION` - Correct my data\n* `GRIEVANCE` - Privacy complaint",
+    "enum": [
+     "EXPORT",
+     "ERASURE",
+     "CORRECTION",
+     "GRIEVANCE"
+    ],
+    "type": "string"
+   },
+   "DataStatusEnum": {
+    "description": "* `RECEIVED` - Received\n* `WAITING` - Cooling-off (can be cancelled)\n* `IN_PROGRESS` - In progress\n* `COMPLETED` - Completed\n* `REJECTED` - Rejected\n* `CANCELLED` - Cancelled",
+    "enum": [
+     "RECEIVED",
+     "WAITING",
+     "IN_PROGRESS",
+     "COMPLETED",
+     "REJECTED",
+     "CANCELLED"
+    ],
+    "type": "string"
+   },
    "DayPassMethodEnum": {
     "description": "* `WALLET` - WALLET\n* `UPI` - UPI",
     "enum": [
@@ -838,6 +1171,29 @@
     },
     "required": [
      "method"
+    ],
+    "type": "object"
+   },
+   "DecisionRequest": {
+    "properties": {
+     "amount": {
+      "format": "decimal",
+      "nullable": true,
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "approve": {
+      "type": "boolean"
+     },
+     "note": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "approve",
+     "note"
     ],
     "type": "object"
    },
@@ -1790,6 +2146,40 @@
     ],
     "type": "object"
    },
+   "FileClaimRequest": {
+    "properties": {
+     "amount": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "description": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "files": {
+      "items": {
+       "format": "binary",
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/ClaimKindEnum"
+     },
+     "trip": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "amount",
+     "description",
+     "kind",
+     "trip"
+    ],
+    "type": "object"
+   },
    "FlagsEnum": {
     "description": "* `ROUTE_DEVIATION` - Route much longer than estimated\n* `LONG_PICKUP` - Pickup took much longer than the ETA\n* `SOS` - SOS raised\n* `LOW_RATING` - Rated 2 stars or less\n* `GPS_JUMP` - GPS jumped impossibly far (glitch or spoofing)\n* `RIDE_CHECK` - Ride Check escalated to the safety team",
     "enum": [
@@ -2053,6 +2443,99 @@
      "database",
      "status",
      "time"
+    ],
+    "type": "object"
+   },
+   "HelpArticle": {
+    "properties": {
+     "audience": {
+      "$ref": "#/components/schemas/AudienceEnum"
+     },
+     "body": {
+      "type": "string"
+     },
+     "category": {
+      "maxLength": 40,
+      "type": "string"
+     },
+     "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "is_published": {
+      "type": "boolean"
+     },
+     "keywords": {
+      "maxLength": 255,
+      "type": "string"
+     },
+     "slug": {
+      "maxLength": 80,
+      "pattern": "^[-a-zA-Z0-9_]+$",
+      "type": "string"
+     },
+     "title": {
+      "maxLength": 140,
+      "type": "string"
+     },
+     "views": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "body",
+     "category",
+     "id",
+     "slug",
+     "title"
+    ],
+    "type": "object"
+   },
+   "HelpArticleRequest": {
+    "properties": {
+     "audience": {
+      "$ref": "#/components/schemas/AudienceEnum"
+     },
+     "body": {
+      "minLength": 1,
+      "type": "string"
+     },
+     "category": {
+      "maxLength": 40,
+      "minLength": 1,
+      "type": "string"
+     },
+     "is_published": {
+      "type": "boolean"
+     },
+     "keywords": {
+      "maxLength": 255,
+      "type": "string"
+     },
+     "slug": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[-a-zA-Z0-9_]+$",
+      "type": "string"
+     },
+     "title": {
+      "maxLength": 140,
+      "minLength": 1,
+      "type": "string"
+     },
+     "views": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "body",
+     "category",
+     "slug",
+     "title"
     ],
     "type": "object"
    },
@@ -2381,6 +2864,64 @@
     ],
     "type": "string"
    },
+   "Macro": {
+    "properties": {
+     "body": {
+      "type": "string"
+     },
+     "category": {
+      "maxLength": 16,
+      "type": "string"
+     },
+     "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "is_active": {
+      "type": "boolean"
+     },
+     "title": {
+      "maxLength": 80,
+      "type": "string"
+     },
+     "uses": {
+      "readOnly": true,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "body",
+     "id",
+     "title",
+     "uses"
+    ],
+    "type": "object"
+   },
+   "MacroRequest": {
+    "properties": {
+     "body": {
+      "minLength": 1,
+      "type": "string"
+     },
+     "category": {
+      "maxLength": 16,
+      "type": "string"
+     },
+     "is_active": {
+      "type": "boolean"
+     },
+     "title": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "body",
+     "title"
+    ],
+    "type": "object"
+   },
    "MarkAllRead": {
     "properties": {
      "updated": {
@@ -2636,6 +3177,25 @@
     ],
     "type": "object"
    },
+   "OfferRequest": {
+    "properties": {
+     "body": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+     },
+     "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "body",
+     "title"
+    ],
+    "type": "object"
+   },
    "OnboardingStatusEnum": {
     "description": "* `PENDING_DOCUMENTS` - Awaiting documents\n* `UNDER_REVIEW` - Under review\n* `APPROVED` - Approved\n* `REJECTED` - Rejected\n* `SUSPENDED` - Suspended",
     "enum": [
@@ -2719,6 +3279,23 @@
     "required": [
      "code",
      "phone"
+    ],
+    "type": "object"
+   },
+   "OutcomeRequest": {
+    "properties": {
+     "outcome": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "reject": {
+      "default": false,
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "outcome"
     ],
     "type": "object"
    },
@@ -2887,6 +3464,37 @@
     ],
     "type": "object"
    },
+   "PaginatedAppealList": {
+    "properties": {
+     "count": {
+      "example": 123,
+      "type": "integer"
+     },
+     "next": {
+      "example": "http://api.example.org/accounts/?page=4",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "previous": {
+      "example": "http://api.example.org/accounts/?page=2",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/Appeal"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "count",
+     "results"
+    ],
+    "type": "object"
+   },
    "PaginatedAuditLogList": {
     "properties": {
      "count": {
@@ -2908,6 +3516,37 @@
      "results": {
       "items": {
        "$ref": "#/components/schemas/AuditLog"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "count",
+     "results"
+    ],
+    "type": "object"
+   },
+   "PaginatedClaimList": {
+    "properties": {
+     "count": {
+      "example": 123,
+      "type": "integer"
+     },
+     "next": {
+      "example": "http://api.example.org/accounts/?page=4",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "previous": {
+      "example": "http://api.example.org/accounts/?page=2",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/Claim"
       },
       "type": "array"
      }
@@ -3135,6 +3774,37 @@
     ],
     "type": "object"
    },
+   "PaginatedHelpArticleList": {
+    "properties": {
+     "count": {
+      "example": 123,
+      "type": "integer"
+     },
+     "next": {
+      "example": "http://api.example.org/accounts/?page=4",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "previous": {
+      "example": "http://api.example.org/accounts/?page=2",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/HelpArticle"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "count",
+     "results"
+    ],
+    "type": "object"
+   },
    "PaginatedIncidentList": {
     "properties": {
      "count": {
@@ -3156,6 +3826,37 @@
      "results": {
       "items": {
        "$ref": "#/components/schemas/Incident"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "count",
+     "results"
+    ],
+    "type": "object"
+   },
+   "PaginatedMacroList": {
+    "properties": {
+     "count": {
+      "example": 123,
+      "type": "integer"
+     },
+     "next": {
+      "example": "http://api.example.org/accounts/?page=4",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "previous": {
+      "example": "http://api.example.org/accounts/?page=2",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/Macro"
       },
       "type": "array"
      }
@@ -4281,7 +4982,7 @@
       "$ref": "#/components/schemas/PaymentMethodEnum"
      },
      "purpose": {
-      "$ref": "#/components/schemas/PurposeEnum"
+      "$ref": "#/components/schemas/PaymentPurposeEnum"
      },
      "reference": {
       "maxLength": 24,
@@ -4440,6 +5141,19 @@
      "name"
     ],
     "type": "object"
+   },
+   "PaymentPurposeEnum": {
+    "description": "* `TRIP` - Trip fare\n* `TIP` - Tip\n* `TOP_UP` - Wallet top-up\n* `DUES` - Dues payment\n* `PASS` - Ride Pass\n* `SPLIT` - Fare split\n* `LOCK` - Fare Lock",
+    "enum": [
+     "TRIP",
+     "TIP",
+     "TOP_UP",
+     "DUES",
+     "PASS",
+     "SPLIT",
+     "LOCK"
+    ],
+    "type": "string"
    },
    "PaymentStatusEnum": {
     "description": "* `PENDING` - Pending\n* `SUCCEEDED` - Succeeded\n* `FAILED` - Failed",
@@ -4980,19 +5694,6 @@
      "value"
     ],
     "type": "object"
-   },
-   "PurposeEnum": {
-    "description": "* `TRIP` - Trip fare\n* `TIP` - Tip\n* `TOP_UP` - Wallet top-up\n* `DUES` - Dues payment\n* `PASS` - Ride Pass\n* `SPLIT` - Fare split\n* `LOCK` - Fare Lock",
-    "enum": [
-     "TRIP",
-     "TIP",
-     "TOP_UP",
-     "DUES",
-     "PASS",
-     "SPLIT",
-     "LOCK"
-    ],
-    "type": "string"
    },
    "PushKeysRequest": {
     "properties": {
@@ -6602,6 +7303,47 @@
     ],
     "type": "object"
    },
+   "SubjectEnum": {
+    "description": "* `DRIVER_SUSPENSION` - Driver account suspended\n* `RIDER_BLOCK` - Rider account blocked\n* `FRAUD_DECISION` - Fraud decision",
+    "enum": [
+     "DRIVER_SUSPENSION",
+     "RIDER_BLOCK",
+     "FRAUD_DECISION"
+    ],
+    "type": "string"
+   },
+   "SubmitAppealRequest": {
+    "properties": {
+     "statement": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "subject": {
+      "$ref": "#/components/schemas/SubjectEnum"
+     }
+    },
+    "required": [
+     "statement",
+     "subject"
+    ],
+    "type": "object"
+   },
+   "SubmitRequestRequest": {
+    "properties": {
+     "details": {
+      "maxLength": 2000,
+      "type": "string"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/DataRequestKindEnum"
+     }
+    },
+    "required": [
+     "kind"
+    ],
+    "type": "object"
+   },
    "SureRideQuote": {
     "properties": {
      "fee": {
@@ -7253,6 +7995,11 @@
       "readOnly": true,
       "type": "string"
      },
+     "rating": {
+      "nullable": true,
+      "readOnly": true,
+      "type": "integer"
+     },
      "refund_amount": {
       "format": "decimal",
       "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
@@ -7299,6 +8046,7 @@
      "messages",
      "priority",
      "raised_by",
+     "rating",
      "sla_due_at",
      "subject",
      "ticket_number",
@@ -12091,6 +12839,159 @@
     ]
    }
   },
+  "/api/v1/help/": {
+   "get": {
+    "description": "Help articles for the signed-in person's app (riders or drivers).",
+    "operationId": "help_list",
+    "parameters": [
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedHelpArticleList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "help"
+    ]
+   }
+  },
+  "/api/v1/help/{slug}/": {
+   "get": {
+    "description": "Help articles for the signed-in person's app (riders or drivers).",
+    "operationId": "help_retrieve",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "slug",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HelpArticle"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "help"
+    ]
+   }
+  },
+  "/api/v1/help/{slug}/vote/": {
+   "post": {
+    "description": "Help articles for the signed-in person's app (riders or drivers).",
+    "operationId": "help_vote_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "slug",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "help"
+    ]
+   }
+  },
   "/api/v1/intel/alerts/": {
    "get": {
     "description": "Automatic alerts (``?status=OPEN|RESOLVED``); each one created a task for its owner.",
@@ -12680,6 +13581,483 @@
     ],
     "tags": [
      "payments"
+    ]
+   }
+  },
+  "/api/v1/me/appeals/": {
+   "get": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_appeals_list",
+    "parameters": [
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedAppealList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   },
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_appeals_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SubmitAppealRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/SubmitAppealRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/SubmitAppealRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Appeal"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/claims/": {
+   "get": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_claims_list",
+    "parameters": [
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedClaimList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   },
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_claims_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FileClaimRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/FileClaimRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/FileClaimRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Claim"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/privacy/": {
+   "get": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_privacy_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   },
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_privacy_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsentRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsentRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsentRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/privacy/requests/": {
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_privacy_requests_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SubmitRequestRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/SubmitRequestRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/SubmitRequestRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DataRequest"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/privacy/requests/{id}/cancel/": {
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_privacy_requests_cancel_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DataRequest"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/privacy/requests/{id}/download/": {
+   "get": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_privacy_requests_download_retrieve",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/zip": {
+        "schema": {
+         "format": "binary",
+         "type": "string"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/tickets/{id}/rate/": {
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_tickets_rate_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
     ]
    }
   },
@@ -13533,6 +14911,621 @@
     ],
     "tags": [
      "operations"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/appeals/{id}/decide/": {
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_appeals_decide_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Appeal"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/articles/": {
+   "get": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_articles_list",
+    "parameters": [
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedHelpArticleList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   },
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_articles_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HelpArticleRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/HelpArticleRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/HelpArticleRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HelpArticle"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/claims/{id}/decide/": {
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_claims_decide_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Claim"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/claims/{id}/review/": {
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_claims_review_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Claim"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/csat/": {
+   "get": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_csat_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/macros/": {
+   "get": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_macros_list",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "category",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedMacroList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   },
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_macros_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MacroRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/MacroRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/MacroRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Macro"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/macros/{id}/use/{ticket_id}/": {
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_macros_use_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "ticket_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/offer/": {
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_offer_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OfferRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/OfferRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/OfferRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/overview/": {
+   "get": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_overview_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/requests/{id}/resolve/": {
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_requests_resolve_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OutcomeRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/OutcomeRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/OutcomeRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DataRequest"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
     ]
    }
   },

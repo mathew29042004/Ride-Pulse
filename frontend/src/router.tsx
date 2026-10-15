@@ -51,7 +51,14 @@ const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
 const OpsWork = lazy(() => import("./pages/ops/work/OpsWork"));
 const FleetPortal = lazy(() => import("./pages/fleet/FleetPortal"));
 const RiderBusiness = lazy(() => import("./pages/rider/RiderBusiness"));
+const trust = () => import("./pages/shared/Trust");
+const PrivacyCentre = lazy(() => trust().then((m) => ({ default: m.PrivacyCentre })));
+const HelpCentre = lazy(() => trust().then((m) => ({ default: m.HelpCentre })));
+const ClaimsPage = lazy(() => trust().then((m) => ({ default: m.ClaimsPage })));
+const AppealsRider = lazy(() => trust().then((m) => ({ default: () => <m.Appeals base="/ride" subjects={m.RIDER_APPEALS} /> })));
+const AppealsDriver = lazy(() => trust().then((m) => ({ default: () => <m.Appeals base="/drive" subjects={m.DRIVER_APPEALS} /> })));
 const OpsPlatform = lazy(() => import("./pages/ops/OpsPlatform"));
+const OpsTrust = lazy(() => import("./pages/ops/OpsTrust"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
 const OpsQuests = lazy(() => opsFleet().then((m) => ({ default: m.OpsQuests })));
@@ -131,6 +138,11 @@ export const router = createBrowserRouter([
       { path: "account", element: lazyPage(<RiderAccount />) },
       { path: "business/:id", element: lazyPage(<RiderBusiness />) },
       { path: "support", element: lazyPage(<SupportList base="/ride" />) },
+      { path: "privacy", element: lazyPage(<PrivacyCentre base="/ride" />) },
+      { path: "help", element: lazyPage(<HelpCentre base="/ride" />) },
+      { path: "help/:slug", element: lazyPage(<HelpCentre base="/ride" />) },
+      { path: "claims", element: lazyPage(<ClaimsPage base="/ride" />) },
+      { path: "appeals", element: lazyPage(<AppealsRider />) },
       { path: "support/:id", element: lazyPage(<TicketThread base="/ride" />) },
     ],
   },
@@ -148,6 +160,11 @@ export const router = createBrowserRouter([
       { path: "documents", element: lazyPage(<DriverDocuments />) },
       { path: "account", element: lazyPage(<DriverAccount />) },
       { path: "support", element: lazyPage(<SupportList base="/drive" />) },
+      { path: "privacy", element: lazyPage(<PrivacyCentre base="/drive" />) },
+      { path: "help", element: lazyPage(<HelpCentre base="/drive" />) },
+      { path: "help/:slug", element: lazyPage(<HelpCentre base="/drive" />) },
+      { path: "claims", element: lazyPage(<ClaimsPage base="/drive" />) },
+      { path: "appeals", element: lazyPage(<AppealsDriver />) },
       { path: "support/:id", element: lazyPage(<TicketThread base="/drive" />) },
     ],
   },
@@ -190,6 +207,7 @@ export const router = createBrowserRouter([
       { path: "work", element: lazyPage(<OpsWork />) },
       { path: "briefing", element: lazyPage(<OpsBriefing />) },
       { path: "platform", element: lazyPage(<OpsPlatform />) },
+      { path: "trust", element: lazyPage(<OpsTrust />) },
       { path: "fleet-owners", element: lazyPage(<OpsFleetOwners />) },
       { path: "quests", element: lazyPage(<OpsQuests />) },
       { path: "upkeep", element: lazyPage(<OpsUpkeep />) },

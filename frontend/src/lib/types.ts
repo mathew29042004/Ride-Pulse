@@ -440,6 +440,7 @@ export interface TicketMessage {
 export interface Ticket {
   id: number;
   ticket_number: string;
+  rating?: number | null;
   raised_by: string;
   trip: number | null;
   trip_number: string | null;
