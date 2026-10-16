@@ -138,6 +138,12 @@ class FuelType(models.TextChoices):
     EV = "EV", "Electric"
 
 
+class VehicleCondition(models.TextChoices):
+    ACTIVE = "ACTIVE", "On the road"
+    IN_WORKSHOP = "IN_WORKSHOP", "In the workshop"
+    OFF_ROAD = "OFF_ROAD", "Off the road (unsafe)"
+
+
 class Vehicle(AuditedModel, TimeStampedModel):
     driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name="vehicles")
     ride_type = models.ForeignKey(
@@ -172,6 +178,12 @@ class Vehicle(AuditedModel, TimeStampedModel):
     battery_updated_at = models.DateTimeField(null=True, blank=True)
     # Wheelchair-accessible vehicle (ramp or lift, secured wheelchair space).
     wheelchair_accessible = models.BooleanField(default=False)
+    # Road-worthiness (see fleet.maintenance): only an ACTIVE vehicle can take rides.
+    condition = models.CharField(
+        max_length=11, choices=VehicleCondition.choices, default=VehicleCondition.ACTIVE
+    )
+    condition_note = models.CharField(max_length=200, blank=True)
+    condition_since = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-is_active", "-created_at"]

@@ -659,6 +659,7 @@ RIDER = (
     "split",
     "lost_item",
     "lost_item_returned",
+    "vehicle_issue",
     "early_drop",
     "home_safe",
     "fair_share",
@@ -688,6 +689,11 @@ DRIVER = (
     "recording_start",
     "recording_share",
 )
+
+
+class VehicleIssueRequestSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=["AC", "CLEANLINESS", "SEATBELTS", "OTHER"])
+    description = serializers.CharField(required=False, allow_blank=True, max_length=300)
 
 
 class TripViewSet(
@@ -1029,6 +1035,29 @@ class TripViewSet(
         if item is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(LostItemSerializer(item).data)
+
+    @extend_schema(request=VehicleIssueRequestSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="vehicle-issue")
+    def vehicle_issue(self, request, pk=None):
+        """Rider: report a problem with the car after the ride (AC, cleanliness, belts)."""
+        from apps.fleet import maintenance
+        from apps.fleet.models import IssueSource
+
+        trip = self.get_object()
+        if trip.status != TripStatus.COMPLETED or trip.vehicle_id is None:
+            raise BusinessRuleViolation("You can report the car after a completed ride.")
+        if trip.rider.user_id != request.user.pk:
+            raise ActionNotPermitted("Only the rider can report the car.")
+        serializer = VehicleIssueRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        issue = maintenance.report_issue(
+            trip.vehicle,
+            user=request.user,
+            source=IssueSource.RIDER,
+            trip=trip,
+            **serializer.validated_data,
+        )
+        return Response({"id": issue.pk, "status": issue.status}, status=status.HTTP_201_CREATED)
 
     @extend_schema(request=LostItemAnswerSerializer, responses=LostItemSerializer)
     @action(detail=True, methods=["post"], url_path="lost-item/answer")

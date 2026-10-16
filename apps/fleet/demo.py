@@ -34,7 +34,7 @@ from apps.pricing.models import RideType
 from apps.realtime import broadcast
 
 from . import owners, quests, statements
-from .models import ChargingStation, FleetMembership, FleetOwner, ServiceRecord
+from .models import ChargingStation, FleetMembership, FleetOwner, ServiceKind, ServiceRecord
 
 User = get_user_model()
 
@@ -81,6 +81,7 @@ def seed(*, seed: int = 9, log=print, now: datetime | None = None) -> dict:
         stats["fleet_owners"] = _owners(rng, fake, now)
         stats["chargers"] = _chargers(rng)
         stats["ev_vehicles"] = _vehicles(rng, now)
+        stats.update(_health(rng, now))
         stats["pan_cards"] = _pan_cards(rng)
         stats["quests"] = _quests(rng, now)
         stats["statements"] = sum(
@@ -214,21 +215,161 @@ def _vehicles(rng: random.Random, now: datetime) -> int:
         if code in ("MINI", "SUV") and rng.random() < 0.04:
             fields["wheelchair_accessible"] = True
         Vehicle.objects.filter(pk=vehicle.pk).update(**fields)
-        if since < every and rng.random() < 0.7:
-            ServiceRecord.objects.create(
-                vehicle=vehicle,
-                odometer_km=max(0, now_km - since),
-                serviced_on=today - timedelta(days=rng.randint(10, 150)),
-                workshop=rng.choice(
-                    [
-                        "Authorised service centre",
-                        "Bosch Car Service",
-                        "Local garage",
-                        "Fleet workshop",
-                    ]
-                ),
-            )
+        if since < every and rng.random() < 0.85:
+            last = max(0, now_km - since)
+            # The latest routine service, plus one or two older visits behind it.
+            for k in range(rng.choice([1, 2, 2, 3])):
+                kind = ServiceKind.ROUTINE if k == 0 else rng.choice(OLDER_KINDS)
+                parts = _parts(rng, kind, code)
+                ServiceRecord.objects.create(
+                    vehicle=vehicle,
+                    kind=kind,
+                    odometer_km=max(0, last - k * rng.randint(every // 3, every)),
+                    serviced_on=today - timedelta(days=rng.randint(10, 150) + 120 * k),
+                    workshop=rng.choice(WORKSHOPS),
+                    parts=parts,
+                    parts_cost=sum((Decimal(p["cost"]) for p in parts), Decimal(0)),
+                    labour_cost=Decimal(rng.choice(LABOUR[kind]) * (0.5 if code == "BIKE" else 1)),
+                    invoice_number=f"INV/{today.year}/{rng.randint(1000, 99999)}",
+                )
     return Vehicle.objects.filter(fuel_type=FuelType.EV, is_active=True).count()
+
+
+WORKSHOPS = [
+    "Authorised service centre",
+    "Bosch Car Service",
+    "Mahindra First Choice",
+    "GoMechanic",
+    "Local garage",
+    "Fleet workshop",
+]
+OLDER_KINDS = [
+    ServiceKind.ROUTINE,
+    ServiceKind.ROUTINE,
+    ServiceKind.REPAIR,
+    ServiceKind.TYRES,
+    ServiceKind.BATTERY,
+]
+# (part, cost for a car in rupees); bikes cost about 40%.
+PARTS = {
+    ServiceKind.ROUTINE: [
+        ("Engine oil", 1400),
+        ("Oil filter", 350),
+        ("Air filter", 450),
+        ("Cabin filter", 600),
+        ("Coolant top-up", 300),
+        ("Spark plugs", 900),
+    ],
+    ServiceKind.REPAIR: [
+        ("Brake pads", 1800),
+        ("Clutch plate", 4800),
+        ("Suspension bush", 1200),
+        ("Alternator belt", 900),
+        ("AC gas refill", 1500),
+        ("Wiper blades", 500),
+    ],
+    ServiceKind.TYRES: [("Tyre", 3200), ("Wheel alignment", 600), ("Wheel balancing", 400)],
+    ServiceKind.BATTERY: [("Battery", 5200)],
+    ServiceKind.ACCIDENT: [("Bumper", 4500), ("Headlamp", 2800), ("Paint and denting", 6000)],
+}
+LABOUR = {
+    ServiceKind.ROUTINE: [400, 600, 800],
+    ServiceKind.REPAIR: [600, 1000, 1500],
+    ServiceKind.TYRES: [200, 300],
+    ServiceKind.BATTERY: [0, 150],
+    ServiceKind.ACCIDENT: [1500, 2500],
+}
+
+
+def _parts(rng: random.Random, kind: str, code: str) -> list[dict]:
+    scale = 0.4 if code == "BIKE" else 0.6 if code == "AUTO" else 1.25 if code == "SUV" else 1
+    catalogue = PARTS[kind]
+    picked = rng.sample(catalogue, k=min(len(catalogue), rng.randint(1, 3)))
+    return [
+        {"name": name, "cost": f"{round(cost * scale * rng.uniform(0.85, 1.2)):.2f}"}
+        for name, cost in picked
+    ]
+
+
+def _health(rng: random.Random, now: datetime) -> dict:
+    """Daily checks for the last week, a few open faults, some cars in the workshop and a couple
+    off the road, so every vehicle state shows up."""
+    from apps.drivers.models import VehicleCondition
+
+    from . import maintenance
+    from .models import IssueKind, IssueSeverity, IssueSource, VehicleInspection, VehicleIssue
+
+    today = timezone.localdate(now)
+    checks, issues = [], []
+    counts = {"inspections": 0, "open_issues": 0, "in_workshop": 0, "off_road": 0}
+    vehicles = Vehicle.objects.filter(is_active=True).select_related("driver__user")
+    for vehicle in vehicles:
+        demo = vehicle.driver.user.email.endswith("@ridepulse.dev")
+        diligence = rng.uniform(0.4, 1.0)
+        for day in range(7):
+            if rng.random() < diligence:
+                on = today - timedelta(days=day)
+                checks.append(
+                    VehicleInspection(
+                        vehicle=vehicle,
+                        driver=vehicle.driver,
+                        inspected_on=on,
+                        items=dict.fromkeys(maintenance.CHECKLIST, True),
+                        passed=True,
+                        created_at=now - timedelta(days=day, hours=rng.randint(1, 6)),
+                    )
+                )
+        if demo:
+            continue  # keep the demo logins' cars road-worthy
+        roll = rng.random()
+        if roll < 0.04:  # a rider complaint or a minor fault still open
+            kind = rng.choice([IssueKind.AC, IssueKind.CLEANLINESS, IssueKind.OTHER])
+            issues.append(
+                VehicleIssue(
+                    vehicle=vehicle,
+                    source=rng.choice([IssueSource.RIDER, IssueSource.DRIVER]),
+                    kind=kind,
+                    severity=IssueSeverity.MINOR,
+                    description={
+                        "AC": "AC not cooling well",
+                        "CLEANLINESS": "Seats need a clean",
+                    }.get(kind, "Rattle from the rear door"),
+                    opened_at=now - timedelta(days=rng.randint(0, 6), hours=rng.randint(0, 20)),
+                )
+            )
+            counts["open_issues"] += 1
+        elif roll < 0.055:
+            Vehicle.objects.filter(pk=vehicle.pk).update(
+                condition=VehicleCondition.IN_WORKSHOP,
+                condition_note=rng.choice(
+                    ["Clutch replacement", "Scheduled service", "AC repair", "Denting and paint"]
+                ),
+                condition_since=now - timedelta(hours=rng.randint(3, 60)),
+            )
+            counts["in_workshop"] += 1
+        elif roll < 0.062:
+            issues.append(
+                VehicleIssue(
+                    vehicle=vehicle,
+                    source=IssueSource.DRIVER,
+                    kind=IssueKind.BREAKDOWN,
+                    severity=IssueSeverity.CRITICAL,
+                    description=rng.choice(
+                        ["Engine overheating", "Clutch failed", "Flat tyre and no spare"]
+                    ),
+                    opened_at=now - timedelta(hours=rng.randint(2, 30)),
+                )
+            )
+            Vehicle.objects.filter(pk=vehicle.pk).update(
+                condition=VehicleCondition.OFF_ROAD,
+                condition_note="Breakdown",
+                condition_since=now - timedelta(hours=rng.randint(2, 30)),
+            )
+            counts["off_road"] += 1
+    VehicleInspection.objects.bulk_create(checks, batch_size=2000)
+    VehicleIssue.objects.bulk_create(issues)
+    counts["inspections"] = len(checks)
+    return counts
 
 
 def _pan_cards(rng: random.Random) -> int:

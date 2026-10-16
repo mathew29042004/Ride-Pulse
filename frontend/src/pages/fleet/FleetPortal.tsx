@@ -8,25 +8,14 @@ import { clsx } from "clsx";
 import { Car, IndianRupee, LogOut, UserMinus, Users, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
+import { StateBadge, type Health as VehicleHealth } from "@/components/DriverBusiness";
 import { Logo } from "@/components/Logo";
 import { Badge, Button, Card, CardHeader, Stat, Table, Td, Th } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { inr } from "@/lib/format";
 
-interface Health {
-  id: number;
-  registration: string;
-  name: string;
-  driver: string | null;
-  odometer_km: number;
-  service: "OK" | "DUE_SOON" | "OVERDUE";
-  service_due_in_km: number;
-  documents: { document: string; expires_on: string; status: string }[];
-  fuel_type: string;
-  battery_percent: number | null;
-  status: "OK" | "SOON" | "ACTION";
-}
+type Health = VehicleHealth & { fuel_type: string; battery_percent: number | null };
 interface Board {
   company: string;
   city: string;
@@ -54,6 +43,14 @@ export default function FleetPortal() {
     onSuccess: (data) => {
       onDone(data);
       toast.success("Service logged");
+    },
+    onError,
+  });
+  const condition = useMutation({
+    mutationFn: ({ id, ...body }: { id: number; condition: string; note: string }) => api.post<Board>(`fleet/vehicles/${id}/condition/`, body),
+    onSuccess: (data) => {
+      onDone(data);
+      toast.success("Vehicle updated");
     },
     onError,
   });
@@ -131,7 +128,7 @@ export default function FleetPortal() {
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
           <Card className="p-4">
-            <CardHeader title="Vehicles" subtitle="Service by distance; insurance, permit and fitness by date. Expired insurance stops a car going online." />
+            <CardHeader title="Vehicles" subtitle="Service by distance; papers by date. A car off the road (unsafe) or in the workshop can't take rides; logging the repair brings it back." />
             <div className="space-y-2">
               {(b?.vehicles ?? []).map((v) => (
                 <div key={v.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-line px-3 py-2.5 text-sm">
@@ -149,11 +146,38 @@ export default function FleetPortal() {
                         .join("")}
                     </div>
                   </div>
-                  <Badge tone={v.status === "ACTION" ? "danger" : v.status === "SOON" ? "warning" : "brand"}>{v.status === "ACTION" ? "Needs action" : v.status === "SOON" ? "Due soon" : "OK"}</Badge>
-                  {v.service !== "OK" && (
+                  <StateBadge state={v.state} />
+                  {v.service !== "OK" && v.state !== "OFF_ROAD" && (
                     <Button size="sm" variant="outline" icon={<Wrench className="size-3.5" />} onClick={() => service.mutate(v.id)}>
                       Serviced
                     </Button>
+                  )}
+                  {v.state !== "IN_WORKSHOP" && v.state !== "OFF_ROAD" && (
+                    <Button size="sm" variant="ghost" onClick={() => condition.mutate({ id: v.id, condition: "IN_WORKSHOP", note: "Sent to the workshop" })}>
+                      To workshop
+                    </Button>
+                  )}
+                  {v.state === "IN_WORKSHOP" && (
+                    <Button size="sm" variant="ghost" onClick={() => condition.mutate({ id: v.id, condition: "ACTIVE", note: "Back from the workshop" })}>
+                      Back on road
+                    </Button>
+                  )}
+                  {(v.open_issues.length > 0 || v.condition_note) && v.state !== "OK" && (
+                    <div className="basis-full text-xs">
+                      {v.condition_note && <span className="font-semibold">{v.condition_note}. </span>}
+                      {v.open_issues.map((i) => (
+                        <span key={i.id} className={clsx("mr-2", i.severity === "CRITICAL" ? "text-danger" : "text-amber-600")}>
+                          {i.kind_label}
+                          {i.description && `: ${i.description}`} ({i.source.toLowerCase()})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {v.history && v.history.length > 0 && (
+                    <div className="basis-full text-xs text-muted">
+                      Last: {v.history[0].kind_label} on {v.history[0].serviced_on}, {inr(v.history[0].total_cost)}
+                      {v.costs?.cost_per_km && ` · upkeep ${inr(v.costs.cost_per_km)}/km this year`}
+                    </div>
                   )}
                 </div>
               ))}

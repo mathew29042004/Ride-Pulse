@@ -55,7 +55,7 @@ const NAV = [
     items: [
       { to: "/ops/fleet-owners", label: "Fleet owners", icon: Building2, cap: "fleet.manage" },
       { to: "/ops/quests", label: "Quests", icon: Target, cap: "fleet.manage" },
-      { to: "/ops/upkeep", label: "Vehicle upkeep", icon: Wrench, cap: "fleet.manage" },
+      { to: "/ops/upkeep", label: "Vehicle health", icon: Wrench, cap: "fleet.manage" },
       { to: "/ops/airports", label: "Airports & EVs", icon: Plane, cap: "fleet.manage" },
       { to: "/ops/tds", label: "TDS", icon: Receipt, cap: "payments.view" },
     ],

@@ -14,6 +14,7 @@ import { FairShareCard } from "@/components/FairShare";
 import { LockFareButton, TripEcoLine } from "@/components/GreenAndLock";
 import { ParcelCard } from "@/components/ParcelForm";
 import { LostItemCard } from "@/components/LostItem";
+import { ReportCar } from "@/components/ReportCar";
 import { HomeSafeButton, NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
 import { SplitFareCard } from "@/components/SplitFare";
 import { PoolBadge } from "@/components/PoolBadge";
@@ -397,6 +398,7 @@ export default function RiderTrip() {
             <TripRecorder trip={trip} />
             <LockFareButton trip={trip} />
             <LostItemCard trip={trip} />
+            <ReportCar trip={trip} />
 
             <div className="mt-3 grid grid-cols-3 gap-2">
               <Button variant="secondary" icon={<Download className="size-4" />} onClick={() => openFile(`/api/v1/trips/${trip.id}/receipt/`)}>

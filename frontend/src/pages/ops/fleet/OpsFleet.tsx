@@ -6,9 +6,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
 import { BatteryCharging, Building2, Download, Plane, Plus, Target, Wrench } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
+import { StateBadge, STATE_LABEL, type Health as VehicleHealth } from "@/components/DriverBusiness";
 import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Modal, PageHeader, Segmented, Select, Stat, Table, Td, Th, Toggle } from "@/components/ui";
 import { useOps } from "@/layouts/OpsLayout";
 import { api, ApiError, openFile } from "@/lib/api";
@@ -355,69 +356,150 @@ export function OpsQuests() {
 
 // --- Vehicle upkeep --------------------------------------------------------------------------
 
-interface UpkeepRow {
-  id: number;
-  registration: string;
-  name: string;
-  ride_type: string;
-  driver: string | null;
-  odometer_km: number;
-  service: string;
-  service_due_in_km: number;
-  documents: { document: string; expires_on: string; status: string }[];
-  status: "ACTION" | "SOON";
+interface Upkeep {
+  vehicles: number;
+  action: number;
+  soon: number;
+  service_overdue: number;
+  insurance_expired: number;
+  by_state: Record<"OK" | "DUE" | "OVERDUE" | "IN_WORKSHOP" | "OFF_ROAD", number>;
+  open_issues: number;
+  checked_today: number;
+  spend_30d: string;
+  attention: (VehicleHealth & { ride_type: string })[];
 }
+type Detail = VehicleHealth & { inspections: { inspected_on: string; passed: boolean; items: Record<string, boolean> }[] };
 
 export function OpsUpkeep() {
   const { cityInfo } = useOps();
-  const q = useQuery({ queryKey: ["ops", "upkeep", cityInfo?.id], queryFn: () => api.get<{ vehicles: number; action: number; soon: number; service_overdue: number; insurance_expired: number; attention: UpkeepRow[] }>(`ops/fleet/upkeep/${cityInfo ? `?city=${cityInfo.id}` : ""}`) });
+  const qc = useQueryClient();
+  const [filter, setFilter] = useState<string>("");
+  const [open, setOpen] = useState<number | null>(null);
+  const q = useQuery({ queryKey: ["ops", "upkeep", cityInfo?.id], queryFn: () => api.get<Upkeep>(`ops/fleet/upkeep/${cityInfo ? `?city=${cityInfo.id}` : ""}`), refetchInterval: 30_000 });
+  const detail = useQuery({ queryKey: ["ops", "upkeep", "vehicle", open], queryFn: () => api.get<Detail>(`ops/fleet/upkeep/${open}/`), enabled: open != null });
+  const condition = useMutation({
+    mutationFn: ({ id, ...body }: { id: number; condition: string; note: string }) => api.post(`ops/fleet/upkeep/${id}/condition/`, body),
+    onSuccess: () => {
+      toast.success("Vehicle updated");
+      qc.invalidateQueries({ queryKey: ["ops", "upkeep"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Something went wrong."),
+  });
   const d = q.data;
+  const rows = (d?.attention ?? []).filter((v) => !filter || v.state === filter);
+  const states = ["OFF_ROAD", "IN_WORKSHOP", "OVERDUE", "DUE"] as const;
   return (
     <>
-      <PageHeader title={`Vehicle upkeep · ${cityInfo?.name ?? "All cities"}`} subtitle="Service by distance driven, and insurance, permit and fitness expiry. Drivers and fleet owners are warned ahead; expired insurance keeps a car offline." />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Active vehicles" value={d?.vehicles ?? "—"} icon={<Wrench className="size-4" />} />
-        <Stat label="Need action" value={d?.action ?? "—"} tone="danger" />
-        <Stat label="Due soon" value={d?.soon ?? "—"} tone="warning" />
-        <Stat label="Service overdue" value={d?.service_overdue ?? "—"} sub={d ? `${d.insurance_expired} with expired insurance` : ""} />
+      <PageHeader title={`Vehicle health · ${cityInfo?.name ?? "All cities"}`} subtitle="Every car is on the road, needs attention, overdue, in the workshop, or off the road (unsafe). Drivers do a daily safety check; a failed brake, tyre, light or belt, a breakdown or an accident takes the car off the road until the repair is logged." />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Stat label="Active vehicles" value={d?.vehicles ?? "—"} icon={<Wrench className="size-4" />} sub={d ? `${d.by_state.OK} on the road, all clear` : ""} />
+        <Stat label="Off the road" value={d?.by_state.OFF_ROAD ?? "—"} tone="danger" sub={d ? `${d.by_state.IN_WORKSHOP} in the workshop` : ""} />
+        <Stat label="Overdue" value={d?.by_state.OVERDUE ?? "—"} tone="warning" sub={d ? `${d.service_overdue} service · ${d.insurance_expired} insurance` : ""} />
+        <Stat label="Open faults" value={d?.open_issues ?? "—"} sub={d ? `${d.by_state.DUE} cars need attention soon` : ""} />
+        <Stat label="Daily checks today" value={d ? `${Math.round((100 * d.checked_today) / Math.max(1, d.vehicles))}%` : "—"} sub={d ? `upkeep spend 30 d ${inr(d.spend_30d)}` : ""} tone="info" />
       </div>
-      <Card className="mt-4 overflow-x-auto">
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button size="sm" variant={filter === "" ? "primary" : "outline"} onClick={() => setFilter("")}>
+          All needing attention
+        </Button>
+        {states.map((s) => (
+          <Button key={s} size="sm" variant={filter === s ? "primary" : "outline"} onClick={() => setFilter(s)}>
+            {STATE_LABEL[s]} {d ? `(${d.by_state[s]})` : ""}
+          </Button>
+        ))}
+      </div>
+      <Card className="mt-3 overflow-x-auto">
         <Table>
           <thead>
             <tr>
               <Th>Vehicle</Th>
               <Th>Driver</Th>
+              <Th>State</Th>
+              <Th>Why</Th>
               <Th className="text-right">Odometer</Th>
-              <Th>Service</Th>
-              <Th>Papers</Th>
               <Th />
             </tr>
           </thead>
           <tbody>
-            {(d?.attention ?? []).map((v) => (
-              <tr key={v.id} className="border-t border-line">
-                <Td>
-                  <div className="font-semibold">{v.registration}</div>
-                  <div className="text-xs text-muted">
-                    {v.name} · {v.ride_type}
-                  </div>
-                </Td>
-                <Td>{v.driver ?? "—"}</Td>
-                <Td className="text-right">{v.odometer_km.toLocaleString("en-IN")} km</Td>
-                <Td className={clsx(v.service === "OVERDUE" && "font-semibold text-danger")}>{v.service === "OVERDUE" ? `overdue by ${-v.service_due_in_km} km` : v.service === "DUE_SOON" ? `due in ${v.service_due_in_km} km` : "OK"}</Td>
-                <Td className="text-xs">
-                  {v.documents
-                    .filter((doc) => doc.status !== "OK")
-                    .map((doc) => `${doc.document} ${doc.status === "EXPIRED" ? "expired" : "expires"} ${doc.expires_on}`)
-                    .join(" · ") || "OK"}
-                </Td>
-                <Td>
-                  <Badge tone={v.status === "ACTION" ? "danger" : "warning"}>{v.status === "ACTION" ? "Action" : "Soon"}</Badge>
-                </Td>
-              </tr>
+            {rows.map((v) => (
+              <Fragment key={v.id}>
+                <tr className="cursor-pointer border-t border-line hover:bg-surface-2" onClick={() => setOpen(open === v.id ? null : v.id)}>
+                  <Td>
+                    <div className="font-semibold">{v.registration}</div>
+                    <div className="text-xs text-muted">
+                      {v.name} · {v.ride_type}
+                    </div>
+                  </Td>
+                  <Td>{v.driver ?? "—"}</Td>
+                  <Td>
+                    <StateBadge state={v.state} />
+                  </Td>
+                  <Td className="max-w-md text-xs">
+                    {[
+                      v.condition_note,
+                      ...v.open_issues.map((i) => `${i.kind_label}${i.description ? `: ${i.description}` : ""} (${i.source.toLowerCase()})`),
+                      v.service === "OVERDUE" ? `service overdue by ${-v.service_due_in_km} km` : v.service === "DUE_SOON" ? `service in ${v.service_due_in_km} km` : "",
+                      ...v.documents.filter((doc) => doc.status !== "OK").map((doc) => `${doc.document} ${doc.status === "EXPIRED" ? "expired" : "expires"} ${doc.expires_on}`),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Td>
+                  <Td className="text-right">{v.odometer_km.toLocaleString("en-IN")} km</Td>
+                  <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                    {v.state === "IN_WORKSHOP" ? (
+                      <Button size="sm" variant="outline" onClick={() => condition.mutate({ id: v.id, condition: "ACTIVE", note: "Back from the workshop" })}>
+                        Back on road
+                      </Button>
+                    ) : v.state !== "OFF_ROAD" ? (
+                      <Button size="sm" variant="ghost" onClick={() => condition.mutate({ id: v.id, condition: "IN_WORKSHOP", note: "Called in by operations" })}>
+                        To workshop
+                      </Button>
+                    ) : null}
+                  </td>
+                </tr>
+                {open === v.id && (
+                  <tr className="bg-surface-2">
+                    <td colSpan={6} className="px-4 py-3 text-xs">
+                      {!detail.data ? (
+                        "Loading…"
+                      ) : (
+                        <div className="grid gap-4 md:grid-cols-[1fr_260px]">
+                          <div>
+                            <div className="mb-1 font-semibold">
+                              Service history · {detail.data.costs?.visits ?? 0} visits, {inr(detail.data.costs?.spend ?? "0")} this year
+                              {detail.data.costs?.cost_per_km && ` · ${inr(detail.data.costs.cost_per_km)}/km`}
+                            </div>
+                            {(detail.data.history ?? []).map((h) => (
+                              <div key={h.id} className="border-t border-line py-1">
+                                <span className="font-semibold">{h.kind_label}</span> · {h.serviced_on} · {h.odometer_km.toLocaleString("en-IN")} km · {h.workshop || "—"} · {inr(h.total_cost)}
+                                {h.invoice_number && ` · ${h.invoice_number}`}
+                                {h.parts.length > 0 && <span className="text-muted"> · {h.parts.map((p) => `${p.name} ${inr(p.cost)}`).join(", ")}</span>}
+                                {h.fixed.length > 0 && <span className="text-brand"> · fixed {h.fixed.join(", ").toLowerCase()}</span>}
+                              </div>
+                            ))}
+                            {(detail.data.history ?? []).length === 0 && <div className="text-muted">No service on record.</div>}
+                          </div>
+                          <div>
+                            <div className="mb-1 font-semibold">Daily checks (last 2 weeks)</div>
+                            <div className="flex flex-wrap gap-1">
+                              {detail.data.inspections.map((c, i) => (
+                                <span key={i} title={Object.entries(c.items).filter(([, ok]) => !ok).map(([k]) => k).join(", ") || "all OK"} className={clsx("rounded px-1.5 py-0.5", c.passed ? "bg-brand/15 text-brand" : "bg-danger/15 text-danger")}>
+                                  {c.inspected_on.slice(5)}
+                                </span>
+                              ))}
+                              {detail.data.inspections.length === 0 && <span className="text-muted">None</span>}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </Table>
+        {rows.length === 0 && <p className="p-4 text-sm text-muted">Nothing here.</p>}
       </Card>
     </>
   );

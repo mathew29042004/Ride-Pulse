@@ -125,11 +125,55 @@ class Simulator:
                 try:
                     if payments.wallet_balance(driver.user) < -300:
                         payments.pay_dues(driver.user, method="UPI", payer_reference="bot@upi")
+                    self._daily_check(driver)
                     drivers_svc.go_online(driver, lat=lat, lng=lng)
                 except DomainError:
                     continue
                 self.bots[driver.pk] = BotDriver(driver.pk, accept_rate=self.rng.uniform(0.8, 0.97))
                 self.bump("drivers_online")
+
+    def _daily_check(self, driver: DriverProfile) -> None:
+        """Bots tick the walk-round once a day; now and then something has failed."""
+        from apps.fleet import maintenance
+
+        vehicle = driver.active_vehicle
+        if (
+            vehicle is None
+            or vehicle.inspections.filter(inspected_on=timezone.localdate()).exists()
+        ):
+            return
+        items = dict.fromkeys(maintenance.CHECKLIST, True)
+        roll = self.rng.random()
+        if roll < 0.01:
+            items[self.rng.choice(list(maintenance.CRITICAL_ITEMS))] = False  # off the road
+        elif roll < 0.06:
+            items[self.rng.choice(["clean", "wipers", "horn", "first_aid"])] = False
+        maintenance.submit_inspection(vehicle, driver=driver, items=items)
+        self.bump("daily_checks")
+
+    def workshop(self) -> None:
+        """The workshop: cars off the road or in for work come back after a few hours."""
+        from datetime import timedelta
+
+        from apps.drivers.models import Vehicle, VehicleCondition
+        from apps.fleet import maintenance
+        from apps.fleet.models import ServiceKind
+
+        due = Vehicle.objects.filter(
+            condition__in=[VehicleCondition.OFF_ROAD, VehicleCondition.IN_WORKSHOP],
+            condition_since__lt=timezone.now() - timedelta(hours=self.rng.uniform(2, 8)),
+        ).select_related("driver__user")[:5]
+        for vehicle in due:
+            with suppress(DomainError):
+                maintenance.record_service(
+                    vehicle,
+                    user=vehicle.driver.user,
+                    kind=ServiceKind.REPAIR,
+                    workshop="Fleet workshop",
+                    parts=[{"name": "Repair parts", "cost": str(self.rng.randint(300, 4000))}],
+                    labour_cost=self.rng.choice([300, 600, 900]),
+                )
+                self.bump("repairs")
 
     def _city_driver_ids(self, city: City) -> set[int]:
         if not hasattr(self, "_city_cache"):
@@ -530,6 +574,7 @@ class Simulator:
             pricing.recompute_surge()
             price_alerts.check_alerts()
             driver_wellbeing.sweep()
+            self.workshop()
             self.last_surge = clock.monotonic()
 
     def run(self, *, duration: float | None = None, report_every: float = 30) -> None:

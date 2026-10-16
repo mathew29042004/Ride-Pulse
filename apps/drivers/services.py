@@ -265,6 +265,12 @@ def compliance_problems(driver: DriverProfile, *, on: date | None = None) -> lis
             f"Vehicle insurance expired on {vehicle.insurance_expires_on:%d %b %Y}; renew it to "
             "go online."
         )
+    if vehicle and vehicle.condition != "ACTIVE":
+        problems.append(
+            f"Your vehicle is {vehicle.get_condition_display().lower()}"
+            + (f" ({vehicle.condition_note})" if vehicle.condition_note else "")
+            + ". Log the repair in Vehicle care to go online."
+        )
     balance = wallet_balance(driver.user)
     if balance < -max_driver_dues():
         problems.append(

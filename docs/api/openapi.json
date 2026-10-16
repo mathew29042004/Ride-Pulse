@@ -752,6 +752,30 @@
     },
     "type": "object"
    },
+   "ConditionEnum": {
+    "description": "* `ACTIVE` - On the road\n* `IN_WORKSHOP` - In the workshop\n* `OFF_ROAD` - Off the road (unsafe)",
+    "enum": [
+     "ACTIVE",
+     "IN_WORKSHOP",
+     "OFF_ROAD"
+    ],
+    "type": "string"
+   },
+   "ConditionRequest": {
+    "properties": {
+     "condition": {
+      "$ref": "#/components/schemas/ConditionEnum"
+     },
+     "note": {
+      "maxLength": 200,
+      "type": "string"
+     }
+    },
+    "required": [
+     "condition"
+    ],
+    "type": "object"
+   },
    "ConfirmCarRequest": {
     "properties": {
      "is_my_car": {
@@ -2791,6 +2815,20 @@
     ],
     "type": "string"
    },
+   "InspectionRequest": {
+    "properties": {
+     "items": {
+      "additionalProperties": {
+       "type": "boolean"
+      },
+      "type": "object"
+     }
+    },
+    "required": [
+     "items"
+    ],
+    "type": "object"
+   },
    "InviteRequest": {
     "properties": {
      "phone": {
@@ -2801,6 +2839,24 @@
     },
     "required": [
      "phone"
+    ],
+    "type": "object"
+   },
+   "IssueRequest": {
+    "properties": {
+     "description": {
+      "maxLength": 300,
+      "type": "string"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/VehicleIssueKindEnum"
+     },
+     "severity": {
+      "$ref": "#/components/schemas/SeverityEnum"
+     }
+    },
+    "required": [
+     "kind"
     ],
     "type": "object"
    },
@@ -3438,6 +3494,18 @@
    },
    "OwnerServiceRequest": {
     "properties": {
+     "invoice_number": {
+      "maxLength": 40,
+      "type": "string"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/ServiceKindEnum"
+     },
+     "labour_cost": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
      "notes": {
       "maxLength": 255,
       "type": "string"
@@ -3445,6 +3513,18 @@
      "odometer_km": {
       "minimum": 0,
       "type": "integer"
+     },
+     "parts": {
+      "items": {
+       "$ref": "#/components/schemas/PartRequest"
+      },
+      "type": "array"
+     },
+     "resolves": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
      },
      "vehicle_id": {
       "type": "integer"
@@ -4783,6 +4863,25 @@
     },
     "required": [
      "on"
+    ],
+    "type": "object"
+   },
+   "PartRequest": {
+    "properties": {
+     "cost": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "cost",
+     "name"
     ],
     "type": "object"
    },
@@ -6483,6 +6582,16 @@
     ],
     "type": "object"
    },
+   "RiderCarIssueKindEnum": {
+    "description": "* `AC` - AC\n* `CLEANLINESS` - CLEANLINESS\n* `SEATBELTS` - SEATBELTS\n* `OTHER` - OTHER",
+    "enum": [
+     "AC",
+     "CLEANLINESS",
+     "SEATBELTS",
+     "OTHER"
+    ],
+    "type": "string"
+   },
    "RiderLocationRequest": {
     "properties": {
      "lat": {
@@ -7010,8 +7119,32 @@
     ],
     "type": "string"
    },
+   "ServiceKindEnum": {
+    "description": "* `ROUTINE` - Routine service\n* `REPAIR` - Repair\n* `TYRES` - Tyres\n* `BATTERY` - Battery\n* `ACCIDENT` - Accident repair\n* `INSPECTION` - Fitness inspection",
+    "enum": [
+     "ROUTINE",
+     "REPAIR",
+     "TYRES",
+     "BATTERY",
+     "ACCIDENT",
+     "INSPECTION"
+    ],
+    "type": "string"
+   },
    "ServiceRequest": {
     "properties": {
+     "invoice_number": {
+      "maxLength": 40,
+      "type": "string"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/ServiceKindEnum"
+     },
+     "labour_cost": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
      "notes": {
       "maxLength": 255,
       "type": "string"
@@ -7020,12 +7153,33 @@
       "minimum": 0,
       "type": "integer"
      },
+     "parts": {
+      "items": {
+       "$ref": "#/components/schemas/PartRequest"
+      },
+      "type": "array"
+     },
+     "resolves": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
      "workshop": {
       "maxLength": 120,
       "type": "string"
      }
     },
     "type": "object"
+   },
+   "SeverityEnum": {
+    "description": "* `MINOR` - Minor (fix soon)\n* `MAJOR` - Major (fix this week)\n* `CRITICAL` - Critical (unsafe: off the road)",
+    "enum": [
+     "MINOR",
+     "MAJOR",
+     "CRITICAL"
+    ],
+    "type": "string"
    },
    "ShareModeEnum": {
     "description": "* `ALWAYS` - Every ride\n* `NIGHT` - Night rides\n* `NEVER` - Only when I share",
@@ -9306,6 +9460,36 @@
     ],
     "type": "object"
    },
+   "VehicleIssueKindEnum": {
+    "description": "* `BREAKDOWN` - Breakdown\n* `ACCIDENT` - Accident\n* `BRAKES` - Brakes\n* `TYRES` - Tyres\n* `LIGHTS` - Lights\n* `SEATBELTS` - Seat belts\n* `AC` - Air conditioning\n* `CLEANLINESS` - Cleanliness\n* `OTHER` - Other",
+    "enum": [
+     "BREAKDOWN",
+     "ACCIDENT",
+     "BRAKES",
+     "TYRES",
+     "LIGHTS",
+     "SEATBELTS",
+     "AC",
+     "CLEANLINESS",
+     "OTHER"
+    ],
+    "type": "string"
+   },
+   "VehicleIssueRequestRequest": {
+    "properties": {
+     "description": {
+      "maxLength": 300,
+      "type": "string"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/RiderCarIssueKindEnum"
+     }
+    },
+    "required": [
+     "kind"
+    ],
+    "type": "object"
+   },
    "VehicleRequest": {
     "properties": {
      "color": {
@@ -10751,6 +10935,106 @@
        }
       }
      }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
+  "/api/v1/driver/biz/vehicle/check/": {
+   "post": {
+    "description": "The daily walk-round. A failed brake, tyre, light or belt takes the car off the road.",
+    "operationId": "driver_biz_vehicle_check_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InspectionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/InspectionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/InspectionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
+  "/api/v1/driver/biz/vehicle/issue/": {
+   "post": {
+    "description": "Report a fault or a breakdown (a breakdown mid-ride gets the rider a new car).",
+    "operationId": "driver_biz_vehicle_issue_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueRequest"
+       }
+      }
+     },
+     "required": true
     },
     "responses": {
      "200": {
@@ -12974,6 +13258,67 @@
       "multipart/form-data": {
        "schema": {
         "$ref": "#/components/schemas/OwnerServiceRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "fleet"
+    ]
+   }
+  },
+  "/api/v1/fleet/vehicles/{vehicle_id}/condition/": {
+   "post": {
+    "description": "Send a car to the workshop, or bring it back once nothing critical is open.",
+    "operationId": "fleet_vehicles_condition_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "vehicle_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConditionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ConditionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ConditionRequest"
        }
       }
      },
@@ -15341,6 +15686,169 @@
       }
      }
     ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/fleet/upkeep/{vehicle_id}/": {
+   "get": {
+    "description": "Fleet owners, quests, vehicle upkeep, airports, EVs and TDS for the ops team.",
+    "operationId": "ops_fleet_upkeep_vehicle",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "vehicle_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/fleet/upkeep/{vehicle_id}/condition/": {
+   "post": {
+    "description": "Fleet owners, quests, vehicle upkeep, airports, EVs and TDS for the ops team.",
+    "operationId": "ops_fleet_upkeep_condition_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "vehicle_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConditionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ConditionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ConditionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/fleet/upkeep/{vehicle_id}/issue/": {
+   "post": {
+    "description": "Fleet owners, quests, vehicle upkeep, airports, EVs and TDS for the ops team.",
+    "operationId": "ops_fleet_upkeep_issue_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "vehicle_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueRequest"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "content": {
@@ -23898,6 +24406,67 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/Trip"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "trips"
+    ]
+   }
+  },
+  "/api/v1/trips/{id}/vehicle-issue/": {
+   "post": {
+    "description": "Rider: report a problem with the car after the ride (AC, cleanliness, belts).",
+    "operationId": "trips_vehicle_issue_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this trip.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VehicleIssueRequestRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/VehicleIssueRequestRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/VehicleIssueRequestRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
         }
        }
       },

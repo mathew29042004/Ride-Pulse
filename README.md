@@ -474,6 +474,20 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Vehicle upkeep:** odometer from trips, service due by distance (bike 3,000 km, auto 5,000,
   cars 10,000), insurance, permit and fitness expiry. Drivers and owners are warned ahead;
   expired insurance keeps a car offline. Drivers and owners log services.
+* **Vehicle health** (Ops → Vehicle health, the driver's Vehicle care card, the owner portal):
+  every car is *on the road*, *needs attention*, *overdue*, *in the workshop* or *off the road*.
+  * A **daily safety check** (10 items) before the first ride. A failed brake, tyre, light or
+    seat belt takes the car off the road.
+  * **Faults** come from drivers, riders ("Something wrong with the car?" after a ride), the daily
+    check, owners and ops. A breakdown or accident is critical.
+  * A **breakdown before pickup** sends the ride to another driver. A **breakdown mid-ride** ends
+    it at no charge and opens a high-priority ticket.
+  * **Service records** keep the kind of work, parts with costs, labour and the invoice number.
+    A repair closes the faults it fixed and puts the car back on the road; cost per km is shown.
+  * A car off the road or in the workshop can't go online. Owners and ops can send a car to the
+    workshop and bring it back.
+  * In the demo, bot drivers do the daily check, sometimes find faults, and the "workshop"
+    repairs them a few hours later.
 * **EVs:** range-aware dispatch (a trip is offered only if the battery covers pickup + trip + a
   15 km reserve), battery level from the driver app (the simulator drains and recharges), low
   battery alerts with the nearest suitable chargers (123 stations: Tata Power, Statiq,

@@ -98,14 +98,31 @@ class FleetMembership(models.Model):
 # --- Vehicle upkeep --------------------------------------------------------------------------
 
 
+class ServiceKind(models.TextChoices):
+    ROUTINE = "ROUTINE", "Routine service"
+    REPAIR = "REPAIR", "Repair"
+    TYRES = "TYRES", "Tyres"
+    BATTERY = "BATTERY", "Battery"
+    ACCIDENT = "ACCIDENT", "Accident repair"
+    INSPECTION = "INSPECTION", "Fitness inspection"
+
+
 class ServiceRecord(models.Model):
+    """One visit to a workshop: what was done, the parts, what it cost, and the invoice."""
+
     vehicle = models.ForeignKey(
         "drivers.Vehicle", on_delete=models.CASCADE, related_name="service_records"
     )
+    kind = models.CharField(max_length=10, choices=ServiceKind.choices, default=ServiceKind.ROUTINE)
     odometer_km = models.PositiveIntegerField()
     serviced_on = models.DateField()
     workshop = models.CharField(max_length=120, blank=True)
     notes = models.CharField(max_length=255, blank=True)
+    # [{"name": "Brake pads", "cost": "1800.00"}, …]
+    parts = models.JSONField(default=list, blank=True)
+    parts_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    labour_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    invoice_number = models.CharField(max_length=40, blank=True)
     recorded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -116,6 +133,93 @@ class ServiceRecord(models.Model):
 
     def __str__(self) -> str:
         return f"{self.vehicle_id} @ {self.odometer_km} km"
+
+    @property
+    def total_cost(self):
+        return self.parts_cost + self.labour_cost
+
+
+class VehicleInspection(models.Model):
+    """The driver's pre-shift walk-round: each checklist item passed or failed."""
+
+    vehicle = models.ForeignKey(
+        "drivers.Vehicle", on_delete=models.CASCADE, related_name="inspections"
+    )
+    driver = models.ForeignKey(
+        "drivers.DriverProfile", on_delete=models.CASCADE, related_name="inspections"
+    )
+    inspected_on = models.DateField(db_index=True)
+    items = models.JSONField(default=dict)  # {"brakes": true, "tyres": false, …}
+    passed = models.BooleanField()
+    created_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.vehicle_id} {self.inspected_on} {'pass' if self.passed else 'fail'}"
+
+
+class IssueSource(models.TextChoices):
+    DRIVER = "DRIVER", "Driver"
+    RIDER = "RIDER", "Rider"
+    INSPECTION = "INSPECTION", "Daily check"
+    OWNER = "OWNER", "Fleet owner"
+    OPS = "OPS", "Operations"
+
+
+class IssueKind(models.TextChoices):
+    BREAKDOWN = "BREAKDOWN", "Breakdown"
+    ACCIDENT = "ACCIDENT", "Accident"
+    BRAKES = "BRAKES", "Brakes"
+    TYRES = "TYRES", "Tyres"
+    LIGHTS = "LIGHTS", "Lights"
+    SEATBELTS = "SEATBELTS", "Seat belts"
+    AC = "AC", "Air conditioning"
+    CLEANLINESS = "CLEANLINESS", "Cleanliness"
+    OTHER = "OTHER", "Other"
+
+
+class IssueSeverity(models.TextChoices):
+    MINOR = "MINOR", "Minor (fix soon)"
+    MAJOR = "MAJOR", "Major (fix this week)"
+    CRITICAL = "CRITICAL", "Critical (unsafe: off the road)"
+
+
+class IssueStatus(models.TextChoices):
+    OPEN = "OPEN", "Open"
+    IN_REPAIR = "IN_REPAIR", "In repair"
+    RESOLVED = "RESOLVED", "Resolved"
+
+
+class VehicleIssue(models.Model):
+    """A fault: a breakdown, a failed check item, or a rider's report. Critical ones take the
+    vehicle off the road until a repair is logged."""
+
+    vehicle = models.ForeignKey("drivers.Vehicle", on_delete=models.CASCADE, related_name="issues")
+    source = models.CharField(max_length=10, choices=IssueSource.choices)
+    kind = models.CharField(max_length=11, choices=IssueKind.choices)
+    severity = models.CharField(max_length=8, choices=IssueSeverity.choices)
+    description = models.CharField(max_length=300, blank=True)
+    trip = models.ForeignKey(
+        "rides.Trip", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    reported_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    status = models.CharField(max_length=9, choices=IssueStatus.choices, default=IssueStatus.OPEN)
+    repair = models.ForeignKey(
+        ServiceRecord, null=True, blank=True, on_delete=models.SET_NULL, related_name="fixed"
+    )
+    opened_at = models.DateTimeField(db_index=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-opened_at"]
+        indexes = [models.Index(fields=["vehicle", "status"], name="vehicle_issue_open_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.vehicle_id} {self.kind} {self.status}"
 
 
 # --- EV charging -----------------------------------------------------------------------------

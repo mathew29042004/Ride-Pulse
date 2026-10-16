@@ -145,7 +145,7 @@ def owner_for(user) -> FleetOwner:
 
 
 def dashboard(owner: FleetOwner, *, now: datetime | None = None) -> dict:
-    from .maintenance import vehicle_health
+    from .maintenance import costs, history, vehicle_health, with_health_data
 
     now = now or timezone.now()
     today = timezone.make_aware(datetime.combine(timezone.localdate(now), datetime.min.time()))
@@ -198,7 +198,11 @@ def dashboard(owner: FleetOwner, *, now: datetime | None = None) -> dict:
             }
         )
     rows.sort(key=lambda r: (-r["week_trips"], r["name"]))
-    vehicles = Vehicle.objects.filter(owner=owner, is_active=True).select_related("driver__user")
+    vehicles = with_health_data(
+        Vehicle.objects.filter(owner=owner, is_active=True).select_related(
+            "driver__user", "ride_type"
+        )
+    )
     from apps.payments.models import Payout
 
     return {
@@ -214,7 +218,10 @@ def dashboard(owner: FleetOwner, *, now: datetime | None = None) -> dict:
         "week_trips": sum(r["week_trips"] for r in rows),
         "week_share": str(sum(Decimal(r["week_share"]) for r in rows)),
         "balance": str(wallet_balance(owner.user)),
-        "vehicles": [vehicle_health(v, now=now) for v in vehicles],
+        "vehicles": [
+            {**vehicle_health(v, now=now), "costs": costs(v), "history": history(v, limit=5)}
+            for v in vehicles
+        ],
         "payouts": [
             {
                 "number": p.payout_number,

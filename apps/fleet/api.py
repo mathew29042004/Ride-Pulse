@@ -19,14 +19,22 @@ from rest_framework.viewsets import GenericViewSet
 
 from apps.accounts.roles import Cap
 from apps.core.api import BaseViewSet, ContextBindingMixin
-from apps.core.exceptions import ActionNotPermitted
+from apps.core.exceptions import ActionNotPermitted, BusinessRuleViolation
 from apps.drivers.api import IsDriver
-from apps.drivers.models import DriverProfile, Vehicle
+from apps.drivers.models import DriverProfile, Vehicle, VehicleCondition
 from apps.geo.models import City
 from apps.pricing.models import RideType
 
 from . import airport, ev, maintenance, owners, quests, statements
-from .models import DriverStatement, FleetOwner, Quest
+from .models import (
+    DriverStatement,
+    FleetOwner,
+    IssueKind,
+    IssueSeverity,
+    IssueSource,
+    Quest,
+    ServiceKind,
+)
 
 # --- Drivers ---------------------------------------------------------------------------------
 
@@ -41,10 +49,37 @@ class BatterySerializer(serializers.Serializer):
     percent = serializers.IntegerField(min_value=0, max_value=100)
 
 
+class PartSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=80)
+    cost = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0)
+
+
 class ServiceSerializer(serializers.Serializer):
     odometer_km = serializers.IntegerField(required=False, min_value=0)
     workshop = serializers.CharField(required=False, allow_blank=True, max_length=120)
     notes = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    kind = serializers.ChoiceField(choices=ServiceKind.choices, required=False)
+    parts = PartSerializer(many=True, required=False)
+    labour_cost = serializers.DecimalField(
+        max_digits=10, decimal_places=2, min_value=0, required=False
+    )
+    invoice_number = serializers.CharField(required=False, allow_blank=True, max_length=40)
+    resolves = serializers.ListField(child=serializers.IntegerField(), required=False)
+
+
+class InspectionSerializer(serializers.Serializer):
+    items = serializers.DictField(child=serializers.BooleanField())
+
+
+class IssueSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=IssueKind.choices)
+    severity = serializers.ChoiceField(choices=IssueSeverity.choices, required=False)
+    description = serializers.CharField(required=False, allow_blank=True, max_length=300)
+
+
+class ConditionSerializer(serializers.Serializer):
+    condition = serializers.ChoiceField(choices=VehicleCondition.choices)
+    note = serializers.CharField(required=False, allow_blank=True, max_length=200)
 
 
 class DriverBusinessViewSet(ContextBindingMixin, GenericViewSet):
@@ -107,12 +142,43 @@ class DriverBusinessViewSet(ContextBindingMixin, GenericViewSet):
             data = ServiceSerializer(data=request.data)
             data.is_valid(raise_exception=True)
             maintenance.record_service(vehicle, user=request.user, **data.validated_data)
-            vehicle.refresh_from_db()
-        health = maintenance.vehicle_health(vehicle)
-        health["history"] = list(
-            vehicle.service_records.values("odometer_km", "serviced_on", "workshop")[:5]
+        return Response(self._care(vehicle))
+
+    def _care(self, vehicle):
+        health = maintenance.health_of(vehicle)
+        health["history"] = maintenance.history(vehicle, limit=10)
+        health["costs"] = maintenance.costs(vehicle)
+        health["checklist"] = maintenance.CHECKLIST
+        health["critical_items"] = list(maintenance.CRITICAL_ITEMS)
+        return health
+
+    @extend_schema(request=InspectionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="vehicle/check")
+    def vehicle_check(self, request):
+        """The daily walk-round. A failed brake, tyre, light or belt takes the car off the road."""
+        vehicle = self._vehicle()
+        data = InspectionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        maintenance.submit_inspection(vehicle, driver=self.driver, **data.validated_data)
+        return Response(self._care(vehicle))
+
+    @extend_schema(request=IssueSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="vehicle/issue")
+    def vehicle_issue(self, request):
+        """Report a fault or a breakdown (a breakdown mid-ride gets the rider a new car)."""
+        vehicle = self._vehicle()
+        data = IssueSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        maintenance.report_issue(
+            vehicle, user=request.user, source=IssueSource.DRIVER, **data.validated_data
         )
-        return Response(health)
+        return Response(self._care(vehicle))
+
+    def _vehicle(self):
+        vehicle = self.driver.active_vehicle
+        if vehicle is None:
+            raise BusinessRuleViolation("Add a vehicle first.")
+        return vehicle
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"], url_path="airport")
@@ -162,6 +228,19 @@ class FleetOwnerPortalViewSet(BaseViewSet):
             Vehicle.objects.select_related("ride_type"), pk=fields.pop("vehicle_id"), owner=owner
         )
         maintenance.record_service(vehicle, user=request.user, **fields)
+        return Response(owners.dashboard(owner))
+
+    @extend_schema(request=ConditionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"vehicles/(?P<vehicle_id>\d+)/condition")
+    def condition(self, request, vehicle_id=None):
+        """Send a car to the workshop, or bring it back once nothing critical is open."""
+        owner = owners.owner_for(request.user)
+        vehicle = get_object_or_404(Vehicle, pk=vehicle_id, owner=owner)
+        data = ConditionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        maintenance.set_condition(
+            vehicle, data.validated_data["condition"], note=data.validated_data.get("note", "")
+        )
         return Response(owners.dashboard(owner))
 
 
@@ -348,6 +427,43 @@ class FleetOpsViewSet(BaseViewSet):
     @action(detail=False, methods=["get"])
     def upkeep(self, request):
         return Response(maintenance.fleet_health(city_id=self._city(request)))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="ops_fleet_upkeep_vehicle")
+    @action(detail=False, methods=["get"], url_path=r"upkeep/(?P<vehicle_id>\d+)")
+    def upkeep_vehicle(self, request, vehicle_id=None):
+        vehicle = get_object_or_404(Vehicle.objects.select_related("ride_type"), pk=vehicle_id)
+        return Response(
+            {
+                **maintenance.health_of(vehicle),
+                "history": maintenance.history(vehicle),
+                "costs": maintenance.costs(vehicle),
+                "inspections": list(
+                    vehicle.inspections.values("inspected_on", "passed", "items")[:14]
+                ),
+            }
+        )
+
+    @extend_schema(request=ConditionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"upkeep/(?P<vehicle_id>\d+)/condition")
+    def upkeep_condition(self, request, vehicle_id=None):
+        vehicle = get_object_or_404(Vehicle, pk=vehicle_id)
+        data = ConditionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        maintenance.set_condition(
+            vehicle, data.validated_data["condition"], note=data.validated_data.get("note", "")
+        )
+        return Response(maintenance.health_of(vehicle))
+
+    @extend_schema(request=IssueSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"upkeep/(?P<vehicle_id>\d+)/issue")
+    def upkeep_issue(self, request, vehicle_id=None):
+        vehicle = get_object_or_404(Vehicle, pk=vehicle_id)
+        data = IssueSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        maintenance.report_issue(
+            vehicle, user=request.user, source=IssueSource.OPS, **data.validated_data
+        )
+        return Response(maintenance.health_of(vehicle))
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])
