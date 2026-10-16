@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "apps.reliability",
     "apps.trust",
     "apps.experiments",
+    "apps.tours",
 ]
 
 MIDDLEWARE = [
@@ -278,6 +279,7 @@ CELERY_BEAT_SCHEDULE = {
     "price-alerts": {"task": "pricing.check_price_alerts", "schedule": timedelta(minutes=2)},
     "ride-checks": {"task": "rides.run_ride_checks", "schedule": timedelta(minutes=1)},
     "driver-wellbeing": {"task": "drivers.wellbeing_sweep", "schedule": timedelta(minutes=5)},
+    "tours": {"task": "tours.sweep", "schedule": timedelta(minutes=5)},
     "city-coverage": {"task": "pricing.sync_city_coverage", "schedule": crontab(hour=5, minute=0)},
     "stale-drivers-offline": {
         "task": "drivers.mark_stale_drivers_offline",

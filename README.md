@@ -600,6 +600,42 @@ Celery worker and beat, simulator).
   tests with coverage, the React build, Playwright browser tests, a dependency vulnerability
   audit (pip-audit, npm audit), the dbt project, and the Docker image.
 
+### Tour packages (`apps/tours`)
+
+Rider app → **Tours**, driver app → **Your tours**, Ops → **Tours**.
+
+* **70 tours from all 33 cities**, each with real places and time at each stop. For example:
+  * Mahabalipuram, Puducherry and Kanchipuram from Chennai
+  * Mysuru and Nandi Hills from Bengaluru
+  * Hampi and Badami from Hubballi
+  * Munnar and Alleppey from Kochi
+  * Rameswaram and Kodaikanal from Madurai
+  * Araku Valley from Visakhapatnam
+  * Tirumala from Tirupati
+* **Fixed price per car**, locked when booking. It covers:
+  * the whole route from the pickup through every stop and back, at the intercity rate (at least 80 km a day)
+  * time at the places
+  * parking at each stop, the booking fee and GST
+  * the driver's daily allowance on multi-day tours
+
+  Ops can set a seasonal price (−30% to +50%) or pause a tour.
+* **Booking**: 4 hours to 60 days ahead, the group size must fit the car, the pickup must be in the
+  tour's city, and only one tour per day per traveller.
+* **Driver assigned ahead**: the day before, the best-rated free driver in the city with the right
+  car, a road-worthy vehicle and outstation trips switched on gets the tour. The rider sees the name
+  and car. A driver can decline, and the next one is asked.
+* **On the day** the driver taps *Start tour*. It runs as a normal intercity round trip, so PIN,
+  live tracking, SOS, Ride Check, trusted contacts and payment all work, at the booked price. The
+  driver taps *Reached* and *Leaving* at each place, and the rider sees the itinerary live. If the
+  assigned driver hasn't started 15 minutes before departure, the tour goes to normal dispatch at
+  the same price.
+* **Cancellation**: free until 24 hours before. After that it costs 25%, and the assigned driver
+  keeps their share. Once a tour has started, the trip's own rules apply. Riders rate the tour
+  afterwards.
+* **Demo**: a month of completed tours (run through the real trip flow, with genuine fares and
+  ratings) and three weeks of upcoming bookings. `rider@` has Mahabalipuram in two days with
+  `driver@` assigned. The simulator books tours and its bot drivers run them stop by stop.
+
 ### Models and experiments (`apps/experiments`, `data/ml`)
 
 Ops console → **Models & experiments** (`/ops/models`).

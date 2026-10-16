@@ -175,6 +175,83 @@ class Simulator:
                 )
                 self.bump("repairs")
 
+    def _tour_stops(self, trip, driver, now) -> None:
+        """On a tour, reach and leave each stop in turn across the fast-forwarded trip."""
+        from apps.tours import services as tours
+        from apps.tours.models import TourBooking
+
+        booking = TourBooking.objects.filter(trip=trip).select_related("package").first()
+        if booking is None:
+            return
+        stops = list(booking.package.stops.all())
+        share = (now - trip.started_at) / PACKAGE_TRIP_REAL_SECONDS
+        for i, stop in enumerate(stops):
+            entry = booking.progress.get(str(stop.order), {})
+            reach, leave = (i + 0.3) / len(stops), (i + 0.8) / len(stops)
+            with suppress(DomainError):
+                if share >= reach and "arrived" not in entry:
+                    drivers_svc.update_location(driver, lat=stop.lat, lng=stop.lng, record=False)
+                    booking = tours.mark_stop(
+                        booking, driver=driver, order=stop.order, event="arrived", now=now
+                    )
+                if share >= leave and "left" not in entry:
+                    booking = tours.mark_stop(
+                        booking, driver=driver, order=stop.order, event="left", now=now
+                    )
+
+    def tours(self) -> None:
+        """Riders book tours now and then; bot drivers start theirs when it's time."""
+        from apps.tours import services as tours
+        from apps.tours.models import BookingStatus, TourBooking, TourPackage
+
+        now = timezone.now()
+        tours.sweep(now=now)
+        if self.rng.random() < 0.15:
+            package = (
+                TourPackage.objects.filter(is_active=True)
+                .order_by("?")
+                .select_related("city")
+                .first()
+            )
+            rider = (
+                RiderProfile.objects.filter(user__is_active=True, is_blocked=False)
+                .exclude(user__email__in=DEMO_EMAILS)
+                .order_by("?")
+                .first()
+            )
+            if package and rider:
+                day = timezone.localdate(now) + timedelta(days=self.rng.randint(1, 21))
+                depart = timezone.make_aware(datetime.combine(day, package.start_time))
+                ride_type = RideType.objects.get(
+                    code=self.rng.choice(["MINI", "MINI", "SEDAN", "SUV"])
+                )
+                with suppress(DomainError):
+                    tours.book(
+                        rider=rider,
+                        package=package,
+                        ride_type=ride_type,
+                        depart_at=depart,
+                        pickup=self._jitter(package.city.center_lat, package.city.center_lng, 4),
+                        pickup_address="Home",
+                        group_size=self.rng.randint(1, min(4, ride_type.seats)),
+                    )
+                    self.bump("tours_booked")
+        for booking in TourBooking.objects.filter(
+            status=BookingStatus.ASSIGNED,
+            driver_id__in=list(self.bots),
+            depart_at__lte=now + timedelta(minutes=45),
+        ).select_related("driver"):
+            with suppress(DomainError):
+                driver = booking.driver
+                tours.start(
+                    booking,
+                    driver=driver,
+                    lat=driver.current_lat or booking.pickup_lat,
+                    lng=driver.current_lng or booking.pickup_lng,
+                    now=now,
+                )
+                self.bump("tours_started")
+
     def _city_driver_ids(self, city: City) -> set[int]:
         if not hasattr(self, "_city_cache"):
             self._city_cache = {}
@@ -248,6 +325,7 @@ class Simulator:
         elif trip.status == TripStatus.IN_PROGRESS and trip.service in ("RENTAL", "INTERCITY"):
             # Hours-long trips: a bot "fast-forwards" after two real minutes and ends at the
             # destination with the package's distance, so demos don't take all afternoon.
+            self._tour_stops(trip, driver, now)
             if now - trip.started_at >= PACKAGE_TRIP_REAL_SECONDS:
                 drivers_svc.update_location(
                     driver, lat=trip.dropoff_lat, lng=trip.dropoff_lng, record=False
@@ -575,6 +653,7 @@ class Simulator:
             price_alerts.check_alerts()
             driver_wellbeing.sweep()
             self.workshop()
+            self.tours()
             self.last_surge = clock.monotonic()
 
     def run(self, *, duration: float | None = None, report_every: float = 30) -> None:

@@ -34,6 +34,7 @@ class Cap:
     FLEET_MANAGE = "fleet.manage"  # ops: fleet owners, quests, vehicle upkeep, airport queue
     PRIVACY_MANAGE = "privacy.manage"  # data requests (DPDP), appeals, insurance claims
     EXPERIMENTS_MANAGE = "experiments.manage"  # feature flags and A/B tests
+    TOURS_MANAGE = "tours.manage"  # tour packages, their prices and tour bookings
 
     @classmethod
     def all(cls) -> frozenset[str]:
@@ -78,6 +79,7 @@ _MANAGERS = {
     Cap.FLEET_MANAGE,
     Cap.PRIVACY_MANAGE,
     Cap.EXPERIMENTS_MANAGE,
+    Cap.TOURS_MANAGE,
 }
 
 # Associate managers: each runs one line of the business across their state.
@@ -106,6 +108,7 @@ _ASSOC_MAINTENANCE = {
     Cap.TEAM_VIEW,
 }
 _ASSOC_INTERCITY = {
+    Cap.TOURS_MANAGE,
     Cap.TRIPS_VIEW,
     Cap.TRIPS_MANAGE,
     Cap.DRIVERS_VIEW,

@@ -9,6 +9,7 @@ import { BaseMap, CarMarker, FitBounds, MapCircle, MapClick, PinMarker, RouteLin
 import { CallButton } from "@/components/CallButton";
 import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
 import { AirportQueueChip, EvCard } from "@/components/DriverBusiness";
+import { DriverTours } from "@/components/DriverTours";
 import { HotZones } from "@/components/HotZones";
 import { BreakCard, WellbeingChip } from "@/components/FairShare";
 import { DriverLostItems } from "@/components/LostItem";
@@ -521,6 +522,7 @@ export default function DriverHome() {
         <OfferCard offer={offer} busy={accept.isPending || decline.isPending || counter.isPending} onAccept={() => accept.mutate(offer)} onDecline={() => decline.mutate(offer)} onCounter={(extra) => counter.mutate({ o: offer, extra })} />
       ) : (
         <Sheet>
+          <DriverTours pos={pos} tripId={trip?.id} />
           {!trip && (
             <>
               <BreakCard />

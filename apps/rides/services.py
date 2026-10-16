@@ -1015,8 +1015,10 @@ def complete_trip(
 
     eco.award(trip, distance)
     from apps.fleet import hooks
+    from apps.tours.services import on_trip_finished
 
     hooks.after_trip(trip)
+    on_trip_finished(trip)
     if trip.is_teen:
         from apps.riders import teens
 
@@ -1119,6 +1121,9 @@ def _cancel(trip: Trip, *, by: str, reason: str, fee: Decimal, actor, now: datet
     )
     if driver:
         _release_driver(driver)
+    from apps.tours.services import on_trip_finished
+
+    on_trip_finished(trip)
     _trip_event(trip, "trip.cancelled", cancelled_by=by, cancellation_fee=fee)
     if fee:
         payments.charge_cancellation_fee(trip, fee, now=now)
@@ -1180,6 +1185,9 @@ def expire_request(trip: Trip, *, now: datetime) -> Trip:
     )
     if trip.sure_ride_deadline:
         bids.refund_if_late(trip, now=now)
+    from apps.tours.services import on_trip_finished
+
+    on_trip_finished(trip)
     notify(
         trip.rider.user,
         "No drivers available right now",

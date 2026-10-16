@@ -17,6 +17,7 @@ const TrackTrip = lazy(() => import("./pages/public/TrackTrip"));
 const RiderHome = lazy(() => import("./pages/rider/RiderHome"));
 const RiderBook = lazy(() => import("./pages/rider/RiderBook"));
 const RiderPackages = lazy(() => import("./pages/rider/RiderPackages"));
+const RiderTours = lazy(() => import("./pages/rider/RiderTours"));
 const RiderTrip = lazy(() => import("./pages/rider/RiderTrip"));
 const RiderActivity = lazy(() => import("./pages/rider/RiderActivity"));
 const RiderWallet = lazy(() => import("./pages/rider/RiderWallet"));
@@ -59,6 +60,7 @@ const AppealsRider = lazy(() => trust().then((m) => ({ default: () => <m.Appeals
 const AppealsDriver = lazy(() => trust().then((m) => ({ default: () => <m.Appeals base="/drive" subjects={m.DRIVER_APPEALS} /> })));
 const OpsPlatform = lazy(() => import("./pages/ops/OpsPlatform"));
 const OpsModels = lazy(() => import("./pages/ops/OpsModels"));
+const OpsTours = lazy(() => import("./pages/ops/OpsTours"));
 const OpsTrust = lazy(() => import("./pages/ops/OpsTrust"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
@@ -133,6 +135,7 @@ export const router = createBrowserRouter([
       { index: true, element: lazyPage(<RiderHome />) },
       { path: "book", element: lazyPage(<RiderBook />) },
       { path: "packages", element: lazyPage(<RiderPackages />) },
+      { path: "tours", element: lazyPage(<RiderTours />) },
       { path: "trips/:id", element: lazyPage(<RiderTrip />) },
       { path: "activity", element: lazyPage(<RiderActivity />) },
       { path: "wallet", element: lazyPage(<RiderWallet />) },
@@ -209,6 +212,7 @@ export const router = createBrowserRouter([
       { path: "briefing", element: lazyPage(<OpsBriefing />) },
       { path: "platform", element: lazyPage(<OpsPlatform />) },
       { path: "models", element: lazyPage(<OpsModels />) },
+      { path: "tours", element: lazyPage(<OpsTours />) },
       { path: "trust", element: lazyPage(<OpsTrust />) },
       { path: "fleet-owners", element: lazyPage(<OpsFleetOwners />) },
       { path: "quests", element: lazyPage(<OpsQuests />) },

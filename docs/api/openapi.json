@@ -386,6 +386,170 @@
     },
     "type": "object"
    },
+   "BookRequest": {
+    "properties": {
+     "depart_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "group_size": {
+      "default": 1,
+      "maximum": 8,
+      "minimum": 1,
+      "type": "integer"
+     },
+     "payment_method": {
+      "default": "UPI",
+      "minLength": 1,
+      "type": "string"
+     },
+     "pickup_address": {
+      "maxLength": 255,
+      "type": "string"
+     },
+     "pickup_lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "pickup_lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "ride_type": {
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "depart_at",
+     "pickup_lat",
+     "pickup_lng",
+     "ride_type"
+    ],
+    "type": "object"
+   },
+   "Booking": {
+    "properties": {
+     "cancellation_fee": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "created_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "depart_at": {
+      "format": "date-time",
+      "type": "string"
+     },
+     "driver": {
+      "additionalProperties": {},
+      "nullable": true,
+      "readOnly": true,
+      "type": "object"
+     },
+     "earning": {
+      "nullable": true,
+      "readOnly": true,
+      "type": "string"
+     },
+     "fare": {},
+     "group_size": {
+      "maximum": 32767,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "package": {
+      "additionalProperties": {},
+      "readOnly": true,
+      "type": "object"
+     },
+     "pickup_address": {
+      "maxLength": 255,
+      "type": "string"
+     },
+     "pickup_lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "pickup_lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "price": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "progress": {},
+     "rating": {
+      "maximum": 32767,
+      "minimum": 0,
+      "nullable": true,
+      "type": "integer"
+     },
+     "reference": {
+      "maxLength": 20,
+      "type": "string"
+     },
+     "review": {
+      "maxLength": 300,
+      "type": "string"
+     },
+     "ride_type": {
+      "type": "string"
+     },
+     "rider": {
+      "additionalProperties": {},
+      "nullable": true,
+      "readOnly": true,
+      "type": "object"
+     },
+     "status": {
+      "$ref": "#/components/schemas/BookingStatusEnum"
+     },
+     "status_label": {
+      "type": "string"
+     },
+     "trip": {
+      "nullable": true,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "created_at",
+     "depart_at",
+     "driver",
+     "earning",
+     "fare",
+     "id",
+     "package",
+     "pickup_lat",
+     "pickup_lng",
+     "price",
+     "reference",
+     "ride_type",
+     "rider",
+     "status_label"
+    ],
+    "type": "object"
+   },
+   "BookingStatusEnum": {
+    "description": "* `BOOKED` - Booked (finding your driver)\n* `ASSIGNED` - Driver assigned\n* `STARTED` - On the tour\n* `COMPLETED` - Completed\n* `CANCELLED` - Cancelled",
+    "enum": [
+     "BOOKED",
+     "ASSIGNED",
+     "STARTED",
+     "COMPLETED",
+     "CANCELLED"
+    ],
+    "type": "string"
+   },
    "BoostRequest": {
     "properties": {
      "amount": {
@@ -3539,6 +3703,109 @@
     ],
     "type": "object"
    },
+   "Package": {
+    "properties": {
+     "category": {
+      "$ref": "#/components/schemas/PackageCategoryEnum"
+     },
+     "category_label": {
+      "type": "string"
+     },
+     "city": {
+      "type": "string"
+     },
+     "city_name": {
+      "type": "string"
+     },
+     "days": {
+      "maximum": 32767,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "from_price": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "hours": {
+      "format": "double",
+      "readOnly": true,
+      "type": "number"
+     },
+     "is_active": {
+      "type": "boolean"
+     },
+     "km": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 80,
+      "type": "string"
+     },
+     "price_adjust_percent": {
+      "maximum": 32767,
+      "minimum": -32768,
+      "type": "integer"
+     },
+     "rating": {
+      "format": "double",
+      "nullable": true,
+      "type": "number"
+     },
+     "rating_count": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "slug": {
+      "maxLength": 80,
+      "pattern": "^[-a-zA-Z0-9_]+$",
+      "type": "string"
+     },
+     "start_time": {
+      "format": "time",
+      "type": "string"
+     },
+     "stops": {
+      "items": {
+       "$ref": "#/components/schemas/Stop"
+      },
+      "type": "array"
+     },
+     "tagline": {
+      "maxLength": 160,
+      "type": "string"
+     }
+    },
+    "required": [
+     "category",
+     "category_label",
+     "city",
+     "city_name",
+     "from_price",
+     "hours",
+     "km",
+     "name",
+     "rating",
+     "slug",
+     "start_time",
+     "stops",
+     "tagline"
+    ],
+    "type": "object"
+   },
+   "PackageCategoryEnum": {
+    "description": "* `HERITAGE` - Heritage\n* `PILGRIMAGE` - Pilgrimage\n* `NATURE` - Nature & waterfalls\n* `BEACH` - Beaches\n* `HILLS` - Hill stations\n* `CITY` - City tours",
+    "enum": [
+     "HERITAGE",
+     "PILGRIMAGE",
+     "NATURE",
+     "BEACH",
+     "HILLS",
+     "CITY"
+    ],
+    "type": "string"
+   },
    "PackageOption": {
     "properties": {
      "fare": {
@@ -3639,6 +3906,19 @@
     ],
     "type": "string"
    },
+   "PackageUpdateRequest": {
+    "properties": {
+     "is_active": {
+      "type": "boolean"
+     },
+     "price_adjust_percent": {
+      "maximum": 50,
+      "minimum": -30,
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
    "PaginatedAlertList": {
     "properties": {
      "count": {
@@ -3722,6 +4002,37 @@
      "results": {
       "items": {
        "$ref": "#/components/schemas/AuditLog"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "count",
+     "results"
+    ],
+    "type": "object"
+   },
+   "PaginatedBookingList": {
+    "properties": {
+     "count": {
+      "example": 123,
+      "type": "integer"
+     },
+     "next": {
+      "example": "http://api.example.org/accounts/?page=4",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "previous": {
+      "example": "http://api.example.org/accounts/?page=2",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/Booking"
       },
       "type": "array"
      }
@@ -4125,6 +4436,37 @@
      "results": {
       "items": {
        "$ref": "#/components/schemas/Notification"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "count",
+     "results"
+    ],
+    "type": "object"
+   },
+   "PaginatedPackageList": {
+    "properties": {
+     "count": {
+      "example": 123,
+      "type": "integer"
+     },
+     "next": {
+      "example": "http://api.example.org/accounts/?page=4",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "previous": {
+      "example": "http://api.example.org/accounts/?page=2",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/Package"
       },
       "type": "array"
      }
@@ -7580,6 +7922,39 @@
      "kind_label",
      "reference",
      "trip_id"
+    ],
+    "type": "object"
+   },
+   "Stop": {
+    "properties": {
+     "lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "minutes": {
+      "type": "integer"
+     },
+     "name": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     },
+     "order": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "lat",
+     "lng",
+     "minutes",
+     "name",
+     "note",
+     "order"
     ],
     "type": "object"
    },
@@ -15915,6 +16290,187 @@
     ]
    }
   },
+  "/api/v1/ops/tours/bookings/{id}/assign/": {
+   "post": {
+    "description": "Ops: the catalogue with bookings and revenue, upcoming tours, unassigned ones.",
+    "operationId": "ops_tours_bookings_assign_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/tours/bookings/{id}/cancel/": {
+   "post": {
+    "description": "Ops: the catalogue with bookings and revenue, upcoming tours, unassigned ones.",
+    "operationId": "ops_tours_bookings_cancel_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/tours/overview/": {
+   "get": {
+    "description": "Ops: the catalogue with bookings and revenue, upcoming tours, unassigned ones.",
+    "operationId": "ops_tours_overview_retrieve",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "city",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/tours/packages/{slug}/": {
+   "post": {
+    "description": "Ops: the catalogue with bookings and revenue, upcoming tours, unassigned ones.",
+    "operationId": "ops_tours_packages_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "slug",
+      "required": true,
+      "schema": {
+       "pattern": "^[\\w-]+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PackageUpdateRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/PackageUpdateRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/PackageUpdateRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/trust/appeals/{id}/decide/": {
    "post": {
     "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
@@ -21696,6 +22252,594 @@
     ],
     "tags": [
      "team"
+    ]
+   }
+  },
+  "/api/v1/tours/": {
+   "get": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_list",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "category",
+      "schema": {
+       "enum": [
+        "BEACH",
+        "CITY",
+        "HERITAGE",
+        "HILLS",
+        "NATURE",
+        "PILGRIMAGE"
+       ],
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "city",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedPackageList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/assigned/": {
+   "get": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_assigned_list",
+    "parameters": [
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedBookingList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/bookings/": {
+   "get": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_bookings_list",
+    "parameters": [
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedBookingList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/bookings/{id}/cancel/": {
+   "post": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_bookings_cancel_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Booking"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/bookings/{id}/decline/": {
+   "post": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_bookings_decline_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Booking"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/bookings/{id}/rate/": {
+   "post": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_bookings_rate_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Booking"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/bookings/{id}/start/": {
+   "post": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_bookings_start_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/bookings/{id}/stop/": {
+   "post": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_bookings_stop_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Booking"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/{slug}/": {
+   "get": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_retrieve",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "slug",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Package"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
+    ]
+   }
+  },
+  "/api/v1/tours/{slug}/book/": {
+   "post": {
+    "description": "Riders browse and book; drivers see the tours assigned to them.",
+    "operationId": "tours_book_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "slug",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BookRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/BookRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/BookRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Booking"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "tours"
     ]
    }
   },

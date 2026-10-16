@@ -61,6 +61,9 @@ class Command(BaseCommand):
         from apps.intelligence import demo as intelligence_demo
 
         stats.update(intelligence_demo.seed(log=self.stdout.write))
+        from apps.tours import demo as tours_demo
+
+        stats.update(tours_demo.seed(log=self.stdout.write))
         from apps.experiments import demo as experiments_demo
 
         stats.update(experiments_demo.seed(log=self.stdout.write))
@@ -88,3 +91,7 @@ def reload_reference_data():
     from django.apps import apps
 
     import_module("apps.experiments.migrations.0002_default_flags").add_flags(apps, None)
+    from apps.tours.catalogue import load as load_tours
+    from apps.tours.models import TourPackage, TourStop
+
+    load_tours(City, TourPackage, TourStop)

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Clock, House, LocateFixed, MapPin, MapPinned, Package, Search, Timer } from "lucide-react";
+import { Briefcase, ChevronRight, Clock, House, Landmark, LocateFixed, MapPin, MapPinned, Package, Search, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -150,11 +150,12 @@ export default function RiderHome() {
           </span>
         </button>
 
-        <div className="mt-2 grid grid-cols-3 gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             { to: "/ride/book?service=PARCEL", icon: Package, label: "Parcel", hint: "Send by bike" },
             { to: "/ride/packages?service=RENTAL", icon: Timer, label: "Rentals", hint: "By the hour" },
             { to: "/ride/packages?service=INTERCITY", icon: MapPinned, label: "Intercity", hint: "Outstation" },
+            { to: "/ride/tours", icon: Landmark, label: "Tours", hint: "Day trips to famous places" },
           ].map(({ to, icon: Icon, label, hint }) => (
             <button key={to} onClick={() => navigate(to)} title={t(hint)} className="flex items-center justify-center gap-1.5 rounded-full border border-line px-2 py-2 text-xs font-semibold transition hover:bg-surface-2">
               <Icon className="size-4 text-brand" />

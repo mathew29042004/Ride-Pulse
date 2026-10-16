@@ -19,6 +19,7 @@ from apps.reliability import api as reliability
 from apps.riders import api as riders
 from apps.rides import api as rides
 from apps.support import api as support
+from apps.tours import api as tours
 from apps.trust import api as trust
 from apps.workspace import api as workspace
 
@@ -53,6 +54,8 @@ router.register("me", trust.MyTrustViewSet, basename="me-trust")
 router.register("help", trust.HelpViewSet, basename="help")
 router.register("ops/trust", trust.TrustOpsViewSet, basename="ops-trust")
 router.register("ops/experiments", experiments.ExperimentsOpsViewSet, basename="ops-experiments")
+router.register("ops/tours", tours.TourOpsViewSet, basename="ops-tours")
+router.register("tours", tours.TourViewSet, basename="tour")
 router.register("riders", riders.RiderViewSet, basename="rider")
 router.register("driver/biz", fleet.DriverBusinessViewSet, basename="driver-biz")
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")

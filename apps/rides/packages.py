@@ -385,7 +385,13 @@ def request_package_trip(
 
 
 def final_fare(trip: Trip, *, distance: Decimal, duration: Decimal) -> FareBreakdown:
-    """At the end: rentals add extra km and minutes; intercity charges big detours."""
+    """At the end: rentals add extra km and minutes; intercity charges big detours; a tour
+    costs what was booked."""
+    from apps.tours.services import final_fare as tour_fare
+
+    booked = tour_fare(trip)
+    if booked is not None:
+        return booked
     if trip.service == Service.RENTAL:
         return rental_fare(
             trip.city, trip.ride_type, trip.package_hours, used_km=distance, used_minutes=duration
