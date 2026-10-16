@@ -24,6 +24,15 @@ interface Health {
     recent: { kind: string; label: string; email: string; ip: string | null; path: string; detail: string; at: string }[];
   };
   echo_received: { id: string; topic: string; at: string }[];
+  jobs: { name: string; every_seconds: number; last_finished_at: string | null; last_duration_ms: number; last_ok: boolean; last_error: string; last_result: Record<string, unknown>; runs: number; failures: number; state: "OK" | "LATE" | "FAILING" }[];
+  speed: {
+    routes: { route: string; method: string; requests: number; avg_ms: number; p95_ms: number | null }[];
+    requests: number;
+    server_errors: number;
+    threshold_ms: number;
+    last_24h: number;
+    by_route: { method: string; route: string; n: number; worst_ms: number; last: string }[];
+  };
 }
 interface Endpoint {
   id: number;
@@ -213,6 +222,93 @@ export default function OpsPlatform() {
                 </div>
               ))}
             </>
+          )}
+        </Card>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Card className="overflow-x-auto">
+          <div className="p-4 pb-0">
+            <CardHeader title="Background jobs" subtitle="Every scheduled job records each run. Late: it missed three of its runs. Failing: its last run raised an error." />
+          </div>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Job</Th>
+                <Th>Last run</Th>
+                <Th className="text-right">Took</Th>
+                <Th className="text-right">Runs</Th>
+                <Th />
+              </tr>
+            </thead>
+            <tbody>
+              {(h?.jobs ?? []).map((j) => (
+                <tr key={j.name} className="border-t border-line">
+                  <Td>
+                    <div className="font-semibold">{j.name}</div>
+                    <div className="text-xs text-muted">
+                      every {j.every_seconds >= 86400 ? `${j.every_seconds / 86400} d` : j.every_seconds >= 3600 ? `${j.every_seconds / 3600} h` : j.every_seconds >= 60 ? `${j.every_seconds / 60} min` : `${j.every_seconds} s`}
+                      {j.last_error ? ` · ${j.last_error}` : Object.keys(j.last_result).length ? ` · ${Object.entries(j.last_result).map(([k, v]) => `${k} ${v}`).join(", ")}` : ""}
+                    </div>
+                  </Td>
+                  <Td className="whitespace-nowrap text-xs">{j.last_finished_at ? ago(j.last_finished_at) : "never"}</Td>
+                  <Td className="text-right text-xs">{j.last_duration_ms} ms</Td>
+                  <Td className="text-right text-xs">
+                    {j.runs.toLocaleString("en-IN")}
+                    {j.failures > 0 && <span className="text-danger"> · {j.failures} failed</span>}
+                  </Td>
+                  <Td>
+                    <Badge tone={j.state === "OK" ? "brand" : j.state === "LATE" ? "warning" : "danger"}>{j.state === "OK" ? "OK" : j.state === "LATE" ? "Late" : "Failing"}</Badge>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          {h?.jobs.length === 0 && <p className="p-4 text-sm text-muted">No job has run yet. Start the simulator or Celery beat.</p>}
+        </Card>
+        <Card className="overflow-x-auto">
+          <div className="p-4 pb-0">
+            <CardHeader
+              title="Speed"
+              subtitle={h ? `Slowest routes since this server started (${h.speed.requests.toLocaleString("en-IN")} requests, ${h.speed.server_errors} server errors). Requests over ${h.speed.threshold_ms} ms are logged; ${h.speed.last_24h} in the last 24 h.` : ""}
+            />
+          </div>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Route</Th>
+                <Th className="text-right">Requests</Th>
+                <Th className="text-right">Average</Th>
+                <Th className="text-right">p95</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {(h?.speed.routes ?? []).map((r) => (
+                <tr key={`${r.method} ${r.route}`} className="border-t border-line">
+                  <Td className="text-xs">
+                    <span className="font-mono text-muted">{r.method}</span> {r.route}
+                  </Td>
+                  <Td className="text-right text-xs">{r.requests}</Td>
+                  <Td className="text-right text-xs">{r.avg_ms} ms</Td>
+                  <Td className={clsx("text-right text-xs", (r.p95_ms ?? 0) >= (h?.speed.threshold_ms ?? 500) && "font-semibold text-danger")}>{r.p95_ms != null ? `≤ ${r.p95_ms} ms` : "> 10 s"}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          {(h?.speed.by_route ?? []).length > 0 && (
+            <div className="border-t border-line p-4 text-xs">
+              <div className="mb-1 font-semibold">Slow requests, last 24 h</div>
+              {h!.speed.by_route.map((r) => (
+                <div key={`${r.method} ${r.route}`} className="flex justify-between py-0.5">
+                  <span>
+                    <span className="font-mono text-muted">{r.method}</span> {r.route}
+                  </span>
+                  <span>
+                    {r.n}× · worst {r.worst_ms} ms · {ago(r.last)}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </Card>
       </div>

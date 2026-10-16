@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 from apps.accounts.roles import Cap
 from apps.core.api import BaseViewSet
 
-from . import outbox, security
+from . import jobs, outbox, security
 from .models import DeliveryStatus, WebhookDelivery, WebhookEndpoint
 
 
@@ -69,6 +69,8 @@ class PlatformViewSet(BaseViewSet):
                 "topics": outbox.TOPICS,
                 "security": security.overview(),
                 "echo_received": cache.get("webhooks:echo", [])[:10],
+                "jobs": jobs.jobs_overview(),
+                "speed": {**jobs.latency_by_route(), **jobs.slow_overview()},
             }
         )
 

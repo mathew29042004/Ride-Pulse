@@ -1530,6 +1530,126 @@
     ],
     "type": "string"
    },
+   "Driver": {
+    "properties": {
+     "acceptance_rate": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "approved_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "availability": {
+      "$ref": "#/components/schemas/DriverAvailabilityEnum"
+     },
+     "cancelled_trips": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "city": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "completed_trips": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "current_lat": {
+      "format": "double",
+      "maximum": 90,
+      "minimum": -90,
+      "nullable": true,
+      "type": "number"
+     },
+     "current_lng": {
+      "format": "double",
+      "maximum": 180,
+      "minimum": -180,
+      "nullable": true,
+      "type": "number"
+     },
+     "email": {
+      "format": "email",
+      "readOnly": true,
+      "type": "string"
+     },
+     "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "license_expiry": {
+      "format": "date",
+      "type": "string"
+     },
+     "license_number": {
+      "maxLength": 20,
+      "type": "string"
+     },
+     "location_updated_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "name": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "onboarding_status": {
+      "$ref": "#/components/schemas/OnboardingStatusEnum"
+     },
+     "phone": {
+      "readOnly": true,
+      "type": "string"
+     },
+     "rating": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,1}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "rating_count": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "safety_score": {
+      "maximum": 32767,
+      "minimum": 0,
+      "nullable": true,
+      "type": "integer"
+     },
+     "suspended_reason": {
+      "maxLength": 255,
+      "type": "string"
+     },
+     "vehicle": {
+      "additionalProperties": {},
+      "nullable": true,
+      "readOnly": true,
+      "type": "object"
+     },
+     "wallet_balance": {
+      "readOnly": true,
+      "type": "string"
+     }
+    },
+    "required": [
+     "city",
+     "email",
+     "id",
+     "license_expiry",
+     "license_number",
+     "name",
+     "phone",
+     "vehicle",
+     "wallet_balance"
+    ],
+    "type": "object"
+   },
    "DriverAvailabilityEnum": {
     "description": "* `OFFLINE` - Offline\n* `ONLINE` - Online\n* `ON_TRIP` - On a trip",
     "enum": [
@@ -2495,14 +2615,15 @@
     "type": "object"
    },
    "FlagsEnum": {
-    "description": "* `ROUTE_DEVIATION` - Route much longer than estimated\n* `LONG_PICKUP` - Pickup took much longer than the ETA\n* `SOS` - SOS raised\n* `LOW_RATING` - Rated 2 stars or less\n* `GPS_JUMP` - GPS jumped impossibly far (glitch or spoofing)\n* `RIDE_CHECK` - Ride Check escalated to the safety team",
+    "description": "* `ROUTE_DEVIATION` - Route much longer than estimated\n* `LONG_PICKUP` - Pickup took much longer than the ETA\n* `SOS` - SOS raised\n* `LOW_RATING` - Rated 2 stars or less\n* `GPS_JUMP` - GPS jumped impossibly far (glitch or spoofing)\n* `RIDE_CHECK` - Ride Check escalated to the safety team\n* `ABANDONED` - Closed by the watchdog: the trip stopped moving",
     "enum": [
      "ROUTE_DEVIATION",
      "LONG_PICKUP",
      "SOS",
      "LOW_RATING",
      "GPS_JUMP",
-     "RIDE_CHECK"
+     "RIDE_CHECK",
+     "ABANDONED"
     ],
     "type": "string"
    },
@@ -4235,7 +4356,7 @@
     ],
     "type": "object"
    },
-   "PaginatedDriverStatusList": {
+   "PaginatedDriverList": {
     "properties": {
      "count": {
       "example": 123,
@@ -4255,7 +4376,7 @@
      },
      "results": {
       "items": {
-       "$ref": "#/components/schemas/DriverStatus"
+       "$ref": "#/components/schemas/Driver"
       },
       "type": "array"
      }
@@ -12716,7 +12837,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/PaginatedDriverStatusList"
+         "$ref": "#/components/schemas/PaginatedDriverList"
         }
        }
       },

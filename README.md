@@ -698,6 +698,48 @@ Ops console → **Models & experiments** (`/ops/models`).
 * **Extract safety**: incremental tables re-check recent ids for rows committed late, and a
   reset app database is detected, so old batches never hide new rows.
 
+### Running smoothly
+
+* **Trip watchdog** (`reliability.watchdog`, every 5 minutes) finds trips that stopped moving
+  while the driver's app went silent:
+  * assigned but never arrived (45 min): sent to another driver, or closed if over 3 hours old
+  * arrived but never started (60 min): closed
+  * started but never finished (3× the expected time plus an hour, or whole days for rentals,
+    outstation and tours): closed at no charge, flagged ABANDONED, with a support ticket
+
+  Ops get one summary notification per run. It also fixed `cancel_trip`, which crashed for ops
+  when a ride type had been paused in the city after booking.
+* **Background jobs dashboard** (Ops → Platform health): 14 scheduled jobs (dispatch, surge,
+  Ride Check, Guardian, the watchdog, tours, wellbeing, lost & found, alerts, fraud, forecast
+  accuracy, weather, the outbox, vehicle upkeep) record every run: when, how long, result, and
+  errors. Each job shows as OK, Late or Failing. This works the same whether Celery beat or the
+  simulator runs them.
+* **Speed**:
+  * latency per route (average and p95, from the Prometheus histogram)
+  * API requests over `SLOW_REQUEST_MS` (default 500 ms) logged for 7 days
+  * an ops alert when a route is slow 10+ times in 15 minutes
+* **What was made faster** (measured on the demo data):
+
+  | Endpoint | Before | After |
+  |---|---|---|
+  | demand forecast | 1,145 ms, 4,982 queries | 8 ms, 7 queries |
+  | drivers list | 143 queries | 4 queries |
+  | support tickets | 42 queries | 3 queries |
+  | tours overview | 150 queries | 12 queries |
+  | churn list | 83 queries | 4 queries |
+
+  How:
+  * events, weather and hourly counts are loaded once
+  * the backtest runs in the background
+  * wallets are annotated and messages prefetched
+  * consents are checked in bulk
+
+  Tests cap the query count of these lists, so an N+1 can't creep back.
+* **Forecast honesty**: the weather lookup could read readings from after the moment being
+  replayed, which flattered the backtest; it can't any more. Each city's forecast now uses
+  whichever method (full model or plain seasonal baseline) was more accurate over the last 72
+  hours, and the demand page says which.
+
 ### Production checklist
 * `python manage.py check --deploy` passes with `config.settings.prod` (HSTS, secure cookies,
   SSL redirect, `X-Frame-Options`, content-type sniffing off).

@@ -223,7 +223,8 @@ interface Forecast {
   for_hour: string;
   total_expected: number;
   zones: ZoneForecast[];
-  accuracy: { hours: number; trips: number; model: number | null; seasonal: number | null; naive: number | null };
+  accuracy: { hours: number; trips: number; model: number | null; seasonal: number | null; naive: number | null; method?: "blend" | "seasonal" };
+  method?: "blend" | "seasonal";
 }
 
 const STATUS_COLOR = { SHORT: "#e11d48", TIGHT: "#f59e0b", OK: "#16a34a" };
@@ -245,7 +246,12 @@ export function OpsDemand() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Trips expected next hour" value={f?.total_expected ?? "—"} icon={<TrendingUp className="size-4" />} tone="brand" />
         <Stat label="Zones short of drivers" value={zones.filter((z) => z.status === "SHORT").length} icon={<Flame className="size-4" />} tone="danger" />
-        <Stat label="Forecast accuracy" value={pct(acc?.model)} sub={acc ? `Last 72 h, ${acc.hours} steady hours, ${acc.trips} trips` : ""} tone="info" />
+        <Stat
+          label="Forecast accuracy"
+          value={pct(f?.method === "seasonal" ? acc?.seasonal : acc?.model)}
+          sub={acc ? `${f?.method === "seasonal" ? `Seasonal baseline in use: it beat the full model (${pct(acc.model)}) over the last 72 h` : `Full model (seasonal ${pct(acc.seasonal)}, naive ${pct(acc.naive)})`} · ${acc.hours} steady hours, ${acc.trips} trips` : ""}
+          tone="info"
+        />
         <Stat label="Compared with" value={`${pct(acc?.seasonal)} · ${pct(acc?.naive)}`} sub="History only · same as last hour" />
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_420px]">

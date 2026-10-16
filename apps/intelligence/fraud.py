@@ -23,6 +23,7 @@ from apps.core.exceptions import BusinessRuleViolation, InvalidStateTransition
 from apps.core.sequences import next_reference
 from apps.notifications.models import Level
 from apps.notifications.services import notify_role
+from apps.reliability.jobs import tracked
 from apps.riders.models import RiderProfile
 from apps.rides.models import Trip, TripFlag, TripStatus
 
@@ -142,6 +143,7 @@ def _detect(now: datetime) -> list[dict]:
 
 
 @transaction.atomic
+@tracked("fraud-scan", every=timedelta(hours=1))
 def scan(*, now: datetime | None = None) -> dict:
     """Run every rule; open new cases and strengthen open ones."""
     now = now or timezone.now()

@@ -95,6 +95,27 @@ def has_consent(user, purpose: str) -> bool:
     return consents(user).get(purpose, False)
 
 
+def consenting(user_ids, purpose: str) -> set[int]:
+    """Of these users, those whose latest choice for ``purpose`` is "yes" (one query, for lists;
+    contact sharing also counts riders who added a trusted contact, as ``consents`` does)."""
+    latest = dict(
+        ConsentRecord.objects.filter(user_id__in=list(user_ids), purpose=purpose)
+        .order_by("user_id", "-created_at", "-pk")
+        .distinct("user_id")
+        .values_list("user_id", "granted")
+    )
+    if purpose == ConsentPurpose.CONTACT_SHARING:
+        from apps.riders.models import TrustedContact
+
+        with_contacts = set(
+            TrustedContact.objects.filter(rider__user_id__in=list(user_ids)).values_list(
+                "rider__user_id", flat=True
+            )
+        )
+        return {uid for uid in user_ids if latest.get(uid, uid in with_contacts)}
+    return {uid for uid, granted in latest.items() if granted}
+
+
 # --- Requests --------------------------------------------------------------------------------
 
 

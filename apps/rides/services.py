@@ -1064,7 +1064,9 @@ def cancel_trip(trip: Trip, *, user, reason: str = "", now: datetime | None = No
     if trip.status in TERMINAL_STATUSES:
         raise InvalidStateTransition("This trip has already ended.")
     by = _who_cancels(trip, user)
-    rule = pricing.fare_rule(trip.city, trip.ride_type)
+    # Only riders and drivers can owe or earn a fee. Ops can always cancel, even a trip whose
+    # ride type was paused in the city after it was booked (the fare rule is gone then).
+    rule = pricing.fare_rule(trip.city, trip.ride_type) if by != CancelledBy.OPS else None
 
     if by == CancelledBy.RIDER:
         if trip.status == TripStatus.IN_PROGRESS:

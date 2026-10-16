@@ -24,6 +24,7 @@ from apps.core.exceptions import (
 )
 from apps.notifications.models import Level
 from apps.notifications.services import notify
+from apps.reliability.jobs import tracked
 
 from .models import LostItemCategory, LostItemReport, LostItemStatus, Trip, TripStatus
 
@@ -265,6 +266,7 @@ def dispose(item: LostItemReport, *, now=None) -> LostItemReport:
     return item
 
 
+@tracked("lost-and-found", every=timedelta(hours=1))
 def sweep(*, now=None) -> dict:
     """Daily: remind drivers, move uncollected items to the hub, donate long-unclaimed ones."""
     now = now or timezone.now()

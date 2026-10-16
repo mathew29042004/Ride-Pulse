@@ -68,9 +68,19 @@ class PackageSerializer(serializers.ModelSerializer):
         return cache[package.pk]
 
     def get_from_price(self, package) -> str:
-        mini = self.context.get("mini") or RideType.objects.get(code="MINI")
-        self.context["mini"] = mini
-        return str(services.tour_fare(package, mini).total)
+        from apps.pricing.models import FareRule
+
+        if "mini" not in self.context:
+            mini = RideType.objects.get(code="MINI")
+            self.context["mini"] = mini
+            # Every city's Mini booking fee in one query (not one per package).
+            self.context["fees"] = dict(
+                FareRule.objects.filter(ride_type=mini, is_active=True).values_list(
+                    "city_id", "booking_fee"
+                )
+            )
+        fee = self.context["fees"].get(package.city_id)
+        return str(services.tour_fare(package, self.context["mini"], booking_fee=fee).total)
 
     def get_hours(self, package) -> float:
         return self._route(package)["hours"]
@@ -355,11 +365,12 @@ class TourOpsViewSet(BaseViewSet):
             r["package_id"]: (r["n"], r["done"], r["upcoming"], r["revenue"]) for r in per_package
         }
         rows = []
+        shared: dict = {}  # one car type and fee lookup for the whole list
         for p in packages:
             n, done, upcoming, revenue = stats.get(p.pk, (0, 0, 0, None))
             rows.append(
                 {
-                    **PackageSerializer(p, context={}).data,
+                    **PackageSerializer(p, context=shared).data,
                     "bookings": n,
                     "completed": done,
                     "upcoming": upcoming,

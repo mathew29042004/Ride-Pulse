@@ -60,9 +60,18 @@ class MetricsMiddleware:
         started = time.perf_counter()
         response = self.get_response(request)
         if not request.path.startswith(("/static/", "/metrics")):
-            observe(
-                request.method, request.path, response.status_code, time.perf_counter() - started
-            )
+            seconds = time.perf_counter() - started
+            observe(request.method, request.path, response.status_code, seconds)
+            if request.path.startswith("/api/"):
+                from apps.reliability import jobs
+
+                if seconds * 1000 >= jobs.slow_threshold_ms():
+                    jobs.record_slow(
+                        request.method,
+                        _route(request.path),
+                        response.status_code,
+                        int(seconds * 1000),
+                    )
         return response
 
 

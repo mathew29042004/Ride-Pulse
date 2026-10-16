@@ -126,7 +126,8 @@ class DriverSerializer(serializers.ModelSerializer):
         return VehicleSerializer(vehicle).data if vehicle else None
 
     def get_wallet_balance(self, driver) -> str:
-        return str(wallet_balance(driver.user))
+        annotated = getattr(driver, "wallet_amount", None)  # lists annotate it in one query
+        return str(annotated if annotated is not None else wallet_balance(driver.user))
 
 
 class DriverStatusSerializer(DriverSerializer):
@@ -509,8 +510,37 @@ class ReasonSerializer(serializers.Serializer):
 class DriverViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseViewSet):
     """Drivers, for operations staff: onboarding, verification and suspension."""
 
-    queryset = DriverProfile.objects.select_related("user", "city").prefetch_related("vehicles")
+    queryset = DriverProfile.objects.select_related("user", "city").prefetch_related(
+        "vehicles__ride_type"
+    )
     serializer_class = DriverStatusSerializer
+
+    def get_serializer_class(self):
+        # The list is a table: no per-driver document and compliance checks (the detail
+        # view still has them).
+        return DriverSerializer if self.action == "list" else DriverStatusSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action == "list":
+            from decimal import Decimal
+
+            from django.db.models import DecimalField, OuterRef, Subquery, Value
+            from django.db.models.functions import Coalesce
+
+            from apps.payments.models import Wallet
+
+            queryset = queryset.annotate(
+                wallet_amount=Coalesce(
+                    Subquery(
+                        Wallet.objects.filter(user_id=OuterRef("user_id")).values("balance")[:1]
+                    ),
+                    Value(Decimal("0.00")),
+                    output_field=DecimalField(max_digits=12, decimal_places=2),
+                )
+            )
+        return queryset
+
     filterset_fields = ["city__slug", "onboarding_status", "availability"]
     search_fields = [
         "user__email",

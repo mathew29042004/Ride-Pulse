@@ -27,6 +27,7 @@ from apps.core import conf
 from apps.core.exceptions import ActionNotPermitted, BusinessRuleViolation
 from apps.notifications.models import Level
 from apps.notifications.services import notify
+from apps.reliability.jobs import tracked
 
 from .models import EmergencyShare, LocationSource, ShareTrigger, Trip, TripStatus
 from .safety import _text
@@ -198,6 +199,7 @@ def rider_ok(rider, *, now=None) -> None:
         end(share, user=rider.user, now=now)
 
 
+@tracked("guardian", every=timedelta(minutes=1))
 def sweep(*, now: datetime | None = None) -> dict:
     """Every minute: follow the car, remind contacts if the phone went quiet, expire."""
     now = now or timezone.now()

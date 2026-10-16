@@ -26,6 +26,7 @@ from django.db import transaction
 from django.db.models import Count, Min, Q
 from django.utils import timezone
 
+from .jobs import tracked
 from .models import DeliveryStatus, OutboxEvent, WebhookDelivery, WebhookEndpoint
 
 MAX_ATTEMPTS = 8
@@ -69,6 +70,7 @@ def _subscribers(event: OutboxEvent):
     return [e for e in endpoints if e.corporate_id is None or e.corporate_id == profile_id]
 
 
+@tracked("outbox-relay", every=timedelta(seconds=10))
 def relay(*, batch: int = 200, now: datetime | None = None) -> int:
     now = now or timezone.now()
     with transaction.atomic():

@@ -77,6 +77,9 @@ MIDDLEWARE = [
     "apps.core.metrics.MetricsMiddleware",
 ]
 
+# API requests slower than this are logged for Platform health (and alert ops when repeated).
+SLOW_REQUEST_MS = env.int("SLOW_REQUEST_MS", default=500)
+
 # Prometheus scrapes /metrics with "Authorization: Bearer <METRICS_TOKEN>".
 METRICS_TOKEN = env("METRICS_TOKEN", default="")
 
@@ -266,6 +269,10 @@ CELERY_BEAT_SCHEDULE = {
     "fleet-quests": {"task": "fleet.end_quests", "schedule": timedelta(minutes=15)},
     "intel-weather": {"task": "intelligence.refresh_weather", "schedule": timedelta(minutes=30)},
     "intel-alerts": {"task": "intelligence.check_alerts", "schedule": timedelta(minutes=5)},
+    "intel-accuracy": {
+        "task": "intelligence.refresh_forecast_accuracy",
+        "schedule": timedelta(minutes=30),
+    },
     "intel-nudges": {"task": "intelligence.nudge_drivers", "schedule": timedelta(minutes=10)},
     "intel-fraud": {"task": "intelligence.fraud_scan", "schedule": timedelta(hours=1)},
     "intel-briefing": {
@@ -281,6 +288,8 @@ CELERY_BEAT_SCHEDULE = {
     "ride-checks": {"task": "rides.run_ride_checks", "schedule": timedelta(minutes=1)},
     "guardian": {"task": "rides.guardian_sweep", "schedule": timedelta(minutes=1)},
     "lost-items": {"task": "rides.lost_items_sweep", "schedule": timedelta(hours=1)},
+    "trip-watchdog": {"task": "reliability.trip_watchdog", "schedule": timedelta(minutes=5)},
+    "slow-requests": {"task": "reliability.check_slow", "schedule": timedelta(minutes=5)},
     "driver-wellbeing": {"task": "drivers.wellbeing_sweep", "schedule": timedelta(minutes=5)},
     "tours": {"task": "tours.sweep", "schedule": timedelta(minutes=5)},
     "city-coverage": {"task": "pricing.sync_city_coverage", "schedule": crontab(hour=5, minute=0)},

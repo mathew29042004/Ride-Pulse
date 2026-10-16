@@ -16,6 +16,7 @@ from apps.accounts.models import Role, StaffProfile
 from apps.geo.models import City
 from apps.notifications.models import Level
 from apps.notifications.services import notify
+from apps.reliability.jobs import tracked
 from apps.rides.models import Trip, TripStatus
 from apps.support.models import SafetyIncident, SupportTicket, TicketStatus
 from apps.workspace import services as work
@@ -245,6 +246,7 @@ def _raise(city: City, finding: Finding, now: datetime) -> OpsAlert | None:
     return alert
 
 
+@tracked("ops-alerts", every=timedelta(minutes=5))
 def check(*, now: datetime | None = None) -> dict:
     """Run every rule for every city; open new alerts and close recovered ones."""
     now = now or timezone.now()

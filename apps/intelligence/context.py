@@ -12,6 +12,8 @@
 
 import hashlib
 import math
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -20,6 +22,7 @@ from django.utils import timezone
 
 from apps.geo.distance import haversine_km
 from apps.geo.models import City
+from apps.reliability.jobs import tracked
 
 from .models import CityEvent, WeatherReading
 
@@ -111,6 +114,7 @@ def _simulate(city: City, at: datetime) -> dict:
     }
 
 
+@tracked("weather", every=timedelta(minutes=30))
 def refresh_weather(*, now: datetime | None = None, live: bool = True) -> dict:
     now = now or timezone.now()
     counts = {"open-meteo": 0, "simulated": 0}
@@ -127,10 +131,39 @@ def refresh_weather(*, now: datetime | None = None, live: bool = True) -> dict:
     return counts
 
 
+_WEATHER: ContextVar[dict | None] = ContextVar("preloaded_weather", default=None)
+
+
+@contextmanager
+def preloaded_weather(start: datetime, end: datetime):
+    """For callers that ask for the weather at many past moments (the forecast backtest): load
+    every reading in the window once, per city, newest first."""
+    readings: dict[int, list] = {}
+    for reading in WeatherReading.objects.filter(
+        observed_at__gte=start - FRESH_FOR, observed_at__lte=end
+    ).order_by("-observed_at"):
+        readings.setdefault(reading.city_id, []).append(reading)
+    token = _WEATHER.set(readings)
+    try:
+        yield
+    finally:
+        _WEATHER.reset(token)
+
+
 def current_weather(city_id: int, *, now: datetime | None = None) -> WeatherReading | None:
     now = now or timezone.now()
+    preloaded = _WEATHER.get()
+    if preloaded is not None:
+        return next(
+            (r for r in preloaded.get(city_id, ()) if now - FRESH_FOR <= r.observed_at <= now),
+            None,
+        )
     return (
-        WeatherReading.objects.filter(city_id=city_id, observed_at__gte=now - FRESH_FOR)
+        # Never a reading from after ``now``: replaying the past (the backtest) mustn't peek at
+        # weather that hadn't happened yet.
+        WeatherReading.objects.filter(
+            city_id=city_id, observed_at__gte=now - FRESH_FOR, observed_at__lte=now
+        )
         .order_by("-observed_at")
         .first()
     )
@@ -161,11 +194,16 @@ def events_in_window(start: datetime, end: datetime, *, city_id: int | None = No
     return events
 
 
-def event_extra_trips(zone, hour_start: datetime) -> tuple[float, list[str]]:
-    """Extra trips expected in a zone in the hour from ``hour_start`` because of events."""
+def event_extra_trips(zone, hour_start: datetime, events=None) -> tuple[float, list[str]]:
+    """Extra trips expected in a zone in the hour from ``hour_start`` because of events.
+    ``events``: that hour's events, loaded once by callers that look at many zones."""
     hour_end = hour_start + timedelta(hours=1)
     extra, reasons = 0.0, []
-    for event in events_in_window(hour_start, hour_end, city_id=zone.city_id):
+    if events is None:
+        events = events_in_window(hour_start, hour_end, city_id=zone.city_id)
+    else:
+        events = [e for e in events if e.city_id == zone.city_id]
+    for event in events:
         if haversine_km(zone.center_lat, zone.center_lng, event.lat, event.lng) > EVENT_RADIUS_KM:
             continue
         leaving = (

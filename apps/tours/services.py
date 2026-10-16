@@ -40,6 +40,7 @@ from apps.notifications.services import notify
 from apps.payments.models import PaymentMethod
 from apps.pricing.fare import FareBreakdown, FareLine
 from apps.pricing.models import RideType, Service
+from apps.reliability.jobs import tracked
 from apps.rides.packages import ROAD_FACTOR, _booking_fee, _breakdown, _m
 
 from .models import BookingStatus, TourBooking, TourCategory, TourPackage
@@ -82,7 +83,11 @@ def route(package: TourPackage, pickup: tuple[float, float] | None = None) -> di
 
 
 def tour_fare(
-    package: TourPackage, ride_type: RideType, *, pickup: tuple[float, float] | None = None
+    package: TourPackage,
+    ride_type: RideType,
+    *,
+    pickup: tuple[float, float] | None = None,
+    booking_fee: Decimal | None = None,
 ) -> FareBreakdown:
     if ride_type.code not in TOUR_TYPES:
         raise BusinessRuleViolation("Tours are in cars: Mini, Sedan or SUV.", field="ride_type")
@@ -125,7 +130,8 @@ def tour_fare(
     return _breakdown(
         lines,
         passthrough=tolls,
-        fees=_booking_fee(city, ride_type) + PARKING_PER_STOP * r["stops"],
+        fees=(booking_fee if booking_fee is not None else _booking_fee(city, ride_type))
+        + PARKING_PER_STOP * r["stops"],
         allowance=terms["allowance"] * package.days if package.days > 1 else Decimal(0),
         distance_km=r["km"],
         duration_minutes=Decimal(r["drive_minutes"] + r["visit_minutes"]),
@@ -569,6 +575,7 @@ def rate(booking: TourBooking, *, user, stars: int, review: str = "") -> TourBoo
 # --- The sweep (every few minutes) -----------------------------------------------------------
 
 
+@tracked("tours", every=timedelta(minutes=5))
 def sweep(*, now: datetime | None = None) -> dict:
     now = now or timezone.now()
     assigned = fallen_back = 0

@@ -29,6 +29,7 @@ from apps.core.exceptions import BusinessRuleViolation
 from apps.drivers.models import Vehicle, VehicleCondition
 from apps.notifications.models import Level, Notification
 from apps.notifications.services import notify
+from apps.reliability.jobs import tracked
 from apps.rides.models import Trip, TripStatus
 
 from .models import (
@@ -506,6 +507,7 @@ def _warned_recently(user, title: str, now: datetime) -> bool:
     ).exists()
 
 
+@tracked("vehicle-upkeep", every=timedelta(days=1))
 def sweep(*, now: datetime | None = None) -> dict:
     """Daily: warn drivers (and their fleet owner) about service and document deadlines."""
     now = now or timezone.now()

@@ -1,5 +1,6 @@
 import django_filters
 from django.contrib.auth import get_user_model
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, serializers, status
@@ -65,9 +66,9 @@ class TicketSerializer(serializers.ModelSerializer):
 
     def get_messages(self, ticket) -> list[dict]:
         request = self.context.get("request")
-        messages = ticket.messages.select_related("author")
+        messages = ticket.messages.all()  # prefetched with their authors by the view
         if request is None or request.user.is_end_user:
-            messages = messages.filter(is_internal=False)
+            messages = [m for m in messages if not m.is_internal]
         return TicketMessageSerializer(messages, many=True).data
 
 
@@ -119,7 +120,11 @@ class TicketViewSet(
 ):
     """Help tickets. Riders and drivers see their own; support staff work the queue."""
 
-    queryset = SupportTicket.objects.select_related("raised_by", "assigned_to", "trip")
+    queryset = SupportTicket.objects.select_related(
+        "raised_by", "assigned_to", "trip", "rating"
+    ).prefetch_related(
+        Prefetch("messages", queryset=TicketMessage.objects.select_related("author"))
+    )
     serializer_class = TicketSerializer
     filterset_class = TicketFilter
     search_fields = ["ticket_number", "subject", "raised_by__email", "trip__trip_number"]

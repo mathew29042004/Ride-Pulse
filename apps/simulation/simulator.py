@@ -644,7 +644,14 @@ class Simulator:
             self.last_weather = clock.monotonic()
         if clock.monotonic() - self.last_intel > 300:
             from apps.intelligence import alerts, demand, fraud
+            from apps.reliability import watchdog
 
+            watchdog.sweep()
+            from apps.reliability import jobs
+
+            jobs.check_slow()
+            if demand.cached_accuracy(None) is None:  # expires after 3 hours, then recomputed
+                demand.refresh_accuracy(None)
             raised = alerts.check()
             nudged = demand.nudge_drivers()
             cases = fraud.scan()

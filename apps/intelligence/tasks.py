@@ -26,3 +26,9 @@ def fraud_scan() -> dict:
 @shared_task(name="intelligence.refresh_weather")
 def refresh_weather() -> dict:
     return context.refresh_weather()
+
+
+@shared_task(name="intelligence.refresh_forecast_accuracy")
+def refresh_forecast_accuracy() -> dict:
+    """Keep the platform-wide forecast accuracy (and method choice) fresh."""
+    return demand.refresh_accuracy(None)

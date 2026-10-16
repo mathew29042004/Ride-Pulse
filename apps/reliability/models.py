@@ -118,3 +118,45 @@ class SecurityEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {self.email or self.ip}"
+
+
+# --- Background jobs and slow requests (Platform health) ---------------------------------------
+
+
+class JobStatus(models.Model):
+    """The latest run of each scheduled job: whoever runs it (Celery beat in production, the
+    simulator in the demo) records it here, so ops can see a job that stopped or keeps failing."""
+
+    name = models.CharField(max_length=60, unique=True)
+    every_seconds = models.PositiveIntegerField()
+    last_started_at = models.DateTimeField(null=True, blank=True)
+    last_finished_at = models.DateTimeField(null=True, blank=True)
+    last_duration_ms = models.PositiveIntegerField(default=0)
+    last_ok = models.BooleanField(default=True)
+    last_error = models.CharField(max_length=300, blank=True)
+    last_result = models.JSONField(default=dict, blank=True)
+    runs = models.PositiveBigIntegerField(default=0)
+    failures = models.PositiveBigIntegerField(default=0)
+    last_failed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class SlowRequest(models.Model):
+    """An API request slower than ``SLOW_REQUEST_MS`` (kept 7 days)."""
+
+    route = models.CharField(max_length=120, db_index=True)
+    method = models.CharField(max_length=8)
+    status = models.PositiveSmallIntegerField()
+    duration_ms = models.PositiveIntegerField()
+    at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-at"]
+
+    def __str__(self) -> str:
+        return f"{self.method} {self.route} {self.duration_ms} ms"

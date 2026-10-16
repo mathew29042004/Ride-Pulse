@@ -89,6 +89,7 @@ class TripFlag(models.TextChoices):
     LOW_RATING = "LOW_RATING", "Rated 2 stars or less"
     GPS_JUMP = "GPS_JUMP", "GPS jumped impossibly far (glitch or spoofing)"
     RIDE_CHECK = "RIDE_CHECK", "Ride Check escalated to the safety team"
+    ABANDONED = "ABANDONED", "Closed by the watchdog: the trip stopped moving"
 
 
 class ParcelCategory(models.TextChoices):

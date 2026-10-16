@@ -184,7 +184,6 @@ def churn_probability(model: dict, features: dict) -> float:
 def at_risk(*, limit: int = 50, now: datetime | None = None) -> list[dict]:
     from apps.riders.models import RiderProfile
     from apps.trust.models import ConsentPurpose
-    from apps.trust.privacy import has_consent
 
     model = load("churn")
     if model is None:
@@ -197,6 +196,9 @@ def at_risk(*, limit: int = 50, now: datetime | None = None) -> list[dict]:
         reverse=True,
     )[:limit]
     riders = RiderProfile.objects.select_related("user").in_bulk([rid for _, rid, _ in scored])
+    from apps.trust.privacy import consenting
+
+    opted_in = consenting([r.user_id for r in riders.values()], ConsentPurpose.MARKETING)
     rows = []
     for p, rider_id, f in scored:
         rider = riders.get(rider_id)
@@ -210,7 +212,7 @@ def at_risk(*, limit: int = 50, now: datetime | None = None) -> list[dict]:
                 "days_since_last": f["days_since_last"],
                 "trips_56d": f["trips_56d"],
                 "failed_56d": f["failed_56d"],
-                "can_message": has_consent(rider.user, ConsentPurpose.MARKETING),
+                "can_message": rider.user_id in opted_in,
             }
         )
     return rows

@@ -18,6 +18,8 @@ the four-week history hasn't seen yet.
 """
 
 from collections import defaultdict
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timedelta
 
 from django.db.models import Count
@@ -29,8 +31,10 @@ from apps.geo.distance import haversine_km
 from apps.geo.models import Zone
 from apps.notifications.models import Level
 from apps.notifications.services import notify
+from apps.reliability.jobs import tracked
 from apps.rides.models import Trip
 
+from . import context
 from .models import DemandNudge
 
 WEEK_WEIGHTS = (0.4, 0.3, 0.2, 0.1)
@@ -45,7 +49,53 @@ def _hour_start(at: datetime) -> datetime:
     return timezone.localtime(at).replace(minute=0, second=0, microsecond=0)
 
 
+_HOURLY: ContextVar[dict | None] = ContextVar("preloaded_hourly_counts", default=None)
+
+
+@contextmanager
+def _preloaded_counts(start: datetime, end: datetime, city_id: int | None):
+    """Trips per zone for every hour in [start, end), in one query, for the backtest (which
+    asks for the same hours again and again). Whole-hour windows are then answered from
+    memory; anything else still goes to the database."""
+    from django.db.models.functions import TruncHour
+
+    trips = Trip.objects.filter(
+        requested_at__gte=start, requested_at__lt=end, pickup_zone__isnull=False
+    )
+    if city_id:
+        trips = trips.filter(city_id=city_id)
+    hourly: dict[datetime, dict[int, int]] = defaultdict(dict)
+    for hour, zone, n in (
+        trips.annotate(hour=TruncHour("requested_at"))
+        .values_list("hour", "pickup_zone")
+        .annotate(n=Count("pk"))
+        .values_list("hour", "pickup_zone", "n")
+    ):
+        hourly[hour][zone] = n
+    token = _HOURLY.set({"range": (start, end, city_id), "hours": hourly})
+    try:
+        yield
+    finally:
+        _HOURLY.reset(token)
+
+
+def _from_memory(start: datetime, end: datetime, city_id: int | None) -> dict[int, int] | None:
+    memo = _HOURLY.get()
+    if memo is None:
+        return None
+    low, high, memo_city = memo["range"]
+    whole = start.minute == start.second == start.microsecond == 0 and end - start == timedelta(
+        hours=1
+    )
+    if memo_city != city_id or not whole or start < low or end > high:
+        return None
+    return dict(memo["hours"].get(start, {}))
+
+
 def _counts_by_zone(start: datetime, end: datetime, city_id: int | None) -> dict[int, int]:
+    remembered = _from_memory(start, end, city_id)
+    if remembered is not None:
+        return remembered
     trips = Trip.objects.filter(
         requested_at__gte=start, requested_at__lt=end, pickup_zone__isnull=False
     )
@@ -98,10 +148,17 @@ def _base_predict(*, city_id: int | None = None, now: datetime | None = None) ->
 
 
 def predict(
-    *, city_id: int | None = None, now: datetime | None = None, with_context: bool = True
+    *,
+    city_id: int | None = None,
+    now: datetime | None = None,
+    with_context: bool = True,
+    method: str = "blend",
 ) -> dict[int, float]:
-    """The forecast, lifted by rain (per city) and by events near each zone."""
+    """The forecast, lifted by rain (per city) and by events near each zone. ``method``
+    "seasonal" is the plain seasonal baseline (used where it has been forecasting better)."""
     now = now or timezone.now()
+    if method == "seasonal":
+        return _baseline(_hour_start(now) + timedelta(hours=1), city_id)
     base = _base_predict(city_id=city_id, now=now)
     if not with_context:
         return base
@@ -109,11 +166,10 @@ def predict(
 
     next_hour = _hour_start(now) + timedelta(hours=1)
     zones = {z.pk: z for z in Zone.objects.filter(pk__in=base)}
-    event_zones = Zone.objects.filter(
-        city_id__in=context.events_in_window(
-            next_hour, next_hour + timedelta(hours=1), city_id=city_id
-        ).values("city_id")
+    events = list(
+        context.events_in_window(next_hour, next_hour + timedelta(hours=1), city_id=city_id)
     )
+    event_zones = Zone.objects.filter(city_id__in={e.city_id for e in events})
     for zone in event_zones:
         zones.setdefault(zone.pk, zone)
     factors: dict[int, float] = {}
@@ -123,7 +179,7 @@ def predict(
             factors[zone.city_id] = context.weather_factor(
                 context.current_weather(zone.city_id, now=now)
             )
-        extra, _ = context.event_extra_trips(zone, next_hour)
+        extra, _ = context.event_extra_trips(zone, next_hour, events)
         value = base.get(pk, 0.0) * factors[zone.city_id] + extra
         if value > 0:
             result[pk] = value
@@ -144,13 +200,17 @@ def _free_drivers(city_id: int | None):
 def forecast(*, city_id: int | None = None, now: datetime | None = None, limit: int = 30) -> dict:
     """Zones ranked by expected shortage in the next hour."""
     now = now or timezone.now()
-    expected = predict(city_id=city_id, now=now)
+    method = active_method(city_id)
+    expected = predict(city_id=city_id, now=now, method=method)
     zones = Zone.objects.filter(pk__in=expected).select_related("city")
     drivers = _free_drivers(city_id)
     rows = []
     from . import context
 
     next_hour = _hour_start(now) + timedelta(hours=1)
+    events = list(
+        context.events_in_window(next_hour, next_hour + timedelta(hours=1), city_id=city_id)
+    )
     for zone in zones:
         trips = expected[zone.pk]
         near = sum(
@@ -173,7 +233,7 @@ def forecast(*, city_id: int | None = None, now: datetime | None = None, limit: 
                 "drivers_nearby": near,
                 "shortage": round(shortage, 2),
                 "status": "SHORT" if shortage >= 1.5 else "TIGHT" if shortage >= 1 else "OK",
-                "reasons": context.event_extra_trips(zone, next_hour)[1],
+                "reasons": context.event_extra_trips(zone, next_hour, events)[1],
             }
         )
     rows.sort(key=lambda r: (-r["shortage"], -r["expected_trips"]))
@@ -181,10 +241,12 @@ def forecast(*, city_id: int | None = None, now: datetime | None = None, limit: 
     return {
         "for_hour": next_hour.isoformat(),
         "total_expected": round(sum(r["expected_trips"] for r in rows)),
+        "method": method,
         "zones": rows[:limit],
     }
 
 
+@tracked("demand-nudges", every=timedelta(minutes=10))
 def nudge_drivers(*, now: datetime | None = None, max_zones: int = 10) -> int:
     """Tell free drivers near the worst-short zones where demand is about to rise."""
     now = now or timezone.now()
@@ -259,6 +321,14 @@ def backtest(*, hours: int = 24, now: datetime | None = None, city_id: int | Non
     """
     now = now or timezone.now()
     end = _hour_start(now)
+    with (
+        _preloaded_counts(end - timedelta(hours=hours + 1, weeks=len(WEEK_WEIGHTS)), end, city_id),
+        context.preloaded_weather(end - timedelta(hours=hours + 1), end),
+    ):
+        return _backtest(hours, end, city_id)
+
+
+def _backtest(hours: int, end: datetime, city_id: int | None) -> dict:
     errors = {"model": 0.0, "seasonal": 0.0, "naive": 0.0}
     trips = tested = 0
     for back in range(hours, 0, -1):
@@ -280,6 +350,41 @@ def backtest(*, hours: int = 24, now: datetime | None = None, city_id: int | Non
         return {"hours": 0, "trips": 0, "model": None, "seasonal": None, "naive": None}
     accuracy = {name: max(0.0, round(100 - 100 * err / trips, 1)) for name, err in errors.items()}
     return {"hours": tested, "trips": trips, **accuracy}
+
+
+METHOD_MARGIN = 3.0  # accuracy points the seasonal baseline must win by to take over
+
+
+def accuracy_key(city_id: int | None) -> str:
+    return f"intel:backtest:{city_id}"
+
+
+@tracked("forecast-accuracy", every=timedelta(minutes=30))
+def refresh_accuracy(city_id: int | None = None, *, now: datetime | None = None) -> dict:
+    """Backtest, remember the result, and choose the forecasting method for the city: the
+    full model unless the plain seasonal baseline has clearly been more accurate."""
+    from django.core.cache import cache
+
+    result = backtest(hours=72, now=now, city_id=city_id)
+    model, seasonal = result.get("model"), result.get("seasonal")
+    result["method"] = (
+        "seasonal"
+        if model is not None and seasonal is not None and seasonal - model >= METHOD_MARGIN
+        else "blend"
+    )
+    cache.set(accuracy_key(city_id), result, 3 * 3600)
+    return result
+
+
+def cached_accuracy(city_id: int | None) -> dict | None:
+    from django.core.cache import cache
+
+    return cache.get(accuracy_key(city_id))
+
+
+def active_method(city_id: int | None) -> str:
+    accuracy = cached_accuracy(city_id) or cached_accuracy(None)
+    return accuracy["method"] if accuracy else "blend"
 
 
 def demand_profile(*, city_id: int | None = None, days: int = 28) -> list[dict]:

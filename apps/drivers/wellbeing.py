@@ -22,6 +22,7 @@ from apps.core.conf import wellbeing_rules
 from apps.core.exceptions import BusinessRuleViolation
 from apps.notifications.models import Level
 from apps.notifications.services import notify
+from apps.reliability.jobs import tracked
 
 from .models import Availability, DriverProfile, DriverSession
 
@@ -291,6 +292,7 @@ def nudge_day_off(driver: DriverProfile, now: datetime) -> bool:
     return True
 
 
+@tracked("driver-wellbeing", every=timedelta(minutes=5))
 def sweep(now: datetime | None = None) -> dict:
     """Every few minutes: enforce breaks and the daily limit for idle online drivers, and
     nudge drivers who haven't had a day off."""

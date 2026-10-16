@@ -41,6 +41,7 @@ from apps.geo.distance import haversine_km
 from apps.geo.models import City
 from apps.geo.routing import eta_minutes
 from apps.realtime import broadcast
+from apps.reliability.jobs import tracked
 from apps.riders.teens import TEEN_MIN_RATING, TEEN_MIN_TRIPS
 
 from . import hungarian, packages
@@ -494,6 +495,7 @@ def expire_offers(*, now: datetime | None = None) -> int:
     return expired
 
 
+@tracked("dispatch-sweep", every=timedelta(seconds=10))
 def sweep(*, now: datetime | None = None) -> dict:
     """One dispatcher tick: time out stale offers and requests, then match open requests."""
     from .services import expire_request

@@ -199,12 +199,12 @@ class InsightsViewSet(BaseViewSet):
     def demand(self, request):
         city = request.query_params.get("city")
         city_id = int(city) if city and city.isdigit() else None
-        result = demand.forecast(city_id=city_id)
-        key = f"intel:backtest:{city_id}"
-        accuracy = cache.get(key)
+        accuracy = demand.cached_accuracy(city_id)
         if accuracy is None:
-            accuracy = demand.backtest(hours=72, city_id=city_id)
-            cache.set(key, accuracy, 1800)
+            # The backtest replays 72 hours: computed once here, then kept fresh in the
+            # background (every 30 minutes) so the page never waits for it again.
+            accuracy = demand.refresh_accuracy(city_id)
+        result = demand.forecast(city_id=city_id)
         result["accuracy"] = accuracy
         return Response(result)
 
@@ -274,7 +274,6 @@ class InsightsViewSet(BaseViewSet):
     def surge_policy(self, request):
         """Replay recorded demand and supply under candidate surge settings (GET), or turn the
         recommendation into a draft A/B test (POST)."""
-        from django.core.cache import cache
 
         from . import surge_policy
 

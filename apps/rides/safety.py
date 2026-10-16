@@ -28,6 +28,7 @@ from apps.geo.distance import haversine_km
 from apps.geo.google import decode_polyline
 from apps.notifications.models import Level
 from apps.notifications.services import notify
+from apps.reliability.jobs import tracked
 
 from .models import (
     RideCheck,
@@ -316,6 +317,7 @@ def _escalate(check: RideCheck, *, status: str, note: str, now: datetime) -> Rid
     return check
 
 
+@tracked("ride-checks", every=timedelta(minutes=1))
 def run_ride_checks(now: datetime | None = None) -> dict:
     """Raise new checks on trips in progress, then escalate the ones nobody answered."""
     now = now or timezone.now()
