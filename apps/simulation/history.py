@@ -158,9 +158,9 @@ class HistoryGenerator:
         trip = rides.mark_arrived(trip, driver=courier, now=t_arrive)
         t_start = t_arrive + timedelta(minutes=rng.uniform(1, 4))
         trip = rides.start_trip(trip, driver=courier, otp=trip.otp, now=t_start)
-        t_end = t_start + timedelta(
-            minutes=float(trip.estimated_duration_min) * rng.uniform(0.9, 1.2)
-        )
+        from .traffic import true_minutes
+
+        t_end = t_start + timedelta(minutes=true_minutes(trip, t_start, rng))
         drivers_svc.update_location(courier, lat=dropoff[0], lng=dropoff[1], now=t_end)
         rides.complete_delivery(
             trip,

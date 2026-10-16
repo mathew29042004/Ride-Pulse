@@ -586,6 +586,40 @@ Celery worker and beat, simulator).
   tests with coverage, the React build, Playwright browser tests, a dependency vulnerability
   audit (pip-audit, npm audit), the dbt project, and the Docker image.
 
+### Models and experiments (`apps/experiments`, `data/ml`)
+
+Ops console → **Models & experiments** (`/ops/models`).
+
+* **Feature flags**: on for a percentage of people by a stable hash of their id, so raising the
+  rollout only adds people. Turning a flag off is an instant kill switch. Defaults: `share-rides`,
+  `rider-weather-alerts`, `driver-hot-zones`.
+* **A/B tests**: each person stays in one variant. Seeing a price is an *exposure*, and booking
+  right after is a *conversion*. Results use a two-proportion z-test with a 95% confidence
+  interval, Welch's t-test on revenue, a sample-size target, and a sample-ratio-mismatch check
+  that flags broken assignment. The verdict says "keep running" until there is enough data.
+* **ETA model** (gradient-boosted trees): learns how far real ride times differ from the app's
+  estimate (city, time of week, rain, centre, airport, vehicle). It is tested on the newest 20%
+  of rides (a time split, never shuffled). On the demo data the error is 4.5 min against 9.8 min
+  for the estimate alone (54% better). The ride's true time comes from a hidden traffic model in
+  the simulator (`apps/simulation/traffic.py`), which the app never reads.
+* **Churn model** (logistic regression): the chance an active rider takes no trip in the next
+  28 days. AUC is 0.90 on the newest weekly snapshot. The model card also shows the obvious rule
+  "days since last trip" (0.91), which is honestly slightly better on simulated riders, whose
+  leaving depends mostly on recency. At-risk riders can be sent a win-back offer, but only those
+  who opted in to offers (DPDP consent).
+* **Surge optimiser**: replays the recorded zone snapshots under 20 surge settings, using stated
+  rider and driver responses. On the demo data a 1.5x cap completes about 15% more trips for
+  about 1% less revenue. It is a model of the market, so **Propose A/B test** turns it into the
+  draft `surge-cap` experiment. The demo seed starts that test, and the booking flow charges the
+  capped price to the treatment group.
+* **Training**: `make data-run` extracts, builds dbt (including `ml_eta_training` and
+  `ml_rider_churn`), trains, and exports `data/models/*.json`. The app scores those files in plain
+  Python (a tree walker and the logistic formula), with no scikit-learn on the server.
+* **Governed metrics**: `data/dbt/models/metrics/semantic.yml` defines the business metrics
+  once with MetricFlow (`cd data/dbt && ../.venv/bin/mf validate-configs`).
+* **Extract safety**: incremental tables re-check recent ids for rows committed late, and a
+  reset app database is detected, so old batches never hide new rows.
+
 ### Production checklist
 * `python manage.py check --deploy` passes with `config.settings.prod` (HSTS, secure cookies,
   SSL redirect, `X-Frame-Options`, content-type sniffing off).

@@ -97,7 +97,7 @@ data-setup: ## Create data/.venv with DuckDB, dbt and Dagster (separate from the
 	uv pip install --python $(DATA_PY) -r data/requirements.in
 	cd data/dbt && ../.venv/bin/dbt parse --profiles-dir . -q
 
-data-run: ## Run the pipeline once: extract -> dbt build + tests -> insights report
+data-run: ## Run the pipeline once: extract -> dbt build + tests -> insights report -> train models
 	cd data && .venv/bin/python -m pipeline.run
 
 data-ui: ## Dagster UI at http://localhost:3000 (pipeline graph, runs, daily schedule)

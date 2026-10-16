@@ -1,1134 +1,1155 @@
 {
- "generated_at": "2026-10-14T15:08:35.713686+00:00",
+ "generated_at": "2026-10-16T04:01:01.444729+00:00",
  "headline": {
-  "requests": 15670,
-  "completed": 12604,
-  "gross_bookings": 3068458.02,
-  "commission": 532300.46,
-  "driver_earnings": 2166302.37,
+  "requests": 16256,
+  "completed": 13124,
+  "gross_bookings": 3367580.28,
+  "commission": 584690.66,
+  "driver_earnings": 2384640.65,
   "cities": 33,
-  "first_day": "2026-08-15",
-  "last_day": "2026-10-14",
-  "parcels": 788,
-  "co2_saved_tonnes": 6.87
+  "first_day": "2026-08-17",
+  "last_day": "2026-10-16",
+  "parcels": 1028,
+  "co2_saved_tonnes": 8.54
  },
  "daily": [
   {
-   "date": "2026-08-15",
-   "requests": 269,
-   "completed": 231,
-   "gross_bookings": 47633.0,
-   "parcels": 13
-  },
-  {
-   "date": "2026-08-16",
-   "requests": 186,
-   "completed": 159,
-   "gross_bookings": 31893.02,
-   "parcels": 7
-  },
-  {
    "date": "2026-08-17",
-   "requests": 165,
-   "completed": 142,
-   "gross_bookings": 36150.76,
-   "parcels": 11
+   "requests": 217,
+   "completed": 197,
+   "gross_bookings": 43486.61,
+   "parcels": 14
   },
   {
    "date": "2026-08-18",
-   "requests": 197,
-   "completed": 161,
-   "gross_bookings": 33880.75,
-   "parcels": 10
+   "requests": 267,
+   "completed": 235,
+   "gross_bookings": 49552.35,
+   "parcels": 25
   },
   {
    "date": "2026-08-19",
-   "requests": 167,
-   "completed": 141,
-   "gross_bookings": 28733.26,
-   "parcels": 12
+   "requests": 199,
+   "completed": 176,
+   "gross_bookings": 36377.26,
+   "parcels": 9
   },
   {
    "date": "2026-08-20",
-   "requests": 172,
-   "completed": 130,
-   "gross_bookings": 25812.37,
-   "parcels": 6
+   "requests": 231,
+   "completed": 197,
+   "gross_bookings": 47596.99,
+   "parcels": 16
   },
   {
    "date": "2026-08-21",
-   "requests": 159,
-   "completed": 126,
-   "gross_bookings": 23983.75,
-   "parcels": 13
+   "requests": 211,
+   "completed": 178,
+   "gross_bookings": 38398.47,
+   "parcels": 16
   },
   {
    "date": "2026-08-22",
-   "requests": 217,
-   "completed": 174,
-   "gross_bookings": 36372.57,
-   "parcels": 12
+   "requests": 237,
+   "completed": 205,
+   "gross_bookings": 46328.97,
+   "parcels": 14
   },
   {
    "date": "2026-08-23",
-   "requests": 192,
-   "completed": 152,
-   "gross_bookings": 30764.41,
-   "parcels": 18
-  },
-  {
-   "date": "2026-08-24",
-   "requests": 195,
-   "completed": 166,
-   "gross_bookings": 37517.73,
+   "requests": 251,
+   "completed": 221,
+   "gross_bookings": 52634.3,
    "parcels": 12
   },
   {
+   "date": "2026-08-24",
+   "requests": 232,
+   "completed": 191,
+   "gross_bookings": 46059.63,
+   "parcels": 14
+  },
+  {
    "date": "2026-08-25",
-   "requests": 161,
-   "completed": 145,
-   "gross_bookings": 27670.1,
-   "parcels": 11
+   "requests": 227,
+   "completed": 191,
+   "gross_bookings": 41579.96,
+   "parcels": 16
   },
   {
    "date": "2026-08-26",
-   "requests": 188,
-   "completed": 161,
-   "gross_bookings": 35659.89,
-   "parcels": 17
-  },
-  {
-   "date": "2026-08-27",
-   "requests": 197,
-   "completed": 159,
-   "gross_bookings": 30206.38,
+   "requests": 252,
+   "completed": 203,
+   "gross_bookings": 53435.45,
    "parcels": 15
   },
   {
+   "date": "2026-08-27",
+   "requests": 243,
+   "completed": 207,
+   "gross_bookings": 50579.01,
+   "parcels": 14
+  },
+  {
    "date": "2026-08-28",
-   "requests": 159,
-   "completed": 127,
-   "gross_bookings": 28110.28,
-   "parcels": 8
+   "requests": 250,
+   "completed": 209,
+   "gross_bookings": 48869.47,
+   "parcels": 17
   },
   {
    "date": "2026-08-29",
-   "requests": 255,
-   "completed": 217,
-   "gross_bookings": 39908.66,
+   "requests": 234,
+   "completed": 189,
+   "gross_bookings": 40744.79,
    "parcels": 17
   },
   {
    "date": "2026-08-30",
-   "requests": 232,
-   "completed": 203,
-   "gross_bookings": 43857.65,
-   "parcels": 15
-  },
-  {
-   "date": "2026-08-31",
-   "requests": 180,
-   "completed": 151,
-   "gross_bookings": 30398.91,
-   "parcels": 9
-  },
-  {
-   "date": "2026-09-01",
-   "requests": 206,
-   "completed": 170,
-   "gross_bookings": 39862.18,
-   "parcels": 11
-  },
-  {
-   "date": "2026-09-02",
-   "requests": 194,
-   "completed": 167,
-   "gross_bookings": 32404.43,
-   "parcels": 15
-  },
-  {
-   "date": "2026-09-03",
-   "requests": 188,
-   "completed": 159,
-   "gross_bookings": 37318.34,
-   "parcels": 11
-  },
-  {
-   "date": "2026-09-04",
-   "requests": 199,
-   "completed": 175,
-   "gross_bookings": 41573.36,
+   "requests": 257,
+   "completed": 208,
+   "gross_bookings": 47721.47,
    "parcels": 12
   },
   {
-   "date": "2026-09-05",
-   "requests": 223,
-   "completed": 187,
-   "gross_bookings": 35098.32,
-   "parcels": 17
-  },
-  {
-   "date": "2026-09-06",
-   "requests": 201,
-   "completed": 166,
-   "gross_bookings": 33427.52,
-   "parcels": 13
-  },
-  {
-   "date": "2026-09-07",
-   "requests": 205,
-   "completed": 181,
-   "gross_bookings": 35583.02,
-   "parcels": 14
-  },
-  {
-   "date": "2026-09-08",
-   "requests": 186,
-   "completed": 160,
-   "gross_bookings": 33638.91,
-   "parcels": 21
-  },
-  {
-   "date": "2026-09-09",
-   "requests": 181,
-   "completed": 153,
-   "gross_bookings": 35965.74,
-   "parcels": 9
-  },
-  {
-   "date": "2026-09-10",
-   "requests": 199,
-   "completed": 173,
-   "gross_bookings": 34067.29,
-   "parcels": 14
-  },
-  {
-   "date": "2026-09-11",
-   "requests": 206,
-   "completed": 173,
-   "gross_bookings": 35967.43,
-   "parcels": 16
-  },
-  {
-   "date": "2026-09-12",
-   "requests": 227,
-   "completed": 186,
-   "gross_bookings": 37140.49,
+   "date": "2026-08-31",
+   "requests": 250,
+   "completed": 210,
+   "gross_bookings": 41842.13,
    "parcels": 19
   },
   {
-   "date": "2026-09-13",
-   "requests": 235,
-   "completed": 193,
-   "gross_bookings": 41780.41,
-   "parcels": 15
+   "date": "2026-09-01",
+   "requests": 214,
+   "completed": 176,
+   "gross_bookings": 38624.57,
+   "parcels": 13
   },
   {
-   "date": "2026-09-14",
-   "requests": 204,
-   "completed": 177,
-   "gross_bookings": 38442.0,
-   "parcels": 9
+   "date": "2026-09-02",
+   "requests": 258,
+   "completed": 205,
+   "gross_bookings": 49423.37,
+   "parcels": 22
   },
   {
-   "date": "2026-09-15",
-   "requests": 201,
-   "completed": 166,
-   "gross_bookings": 31573.32,
+   "date": "2026-09-03",
+   "requests": 282,
+   "completed": 226,
+   "gross_bookings": 46284.23,
+   "parcels": 26
+  },
+  {
+   "date": "2026-09-04",
+   "requests": 269,
+   "completed": 224,
+   "gross_bookings": 49782.42,
    "parcels": 11
   },
   {
-   "date": "2026-09-16",
-   "requests": 209,
-   "completed": 172,
-   "gross_bookings": 38513.22,
+   "date": "2026-09-05",
+   "requests": 261,
+   "completed": 223,
+   "gross_bookings": 49335.24,
    "parcels": 8
   },
   {
+   "date": "2026-09-06",
+   "requests": 287,
+   "completed": 233,
+   "gross_bookings": 51348.87,
+   "parcels": 21
+  },
+  {
+   "date": "2026-09-07",
+   "requests": 266,
+   "completed": 227,
+   "gross_bookings": 51739.75,
+   "parcels": 20
+  },
+  {
+   "date": "2026-09-08",
+   "requests": 221,
+   "completed": 184,
+   "gross_bookings": 44590.85,
+   "parcels": 17
+  },
+  {
+   "date": "2026-09-09",
+   "requests": 231,
+   "completed": 196,
+   "gross_bookings": 41299.7,
+   "parcels": 18
+  },
+  {
+   "date": "2026-09-10",
+   "requests": 266,
+   "completed": 228,
+   "gross_bookings": 52129.55,
+   "parcels": 15
+  },
+  {
+   "date": "2026-09-11",
+   "requests": 247,
+   "completed": 206,
+   "gross_bookings": 47166.54,
+   "parcels": 18
+  },
+  {
+   "date": "2026-09-12",
+   "requests": 298,
+   "completed": 241,
+   "gross_bookings": 52787.44,
+   "parcels": 20
+  },
+  {
+   "date": "2026-09-13",
+   "requests": 274,
+   "completed": 232,
+   "gross_bookings": 44002.25,
+   "parcels": 21
+  },
+  {
+   "date": "2026-09-14",
+   "requests": 228,
+   "completed": 192,
+   "gross_bookings": 44955.05,
+   "parcels": 19
+  },
+  {
+   "date": "2026-09-15",
+   "requests": 224,
+   "completed": 182,
+   "gross_bookings": 45217.54,
+   "parcels": 16
+  },
+  {
+   "date": "2026-09-16",
+   "requests": 227,
+   "completed": 183,
+   "gross_bookings": 46911.2,
+   "parcels": 18
+  },
+  {
    "date": "2026-09-17",
-   "requests": 237,
-   "completed": 199,
-   "gross_bookings": 43156.58,
+   "requests": 273,
+   "completed": 223,
+   "gross_bookings": 52066.69,
    "parcels": 15
   },
   {
    "date": "2026-09-18",
-   "requests": 205,
-   "completed": 172,
-   "gross_bookings": 33825.37,
-   "parcels": 12
+   "requests": 207,
+   "completed": 169,
+   "gross_bookings": 35770.89,
+   "parcels": 15
   },
   {
    "date": "2026-09-19",
-   "requests": 227,
-   "completed": 195,
-   "gross_bookings": 42385.78,
-   "parcels": 12
+   "requests": 267,
+   "completed": 209,
+   "gross_bookings": 45528.94,
+   "parcels": 19
   },
   {
    "date": "2026-09-20",
-   "requests": 257,
-   "completed": 211,
-   "gross_bookings": 41741.46,
-   "parcels": 16
+   "requests": 250,
+   "completed": 203,
+   "gross_bookings": 44616.84,
+   "parcels": 17
   },
   {
    "date": "2026-09-21",
-   "requests": 196,
-   "completed": 157,
-   "gross_bookings": 28060.69,
-   "parcels": 15
-  },
-  {
-   "date": "2026-09-22",
-   "requests": 259,
-   "completed": 229,
-   "gross_bookings": 56280.32,
-   "parcels": 22
-  },
-  {
-   "date": "2026-09-23",
-   "requests": 294,
-   "completed": 254,
-   "gross_bookings": 69606.35,
-   "parcels": 15
-  },
-  {
-   "date": "2026-09-24",
-   "requests": 248,
-   "completed": 202,
-   "gross_bookings": 49920.67,
-   "parcels": 6
-  },
-  {
-   "date": "2026-09-25",
-   "requests": 240,
-   "completed": 203,
-   "gross_bookings": 56536.01,
-   "parcels": 5
-  },
-  {
-   "date": "2026-09-26",
-   "requests": 321,
-   "completed": 269,
-   "gross_bookings": 69447.32,
-   "parcels": 11
-  },
-  {
-   "date": "2026-09-27",
-   "requests": 276,
-   "completed": 227,
-   "gross_bookings": 60730.73,
-   "parcels": 15
-  },
-  {
-   "date": "2026-09-28",
-   "requests": 274,
-   "completed": 240,
-   "gross_bookings": 66618.11,
-   "parcels": 12
-  },
-  {
-   "date": "2026-09-29",
-   "requests": 257,
-   "completed": 219,
-   "gross_bookings": 60487.51,
+   "requests": 266,
+   "completed": 210,
+   "gross_bookings": 44372.33,
    "parcels": 16
   },
   {
-   "date": "2026-09-30",
-   "requests": 236,
-   "completed": 200,
-   "gross_bookings": 54927.64,
-   "parcels": 10
-  },
-  {
-   "date": "2026-10-01",
-   "requests": 264,
-   "completed": 220,
-   "gross_bookings": 59841.33,
-   "parcels": 11
-  },
-  {
-   "date": "2026-10-02",
-   "requests": 283,
-   "completed": 242,
-   "gross_bookings": 60512.44,
-   "parcels": 13
-  },
-  {
-   "date": "2026-10-03",
-   "requests": 273,
-   "completed": 237,
-   "gross_bookings": 59516.8,
-   "parcels": 10
-  },
-  {
-   "date": "2026-10-04",
-   "requests": 270,
-   "completed": 236,
-   "gross_bookings": 64003.52,
+   "date": "2026-09-22",
+   "requests": 258,
+   "completed": 194,
+   "gross_bookings": 42039.4,
    "parcels": 20
   },
   {
+   "date": "2026-09-23",
+   "requests": 261,
+   "completed": 204,
+   "gross_bookings": 43765.91,
+   "parcels": 22
+  },
+  {
+   "date": "2026-09-24",
+   "requests": 229,
+   "completed": 180,
+   "gross_bookings": 39500.15,
+   "parcels": 15
+  },
+  {
+   "date": "2026-09-25",
+   "requests": 312,
+   "completed": 249,
+   "gross_bookings": 78157.52,
+   "parcels": 20
+  },
+  {
+   "date": "2026-09-26",
+   "requests": 349,
+   "completed": 278,
+   "gross_bookings": 83025.36,
+   "parcels": 14
+  },
+  {
+   "date": "2026-09-27",
+   "requests": 359,
+   "completed": 287,
+   "gross_bookings": 85259.71,
+   "parcels": 24
+  },
+  {
+   "date": "2026-09-28",
+   "requests": 349,
+   "completed": 266,
+   "gross_bookings": 81507.03,
+   "parcels": 23
+  },
+  {
+   "date": "2026-09-29",
+   "requests": 330,
+   "completed": 267,
+   "gross_bookings": 89188.11,
+   "parcels": 21
+  },
+  {
+   "date": "2026-09-30",
+   "requests": 256,
+   "completed": 208,
+   "gross_bookings": 60605.56,
+   "parcels": 11
+  },
+  {
+   "date": "2026-10-01",
+   "requests": 258,
+   "completed": 204,
+   "gross_bookings": 63430.84,
+   "parcels": 15
+  },
+  {
+   "date": "2026-10-02",
+   "requests": 269,
+   "completed": 207,
+   "gross_bookings": 60580.34,
+   "parcels": 12
+  },
+  {
+   "date": "2026-10-03",
+   "requests": 314,
+   "completed": 246,
+   "gross_bookings": 77580.59,
+   "parcels": 14
+  },
+  {
+   "date": "2026-10-04",
+   "requests": 322,
+   "completed": 264,
+   "gross_bookings": 87117.8,
+   "parcels": 18
+  },
+  {
    "date": "2026-10-05",
-   "requests": 291,
-   "completed": 242,
-   "gross_bookings": 58403.29,
-   "parcels": 13
+   "requests": 309,
+   "completed": 238,
+   "gross_bookings": 70637.25,
+   "parcels": 19
   },
   {
    "date": "2026-10-06",
-   "requests": 315,
-   "completed": 268,
-   "gross_bookings": 70017.44,
-   "parcels": 12
+   "requests": 331,
+   "completed": 260,
+   "gross_bookings": 80344.86,
+   "parcels": 16
   },
   {
    "date": "2026-10-07",
-   "requests": 288,
-   "completed": 248,
-   "gross_bookings": 67256.39,
-   "parcels": 7
+   "requests": 305,
+   "completed": 224,
+   "gross_bookings": 65971.9,
+   "parcels": 20
   },
   {
    "date": "2026-10-08",
-   "requests": 284,
-   "completed": 238,
-   "gross_bookings": 60728.08,
-   "parcels": 12
+   "requests": 347,
+   "completed": 267,
+   "gross_bookings": 81997.26,
+   "parcels": 18
   },
   {
    "date": "2026-10-09",
    "requests": 263,
-   "completed": 229,
-   "gross_bookings": 57954.9,
-   "parcels": 7
+   "completed": 196,
+   "gross_bookings": 62256.94,
+   "parcels": 13
   },
   {
    "date": "2026-10-10",
-   "requests": 303,
-   "completed": 256,
-   "gross_bookings": 66032.38,
-   "parcels": 9
-  },
-  {
-   "date": "2026-10-11",
-   "requests": 288,
-   "completed": 238,
-   "gross_bookings": 57105.52,
-   "parcels": 12
-  },
-  {
-   "date": "2026-10-12",
-   "requests": 290,
-   "completed": 238,
-   "gross_bookings": 50576.11,
-   "parcels": 18
-  },
-  {
-   "date": "2026-10-13",
-   "requests": 1489,
-   "completed": 916,
-   "gross_bookings": 325344.09,
+   "requests": 346,
+   "completed": 273,
+   "gross_bookings": 80829.48,
    "parcels": 19
   },
   {
+   "date": "2026-10-11",
+   "requests": 381,
+   "completed": 296,
+   "gross_bookings": 86252.46,
+   "parcels": 23
+  },
+  {
+   "date": "2026-10-12",
+   "requests": 344,
+   "completed": 266,
+   "gross_bookings": 76437.02,
+   "parcels": 20
+  },
+  {
+   "date": "2026-10-13",
+   "requests": 276,
+   "completed": 216,
+   "gross_bookings": 67498.9,
+   "parcels": 17
+  },
+  {
    "date": "2026-10-14",
-   "requests": 687,
-   "completed": 316,
-   "gross_bookings": 126531.72,
-   "parcels": 22
+   "requests": 264,
+   "completed": 206,
+   "gross_bookings": 62465.2,
+   "parcels": 18
+  },
+  {
+   "date": "2026-10-15",
+   "requests": 305,
+   "completed": 239,
+   "gross_bookings": 77969.57,
+   "parcels": 17
+  },
+  {
+   "date": "2026-10-16",
+   "requests": 45,
+   "completed": 0,
+   "gross_bookings": 0.0,
+   "parcels": 4
   }
  ],
  "cities": [
   {
    "city": "Bengaluru",
    "state": "Karnataka",
-   "requests": 1989,
-   "completed": 1543,
-   "completion_rate": 0.776,
-   "gross_bookings": 711205.06,
-   "avg_pickup_minutes": 7.6
+   "requests": 1992,
+   "completed": 1627,
+   "completion_rate": 0.817,
+   "gross_bookings": 738279.58,
+   "avg_pickup_minutes": 7.5
   },
   {
    "city": "Chennai",
    "state": "Tamil Nadu",
-   "requests": 1852,
-   "completed": 1442,
-   "completion_rate": 0.779,
-   "gross_bookings": 508624.46,
-   "avg_pickup_minutes": 7.9
+   "requests": 2067,
+   "completed": 1694,
+   "completion_rate": 0.82,
+   "gross_bookings": 622871.14,
+   "avg_pickup_minutes": 7.5
   },
   {
    "city": "Kochi",
    "state": "Kerala",
-   "requests": 723,
-   "completed": 594,
-   "completion_rate": 0.822,
-   "gross_bookings": 186824.34,
-   "avg_pickup_minutes": 7.6
-  },
-  {
-   "city": "Coimbatore",
-   "state": "Tamil Nadu",
-   "requests": 1047,
-   "completed": 726,
-   "completion_rate": 0.693,
-   "gross_bookings": 181545.48,
-   "avg_pickup_minutes": 7.8
+   "requests": 716,
+   "completed": 573,
+   "completion_rate": 0.8,
+   "gross_bookings": 205439.51,
+   "avg_pickup_minutes": 7.7
   },
   {
    "city": "Visakhapatnam",
    "state": "Andhra Pradesh",
-   "requests": 757,
-   "completed": 661,
-   "completion_rate": 0.873,
-   "gross_bookings": 162441.42,
-   "avg_pickup_minutes": 7.6
+   "requests": 737,
+   "completed": 542,
+   "completion_rate": 0.735,
+   "gross_bookings": 148439.6,
+   "avg_pickup_minutes": 7.4
   },
   {
    "city": "Thiruvananthapuram",
    "state": "Kerala",
-   "requests": 589,
-   "completed": 515,
-   "completion_rate": 0.874,
-   "gross_bookings": 123668.57,
-   "avg_pickup_minutes": 7.8
+   "requests": 612,
+   "completed": 523,
+   "completion_rate": 0.855,
+   "gross_bookings": 146902.1,
+   "avg_pickup_minutes": 7.1
+  },
+  {
+   "city": "Coimbatore",
+   "state": "Tamil Nadu",
+   "requests": 892,
+   "completed": 695,
+   "completion_rate": 0.779,
+   "gross_bookings": 141759.97,
+   "avg_pickup_minutes": 7.3
+  },
+  {
+   "city": "Kozhikode",
+   "state": "Kerala",
+   "requests": 492,
+   "completed": 396,
+   "completion_rate": 0.805,
+   "gross_bookings": 124552.01,
+   "avg_pickup_minutes": 7.5
   },
   {
    "city": "Vijayawada",
    "state": "Andhra Pradesh",
-   "requests": 628,
-   "completed": 505,
-   "completion_rate": 0.804,
-   "gross_bookings": 108453.54,
+   "requests": 658,
+   "completed": 487,
+   "completion_rate": 0.74,
+   "gross_bookings": 115720.68,
    "avg_pickup_minutes": 7.2
   },
   {
    "city": "Madurai",
    "state": "Tamil Nadu",
-   "requests": 617,
-   "completed": 539,
-   "completion_rate": 0.874,
-   "gross_bookings": 103456.53,
-   "avg_pickup_minutes": 7.8
+   "requests": 634,
+   "completed": 503,
+   "completion_rate": 0.793,
+   "gross_bookings": 105947.0,
+   "avg_pickup_minutes": 7.5
   },
   {
    "city": "Mangaluru",
    "state": "Karnataka",
-   "requests": 447,
-   "completed": 378,
-   "completion_rate": 0.846,
-   "gross_bookings": 99641.11,
-   "avg_pickup_minutes": 7.9
-  },
-  {
-   "city": "Hubballi-Dharwad",
-   "state": "Karnataka",
-   "requests": 412,
-   "completed": 360,
-   "completion_rate": 0.874,
-   "gross_bookings": 87332.89,
-   "avg_pickup_minutes": 7.8
+   "requests": 440,
+   "completed": 336,
+   "completion_rate": 0.764,
+   "gross_bookings": 100067.67,
+   "avg_pickup_minutes": 7.7
   },
   {
    "city": "Mysuru",
    "state": "Karnataka",
-   "requests": 573,
-   "completed": 498,
-   "completion_rate": 0.869,
-   "gross_bookings": 86575.83,
-   "avg_pickup_minutes": 7.7
+   "requests": 582,
+   "completed": 491,
+   "completion_rate": 0.844,
+   "gross_bookings": 97881.03,
+   "avg_pickup_minutes": 7.2
   },
   {
-   "city": "Kozhikode",
-   "state": "Kerala",
-   "requests": 415,
-   "completed": 262,
-   "completion_rate": 0.631,
-   "gross_bookings": 83342.22,
-   "avg_pickup_minutes": 7.6
+   "city": "Hubballi-Dharwad",
+   "state": "Karnataka",
+   "requests": 467,
+   "completed": 365,
+   "completion_rate": 0.782,
+   "gross_bookings": 95690.75,
+   "avg_pickup_minutes": 7.3
   },
   {
    "city": "Tirupati",
    "state": "Andhra Pradesh",
-   "requests": 408,
-   "completed": 366,
-   "completion_rate": 0.897,
-   "gross_bookings": 81458.65,
-   "avg_pickup_minutes": 7.4
+   "requests": 428,
+   "completed": 361,
+   "completion_rate": 0.843,
+   "gross_bookings": 82111.11,
+   "avg_pickup_minutes": 7.8
   },
   {
    "city": "Tiruchirappalli",
    "state": "Tamil Nadu",
-   "requests": 452,
-   "completed": 400,
-   "completion_rate": 0.885,
-   "gross_bookings": 66437.29,
-   "avg_pickup_minutes": 7.6
+   "requests": 482,
+   "completed": 376,
+   "completion_rate": 0.78,
+   "gross_bookings": 74719.64,
+   "avg_pickup_minutes": 7.7
   },
   {
    "city": "Rajamahendravaram",
    "state": "Andhra Pradesh",
-   "requests": 244,
+   "requests": 294,
    "completed": 211,
-   "completion_rate": 0.865,
-   "gross_bookings": 40407.92,
-   "avg_pickup_minutes": 7.9
+   "completion_rate": 0.718,
+   "gross_bookings": 45932.26,
+   "avg_pickup_minutes": 7.6
+  },
+  {
+   "city": "Belagavi",
+   "state": "Karnataka",
+   "requests": 260,
+   "completed": 220,
+   "completion_rate": 0.846,
+   "gross_bookings": 40345.55,
+   "avg_pickup_minutes": 8.0
   },
   {
    "city": "Kalaburagi",
    "state": "Karnataka",
-   "requests": 248,
-   "completed": 197,
-   "completion_rate": 0.794,
-   "gross_bookings": 35808.51,
-   "avg_pickup_minutes": 7.8
-  },
-  {
-   "city": "Salem",
-   "state": "Tamil Nadu",
-   "requests": 246,
-   "completed": 228,
-   "completion_rate": 0.927,
-   "gross_bookings": 34441.64,
+   "requests": 268,
+   "completed": 218,
+   "completion_rate": 0.813,
+   "gross_bookings": 39923.85,
    "avg_pickup_minutes": 7.7
   },
   {
    "city": "Thoothukudi",
    "state": "Tamil Nadu",
-   "requests": 219,
-   "completed": 158,
-   "completion_rate": 0.721,
-   "gross_bookings": 33157.55,
-   "avg_pickup_minutes": 7.3
+   "requests": 217,
+   "completed": 167,
+   "completion_rate": 0.77,
+   "gross_bookings": 37667.39,
+   "avg_pickup_minutes": 6.7
   },
   {
    "city": "Kollam",
    "state": "Kerala",
-   "requests": 279,
-   "completed": 228,
-   "completion_rate": 0.817,
-   "gross_bookings": 31007.56,
+   "requests": 291,
+   "completed": 237,
+   "completion_rate": 0.814,
+   "gross_bookings": 37663.11,
    "avg_pickup_minutes": 8.1
   },
   {
-   "city": "Vellore",
+   "city": "Salem",
    "state": "Tamil Nadu",
-   "requests": 268,
-   "completed": 237,
-   "completion_rate": 0.884,
-   "gross_bookings": 30735.56,
-   "avg_pickup_minutes": 7.7
-  },
-  {
-   "city": "Guntur",
-   "state": "Andhra Pradesh",
-   "requests": 297,
-   "completed": 268,
-   "completion_rate": 0.902,
-   "gross_bookings": 29800.18,
-   "avg_pickup_minutes": 7.5
-  },
-  {
-   "city": "Belagavi",
-   "state": "Karnataka",
-   "requests": 228,
-   "completed": 141,
-   "completion_rate": 0.618,
-   "gross_bookings": 24813.66,
+   "requests": 256,
+   "completed": 220,
+   "completion_rate": 0.859,
+   "gross_bookings": 36945.86,
    "avg_pickup_minutes": 7.7
   },
   {
    "city": "Tirunelveli",
    "state": "Tamil Nadu",
-   "requests": 240,
-   "completed": 210,
+   "requests": 281,
+   "completed": 246,
    "completion_rate": 0.875,
-   "gross_bookings": 23798.48,
-   "avg_pickup_minutes": 7.1
+   "gross_bookings": 31838.2,
+   "avg_pickup_minutes": 7.6
+  },
+  {
+   "city": "Guntur",
+   "state": "Andhra Pradesh",
+   "requests": 269,
+   "completed": 226,
+   "completion_rate": 0.84,
+   "gross_bookings": 28589.93,
+   "avg_pickup_minutes": 7.6
+  },
+  {
+   "city": "Vellore",
+   "state": "Tamil Nadu",
+   "requests": 254,
+   "completed": 194,
+   "completion_rate": 0.764,
+   "gross_bookings": 27679.05,
+   "avg_pickup_minutes": 7.8
+  },
+  {
+   "city": "Thrissur",
+   "state": "Kerala",
+   "requests": 274,
+   "completed": 236,
+   "completion_rate": 0.861,
+   "gross_bookings": 27253.74,
+   "avg_pickup_minutes": 7.7
   },
   {
    "city": "Davanagere",
    "state": "Karnataka",
-   "requests": 249,
-   "completed": 228,
-   "completion_rate": 0.916,
-   "gross_bookings": 23353.32,
-   "avg_pickup_minutes": 6.8
+   "requests": 299,
+   "completed": 241,
+   "completion_rate": 0.806,
+   "gross_bookings": 26435.85,
+   "avg_pickup_minutes": 7.6
   },
   {
-   "city": "Nellore",
+   "city": "Kakinada",
    "state": "Andhra Pradesh",
-   "requests": 256,
-   "completed": 224,
-   "completion_rate": 0.875,
-   "gross_bookings": 21755.76,
-   "avg_pickup_minutes": 7.9
-  },
-  {
-   "city": "Erode",
-   "state": "Tamil Nadu",
-   "requests": 257,
-   "completed": 229,
-   "completion_rate": 0.891,
-   "gross_bookings": 21594.14,
+   "requests": 239,
+   "completed": 209,
+   "completion_rate": 0.874,
+   "gross_bookings": 25699.09,
    "avg_pickup_minutes": 7.8
   },
   {
-   "city": "Anantapur",
-   "state": "Andhra Pradesh",
+   "city": "Thanjavur",
+   "state": "Tamil Nadu",
    "requests": 250,
-   "completed": 225,
-   "completion_rate": 0.9,
-   "gross_bookings": 21473.9,
+   "completed": 202,
+   "completion_rate": 0.808,
+   "gross_bookings": 25427.96,
    "avg_pickup_minutes": 7.6
   },
   {
    "city": "Tiruppur",
    "state": "Tamil Nadu",
-   "requests": 239,
-   "completed": 205,
-   "completion_rate": 0.858,
-   "gross_bookings": 20747.73,
-   "avg_pickup_minutes": 8.0
-  },
-  {
-   "city": "Thrissur",
-   "state": "Kerala",
-   "requests": 244,
-   "completed": 185,
-   "completion_rate": 0.758,
-   "gross_bookings": 20054.56,
-   "avg_pickup_minutes": 7.5
-  },
-  {
-   "city": "Thanjavur",
-   "state": "Tamil Nadu",
-   "requests": 247,
-   "completed": 187,
-   "completion_rate": 0.757,
-   "gross_bookings": 18704.77,
-   "avg_pickup_minutes": 8.2
-  },
-  {
-   "city": "Kakinada",
-   "state": "Andhra Pradesh",
-   "requests": 241,
-   "completed": 117,
-   "completion_rate": 0.485,
-   "gross_bookings": 16845.72,
-   "avg_pickup_minutes": 7.5
-  },
-  {
-   "city": "Kurnool",
-   "state": "Andhra Pradesh",
-   "requests": 245,
-   "completed": 196,
-   "completion_rate": 0.8,
-   "gross_bookings": 15463.86,
-   "avg_pickup_minutes": 7.6
+   "requests": 279,
+   "completed": 247,
+   "completion_rate": 0.885,
+   "gross_bookings": 24878.78,
+   "avg_pickup_minutes": 7.7
   },
   {
    "city": "Kannur",
    "state": "Kerala",
-   "requests": 264,
-   "completed": 141,
-   "completion_rate": 0.534,
-   "gross_bookings": 13485.81,
-   "avg_pickup_minutes": 7.2
+   "requests": 289,
+   "completed": 236,
+   "completion_rate": 0.817,
+   "gross_bookings": 24584.92,
+   "avg_pickup_minutes": 7.7
+  },
+  {
+   "city": "Erode",
+   "state": "Tamil Nadu",
+   "requests": 275,
+   "completed": 219,
+   "completion_rate": 0.796,
+   "gross_bookings": 23364.56,
+   "avg_pickup_minutes": 8.1
+  },
+  {
+   "city": "Nellore",
+   "state": "Andhra Pradesh",
+   "requests": 279,
+   "completed": 213,
+   "completion_rate": 0.763,
+   "gross_bookings": 22666.4,
+   "avg_pickup_minutes": 7.9
+  },
+  {
+   "city": "Anantapur",
+   "state": "Andhra Pradesh",
+   "requests": 245,
+   "completed": 207,
+   "completion_rate": 0.845,
+   "gross_bookings": 21128.07,
+   "avg_pickup_minutes": 7.9
+  },
+  {
+   "city": "Kurnool",
+   "state": "Andhra Pradesh",
+   "requests": 238,
+   "completed": 206,
+   "completion_rate": 0.866,
+   "gross_bookings": 19173.92,
+   "avg_pickup_minutes": 7.1
   }
  ],
  "states": [
   {
    "state": "Andhra Pradesh",
    "service": "RIDE",
-   "requests": 3104,
-   "completed": 2552,
-   "gross_bookings": 478330.19
+   "requests": 3166,
+   "completed": 2489,
+   "gross_bookings": 493612.11
   },
   {
    "state": "Andhra Pradesh",
    "service": "PARCEL",
-   "requests": 222,
-   "completed": 221,
-   "gross_bookings": 19770.76
+   "requests": 221,
+   "completed": 173,
+   "gross_bookings": 15848.95
   },
   {
    "state": "Karnataka",
    "service": "RIDE",
-   "requests": 3942,
-   "completed": 3144,
-   "gross_bookings": 1038152.68
+   "requests": 4052,
+   "completed": 3256,
+   "gross_bookings": 1100783.12
   },
   {
    "state": "Karnataka",
    "service": "PARCEL",
-   "requests": 204,
-   "completed": 201,
-   "gross_bookings": 30577.7
+   "requests": 256,
+   "completed": 242,
+   "gross_bookings": 37841.16
   },
   {
    "state": "Kerala",
    "service": "RIDE",
-   "requests": 2398,
-   "completed": 1812,
-   "gross_bookings": 445168.89
+   "requests": 2506,
+   "completed": 2084,
+   "gross_bookings": 552512.79
   },
   {
    "state": "Kerala",
    "service": "PARCEL",
-   "requests": 116,
-   "completed": 113,
-   "gross_bookings": 13214.17
+   "requests": 168,
+   "completed": 117,
+   "gross_bookings": 13882.6
   },
   {
    "state": "Tamil Nadu",
    "service": "RIDE",
-   "requests": 5438,
-   "completed": 4322,
-   "gross_bookings": 1022171.33
+   "requests": 5504,
+   "completed": 4475,
+   "gross_bookings": 1124945.91
   },
   {
    "state": "Tamil Nadu",
    "service": "PARCEL",
-   "requests": 246,
-   "completed": 239,
-   "gross_bookings": 21072.3
+   "requests": 383,
+   "completed": 288,
+   "gross_bookings": 28153.64
   }
  ],
  "hours": [
   {
    "hour": 0,
-   "requests": 316,
-   "avg_surge": 1.03,
-   "no_driver_rate": 0.059
+   "requests": 153,
+   "avg_surge": 1.01,
+   "no_driver_rate": 0.045
   },
   {
    "hour": 1,
-   "requests": 39,
+   "requests": 56,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.111
+   "no_driver_rate": 0.019
   },
   {
    "hour": 2,
-   "requests": 32,
+   "requests": 42,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.107
+   "no_driver_rate": 0.057
   },
   {
    "hour": 3,
-   "requests": 27,
+   "requests": 39,
    "avg_surge": 1.0,
    "no_driver_rate": 0.074
   },
   {
    "hour": 4,
-   "requests": 55,
+   "requests": 72,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.121
+   "no_driver_rate": 0.044
   },
   {
    "hour": 5,
-   "requests": 163,
+   "requests": 188,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.115
+   "no_driver_rate": 0.052
   },
   {
    "hour": 6,
-   "requests": 357,
+   "requests": 418,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.097
+   "no_driver_rate": 0.049
   },
   {
    "hour": 7,
-   "requests": 658,
+   "requests": 750,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.092
+   "no_driver_rate": 0.049
   },
   {
    "hour": 8,
-   "requests": 1082,
-   "avg_surge": 1.04,
-   "no_driver_rate": 0.105
+   "requests": 1192,
+   "avg_surge": 1.12,
+   "no_driver_rate": 0.039
   },
   {
    "hour": 9,
-   "requests": 1152,
-   "avg_surge": 1.03,
-   "no_driver_rate": 0.128
+   "requests": 1240,
+   "avg_surge": 1.16,
+   "no_driver_rate": 0.071
   },
   {
    "hour": 10,
-   "requests": 778,
-   "avg_surge": 1.01,
-   "no_driver_rate": 0.124
+   "requests": 873,
+   "avg_surge": 1.03,
+   "no_driver_rate": 0.063
   },
   {
    "hour": 11,
-   "requests": 587,
+   "requests": 721,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.101
+   "no_driver_rate": 0.05
   },
   {
    "hour": 12,
-   "requests": 604,
+   "requests": 750,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.133
+   "no_driver_rate": 0.058
   },
   {
    "hour": 13,
-   "requests": 653,
-   "avg_surge": 1.0,
-   "no_driver_rate": 0.123
+   "requests": 799,
+   "avg_surge": 1.01,
+   "no_driver_rate": 0.055
   },
   {
    "hour": 14,
-   "requests": 610,
+   "requests": 666,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.102
+   "no_driver_rate": 0.069
   },
   {
    "hour": 15,
-   "requests": 1140,
-   "avg_surge": 1.02,
-   "no_driver_rate": 0.106
+   "requests": 703,
+   "avg_surge": 1.01,
+   "no_driver_rate": 0.057
   },
   {
    "hour": 16,
-   "requests": 1301,
-   "avg_surge": 1.03,
-   "no_driver_rate": 0.111
+   "requests": 922,
+   "avg_surge": 1.02,
+   "no_driver_rate": 0.058
   },
   {
    "hour": 17,
-   "requests": 1168,
-   "avg_surge": 1.03,
-   "no_driver_rate": 0.111
+   "requests": 1142,
+   "avg_surge": 1.11,
+   "no_driver_rate": 0.068
   },
   {
    "hour": 18,
-   "requests": 1158,
-   "avg_surge": 1.04,
-   "no_driver_rate": 0.129
+   "requests": 1398,
+   "avg_surge": 1.24,
+   "no_driver_rate": 0.059
   },
   {
    "hour": 19,
-   "requests": 1089,
-   "avg_surge": 1.03,
-   "no_driver_rate": 0.104
+   "requests": 1309,
+   "avg_surge": 1.19,
+   "no_driver_rate": 0.059
   },
   {
    "hour": 20,
-   "requests": 925,
-   "avg_surge": 1.02,
-   "no_driver_rate": 0.085
+   "requests": 1094,
+   "avg_surge": 1.06,
+   "no_driver_rate": 0.045
   },
   {
    "hour": 21,
-   "requests": 695,
-   "avg_surge": 1.0,
-   "no_driver_rate": 0.117
+   "requests": 821,
+   "avg_surge": 1.02,
+   "no_driver_rate": 0.061
   },
   {
    "hour": 22,
-   "requests": 520,
+   "requests": 629,
    "avg_surge": 1.0,
-   "no_driver_rate": 0.108
+   "no_driver_rate": 0.051
   },
   {
    "hour": 23,
-   "requests": 561,
-   "avg_surge": 1.02,
-   "no_driver_rate": 0.108
+   "requests": 279,
+   "avg_surge": 1.0,
+   "no_driver_rate": 0.076
   }
  ],
  "no_driver_hotspots": [
   {
-   "city": "Thrissur",
-   "ride_type": "Prime Sedan",
-   "requests": 39,
-   "no_driver": 39,
-   "rate": 1.0
+   "city": "Kochi",
+   "ride_type": "Parcel",
+   "requests": 45,
+   "no_driver": 20,
+   "rate": 0.444
   },
   {
-   "city": "Kannur",
-   "ride_type": "Prime Sedan",
-   "requests": 36,
-   "no_driver": 36,
-   "rate": 1.0
+   "city": "Coimbatore",
+   "ride_type": "Parcel",
+   "requests": 50,
+   "no_driver": 21,
+   "rate": 0.42
   },
   {
-   "city": "Belagavi",
-   "ride_type": "Bike",
+   "city": "Chennai",
+   "ride_type": "Parcel",
+   "requests": 121,
+   "no_driver": 42,
+   "rate": 0.347
+  },
+  {
+   "city": "Visakhapatnam",
+   "ride_type": "Parcel",
+   "requests": 45,
+   "no_driver": 13,
+   "rate": 0.289
+  },
+  {
+   "city": "Vijayawada",
+   "ride_type": "Parcel",
+   "requests": 54,
+   "no_driver": 15,
+   "rate": 0.278
+  },
+  {
+   "city": "Tiruchirappalli",
+   "ride_type": "Parcel",
+   "requests": 31,
+   "no_driver": 7,
+   "rate": 0.226
+  },
+  {
+   "city": "Thiruvananthapuram",
+   "ride_type": "Parcel",
+   "requests": 41,
+   "no_driver": 7,
+   "rate": 0.171
+  },
+  {
+   "city": "Madurai",
+   "ride_type": "Parcel",
    "requests": 38,
-   "no_driver": 38,
-   "rate": 1.0
-  },
-  {
-   "city": "Kannur",
-   "ride_type": "Auto",
-   "requests": 65,
-   "no_driver": 65,
-   "rate": 1.0
+   "no_driver": 6,
+   "rate": 0.158
   },
   {
    "city": "Thoothukudi",
-   "ride_type": "Prime Sedan",
-   "requests": 37,
-   "no_driver": 37,
-   "rate": 1.0
-  },
-  {
-   "city": "Kozhikode",
-   "ride_type": "Prime SUV",
-   "requests": 39,
-   "no_driver": 39,
-   "rate": 1.0
-  },
-  {
-   "city": "Kakinada",
-   "ride_type": "Bike",
-   "requests": 50,
-   "no_driver": 50,
-   "rate": 1.0
-  },
-  {
-   "city": "Kakinada",
    "ride_type": "Auto",
-   "requests": 62,
-   "no_driver": 62,
-   "rate": 1.0
+   "requests": 40,
+   "no_driver": 6,
+   "rate": 0.15
   },
   {
-   "city": "Thanjavur",
-   "ride_type": "Prime SUV",
-   "requests": 32,
-   "no_driver": 32,
-   "rate": 1.0
-  },
-  {
-   "city": "Kozhikode",
+   "city": "Rajamahendravaram",
    "ride_type": "Bike",
-   "requests": 65,
-   "no_driver": 65,
-   "rate": 1.0
+   "requests": 46,
+   "no_driver": 6,
+   "rate": 0.13
   }
  ],
  "driver_earnings": [
   {
    "vehicle_class": "AUTO",
+   "fuel": "EV",
+   "drivers": 21,
+   "median_per_hour": 125.0,
+   "median_trips_per_week": 2.0
+  },
+  {
+   "vehicle_class": "AUTO",
    "fuel": "Fuel",
-   "drivers": 145,
-   "median_per_hour": 124.0,
+   "drivers": 136,
+   "median_per_hour": 129.0,
    "median_trips_per_week": 2.0
   },
   {
    "vehicle_class": "BIKE",
    "fuel": "EV",
-   "drivers": 15,
-   "median_per_hour": 58.0,
-   "median_trips_per_week": 3.0
+   "drivers": 34,
+   "median_per_hour": 67.0,
+   "median_trips_per_week": 1.0
   },
   {
    "vehicle_class": "BIKE",
    "fuel": "Fuel",
-   "drivers": 78,
-   "median_per_hour": 59.0,
+   "drivers": 98,
+   "median_per_hour": 74.0,
    "median_trips_per_week": 3.0
   },
   {
    "vehicle_class": "MINI",
    "fuel": "EV",
-   "drivers": 27,
-   "median_per_hour": 141.0,
+   "drivers": 35,
+   "median_per_hour": 152.0,
    "median_trips_per_week": 2.0
   },
   {
    "vehicle_class": "MINI",
    "fuel": "Fuel",
-   "drivers": 175,
-   "median_per_hour": 145.0,
+   "drivers": 168,
+   "median_per_hour": 151.0,
+   "median_trips_per_week": 2.0
+  },
+  {
+   "vehicle_class": "SEDAN",
+   "fuel": "EV",
+   "drivers": 5,
+   "median_per_hour": 183.0,
    "median_trips_per_week": 2.0
   },
   {
    "vehicle_class": "SEDAN",
    "fuel": "Fuel",
-   "drivers": 86,
-   "median_per_hour": 180.0,
-   "median_trips_per_week": 2.5
+   "drivers": 130,
+   "median_per_hour": 195.0,
+   "median_trips_per_week": 2.0
+  },
+  {
+   "vehicle_class": "SUV",
+   "fuel": "EV",
+   "drivers": 7,
+   "median_per_hour": 252.0,
+   "median_trips_per_week": 2.0
   },
   {
    "vehicle_class": "SUV",
    "fuel": "Fuel",
-   "drivers": 50,
-   "median_per_hour": 228.0,
+   "drivers": 102,
+   "median_per_hour": 250.0,
    "median_trips_per_week": 2.0
   }
  ],
  "support": [
   {
+   "category": "PAYMENT",
+   "tickets": 118,
+   "resolved": 89,
+   "within_sla": 81,
+   "avg_hours_to_resolve": 3.4
+  },
+  {
    "category": "DRIVER_BEHAVIOUR",
-   "tickets": 87,
-   "resolved": 67,
-   "within_sla": 0,
-   "avg_hours_to_resolve": 716.8
+   "tickets": 100,
+   "resolved": 75,
+   "within_sla": 63,
+   "avg_hours_to_resolve": 3.9
   },
   {
    "category": "FARE_DISPUTE",
-   "tickets": 85,
-   "resolved": 69,
-   "within_sla": 0,
-   "avg_hours_to_resolve": 690.0
-  },
-  {
-   "category": "PAYMENT",
-   "tickets": 74,
-   "resolved": 52,
-   "within_sla": 0,
-   "avg_hours_to_resolve": 667.3
+   "tickets": 86,
+   "resolved": 63,
+   "within_sla": 52,
+   "avg_hours_to_resolve": 3.5
   },
   {
    "category": "LOST_ITEM",
-   "tickets": 72,
+   "tickets": 71,
    "resolved": 47,
-   "within_sla": 1,
-   "avg_hours_to_resolve": 315.1
+   "within_sla": 43,
+   "avg_hours_to_resolve": 14.6
   },
   {
    "category": "SAFETY",
    "tickets": 3,
-   "resolved": 3,
+   "resolved": 2,
    "within_sla": 0,
-   "avg_hours_to_resolve": 6.4
+   "avg_hours_to_resolve": 227.9
   }
  ],
  "team": [
   {
    "state": "Tamil Nadu",
-   "drivers": 220,
+   "drivers": 256,
    "fleet_executives": 19,
    "support_staff": 20,
    "city_managers": 11
   },
   {
    "state": "Karnataka",
-   "drivers": 159,
+   "drivers": 175,
    "fleet_executives": 14,
    "support_staff": 14,
    "city_managers": 7
   },
   {
    "state": "Andhra Pradesh",
-   "drivers": 139,
+   "drivers": 174,
    "fleet_executives": 13,
    "support_staff": 13,
    "city_managers": 9
   },
   {
    "state": "Kerala",
-   "drivers": 110,
+   "drivers": 130,
    "fleet_executives": 10,
    "support_staff": 10,
    "city_managers": 6

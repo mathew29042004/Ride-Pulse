@@ -150,6 +150,12 @@ class CityEventSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class WinBackSerializer(serializers.Serializer):
+    rider_ids = serializers.ListField(child=serializers.IntegerField(), max_length=500)
+    title = serializers.CharField(max_length=160)
+    body = serializers.CharField(max_length=300)
+
+
 class InsightsViewSet(BaseViewSet):
     """The morning briefing, the next-hour demand forecast and the driver app's hot zones."""
 
@@ -158,6 +164,9 @@ class InsightsViewSet(BaseViewSet):
         "demand": Cap.REPORTS_VIEW,
         "outlook": Cap.REPORTS_VIEW,
         "events": Cap.PRICING_MANAGE,
+        "models": Cap.REPORTS_VIEW,
+        "win_back": Cap.PROMOS_MANAGE,
+        "surge_policy": Cap.PRICING_VIEW,
     }
     driver_actions = ("hot_zones",)
     rider_actions = ("nearby",)
@@ -202,6 +211,10 @@ class InsightsViewSet(BaseViewSet):
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])
     def hot_zones(self, request):
+        from apps.experiments.services import enabled
+
+        if not enabled("driver-hot-zones", request.user):
+            return Response([])
         return Response(demand.hot_zones_for(request.user.driver_profile))
 
     @extend_schema(
@@ -211,8 +224,12 @@ class InsightsViewSet(BaseViewSet):
     @action(detail=False, methods=["get"])
     def nearby(self, request):
         """Rider Home: rain and big events near the rider today."""
+        from apps.experiments.services import enabled
+
         from . import context
 
+        if not enabled("rider-weather-alerts", request.user):
+            return Response({"weather": None, "events": [], "messages": []})
         try:
             lat, lng = float(request.query_params["lat"]), float(request.query_params["lng"])
         except (KeyError, ValueError):
@@ -234,3 +251,42 @@ class InsightsViewSet(BaseViewSet):
         data.is_valid(raise_exception=True)
         event = data.save(created_by=request.user)
         return Response({"id": event.pk}, status=201)
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def models(self, request):
+        """Model cards (what each model predicts and how well) and riders at risk of churning."""
+        from . import ml
+
+        return Response({"cards": ml.model_cards(), "at_risk": ml.at_risk(limit=40)})
+
+    @extend_schema(request=WinBackSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def win_back(self, request):
+        from . import ml
+
+        data = WinBackSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return Response({"sent": ml.win_back(**data.validated_data)})
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get", "post"], url_path="surge-policy")
+    def surge_policy(self, request):
+        """Replay recorded demand and supply under candidate surge settings (GET), or turn the
+        recommendation into a draft A/B test (POST)."""
+        from django.core.cache import cache
+
+        from . import surge_policy
+
+        result = cache.get("intel:surge-policy")
+        if result is None:
+            result = surge_policy.optimise()
+            cache.set("intel:surge-policy", result, 600)
+        if request.method == "POST":
+            if not request.user.has_capability(Cap.EXPERIMENTS_MANAGE):
+                from apps.core.exceptions import ActionNotPermitted
+
+                raise ActionNotPermitted("Only experiment owners can propose a test.")
+            experiment = surge_policy.propose_experiment(result, user=request.user)
+            return Response({"experiment": experiment.key if experiment else None, **result})
+        return Response(result)

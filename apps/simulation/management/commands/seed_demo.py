@@ -61,6 +61,9 @@ class Command(BaseCommand):
         from apps.intelligence import demo as intelligence_demo
 
         stats.update(intelligence_demo.seed(log=self.stdout.write))
+        from apps.experiments import demo as experiments_demo
+
+        stats.update(experiments_demo.seed(log=self.stdout.write))
         self.stdout.write(self.style.SUCCESS(f"Done in {time.monotonic() - started:.0f}s: {stats}"))
         self.stdout.write(
             f"Demo logins (password {DEMO_PASSWORD}): "
@@ -80,3 +83,8 @@ def reload_reference_data():
     load_fares(City, RideType, FareRule)
     apply_service_hours(RideType)
     apply_services(RideType)
+    from importlib import import_module
+
+    from django.apps import apps
+
+    import_module("apps.experiments.migrations.0002_default_flags").add_flags(apps, None)

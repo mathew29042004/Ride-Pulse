@@ -58,6 +58,7 @@ const ClaimsPage = lazy(() => trust().then((m) => ({ default: m.ClaimsPage })));
 const AppealsRider = lazy(() => trust().then((m) => ({ default: () => <m.Appeals base="/ride" subjects={m.RIDER_APPEALS} /> })));
 const AppealsDriver = lazy(() => trust().then((m) => ({ default: () => <m.Appeals base="/drive" subjects={m.DRIVER_APPEALS} /> })));
 const OpsPlatform = lazy(() => import("./pages/ops/OpsPlatform"));
+const OpsModels = lazy(() => import("./pages/ops/OpsModels"));
 const OpsTrust = lazy(() => import("./pages/ops/OpsTrust"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
@@ -207,6 +208,7 @@ export const router = createBrowserRouter([
       { path: "work", element: lazyPage(<OpsWork />) },
       { path: "briefing", element: lazyPage(<OpsBriefing />) },
       { path: "platform", element: lazyPage(<OpsPlatform />) },
+      { path: "models", element: lazyPage(<OpsModels />) },
       { path: "trust", element: lazyPage(<OpsTrust />) },
       { path: "fleet-owners", element: lazyPage(<OpsFleetOwners />) },
       { path: "quests", element: lazyPage(<OpsQuests />) },

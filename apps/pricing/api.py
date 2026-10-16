@@ -107,6 +107,7 @@ class EstimateOptionSerializer(serializers.Serializer):
     suggestion = AlternativeSerializer(allow_null=True)
     sure_ride = SureRideQuoteSerializer(allow_null=True)
     fare_lock = serializers.BooleanField()
+    predicted_duration_min = serializers.FloatField(allow_null=True, required=False)
     offer_range = OfferRangeSerializer()
     fare = FareSerializer()
 
@@ -133,6 +134,7 @@ def serialize_options(result: dict) -> dict:
                 "suggestion": option["suggestion"],
                 "sure_ride": option["sure_ride"],
                 "fare_lock": option["fare_lock"],
+                "predicted_duration_min": option.get("predicted_duration_min"),
                 "offer_range": option["offer_range"],
                 "fare": option["estimate"].fare,
             }

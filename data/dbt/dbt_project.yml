@@ -27,3 +27,9 @@ models:
     reporting:
       +materialized: table
       +schema: reporting
+    ml:
+      +materialized: table
+      +schema: ml
+    metrics:
+      +materialized: table
+      +schema: metrics

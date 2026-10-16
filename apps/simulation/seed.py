@@ -403,6 +403,18 @@ class Seeder:
             drivers_svc.go_offline(driver, now=at)
         self.busy_until[driver.pk] = at
 
+    def _active_types(self, city) -> set[str]:
+        cache = self.__dict__.setdefault("_types_by_city", {})
+        if city.pk not in cache:
+            from apps.pricing.models import FareRule
+
+            cache[city.pk] = set(
+                FareRule.objects.filter(city=city, is_active=True).values_list(
+                    "ride_type__code", flat=True
+                )
+            )
+        return cache[city.pk]
+
     def _available(self, slug: str, ride_type: str, at: datetime) -> list[DriverProfile]:
         return [
             d
@@ -431,6 +443,10 @@ class Seeder:
             return None
         pickup, pickup_name, dropoff, dropoff_name = endpoints
         ride_type = _weighted(rng, RIDE_TYPE_WEIGHTS)
+        if ride_type not in self._active_types(city):  # paused here: no driver can serve it
+            return None
+        if not self.ride_types[ride_type].is_open(at):  # e.g. bikes run 5 am to 11 pm
+            return None
         rider = (
             self.demo_rider
             if (slug == "chennai" and rng.random() < 0.06)
@@ -542,9 +558,10 @@ class Seeder:
         distance = float(trip.estimated_distance_km) * (
             rng.uniform(1.55, 1.8) if deviation else rng.uniform(0.95, 1.12)
         )
-        duration = float(trip.estimated_duration_min) * (
-            rng.uniform(1.4, 1.7) if deviation else rng.uniform(0.85, 1.25)
-        )
+        # Real traffic (city, time, rain, centre, vehicle), which the app's estimate can't see.
+        from .traffic import true_minutes
+
+        duration = true_minutes(trip, t_start, rng) * (rng.uniform(1.35, 1.6) if deviation else 1)
         t_end = t_start + timedelta(minutes=duration)
         for i in range(1, 6):
             f = i / 6

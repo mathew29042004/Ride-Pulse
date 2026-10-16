@@ -8,6 +8,7 @@ from apps.accounts import api as accounts
 from apps.analytics import api as analytics
 from apps.audit.api import AuditLogViewSet
 from apps.drivers import api as drivers
+from apps.experiments import api as experiments
 from apps.fleet import api as fleet
 from apps.geo import api as geo
 from apps.intelligence import api as intelligence
@@ -51,6 +52,7 @@ router.register("platform", reliability.PlatformViewSet, basename="platform")
 router.register("me", trust.MyTrustViewSet, basename="me-trust")
 router.register("help", trust.HelpViewSet, basename="help")
 router.register("ops/trust", trust.TrustOpsViewSet, basename="ops-trust")
+router.register("ops/experiments", experiments.ExperimentsOpsViewSet, basename="ops-experiments")
 router.register("riders", riders.RiderViewSet, basename="rider")
 router.register("driver/biz", fleet.DriverBusinessViewSet, basename="driver-biz")
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")

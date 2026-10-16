@@ -14,6 +14,7 @@ sources:
       - name: trips
       - name: trip_offers
       - name: ratings
+      - name: weather_readings
       - name: parcels
       - name: payments
       - name: support_tickets

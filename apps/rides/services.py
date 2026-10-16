@@ -317,8 +317,16 @@ def estimate_options(
     _validate_points(city, pickup, dropoff, stop, extra_stops)
     has_pass = bool(rider and passes.active_pass(rider, at))
     needs_wheelchair = bool(rider and RidePreference.WHEELCHAIR in (rider.accessibility or []))
+    from apps.experiments import services as experiments
+
+    user = rider.user if rider else None
+    surge_cap = experiments.treatment_config("surge-cap", user).get("surge_cap") if user else None
+    if user:
+        experiments.expose("surge-cap", user, now=at)
     options, promo_error = [], ""
     for ride_type in pricing.active_ride_types(city, service=service):
+        if ride_type.code == "SHARE" and not experiments.enabled("share-rides", user):
+            continue  # shared rides are behind a feature flag
         promo = None
         if promo_code and rider:
             try:
@@ -337,6 +345,7 @@ def estimate_options(
             stop=stop,
             ride_pass=has_pass,
             extra_stops=extra_stops,
+            surge_cap=surge_cap,
         )
         lock = fare_locks.matching_lock(rider, ride_type, pickup, dropoff, at) if not stop else None
         estimate.fare = fare_locks.apply(estimate.fare, lock)
@@ -358,6 +367,18 @@ def estimate_options(
             else None
         )
         low, high = bids.offer_bounds(estimate.fare.total, estimate.fare.driver_earning)
+        from apps.intelligence import ml
+
+        predicted = ml.predict_for(
+            city,
+            ride_type,
+            pickup,
+            dropoff,
+            estimate_min=float(estimate.route.duration_minutes),
+            distance_km=float(estimate.route.distance_km),
+            at=at,
+            zones=(estimate.pickup_zone, estimate.dropoff_zone),
+        )
         options.append(
             {
                 "ride_type": ride_type,
@@ -365,6 +386,8 @@ def estimate_options(
                 "pickup_eta_min": round(eta) if eta is not None else None,
                 "sure_ride": bids.sure_ride_quote(eta),
                 "fare_lock": bool(lock),
+                # The ETA model's ride time (learned from past trips), if one is trained.
+                "predicted_duration_min": round(predicted, 1) if predicted else None,
                 "offer_range": {"min": low, "max": high},
                 "availability": "CLOSED" if not open_now else "AVAILABLE" if nearest else "NONE",
                 "unavailable_reason": (
@@ -506,6 +529,9 @@ def request_trip(
         else None
     )
     has_pass = passes.active_pass(rider, now) is not None
+    from apps.experiments import services as experiments
+
+    surge_cap = experiments.treatment_config("surge-cap", rider.user).get("surge_cap")
     estimate = pricing.estimate_fare(
         city=city,
         ride_type=ride_type,
@@ -516,6 +542,7 @@ def request_trip(
         stop=stop,
         extra_stops=extra_stops,
         ride_pass=has_pass,
+        surge_cap=surge_cap,
     )
     lock = fare_locks.matching_lock(rider, ride_type, pickup, dropoff, now) if not stop else None
     estimate.fare = fare_locks.apply(estimate.fare, lock)
@@ -634,6 +661,7 @@ def request_trip(
         at=now,
     )
     _trip_event(trip, "trip.requested")
+    experiments.on_trip_requested(trip)
     broadcast.ops_event(
         "trip_requested",
         {"trip_id": trip.pk, "city": city.pk, "lat": trip.pickup_lat, "lng": trip.pickup_lng},

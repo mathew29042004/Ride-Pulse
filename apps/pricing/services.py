@@ -227,6 +227,7 @@ def estimate_fare(
     stop: tuple[float, float] | None = None,
     ride_pass: bool = False,
     extra_stops=(),
+    surge_cap: Decimal | None = None,
 ) -> FareEstimate:
     at = at or timezone.now()
     zones = list(city.zones.all())
@@ -235,6 +236,8 @@ def estimate_fare(
     via = [*([stop] if stop else []), *((s["lat"], s["lng"]) for s in extra_stops)]
     route = estimate_route_via([pickup, *via, dropoff], at)
     multiplier = current_surge(pickup_zone, now=at)
+    if surge_cap is not None:  # an A/B test (or policy) capping surge for this rider
+        multiplier = min(multiplier, Decimal(str(surge_cap)))
     airport = bool(
         (pickup_zone and pickup_zone.is_airport) or (dropoff_zone and dropoff_zone.is_airport)
     )

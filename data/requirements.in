@@ -6,3 +6,8 @@ dagster>=1.9
 dagster-webserver>=1.9
 dagster-dbt>=0.25
 psycopg[binary]>=3.2
+# Machine learning (trained here, exported as JSON for the app)
+numpy>=2.0
+pandas>=2.2
+scikit-learn>=1.5
+dbt-metricflow[dbt-duckdb]>=0.15

@@ -1744,6 +1744,11 @@
       "nullable": true,
       "type": "integer"
      },
+     "predicted_duration_min": {
+      "format": "double",
+      "nullable": true,
+      "type": "number"
+     },
      "ride_type": {
       "$ref": "#/components/schemas/RideType"
      },
@@ -1863,6 +1868,74 @@
     "enum": [
      "RIDE",
      "PARCEL"
+    ],
+    "type": "string"
+   },
+   "Experiment": {
+    "properties": {
+     "decision": {
+      "maxLength": 200,
+      "type": "string"
+     },
+     "hypothesis": {
+      "type": "string"
+     },
+     "key": {
+      "maxLength": 60,
+      "pattern": "^[-a-zA-Z0-9_]+$",
+      "type": "string"
+     },
+     "minimum_effect": {
+      "format": "double",
+      "type": "number"
+     },
+     "name": {
+      "maxLength": 120,
+      "type": "string"
+     },
+     "primary_metric": {
+      "maxLength": 40,
+      "type": "string"
+     },
+     "results": {
+      "additionalProperties": {},
+      "readOnly": true,
+      "type": "object"
+     },
+     "started_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ExperimentStatusEnum"
+     },
+     "stopped_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "treatment_config": {},
+     "treatment_percent": {
+      "maximum": 32767,
+      "minimum": 0,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "hypothesis",
+     "key",
+     "name",
+     "results"
+    ],
+    "type": "object"
+   },
+   "ExperimentStatusEnum": {
+    "description": "* `DRAFT` - Draft\n* `RUNNING` - Running\n* `STOPPED` - Stopped",
+    "enum": [
+     "DRAFT",
+     "RUNNING",
+     "STOPPED"
     ],
     "type": "string"
    },
@@ -2178,6 +2251,59 @@
      "kind",
      "trip"
     ],
+    "type": "object"
+   },
+   "Flag": {
+    "properties": {
+     "allow_user_ids": {
+      "items": {
+       "maximum": 2147483647,
+       "minimum": -2147483648,
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "description": {
+      "maxLength": 200,
+      "type": "string"
+     },
+     "enabled": {
+      "type": "boolean"
+     },
+     "key": {
+      "maxLength": 60,
+      "pattern": "^[-a-zA-Z0-9_]+$",
+      "type": "string"
+     },
+     "rollout_percent": {
+      "maximum": 32767,
+      "minimum": 0,
+      "type": "integer"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "readOnly": true,
+      "type": "string"
+     }
+    },
+    "required": [
+     "description",
+     "key",
+     "updated_at"
+    ],
+    "type": "object"
+   },
+   "FlagUpdateRequest": {
+    "properties": {
+     "enabled": {
+      "type": "boolean"
+     },
+     "rollout_percent": {
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+     }
+    },
     "type": "object"
    },
    "FlagsEnum": {
@@ -7303,6 +7429,19 @@
     ],
     "type": "object"
    },
+   "StopRequest": {
+    "properties": {
+     "decision": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "decision"
+    ],
+    "type": "object"
+   },
    "SubjectEnum": {
     "description": "* `DRIVER_SUSPENSION` - Driver account suspended\n* `RIDER_BLOCK` - Rider account blocked\n* `FRAUD_DECISION` - Fraud decision",
     "enum": [
@@ -9231,6 +9370,33 @@
     "required": [
      "balance",
      "statement"
+    ],
+    "type": "object"
+   },
+   "WinBackRequest": {
+    "properties": {
+     "body": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+     },
+     "rider_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 500,
+      "type": "array"
+     },
+     "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "body",
+     "rider_ids",
+     "title"
     ],
     "type": "object"
    },
@@ -13476,6 +13642,36 @@
     ]
    }
   },
+  "/api/v1/intel/models/": {
+   "get": {
+    "description": "Model cards (what each model predicts and how well) and riders at risk of churning.",
+    "operationId": "intel_models_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "intel"
+    ]
+   }
+  },
   "/api/v1/intel/nearby/": {
    "get": {
     "description": "Rider Home: rain and big events near the rider today.",
@@ -13528,6 +13724,114 @@
    "get": {
     "description": "Ops: weather in every city and upcoming events.",
     "operationId": "intel_outlook_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "intel"
+    ]
+   }
+  },
+  "/api/v1/intel/surge-policy/": {
+   "get": {
+    "description": "Replay recorded demand and supply under candidate surge settings (GET), or turn the\nrecommendation into a draft A/B test (POST).",
+    "operationId": "intel_surge_policy_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "intel"
+    ]
+   },
+   "post": {
+    "description": "Replay recorded demand and supply under candidate surge settings (GET), or turn the\nrecommendation into a draft A/B test (POST).",
+    "operationId": "intel_surge_policy_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "intel"
+    ]
+   }
+  },
+  "/api/v1/intel/win_back/": {
+   "post": {
+    "description": "The morning briefing, the next-hour demand forecast and the driver app's hot zones.",
+    "operationId": "intel_win_back_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WinBackRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/WinBackRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/WinBackRequest"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "content": {
@@ -14331,6 +14635,195 @@
     ],
     "tags": [
      "operations"
+    ]
+   }
+  },
+  "/api/v1/ops/experiments/flags/{key}/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_experiments_flags_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "key",
+      "required": true,
+      "schema": {
+       "pattern": "^[\\w-]+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FlagUpdateRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/FlagUpdateRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/FlagUpdateRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Flag"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/experiments/overview/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_experiments_overview_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/experiments/{key}/start/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_experiments_start_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "key",
+      "required": true,
+      "schema": {
+       "pattern": "^[\\w-]+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Experiment"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/experiments/{key}/stop/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_experiments_stop_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "key",
+      "required": true,
+      "schema": {
+       "pattern": "^[\\w-]+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/StopRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/StopRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/StopRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Experiment"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
     ]
    }
   },

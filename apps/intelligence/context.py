@@ -122,7 +122,8 @@ def refresh_weather(*, now: datetime | None = None, live: bool = True) -> dict:
             reading = _simulate(city, now)
         WeatherReading.objects.create(city=city, observed_at=now, **reading)
         counts[reading["source"]] += 1
-    WeatherReading.objects.filter(observed_at__lt=now - timedelta(days=14)).delete()
+    # Weather isn't personal data; a year of it trains the models (ETA, demand).
+    WeatherReading.objects.filter(observed_at__lt=now - timedelta(days=400)).delete()
     return counts
 
 
@@ -277,3 +278,72 @@ def overview(*, now: datetime | None = None) -> dict:
             for e in upcoming
         ],
     }
+
+
+ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
+
+
+def _archive(city: City, start, end) -> dict | None:
+    """Hourly rain and temperature for a past date range (Open-Meteo's historical archive)."""
+    try:
+        response = requests.get(
+            ARCHIVE,
+            params={
+                "latitude": city.center_lat,
+                "longitude": city.center_lng,
+                "start_date": start.isoformat(),
+                "end_date": end.isoformat(),
+                "hourly": "temperature_2m,precipitation,weather_code",
+                "timezone": "Asia/Kolkata",
+            },
+            timeout=8,
+        )
+        response.raise_for_status()
+        return response.json()["hourly"]
+    except Exception:
+        return None
+
+
+def backfill(*, days: int = 60, now: datetime | None = None, live: bool = True) -> dict:
+    """Hourly weather history for every city (archive, or the seasonal simulation offline)."""
+    now = now or timezone.now()
+    end = timezone.localdate(now) - timedelta(days=1)
+    start = end - timedelta(days=days - 1)
+    counts = {"open-meteo": 0, "simulated": 0}
+    offline = not live
+    for city in City.objects.filter(is_active=True):
+        first = timezone.make_aware(datetime.combine(start, datetime.min.time()))
+        last = timezone.make_aware(datetime.combine(end, datetime.max.time()))
+        WeatherReading.objects.filter(
+            city=city, observed_at__gte=first, observed_at__lte=last
+        ).delete()
+        hourly = None if offline else _archive(city, start, end)
+        rows = []
+        if hourly:
+            for at, temp, rain, code in zip(
+                hourly["time"],
+                hourly["temperature_2m"],
+                hourly["precipitation"],
+                hourly["weather_code"],
+                strict=False,
+            ):
+                rows.append(
+                    WeatherReading(
+                        city=city,
+                        observed_at=timezone.make_aware(datetime.fromisoformat(at)),
+                        temperature_c=Decimal(str(temp or 0)),
+                        rain_mm=Decimal(str(rain or 0)),
+                        rain_chance_next_3h=100 if (rain or 0) > 0 else 0,
+                        condition=WMO.get(int(code or 0), "Cloudy"),
+                        source="open-meteo",
+                    )
+                )
+        else:
+            offline = True
+            at = first
+            while at <= last:
+                rows.append(WeatherReading(city=city, observed_at=at, **_simulate(city, at)))
+                at += timedelta(hours=1)
+        WeatherReading.objects.bulk_create(rows, batch_size=2000)
+        counts[rows[0].source if rows else "simulated"] += len(rows)
+    return counts

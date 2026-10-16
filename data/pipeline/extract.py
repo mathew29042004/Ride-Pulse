@@ -4,6 +4,9 @@
   **snapshots**: ``lake/raw/<table>/snapshot=<UTC timestamp>/data.parquet`` (last 7 kept).
 * Append-only history (trip events, ledger entries) is extracted **incrementally**: only rows
   with an id above the last run's watermark, as ``lake/raw/<table>/batch=<timestamp>/``.
+  PostgreSQL hands out ids before a transaction commits, so a slow transaction can commit a
+  *lower* id after a higher one was already extracted. Each run therefore also re-checks the
+  last ``LOOKBACK_IDS`` ids below the watermark and picks up any the lake doesn't have yet.
 
 Privacy by design: names, phone numbers, emails, number plates, addresses, ride PINs and share
 tokens never leave the app. Coordinates are rounded to ~100 m. Riders and drivers appear only as
@@ -26,6 +29,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent
 LAKE = DATA_DIR / "lake" / "raw"
 STATE_FILE = DATA_DIR / "lake" / "_state.json"
 KEEP_SNAPSHOTS = 7
+LOOKBACK_IDS = 20_000  # far more rows than can be in flight at once
 DEFAULT_DB = "postgres://ridepulse:ridepulse@127.0.0.1:5433/ridepulse"
 
 
@@ -144,6 +148,11 @@ TABLES = [
         "JOIN pg.public.payments_ledgertransaction t ON t.id = e.transaction_id",
         incremental_on="e.id",
     ),
+    Table(
+        "weather_readings",
+        "SELECT id, city_id, observed_at, temperature_c, rain_mm, rain_chance_next_3h, "
+        "condition, source FROM pg.public.intelligence_weatherreading",
+    ),
 ]
 
 
@@ -183,13 +192,34 @@ def extract(log=print) -> dict:
     con = duckdb.connect()
     con.execute("INSTALL postgres; LOAD postgres;")
     con.execute(f"ATTACH '{_libpq(_database_url())}' AS pg (TYPE postgres, READ_ONLY)")
+    # A reset database reuses ids, so batches from the old one would mask new rows. When the
+    # database's identity changes (its oldest ledger transaction), start the history afresh.
+    identity = str(
+        con.execute(
+            "SELECT min(created_at)::VARCHAR FROM pg.public.payments_ledgertransaction"
+        ).fetchone()[0]
+    )
+    if state.get("database") not in (None, identity):
+        log("  The app database was reset: rebuilding the incremental history.")
+        for table in TABLES:
+            if table.incremental_on:
+                shutil.rmtree(LAKE / table.name, ignore_errors=True)
+        state["watermarks"] = {}
+    state["database"] = identity
     written: dict[str, int] = {}
     for table in TABLES:
         folder = LAKE / table.name
         if table.incremental_on:
             column = table.incremental_on
-            after = state["watermarks"].get(table.name, 0)
-            sql = f"{table.sql} WHERE {column} > {int(after)}"
+            after = int(state["watermarks"].get(table.name, 0))
+            plain = column.split(".")[-1]
+            sql = f"{table.sql} WHERE {column} > {max(0, after - LOOKBACK_IDS)}"
+            if any(folder.glob("batch=*/data.parquet")):
+                # Late commits below the watermark; anything already in the lake is skipped.
+                sql = (
+                    f"SELECT * FROM ({sql}) WHERE {plain} NOT IN "
+                    f"(SELECT {plain} FROM read_parquet('{folder}/batch=*/data.parquet'))"
+                )
             target = folder / f"batch={run}"
         else:
             sql = table.sql
@@ -203,10 +233,10 @@ def extract(log=print) -> dict:
             f"COPY ({sql}) TO '{target / 'data.parquet'}' (FORMAT parquet, COMPRESSION zstd)"
         )
         if table.incremental_on:
-            plain = table.incremental_on.split(".")[-1]
-            state["watermarks"][table.name] = con.execute(
+            newest = con.execute(
                 f"SELECT max({plain}) FROM read_parquet('{target / 'data.parquet'}')"
             ).fetchone()[0]
+            state["watermarks"][table.name] = max(after, newest)
         else:
             _prune(folder)
         written[table.name] = rows

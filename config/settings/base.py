@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.fleet",
     "apps.reliability",
     "apps.trust",
+    "apps.experiments",
 ]
 
 MIDDLEWARE = [
@@ -450,6 +451,8 @@ GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 DATA_INSIGHTS_PATH = Path(
     env("DATA_INSIGHTS_PATH", default=str(BASE_DIR / "data" / "reports" / "insights.json"))
 )
+# Trained models exported by the data platform (data/ml/train.py); empty: the app's own rules.
+ML_MODELS_DIR = Path(env("ML_MODELS_DIR", default=str(BASE_DIR / "data" / "models")))
 # Language Bridge: free-text chat translation (the phrasebook works without it).
 GOOGLE_TRANSLATE_API_KEY = env("GOOGLE_TRANSLATE_API_KEY", default="")
 GOOGLE_MAPS_BROWSER_KEY = env("GOOGLE_MAPS_BROWSER_KEY", default="")

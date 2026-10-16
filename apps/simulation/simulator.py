@@ -377,6 +377,9 @@ class Simulator:
                 "category": self.rng.choice(["DOCUMENTS", "FOOD", "CLOTHES", "KEYS", "OTHER"]),
                 "weight_kg": self.rng.choice([0.5, 1, 2, 3, 5]),
             }
+        if self._abandons_on_price(rider, a, code):
+            self.bump("abandoned_on_price")
+            return
         billing = self._business_billing(rider, code) if parcel is None else {}
         if billing.get("ride_type"):
             code = billing.pop("ride_type")
@@ -397,6 +400,19 @@ class Simulator:
             self.bump("requests")
         except DomainError:
             self.bump("request_rejected")
+
+    def _abandons_on_price(self, rider, zone, code: str) -> bool:
+        """Bot riders see the price first (an exposure for any running A/B test) and some walk
+        away when surge is high: the higher the multiplier, the likelier."""
+        from apps.experiments import services as experiments
+        from apps.pricing.services import current_surge
+
+        experiments.expose("surge-cap", rider.user)
+        multiplier = float(current_surge(zone))
+        cap = experiments.treatment_config("surge-cap", rider.user).get("surge_cap")
+        if cap is not None:
+            multiplier = min(multiplier, float(cap))
+        return self.rng.random() < min(0.6, max(0.0, multiplier - 1) * 0.5)
 
     PURPOSES = [
         "Client meeting",
