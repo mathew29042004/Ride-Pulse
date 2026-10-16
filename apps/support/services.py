@@ -278,6 +278,22 @@ def raise_sos(
     if TripFlag.SOS not in trip.flags:
         trip.flags = [*trip.flags, TripFlag.SOS]
         trip.save(update_fields=["flags", "updated_at"])
+    if trip.rider.user_id == user.pk:
+        from apps.rides import guardian
+        from apps.rides.models import ShareTrigger
+
+        # Guardian mode: the rider's loved ones see where they are right away. An unanswered
+        # Ride Check comes with the car's location; a pressed SOS with the phone's, if sent.
+        automatic = note.startswith("Automatic Ride Check")
+        guardian.start(
+            trip.rider,
+            ShareTrigger.NO_ANSWER if automatic else ShareTrigger.SOS,
+            trip=trip,
+            lat=None if automatic else lat,
+            lng=None if automatic else lng,
+            detail=note,
+            now=now,
+        )
     for role in (
         Role.OPS_MANAGER,
         Role.SUPPORT_AGENT,

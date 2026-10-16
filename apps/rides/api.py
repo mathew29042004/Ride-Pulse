@@ -1547,3 +1547,198 @@ class PackageQuoteView(ContextBindingMixin, APIView):
             days=data.get("days", 1),
         )
         return Response(PackageQuoteSerializer(result).data)
+
+
+# --- Guardian mode ---------------------------------------------------------------------------
+
+
+class GuardianSettingsSerializer(serializers.Serializer):
+    guardian_mode = serializers.BooleanField(required=False)
+    fake_call_name = serializers.CharField(required=False, max_length=30)
+
+
+class GuardianShareSerializer(serializers.Serializer):
+    trigger = serializers.ChoiceField(choices=["MANUAL", "SHAKE"], default="MANUAL")
+    lat = serializers.FloatField(required=False)
+    lng = serializers.FloatField(required=False)
+
+
+class GuardianPointSerializer(serializers.Serializer):
+    lat = serializers.FloatField(min_value=-90, max_value=90)
+    lng = serializers.FloatField(min_value=-180, max_value=180)
+
+
+def _share_row(share) -> dict | None:
+    from . import guardian
+
+    if share is None:
+        return None
+    return {
+        "id": share.pk,
+        "triggers": share.triggers,
+        "started_at": share.started_at,
+        "ended_at": share.ended_at,
+        "contacts_alerted": share.contacts_alerted,
+        "link": guardian.link(share),
+        "last_at": share.last_at,
+        "last_source": share.last_source,
+        "trip_id": share.trip_id,
+    }
+
+
+class GuardianViewSet(BaseViewSet):
+    """Guardian mode for riders; the open alerts for the safety team."""
+
+    rider_actions = ("status", "preferences", "share", "location", "safe")
+    capabilities = {"active": Cap.SAFETY_MANAGE, "close": Cap.SAFETY_MANAGE}
+
+    def _rider(self):
+        return self.request.user.rider_profile
+
+    def _open(self, rider):
+        from .models import EmergencyShare
+
+        return EmergencyShare.objects.filter(rider=rider, ended_at__isnull=True).first()
+
+    def _status(self, rider):
+        return {
+            "guardian_mode": rider.guardian_mode,
+            "fake_call_name": rider.fake_call_name,
+            "contacts": rider.contacts.count(),
+            "share": _share_row(self._open(rider)),
+        }
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def status(self, request):
+        return Response(self._status(self._rider()))
+
+    @extend_schema(request=GuardianSettingsSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="settings")
+    def preferences(self, request):
+        from apps.trust.models import ConsentPurpose
+        from apps.trust.privacy import set_consent
+
+        data = GuardianSettingsSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        rider = self._rider()
+        values = data.validated_data
+        if values.get("guardian_mode") and not rider.contacts.exists():
+            raise BusinessRuleViolation(
+                "Add at least one trusted contact first.", field="guardian_mode"
+            )
+        for field, value in values.items():
+            setattr(rider, field, value.strip() if isinstance(value, str) else value)
+        rider.save(update_fields=[*values, "updated_at"])
+        if values.get("guardian_mode"):
+            # Switching it on is the rider's consent to share their location with contacts.
+            set_consent(request.user, ConsentPurpose.CONTACT_SHARING, True)
+        return Response(self._status(rider))
+
+    @extend_schema(request=GuardianShareSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def share(self, request):
+        """Share my location now (or shake-to-SOS: on a trip it raises a full SOS)."""
+        from apps.support.services import raise_sos
+
+        from . import guardian
+        from .models import ShareTrigger
+
+        data = GuardianShareSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        rider = self._rider()
+        if not rider.contacts.exists():
+            raise BusinessRuleViolation("Add a trusted contact first so someone can see it.")
+        trip = guardian._active_trip(rider)
+        if v["trigger"] == "SHAKE" and trip is not None:
+            raise_sos(
+                trip=trip,
+                user=request.user,
+                lat=v.get("lat"),
+                lng=v.get("lng"),
+                note="Shake-to-SOS: the rider shook their phone.",
+            )
+            guardian.start(
+                rider, ShareTrigger.SHAKE, trip=trip, lat=v.get("lat"), lng=v.get("lng"), force=True
+            )
+        else:
+            guardian.start(
+                rider,
+                v["trigger"],
+                trip=trip,
+                lat=v.get("lat"),
+                lng=v.get("lng"),
+                force=True,
+            )
+        return Response(self._status(rider))
+
+    @extend_schema(request=GuardianPointSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def location(self, request):
+        from . import guardian
+
+        data = GuardianPointSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        share = guardian.phone_location(self._rider(), **data.validated_data)
+        return Response({"sharing": share is not None})
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def safe(self, request):
+        from . import guardian
+
+        rider = self._rider()
+        share = self._open(rider)
+        if share is not None:
+            guardian.end(share, user=request.user)
+        return Response(self._status(rider))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def active(self, request):
+        from .models import EmergencyShare
+
+        rows = EmergencyShare.objects.filter(ended_at__isnull=True).select_related(
+            "rider__user", "trip"
+        )
+        return Response(
+            [
+                {
+                    **_share_row(s),
+                    "rider": s.rider.name,
+                    "phone": s.rider.user.phone,
+                    "trip_number": s.trip.trip_number if s.trip_id else None,
+                    "lat": s.last_lat,
+                    "lng": s.last_lng,
+                    "reminders_sent": s.reminders_sent,
+                }
+                for s in rows
+            ]
+        )
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"(?P<share_id>\d+)/close")
+    def close(self, request, share_id=None):
+        from . import guardian
+        from .models import EmergencyShare
+
+        share = get_object_or_404(EmergencyShare, pk=share_id)
+        guardian.end(share, user=request.user)
+        return Response({"ended_at": share.ended_at})
+
+
+class SafeShareView(APIView):
+    """Public: what a trusted contact sees from the SMS link while the alert is open."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=["safety"])
+    def get(self, request, token):
+        from . import guardian
+
+        view = guardian.public_view(token)
+        if view is None:
+            raise NotFound("This link doesn't exist.")
+        return Response(view)

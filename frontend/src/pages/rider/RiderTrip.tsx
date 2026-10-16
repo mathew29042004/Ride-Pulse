@@ -13,6 +13,7 @@ import { CarCheck, StartCode } from "@/components/PickupVerification";
 import { FairShareCard } from "@/components/FairShare";
 import { LockFareButton, TripEcoLine } from "@/components/GreenAndLock";
 import { ParcelCard } from "@/components/ParcelForm";
+import { currentPosition, ShakeToSos, TripGuardian } from "@/components/Guardian";
 import { LostItemCard } from "@/components/LostItem";
 import { ReportCar } from "@/components/ReportCar";
 import { HomeSafeButton, NightSafeBar, RideCheckPrompt } from "@/components/SafetyPlus";
@@ -163,7 +164,8 @@ export default function RiderTrip() {
     onError,
   });
   const sos = useMutation({
-    mutationFn: (ambulance: boolean) => api.post(`trips/${id}/sos/`, { note: "Rider pressed SOS in the app", ambulance, lat: driverPos?.lat ?? trip?.pickup_lat, lng: driverPos?.lng ?? trip?.pickup_lng }),
+    // The phone's own location if it gives one (the server falls back to the car's).
+    mutationFn: async (ambulance: boolean) => api.post(`trips/${id}/sos/`, { note: "Rider pressed SOS in the app", ambulance, ...((await currentPosition()) ?? {}) }),
     onSuccess: (_d, ambulance) => { setSosOpen(false); toast.success(ambulance ? "Safety team alerted and an ambulance requested. Also call 108 if you can." : "Safety team alerted. Stay on the line; we're calling you now."); },
     onError,
   });
@@ -470,9 +472,11 @@ export default function RiderTrip() {
         <p className="mt-3 text-sm text-muted">
           In a life-threatening emergency, call <a className="font-bold text-danger" href="tel:112">112</a> (ambulance: <a className="font-bold text-danger" href="tel:108">108</a>).
         </p>
+        <TripGuardian active={active} />
       </Modal>
 
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} tripId={trip.id} />
+      <ShakeToSos active={active} />
     </div>
   );
 }

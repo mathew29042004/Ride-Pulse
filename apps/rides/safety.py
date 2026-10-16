@@ -280,6 +280,11 @@ def _raise(trip: Trip, kind: str, now: datetime) -> RideCheck | None:
             link="/drive",
         )
     broadcast.trip_event(trip.pk, "ride_check", {"id": check.pk, "kind": kind})
+    from . import guardian
+    from .models import ShareTrigger
+
+    # Guardian mode: contacts see the location at the first sign of trouble, not only later.
+    guardian.start(trip.rider, ShareTrigger.RIDE_CHECK, trip=trip, detail=label, now=now)
     return check
 
 
@@ -369,16 +374,27 @@ def answer(check: RideCheck, *, user, ok: bool, now: datetime | None = None) -> 
         check.status = RideCheckStatus.OK
         check.answered_at = now
         check.save(update_fields=["status", "answered_at"])
+        from . import guardian
+
+        guardian.rider_ok(trip.rider, now=now)
         return check
     return _escalate(check, status=RideCheckStatus.HELP, note="the rider asked for help", now=now)
 
 
 def answer_for_bots(now: datetime | None = None) -> int:
     """The simulator's riders and drivers are fine: answer their checks so ops isn't paged."""
+    from apps.riders.models import RiderProfile
+
+    from . import guardian
+
     open_checks = RideCheck.objects.filter(
         status=RideCheckStatus.OPEN, trip__rider__user__email__endswith=BOT_RIDER_DOMAIN
     )
-    return open_checks.update(status=RideCheckStatus.OK, answered_at=now or timezone.now())
+    rider_ids = set(open_checks.values_list("trip__rider_id", flat=True))
+    answered = open_checks.update(status=RideCheckStatus.OK, answered_at=now or timezone.now())
+    for rider in RiderProfile.objects.filter(pk__in=rider_ids).select_related("user"):
+        guardian.rider_ok(rider, now=now)
+    return answered
 
 
 def _require_rider(trip: Trip, user) -> None:

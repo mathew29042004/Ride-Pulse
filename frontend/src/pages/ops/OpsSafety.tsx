@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { BaseMap, PinMarker } from "@/components/map";
 import { OpsRideChecks } from "@/components/SafetyPlus";
+import { OpsGuardianShares } from "@/components/Guardian";
 import { Button, Card, CardHeader, EmptyState, KeyValue, PageHeader, StatusBadge, Textarea } from "@/components/ui";
 import { api } from "@/lib/api";
 import { ago, dateTime } from "@/lib/format";
@@ -93,6 +94,7 @@ export default function OpsSafety() {
           )}
         </div>
       )}
+      <OpsGuardianShares />
       <OpsRideChecks />
     </>
   );

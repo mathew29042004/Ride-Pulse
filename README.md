@@ -18,7 +18,7 @@ screen is alive the moment you open it, and a nightly pipeline turns it all into
 | --- | --- |
 | **Ride, parcel, rental, intercity** | Bike, auto and cars; bike parcels with a recipient delivery code; 1–8 h rentals; outstation one-way or round trips |
 | **Fair pricing** | Upfront fares, surge, promos, Ride Pass; **bid your fare** with driver counter-offers; **Sure Ride** (driver in N minutes or ₹30 back); **Fare Lock** for commutes |
-| **Safety** | Ride PIN / QR start, **Ride Check** (long stops, off-route, late, lost signal), **Night Safe** mode, trusted contacts, SOS desk, masked calls |
+| **Safety** | Ride PIN / QR start, **Ride Check** (long stops, off-route, late, lost signal), **Night Safe** mode, trusted contacts, **Guardian mode** (auto live-location to family, shake-to-SOS, fake call, 112), SOS desk, masked calls |
 | **Drivers first** | Boosts and tips 100% to drivers, **Fair Share Meter**, real earnings after costs, daily goals, going-home mode, **wellbeing breaks** |
 | **Built for India** | ₹ and GST, UPI/cards/cash/wallet, Razorpay, English/Tamil/Hindi with a **chat translation** bridge, IST everywhere |
 | **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 13 roles, manager workspace (tasks, stand-ups, scorecards), alerts that create tasks, morning briefing, demand forecast, fraud review |
@@ -358,6 +358,20 @@ unmapped is denied. Riders and drivers only ever see their own records.
   texts the live link to trusted contacts (up to 3: every ride, night rides, or only when shared),
   stops the driver ending the trip away from the drop unless the rider confirms, and adds an
   "I'm home safe" check-in. Ops see every check in the Safety desk.
+* **Guardian mode** (`rides.guardian`; opt-in for any rider, in Account → Safety): if something
+  goes wrong, the rider's live location goes to their loved ones without them doing anything.
+  * **Triggers**: SOS, shaking the phone hard three times (a 5-second countdown, then SOS), a Ride
+    Check firing or going unanswered, or "Share location".
+  * **What contacts get**: an SMS (and an in-app alert if they use Ride Pulse) with what happened,
+    the car and driver, a Google Maps pin, and a live page (`/safe/<token>`). The page follows
+    the rider's phone, and the car when the phone is quiet.
+  * **Phone gone quiet**: if nothing new arrives for 5 minutes, contacts get the last known
+    location again (every 10 minutes, at most 3 times).
+  * **It ends** on "I'm safe" (or "I'm OK" to a Ride Check), when the safety desk closes it, or
+    after 12 hours. Contacts are told, and the page stops showing a location.
+  * Switching Guardian mode on is the rider's recorded consent to share (DPDP).
+  * **Also**: a fake incoming call from a name the rider chooses, and one-tap 112 in the SOS
+    sheet. The safety desk lists open alerts with "what family sees".
 
 * **When a ride type isn't available:** bike taxis run 5 am – 11 pm (service hours per ride
   type). If nobody of that type is near the pickup, or it's closed, the booking screen suggests

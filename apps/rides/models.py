@@ -665,3 +665,61 @@ class ParcelDelivery(models.Model):
 
     def __str__(self) -> str:
         return f"{self.trip_id} → {self.recipient_name}"
+
+
+# --- Guardian mode: emergency location sharing -----------------------------------------------
+
+
+class ShareTrigger(models.TextChoices):
+    SOS = "SOS", "SOS pressed"
+    SHAKE = "SHAKE", "Phone shaken"
+    RIDE_CHECK = "RIDE_CHECK", "Ride Check alert"
+    NO_ANSWER = "NO_ANSWER", "Ride Check not answered"
+    MANUAL = "MANUAL", "Shared by the rider"
+
+
+class LocationSource(models.TextChoices):
+    PHONE = "PHONE", "Rider's phone"
+    CAR = "CAR", "The car (driver's app)"
+
+
+class EmergencyShare(models.Model):
+    """While something is wrong, the rider's live location goes to their trusted contacts (an
+    SMS with a map pin and a live link), until the rider taps "I'm safe" or it times out."""
+
+    rider = models.ForeignKey(
+        "riders.RiderProfile", on_delete=models.CASCADE, related_name="emergency_shares"
+    )
+    trip = models.ForeignKey(
+        Trip, null=True, blank=True, on_delete=models.SET_NULL, related_name="emergency_shares"
+    )
+    triggers = ArrayField(models.CharField(max_length=10), default=list)
+    detail = models.CharField(max_length=200, blank=True)
+    token = models.CharField(max_length=32, unique=True)
+    started_at = models.DateTimeField(db_index=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.CharField(max_length=8, blank=True)  # RIDER, OPS, EXPIRED
+    last_lat = models.FloatField(null=True, blank=True)
+    last_lng = models.FloatField(null=True, blank=True)
+    last_source = models.CharField(max_length=5, choices=LocationSource.choices, blank=True)
+    last_at = models.DateTimeField(null=True, blank=True)
+    contacts_alerted = models.PositiveSmallIntegerField(default=0)
+    reminders_sent = models.PositiveSmallIntegerField(default=0)
+    last_reminder_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["rider"],
+                condition=Q(ended_at__isnull=True),
+                name="one_open_share_per_rider",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.rider_id} {self.triggers}"
+
+    @property
+    def is_active(self) -> bool:
+        return self.ended_at is None

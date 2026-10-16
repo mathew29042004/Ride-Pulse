@@ -619,6 +619,9 @@ class Simulator:
         if clock.monotonic() - self.last_ride_check > 30:
             ride_safety.run_ride_checks()
             ride_safety.answer_for_bots()
+            from apps.rides import guardian
+
+            guardian.sweep()
             self.last_ride_check = clock.monotonic()
         self.rider_cancellations()
         if clock.monotonic() - self.last_staff > 20:

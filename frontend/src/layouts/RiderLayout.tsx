@@ -1,6 +1,7 @@
 import { Clock, House, User, Wallet } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
 
+import { GuardianBanner } from "@/components/Guardian";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { FrameAside, PhoneFrame } from "@/components/PhoneFrame";
 
@@ -37,6 +38,7 @@ export default function RiderLayout() {
       }
     >
       <OfflineBanner />
+      <GuardianBanner />
       <Outlet />
     </PhoneFrame>
   );

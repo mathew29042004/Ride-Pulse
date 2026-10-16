@@ -274,6 +274,7 @@ def seed(*, seed: int = 21, log=print) -> dict:
         stats["ratings"] = _ratings(rng)
         stats["opted_in"] = _consents(rng, now)
         stats.update(_cases(rng, now))
+        stats.update(guardian_seed(rng, now))
     log(f"  {stats}")
     return stats
 
@@ -421,3 +422,98 @@ def _cases(rng: random.Random, now) -> dict:
             claims.start_review(claim, reviewer=admin)
         made["claims"] += 1
     return made
+
+
+FAMILY = ["Amma", "Appa", "Akka", "Anna", "Thambi", "Thangai", "Paati", "Mama", "Didi", "Bhaiya"]
+
+
+def guardian_seed(rng: random.Random, now) -> dict:
+    """Trusted contacts for about a third of riders, Guardian mode for many of them, a few past
+    alerts and one open alert for the safety desk."""
+    import secrets as tokens
+
+    from apps.riders.models import RiderProfile, ShareMode, TrustedContact
+    from apps.rides.models import EmergencyShare, ShareTrigger, Trip
+
+    from .models import ConsentPurpose
+
+    if TrustedContact.objects.exists():
+        return {}
+    riders = list(RiderProfile.objects.select_related("user").order_by("pk"))
+    contacts, guarded = [], []
+    n = 0
+    for rider in riders:
+        demo = rider.user.email == "rider@ridepulse.dev"
+        if not demo and rng.random() > 0.33:
+            continue
+        for name in ["Amma", "Priya"] if demo else rng.sample(FAMILY, rng.choice([1, 1, 2])):
+            n += 1
+            contacts.append(
+                TrustedContact(
+                    rider=rider,
+                    name=name,
+                    phone=f"9{rng.randint(100000000, 999999999)}"[:10]
+                    if not demo
+                    else f"98765{n:05d}",
+                    share_mode=rng.choice(
+                        [ShareMode.NIGHT, ShareMode.NIGHT, ShareMode.ALWAYS, ShareMode.NEVER]
+                    ),
+                )
+            )
+        if demo or rng.random() < 0.4:
+            guarded.append(rider)
+    TrustedContact.objects.bulk_create(contacts, ignore_conflicts=True)
+    RiderProfile.objects.filter(pk__in=[r.pk for r in guarded]).update(guardian_mode=True)
+    for rider in guarded:
+        privacy.set_consent(rider.user, ConsentPurpose.CONTACT_SHARING, True)
+    # Past alerts: most ended with "I'm safe" within minutes.
+    alerts = 0
+    pool = [r for r in guarded if r.user.email != "rider@ridepulse.dev"]
+    for rider in rng.sample(pool, min(len(pool), 12)):
+        trip = Trip.objects.filter(rider=rider, status="COMPLETED").order_by("?").first()
+        if trip is None:
+            continue
+        started = trip.started_at or trip.requested_at
+        trigger = rng.choice(
+            [
+                ShareTrigger.RIDE_CHECK,
+                ShareTrigger.RIDE_CHECK,
+                ShareTrigger.SOS,
+                ShareTrigger.MANUAL,
+            ]
+        )
+        EmergencyShare.objects.create(
+            rider=rider,
+            trip=trip,
+            triggers=[trigger],
+            token=tokens.token_urlsafe(18)[:32],
+            started_at=started,
+            ended_at=started + timedelta(minutes=rng.randint(3, 25)),
+            ended_by=rng.choice(["RIDER", "RIDER", "RIDER", "OPS"]),
+            last_lat=trip.dropoff_lat,
+            last_lng=trip.dropoff_lng,
+            last_source="CAR",
+            last_at=started + timedelta(minutes=2),
+            contacts_alerted=rider.contacts.count(),
+        )
+        alerts += 1
+    # One alert still open, so the safety desk shows how it looks.
+    if pool:
+        rider = pool[0]
+        EmergencyShare.objects.create(
+            rider=rider,
+            triggers=[ShareTrigger.MANUAL],
+            detail="Shared from the app while walking home",
+            token=tokens.token_urlsafe(18)[:32],
+            started_at=now - timedelta(minutes=6),
+            last_lat=13.0418 + rng.uniform(-0.01, 0.01),
+            last_lng=80.2341 + rng.uniform(-0.01, 0.01),
+            last_source="PHONE",
+            last_at=now - timedelta(minutes=1),
+            contacts_alerted=rider.contacts.count(),
+        )
+    return {
+        "trusted_contacts": len(contacts),
+        "guardian_mode": len(guarded),
+        "guardian_alerts": alerts,
+    }

@@ -14,6 +14,7 @@ import SwitchAccount from "./pages/public/SwitchAccount";
 // Each app is its own chunk: riders never download the operations console.
 const RiderLayout = lazy(() => import("./layouts/RiderLayout"));
 const TrackTrip = lazy(() => import("./pages/public/TrackTrip"));
+const SafeShare = lazy(() => import("./pages/public/SafeShare"));
 const RiderHome = lazy(() => import("./pages/rider/RiderHome"));
 const RiderBook = lazy(() => import("./pages/rider/RiderBook"));
 const RiderPackages = lazy(() => import("./pages/rider/RiderPackages"));
@@ -123,6 +124,7 @@ export const router = createBrowserRouter([
   { path: "/signup", element: <Signup kind="rider" />, errorElement: <ErrorPage /> },
   { path: "/signup/driver", element: <Signup kind="driver" />, errorElement: <ErrorPage /> },
   { path: "/track/:token", element: lazyPage(<TrackTrip />), errorElement: <ErrorPage /> },
+  { path: "/safe/:token", element: lazyPage(<SafeShare />), errorElement: <ErrorPage /> },
   {
     path: "/ride",
     errorElement: <ErrorPage />,

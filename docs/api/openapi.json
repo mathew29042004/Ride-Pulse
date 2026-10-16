@@ -2740,6 +2740,61 @@
     ],
     "type": "object"
    },
+   "GuardianPointRequest": {
+    "properties": {
+     "lat": {
+      "format": "double",
+      "maximum": 90,
+      "minimum": -90,
+      "type": "number"
+     },
+     "lng": {
+      "format": "double",
+      "maximum": 180,
+      "minimum": -180,
+      "type": "number"
+     }
+    },
+    "required": [
+     "lat",
+     "lng"
+    ],
+    "type": "object"
+   },
+   "GuardianSettingsRequest": {
+    "properties": {
+     "fake_call_name": {
+      "maxLength": 30,
+      "minLength": 1,
+      "type": "string"
+     },
+     "guardian_mode": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "GuardianShareRequest": {
+    "properties": {
+     "lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "trigger": {
+      "allOf": [
+       {
+        "$ref": "#/components/schemas/TriggerEnum"
+       }
+      ],
+      "default": "MANUAL"
+     }
+    },
+    "type": "object"
+   },
    "Health": {
     "properties": {
      "database": {
@@ -8845,6 +8900,14 @@
      "payout.created",
      "safety.sos",
      "fraud.case_opened"
+    ],
+    "type": "string"
+   },
+   "TriggerEnum": {
+    "description": "* `MANUAL` - MANUAL\n* `SHAKE` - SHAKE",
+    "enum": [
+     "MANUAL",
+     "SHAKE"
     ],
     "type": "string"
    },
@@ -20655,6 +20718,320 @@
     ],
     "tags": [
      "riders"
+    ]
+   }
+  },
+  "/api/v1/safe/{token}/": {
+   "get": {
+    "description": "Public: what a trusted contact sees from the SMS link while the alert is open.",
+    "operationId": "safe_retrieve",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {}
+    ],
+    "tags": [
+     "safety"
+    ]
+   }
+  },
+  "/api/v1/safety/guardian/active/": {
+   "get": {
+    "description": "Guardian mode for riders; the open alerts for the safety team.",
+    "operationId": "safety_guardian_active_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "safety"
+    ]
+   }
+  },
+  "/api/v1/safety/guardian/location/": {
+   "post": {
+    "description": "Guardian mode for riders; the open alerts for the safety team.",
+    "operationId": "safety_guardian_location_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianPointRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianPointRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianPointRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "safety"
+    ]
+   }
+  },
+  "/api/v1/safety/guardian/safe/": {
+   "post": {
+    "description": "Guardian mode for riders; the open alerts for the safety team.",
+    "operationId": "safety_guardian_safe_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "safety"
+    ]
+   }
+  },
+  "/api/v1/safety/guardian/settings/": {
+   "post": {
+    "description": "Guardian mode for riders; the open alerts for the safety team.",
+    "operationId": "safety_guardian_settings_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianSettingsRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianSettingsRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianSettingsRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "safety"
+    ]
+   }
+  },
+  "/api/v1/safety/guardian/share/": {
+   "post": {
+    "description": "Share my location now (or shake-to-SOS: on a trip it raises a full SOS).",
+    "operationId": "safety_guardian_share_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianShareRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianShareRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/GuardianShareRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "safety"
+    ]
+   }
+  },
+  "/api/v1/safety/guardian/status/": {
+   "get": {
+    "description": "Guardian mode for riders; the open alerts for the safety team.",
+    "operationId": "safety_guardian_status_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "safety"
+    ]
+   }
+  },
+  "/api/v1/safety/guardian/{share_id}/close/": {
+   "post": {
+    "description": "Guardian mode for riders; the open alerts for the safety team.",
+    "operationId": "safety_guardian_close_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "share_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "safety"
     ]
    }
   },

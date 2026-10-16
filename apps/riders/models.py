@@ -41,6 +41,9 @@ class RiderProfile(AuditedModel, TimeStampedModel):
     co2_saved_g = models.PositiveBigIntegerField(default=0)
     # Night Safe mode: stricter Ride Checks, auto-share and drop control from 10 pm to 6 am.
     night_safety = models.BooleanField(default=True)
+    # Guardian mode (opt-in): if anything goes wrong, live location goes to trusted contacts.
+    guardian_mode = models.BooleanField(default=False)
+    fake_call_name = models.CharField(max_length=30, default="Amma")
     # Saved accessibility needs, added to every booking automatically.
     accessibility = ArrayField(models.CharField(max_length=12), default=list, blank=True)
     is_blocked = models.BooleanField(default=False)

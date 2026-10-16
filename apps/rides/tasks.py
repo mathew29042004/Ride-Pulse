@@ -29,3 +29,10 @@ def run_ride_checks() -> dict:
     from .safety import run_ride_checks as run
 
     return run()
+
+
+@shared_task(name="rides.guardian_sweep")
+def guardian_sweep() -> dict:
+    from .guardian import sweep
+
+    return sweep()

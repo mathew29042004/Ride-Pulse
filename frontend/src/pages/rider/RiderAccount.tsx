@@ -10,6 +10,7 @@ import { PushToggle } from "@/components/PushToggle";
 import { EcoCard, FareLocks } from "@/components/GreenAndLock";
 import { ProfilesSection } from "@/components/Profiles";
 import { RidePassCard } from "@/components/RidePassCard";
+import { GuardianSettings } from "@/components/Guardian";
 import { SafetySettings } from "@/components/SafetyPlus";
 import { Avatar, Button, Field, Input, Modal, Select, Stars } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -158,6 +159,7 @@ export default function RiderAccount() {
       <div className="divide-y divide-line">
         <PushToggle audience="rider" />
         <SafetySettings rider={rider} />
+        <GuardianSettings />
         <TrustLinks base="/ride" />
         <Link to="/ride/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
