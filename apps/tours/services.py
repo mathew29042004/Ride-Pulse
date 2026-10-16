@@ -2,8 +2,9 @@
 
 * **Price** (fixed when booking): the whole route from the pickup through every stop and back,
   at the intercity per-km rate for the car (at least 80 km a day), plus time at the places, plus
-  parking at each stop, the booking fee and GST. Multi-day tours add the driver's daily
-  allowance (all of it goes to the driver), as on outstation trips. Ops can adjust a package's
+  parking at each stop, the booking fee and GST, plus estimated highway tolls (to the driver).
+  Multi-day tours add the driver's daily allowance (all of it goes to the driver), as on
+  outstation trips. Ops can adjust a package's
   price by a percentage for the season.
 * **Driver ahead**: a day before (or right away when the tour is that close), the best-rated
   available driver in the city with the right car, a road-worthy vehicle and intercity rides
@@ -107,8 +108,23 @@ def tour_fare(
         lines.append(
             FareLine("TOUR_SEASON", f"{label} ({package.price_adjust_percent:+d}%)", adjust, "FARE")
         )
+    from apps.rides.packages import TOLL_PER_KM, TOLLED_SHARE
+
+    tolls = (
+        []
+        if package.category == TourCategory.CITY  # city tours don't use tolled highways
+        else [
+            FareLine(
+                "TOLLS",
+                "Tolls (estimated, paid by your driver)",
+                _m(r["km"] * TOLLED_SHARE * TOLL_PER_KM[ride_type.code]),
+                "BOOST",
+            )
+        ]
+    )
     return _breakdown(
         lines,
+        passthrough=tolls,
         fees=_booking_fee(city, ride_type) + PARKING_PER_STOP * r["stops"],
         allowance=terms["allowance"] * package.days if package.days > 1 else Decimal(0),
         distance_km=r["km"],

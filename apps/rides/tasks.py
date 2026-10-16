@@ -36,3 +36,10 @@ def guardian_sweep() -> dict:
     from .guardian import sweep
 
     return sweep()
+
+
+@shared_task(name="rides.lost_items_sweep")
+def lost_items_sweep() -> dict:
+    from .lost_items import sweep
+
+    return sweep()

@@ -3173,6 +3173,14 @@
    },
    "LostItem": {
     "properties": {
+     "category": {
+      "$ref": "#/components/schemas/LostItemCategoryEnum"
+     },
+     "closed_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
      "created_at": {
       "format": "date-time",
       "readOnly": true,
@@ -3186,7 +3194,22 @@
       "maxLength": 300,
       "type": "string"
      },
+     "found_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "hub_at": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
      "id": {
+      "readOnly": true,
+      "type": "integer"
+     },
+     "return_trip_id": {
+      "nullable": true,
       "readOnly": true,
       "type": "integer"
      },
@@ -3219,6 +3242,7 @@
      "created_at",
      "description",
      "id",
+     "return_trip_id",
      "rider_name",
      "status_label",
      "trip_id",
@@ -3242,8 +3266,56 @@
     ],
     "type": "object"
    },
+   "LostItemCategoryEnum": {
+    "description": "* `PHONE` - Phone\n* `WALLET` - Wallet or purse\n* `KEYS` - Keys\n* `DOCUMENTS` - Documents or ID\n* `BAG` - Bag\n* `ELECTRONICS` - Laptop or electronics\n* `CLOTHING` - Clothing\n* `OTHER` - Something else",
+    "enum": [
+     "PHONE",
+     "WALLET",
+     "KEYS",
+     "DOCUMENTS",
+     "BAG",
+     "ELECTRONICS",
+     "CLOTHING",
+     "OTHER"
+    ],
+    "type": "string"
+   },
+   "LostItemDeliveryRequest": {
+    "properties": {
+     "address": {
+      "maxLength": 255,
+      "type": "string"
+     },
+     "lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "payment_method": {
+      "default": "UPI",
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "lat",
+     "lng"
+    ],
+    "type": "object"
+   },
    "LostItemRequestRequest": {
     "properties": {
+     "category": {
+      "allOf": [
+       {
+        "$ref": "#/components/schemas/LostItemCategoryEnum"
+       }
+      ],
+      "default": "OTHER"
+     },
      "description": {
       "maxLength": 300,
       "minLength": 1,
@@ -3256,12 +3328,15 @@
     "type": "object"
    },
    "LostItemStatusEnum": {
-    "description": "* `REPORTED` - Waiting for the driver\n* `FOUND` - Driver found it\n* `NOT_FOUND` - Driver couldn't find it\n* `RETURNED` - Returned",
+    "description": "* `REPORTED` - Waiting for the driver\n* `FOUND` - Driver found it\n* `NOT_FOUND` - Driver couldn't find it\n* `ON_THE_WAY` - On its way to you\n* `AT_HUB` - Kept at the Ride Pulse hub\n* `RETURNED` - Returned\n* `DISPOSED` - Unclaimed (donated)",
     "enum": [
      "REPORTED",
      "FOUND",
      "NOT_FOUND",
-     "RETURNED"
+     "ON_THE_WAY",
+     "AT_HUB",
+     "RETURNED",
+     "DISPOSED"
     ],
     "type": "string"
    },
@@ -4398,6 +4473,37 @@
      "results": {
       "items": {
        "$ref": "#/components/schemas/Incident"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "count",
+     "results"
+    ],
+    "type": "object"
+   },
+   "PaginatedLostItemList": {
+    "properties": {
+     "count": {
+      "example": 123,
+      "type": "integer"
+     },
+     "next": {
+      "example": "http://api.example.org/accounts/?page=4",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "previous": {
+      "example": "http://api.example.org/accounts/?page=2",
+      "format": "uri",
+      "nullable": true,
+      "type": "string"
+     },
+     "results": {
+      "items": {
+       "$ref": "#/components/schemas/LostItem"
       },
       "type": "array"
      }
@@ -16353,6 +16459,122 @@
     ]
    }
   },
+  "/api/v1/ops/lost-found/": {
+   "get": {
+    "description": "Ops: every lost item that isn't closed, and the hub.",
+    "operationId": "ops_lost_found_list",
+    "parameters": [
+     {
+      "description": "Which field to use when ordering the results.",
+      "in": "query",
+      "name": "ordering",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A page number within the paginated result set.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Number of results to return per page.",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A search term.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaginatedLostItemList"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/lost-found/{item_id}/{verb}/": {
+   "post": {
+    "description": "Ops: every lost item that isn't closed, and the hub.",
+    "operationId": "ops_lost_found_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "item_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "verb",
+      "required": true,
+      "schema": {
+       "pattern": "^hub|returned|dispose$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LostItem"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/tours/bookings/{id}/assign/": {
    "post": {
     "description": "Ops: the catalogue with bookings and revenue, upcoming tours, unassigned ones.",
@@ -24491,6 +24713,67 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/LostItem"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "trips"
+    ]
+   }
+  },
+  "/api/v1/trips/{id}/lost-item/deliver/": {
+   "post": {
+    "description": "Rider: have the found item brought to you as a bike parcel.",
+    "operationId": "trips_lost_item_deliver_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this trip.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LostItemDeliveryRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/LostItemDeliveryRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/LostItemDeliveryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
         }
        }
       },

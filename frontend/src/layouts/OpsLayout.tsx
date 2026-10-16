@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, Building2, FlaskConical, Landmark, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, Building2, FlaskConical, Landmark, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Network, PackageSearch, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -77,6 +77,7 @@ const NAV = [
     items: [
       { to: "/ops/support", label: "Support", icon: Headset, cap: "support.view" },
       { to: "/ops/safety", label: "Safety (SOS)", icon: ShieldAlert, cap: "safety.manage", badge: "sos" as const },
+      { to: "/ops/lost-found", label: "Lost & found", icon: PackageSearch, cap: "support.view" },
       { to: "/ops/trust", label: "Trust & privacy", icon: ShieldCheck, cap: "privacy.manage" },
       { to: "/ops/audit", label: "Audit trail", icon: ScrollText, cap: "audit.view" },
       { to: "/ops/platform", label: "Platform health", icon: Activity, cap: "audit.view" },

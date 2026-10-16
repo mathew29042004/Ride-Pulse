@@ -57,6 +57,7 @@ router.register("ops/experiments", experiments.ExperimentsOpsViewSet, basename="
 router.register("ops/tours", tours.TourOpsViewSet, basename="ops-tours")
 router.register("tours", tours.TourViewSet, basename="tour")
 router.register("safety/guardian", rides.GuardianViewSet, basename="guardian")
+router.register("ops/lost-found", rides.LostFoundOpsViewSet, basename="ops-lost-found")
 router.register("riders", riders.RiderViewSet, basename="rider")
 router.register("driver/biz", fleet.DriverBusinessViewSet, basename="driver-biz")
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")

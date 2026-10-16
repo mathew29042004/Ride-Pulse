@@ -275,6 +275,7 @@ def seed(*, seed: int = 21, log=print) -> dict:
         stats["opted_in"] = _consents(rng, now)
         stats.update(_cases(rng, now))
         stats.update(guardian_seed(rng, now))
+        stats.update(lost_found_seed(rng, now))
     log(f"  {stats}")
     return stats
 
@@ -517,3 +518,71 @@ def guardian_seed(rng: random.Random, now) -> dict:
         "guardian_mode": len(guarded),
         "guardian_alerts": alerts,
     }
+
+
+LOST = [
+    ("PHONE", "Black Samsung phone, cracked corner"),
+    ("PHONE", "iPhone in a blue cover"),
+    ("WALLET", "Brown leather wallet"),
+    ("KEYS", "House keys on a Ganesha keyring"),
+    ("DOCUMENTS", "File with college certificates"),
+    ("BAG", "Grey laptop backpack"),
+    ("BAG", "Red handbag"),
+    ("ELECTRONICS", "Earbuds case (white)"),
+    ("CLOTHING", "Navy blue jacket"),
+    ("OTHER", "Umbrella with a wooden handle"),
+    ("OTHER", "Tiffin box"),
+]
+
+
+def lost_found_seed(rng: random.Random, now) -> dict:
+    """Lost items from last week's rides, run through the real flow: waiting, found, returned,
+    not found, and a few taken to the hub."""
+    from contextlib import suppress
+
+    from apps.core.exceptions import DomainError
+    from apps.rides import lost_items
+    from apps.rides.models import LostItemReport, Trip
+
+    if LostItemReport.objects.exists():
+        return {}
+    trips = list(
+        Trip.objects.filter(
+            status="COMPLETED",
+            service="RIDE",
+            driver__isnull=False,
+            completed_at__gte=now - timedelta(days=6),
+        )
+        .select_related("rider__user", "driver__user")
+        .order_by("?")[:40]
+    )
+    made = 0
+    for trip in trips:
+        category, description = rng.choice(LOST)
+        with suppress(DomainError):
+            item = lost_items.report(
+                trip, user=trip.rider.user, description=description, category=category
+            )
+            made += 1
+            roll = rng.random()
+            if roll < 0.2:
+                continue  # still waiting for the driver
+            found = roll < 0.85
+            item = lost_items.driver_answer(
+                item,
+                user=trip.driver.user,
+                found=found,
+                note=rng.choice(["On the back seat", "Under the seat", "In the boot", ""])
+                if found
+                else "Checked twice, nothing there",
+            )
+            if not found:
+                continue
+            if rng.random() < 0.5:
+                lost_items.mark_returned(item, user=trip.rider.user)
+            elif rng.random() < 0.4:
+                LostItemReport.objects.filter(pk=item.pk).update(
+                    found_at=now - timedelta(days=rng.randint(8, 12))
+                )
+    moved = lost_items.sweep(now=now)
+    return {"lost_items": made, "lost_to_hub": moved["to_hub"]}

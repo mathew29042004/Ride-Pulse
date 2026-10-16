@@ -232,6 +232,7 @@ SPECTACULAR_SETTINGS = {
         "ServiceKindEnum": "apps.fleet.models.ServiceKind",
         "VehicleIssueKindEnum": "apps.fleet.models.IssueKind",
         "RiderCarIssueKindEnum": ["AC", "CLEANLINESS", "SEATBELTS", "OTHER"],
+        "LostItemCategoryEnum": "apps.rides.models.LostItemCategory",
         "TaskUpdateStatusEnum": [("IN_PROGRESS", "IN_PROGRESS"), ("DONE", "DONE")],
         "OnlinePaymentMethodEnum": [("UPI", "UPI"), ("CARD", "CARD"), ("WALLET", "WALLET")],
         "ParcelCategoryEnum": "apps.rides.models.ParcelCategory",
@@ -279,6 +280,7 @@ CELERY_BEAT_SCHEDULE = {
     "price-alerts": {"task": "pricing.check_price_alerts", "schedule": timedelta(minutes=2)},
     "ride-checks": {"task": "rides.run_ride_checks", "schedule": timedelta(minutes=1)},
     "guardian": {"task": "rides.guardian_sweep", "schedule": timedelta(minutes=1)},
+    "lost-items": {"task": "rides.lost_items_sweep", "schedule": timedelta(hours=1)},
     "driver-wellbeing": {"task": "drivers.wellbeing_sweep", "schedule": timedelta(minutes=5)},
     "tours": {"task": "tours.sweep", "schedule": timedelta(minutes=5)},
     "city-coverage": {"task": "pricing.sync_city_coverage", "schedule": crontab(hour=5, minute=0)},
@@ -415,6 +417,11 @@ RIDE_PULSE = {
     "WELLBEING_WARN_MINUTES": 30,
     "WELLBEING_BONUS_AFTER_MINUTES": 240,
     "WELLBEING_REST_BONUS": "10",
+    # At most 12 hours online in any 24, then 8 hours off; after 6 working days, a nudge to rest.
+    "WELLBEING_DAILY_MAX_MINUTES": 720,
+    "WELLBEING_LONG_REST_MINUTES": 480,
+    "WELLBEING_WEEK_DAYS_LIMIT": 6,
+    "WELLBEING_DAY_COUNTS_AFTER_MINUTES": 240,
     # Rough running cost per km (fuel/charge + upkeep) for the drivers' real hourly earnings.
     "RUNNING_COST_PER_KM": {"BIKE": "2.2", "AUTO": "3.5", "MINI": "6", "SEDAN": "7", "SUV": "9"},
     "GOING_HOME_PER_DAY": 2,

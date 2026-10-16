@@ -347,6 +347,13 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Lost and found:** up to 7 days after a ride the rider reports an item; the driver answers
   Found / Not in my car, masked calls reopen for 24 hours, and a support ticket tracks it until
   the item is handed back.
+  * Phones, wallets, keys and documents are valuables, with urgent tickets.
+  * A found item can come back as a **bike parcel** ("Deliver it to me"), paid like any parcel.
+    It's marked returned when delivered.
+  * An item nobody collects within 7 days goes to the **city hub**, and is donated after 30 days
+    there, with notice to the rider.
+  * Drivers who haven't answered within 12 hours get a reminder.
+  * Ops → **Lost & found** runs it all.
 * **Tamil and Hindi:** the rider and driver apps switch language from Account (kept on the
   device); anything not yet translated shows in English.
 
@@ -395,6 +402,10 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Intercity (outstation):** from a served city to anywhere 40–600 km away, one-way or round
   trip for 1–7 days. Per-km pricing (minimum 100 km one-way, 250 km a day for round trips) plus
   a ₹300/day driver allowance that is all the driver's; car drivers can opt out of intercity.
+  Shown up front and passed straight to the driver, with no commission and no GST:
+  * estimated **tolls** (about 70% of the route on tolled highways)
+  * an **interstate permit** when the destination is in another state
+  * a **night driving allowance** when the drive runs between 10 pm and 6 am
 
 * **Fare Lock:** from a finished ride, lock that route's normal price for a week (₹49) on
   chosen weekdays within an hour of the same time; surge never applies and Ride Pulse covers
@@ -521,6 +532,9 @@ unmapped is denied. Riders and drivers only ever see their own records.
 * **Driver Wellbeing:** after 6 hours of driving (pauses under 20 minutes don't count as rest)
   drivers get no new offers and are taken offline for a 20-minute break, with a warning 30
   minutes before; a proper break after 4+ hours pays a ₹10 rest bonus once a day.
+  * **At most 12 hours online in any 24**, then 8 hours off.
+  * After **6 working days** in a week, a nudge to take a day off.
+  * On a break, the app suggests nearby places to rest: malls and stations, and chargers for EVs.
 
 ### Production essentials
 * **Phone login with SMS codes** (`/api/v1/auth/otp/…`): 6-digit codes stored only as HMACs,

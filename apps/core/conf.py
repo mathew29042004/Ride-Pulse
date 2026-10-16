@@ -218,6 +218,10 @@ def wellbeing_rules() -> dict:
         "warn_minutes": int(_value("WELLBEING_WARN_MINUTES")),
         "bonus_after_minutes": int(_value("WELLBEING_BONUS_AFTER_MINUTES")),
         "rest_bonus": _decimal("WELLBEING_REST_BONUS"),
+        "daily_max_minutes": int(_value("WELLBEING_DAILY_MAX_MINUTES")),
+        "long_rest_minutes": int(_value("WELLBEING_LONG_REST_MINUTES")),
+        "week_days_limit": int(_value("WELLBEING_WEEK_DAYS_LIMIT")),
+        "day_counts_after_minutes": int(_value("WELLBEING_DAY_COUNTS_AFTER_MINUTES")),
     }
 
 

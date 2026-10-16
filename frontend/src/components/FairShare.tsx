@@ -43,6 +43,11 @@ export interface Wellbeing {
   rest_bonus: string;
   rest_bonus_after_minutes: number;
   rest_bonus_paid_today: boolean;
+  daily_minutes: number;
+  daily_limit_minutes: number;
+  days_driven_this_week: number;
+  week_days_limit: number;
+  rest_stops: { name: string; kind: string; km: number }[];
 }
 
 const COLOURS: Record<string, string> = {
@@ -151,6 +156,8 @@ export function WellbeingChip() {
     <div className={clsx("mt-0.5 flex items-center gap-1 text-[11px] font-semibold", close ? "text-amber-600" : "text-muted")}>
       <Timer className="size-3" />
       {t("{time} driving", { time: hm(w.driving_minutes) })} · {w.minutes_left ? t("break in {time}", { time: hm(w.minutes_left) }) : t("break due")}
+      <span className={clsx(w.daily_minutes >= w.daily_limit_minutes - 60 && "text-amber-600")}>· {t("{a} of {b} today", { a: hm(w.daily_minutes), b: `${w.daily_limit_minutes / 60}h` })}</span>
+      {w.days_driven_this_week >= w.week_days_limit && <span className="text-amber-600">· {t("take a day off soon")}</span>}
     </div>
   );
 }
@@ -162,13 +169,24 @@ export function BreakCard() {
   if (!w?.on_break_until) return null;
   const left = Math.max(0, Math.ceil((new Date(w.on_break_until).getTime() - now) / 1000));
   if (!left) return null;
+  const long = left > 3600;
   return (
     <div className="mb-3 flex items-center gap-3 rounded-2xl bg-sky-50 p-3 text-sm text-sky-950 dark:bg-sky-400/10 dark:text-sky-100">
       <Coffee className="size-6 shrink-0" />
       <div className="flex-1">
-        <div className="font-semibold">{t("Rest break")}</div>
-        <div className="text-xs">{t("You've been driving a long time. Stretch, drink some water. Back online in {time}.", { time: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` })}</div>
-        {!w.rest_bonus_paid_today && <div className="mt-0.5 text-xs font-semibold">{t("₹{n} rest bonus when you come back", { n: Number(w.rest_bonus) })}</div>}
+        <div className="font-semibold">{long ? t("Rest until tomorrow") : t("Rest break")}</div>
+        <div className="text-xs">
+          {long
+            ? t("That's 12 hours on the road today. Get some sleep: back online at {time}.", { time: new Date(w.on_break_until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) })
+            : t("You've been driving a long time. Stretch, drink some water. Back online in {time}.", { time: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` })}
+        </div>
+        {!w.rest_bonus_paid_today && !long && <div className="mt-0.5 text-xs font-semibold">{t("₹{n} rest bonus when you come back", { n: Number(w.rest_bonus) })}</div>}
+        {w.rest_stops.length > 0 && (
+          <div className="mt-1.5 text-xs">
+            <span className="font-semibold">{t("Places to rest nearby")}: </span>
+            {w.rest_stops.map((p) => `${p.name} (${p.kind.toLowerCase()}, ${p.km} km)`).join(" · ")}
+          </div>
+        )}
       </div>
     </div>
   );

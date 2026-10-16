@@ -29,6 +29,7 @@ from . import calls, dispatch, invoices, lost_items, pickup, safety, services, s
 from .models import (
     ACTIVE_STATUSES,
     FareSplit,
+    LostItemCategory,
     LostItemReport,
     ParcelCategory,
     ParcelDelivery,
@@ -547,9 +548,14 @@ class LostItemSerializer(serializers.ModelSerializer):
             "trip_number",
             "rider_name",
             "description",
+            "category",
             "status",
             "status_label",
             "driver_note",
+            "return_trip_id",
+            "found_at",
+            "hub_at",
+            "closed_at",
             "created_at",
             "updated_at",
         ]
@@ -557,6 +563,14 @@ class LostItemSerializer(serializers.ModelSerializer):
 
 class LostItemRequestSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=300)
+    category = serializers.ChoiceField(choices=LostItemCategory.choices, default="OTHER")
+
+
+class LostItemDeliverySerializer(serializers.Serializer):
+    lat = serializers.FloatField()
+    lng = serializers.FloatField()
+    address = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    payment_method = serializers.CharField(required=False, default="UPI")
 
 
 class LostItemAnswerSerializer(serializers.Serializer):
@@ -659,6 +673,7 @@ RIDER = (
     "split",
     "lost_item",
     "lost_item_returned",
+    "lost_item_delivery",
     "vehicle_issue",
     "early_drop",
     "home_safe",
@@ -1058,6 +1073,22 @@ class TripViewSet(
             **serializer.validated_data,
         )
         return Response({"id": issue.pk, "status": issue.status}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=LostItemDeliverySerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="lost-item/deliver")
+    def lost_item_delivery(self, request, pk=None):
+        """Rider: have the found item brought to you as a bike parcel."""
+        data = LostItemDeliverySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        parcel = lost_items.request_delivery(
+            self._lost_item(),
+            user=request.user,
+            dropoff=(v["lat"], v["lng"]),
+            dropoff_address=v.get("address", ""),
+            payment_method=v["payment_method"],
+        )
+        return Response({"trip_id": parcel.pk, "trip_number": parcel.trip_number}, status=201)
 
     @extend_schema(request=LostItemAnswerSerializer, responses=LostItemSerializer)
     @action(detail=True, methods=["post"], url_path="lost-item/answer")
@@ -1742,3 +1773,46 @@ class SafeShareView(APIView):
         if view is None:
             raise NotFound("This link doesn't exist.")
         return Response(view)
+
+
+class LostFoundOpsViewSet(BaseViewSet):
+    """Ops: every lost item that isn't closed, and the hub."""
+
+    capabilities = {"*": Cap.SUPPORT_VIEW, "act": Cap.SUPPORT_MANAGE}
+    queryset = LostItemReport.objects.none()
+
+    @extend_schema(responses=LostItemSerializer(many=True))
+    def list(self, request):
+        from .models import LostItemStatus
+
+        rows = (
+            LostItemReport.objects.exclude(
+                status__in=[LostItemStatus.RETURNED, LostItemStatus.DISPOSED]
+            )
+            .select_related("trip__rider__user", "trip__driver__user", "trip__city")
+            .order_by("-created_at")[:300]
+        )
+        data = LostItemSerializer(rows, many=True).data
+        for row, item in zip(data, rows, strict=True):
+            row["driver_name"] = item.trip.driver.name if item.trip.driver_id else None
+            row["city"] = item.trip.city.name
+        return Response(data)
+
+    @extend_schema(request=None, responses=LostItemSerializer)
+    @action(
+        detail=False, methods=["post"], url_path=r"(?P<item_id>\d+)/(?P<verb>hub|returned|dispose)"
+    )
+    def act(self, request, item_id=None, verb=None):
+        item = get_object_or_404(
+            LostItemReport.objects.select_related(
+                "trip__rider__user", "trip__driver__user", "trip__city"
+            ),
+            pk=item_id,
+        )
+        if verb == "hub":
+            item = lost_items.to_hub(item)
+        elif verb == "returned":
+            item = lost_items.mark_returned(item, user=request.user)
+        else:
+            item = lost_items.dispose(item)
+        return Response(LostItemSerializer(item).data)

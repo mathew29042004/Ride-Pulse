@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PackageSearch } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { CallButton } from "@/components/CallButton";
@@ -17,13 +18,25 @@ export interface LostItem {
   trip_number: string;
   rider_name: string;
   description: string;
-  status: "REPORTED" | "FOUND" | "NOT_FOUND" | "RETURNED";
+  status: "REPORTED" | "FOUND" | "NOT_FOUND" | "ON_THE_WAY" | "AT_HUB" | "RETURNED" | "DISPOSED";
+  category?: string;
+  return_trip_id?: number | null;
   status_label: string;
   driver_note: string;
   created_at: string;
 }
 
 const REPORT_DAYS = 7;
+const CATEGORIES = [
+  ["PHONE", "Phone"],
+  ["WALLET", "Wallet or purse"],
+  ["KEYS", "Keys"],
+  ["DOCUMENTS", "Documents or ID"],
+  ["BAG", "Bag"],
+  ["ELECTRONICS", "Laptop or electronics"],
+  ["CLOTHING", "Clothing"],
+  ["OTHER", "Something else"],
+] as const;
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 
 /** On a completed trip (rider side): report, then follow the driver's answer. */
@@ -33,8 +46,25 @@ export function LostItemCard({ trip }: { trip: Trip }) {
   const item = useQuery({ queryKey: key, queryFn: async () => (await api.get<LostItem | undefined>(`trips/${trip.id}/lost-item/`)) ?? null });
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("OTHER");
+  const navigate = useNavigate();
+  const deliver = useMutation({
+    // To where the rider is now (or their pickup point if the phone gives no location).
+    mutationFn: async () => {
+      const here = await new Promise<{ lat: number; lng: number } | null>((resolve) =>
+        "geolocation" in navigator ? navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }), () => resolve(null), { timeout: 5000 }) : resolve(null),
+      );
+      return api.post<{ trip_id: number }>(`trips/${trip.id}/lost-item/deliver/`, { ...(here ?? { lat: trip.pickup_lat, lng: trip.pickup_lng }), address: here ? "My location" : trip.pickup_address });
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: key });
+      toast.success("A courier will bring it to you.");
+      navigate(`/ride/trips/${r.trip_id}`);
+    },
+    onError: (err) => toast.error(errorText(err, "Couldn't book the delivery.")),
+  });
   const send = useMutation({
-    mutationFn: () => api.post<LostItem>(`trips/${trip.id}/lost-item/`, { description }),
+    mutationFn: () => api.post<LostItem>(`trips/${trip.id}/lost-item/`, { description, category }),
     onSuccess: (row) => {
       qc.setQueryData(key, row);
       setOpen(false);
@@ -66,13 +96,24 @@ export function LostItemCard({ trip }: { trip: Trip }) {
           {row.status === "REPORTED" && <p className="mt-1 text-xs text-muted">Waiting for your driver to check the car.</p>}
           {row.status === "NOT_FOUND" && <p className="mt-1 text-xs text-muted">Our support team will follow up on your ticket.</p>}
           {row.status === "FOUND" && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <CallButton tripId={trip.id} name={trip.driver?.name ?? "your driver"} />
-              <Button variant="secondary" loading={returned.isPending} onClick={() => returned.mutate()}>
-                I got it back
+            <>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <CallButton tripId={trip.id} name={trip.driver?.name ?? "your driver"} />
+                <Button variant="secondary" loading={returned.isPending} onClick={() => returned.mutate()}>
+                  I got it back
+                </Button>
+              </div>
+              <Button className="mt-2 w-full" variant="outline" loading={deliver.isPending} onClick={() => deliver.mutate()}>
+                Deliver it to me (bike parcel)
               </Button>
-            </div>
+            </>
           )}
+          {row.status === "ON_THE_WAY" && row.return_trip_id && (
+            <Button className="mt-2 w-full" variant="outline" onClick={() => navigate(`/ride/trips/${row.return_trip_id}`)}>
+              Track the delivery
+            </Button>
+          )}
+          {row.status === "AT_HUB" && <p className="mt-1 text-xs text-muted">It's at our hub in your city. Collect it within 30 days with your ID, or ask support to deliver it.</p>}
         </div>
       ) : (
         <button onClick={() => setOpen(true)} className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-surface-2 px-4 py-3 text-left text-sm font-semibold">
@@ -90,6 +131,13 @@ export function LostItemCard({ trip }: { trip: Trip }) {
         }
       >
         <p className="mb-2 text-sm text-muted">Describe it so your driver can find it. You can call each other through the app for 24 hours.</p>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="mb-2 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm" aria-label="What did you lose?">
+          {CATEGORIES.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         <Textarea rows={3} maxLength={300} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Black backpack on the back seat" />
       </Modal>
     </>

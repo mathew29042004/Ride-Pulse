@@ -5,8 +5,13 @@
   added at the end.
 * **Intercity** (like Ola Outstation): from a served city to anywhere 40–600 km away, one-way
   or a round trip over 1–7 days. Priced per km (at least 100 km one-way, 250 km a day on round
-  trips) plus a daily driver allowance that's all the driver's. Tolls and parking are paid on
-  the way.
+  trips) plus a daily driver allowance that's all the driver's. Shown up front and passed
+  straight to the driver (no commission, no GST on them):
+  * **Tolls** (estimated): about 70% of the route is on tolled highways, at a rate per km for
+    the car;
+  * **Interstate permit** when the destination is in another state (each entry);
+  * **Night driving allowance** when the drive runs between 10 pm and 6 am.
+  Parking on the way is paid by the rider directly.
 
 Both are priced here (GST and commission like rides) and then run through the normal trip,
 dispatch, payment and safety machinery.
@@ -52,8 +57,10 @@ def _breakdown(
     allowance: Decimal = Decimal(0),
     distance_km: Decimal,
     duration_minutes: Decimal,
+    passthrough: list[FareLine] = (),
 ) -> FareBreakdown:
-    """Commission on the fare, GST on fare + fees; the driver allowance is all the driver's."""
+    """Commission on the fare, GST on fare + fees; the driver allowance and pass-through costs
+    (tolls, permits, night allowance) are all the driver's, untaxed."""
     ride_fare = sum((line.amount for line in fare_lines), Decimal(0))
     commission = _m(ride_fare * platform_commission_percent() / 100)
     lines = list(fare_lines)
@@ -66,6 +73,9 @@ def _breakdown(
         lines.append(
             FareLine("ALLOWANCE", "Driver allowance (100% to your driver)", allowance, "BOOST")
         )
+    extra = sum((line.amount for line in passthrough), Decimal(0))
+    lines.extend(passthrough)
+    allowance += extra
     return FareBreakdown(
         lines=lines,
         distance_km=_m(distance_km),
@@ -147,6 +157,39 @@ def intercity_distance(pickup, dropoff) -> Decimal:
     return _m(Decimal(haversine_km(*pickup, *dropoff)) * ROAD_FACTOR)
 
 
+TOLL_PER_KM = {"MINI": Decimal("1.6"), "SEDAN": Decimal("1.6"), "SUV": Decimal("2.6")}
+TOLLED_SHARE = Decimal("0.7")
+INTERSTATE_PERMIT = {"MINI": Decimal(400), "SEDAN": Decimal(450), "SUV": Decimal(650)}
+NIGHT_ALLOWANCE = Decimal(250)
+NIGHT_HOURS = (22, 6)
+
+
+def destination_state(dropoff: tuple[float, float] | None) -> str | None:
+    """The state of the nearest served city within 150 km of the destination (None: unknown)."""
+    from apps.geo.models import City
+
+    if dropoff is None:
+        return None
+    best = min(
+        ((haversine_km(*dropoff, c.center_lat, c.center_lng), c.state) for c in City.objects.all()),
+        default=None,
+    )
+    return best[1] if best and best[0] <= 150 else None
+
+
+def drives_at_night(depart_at: datetime | None, minutes: Decimal) -> bool:
+    if depart_at is None:
+        return False
+    start = timezone.localtime(depart_at)
+    end = start + timedelta(minutes=float(minutes))
+    t = start
+    while t <= end:
+        if t.hour >= NIGHT_HOURS[0] or t.hour < NIGHT_HOURS[1]:
+            return True
+        t += timedelta(minutes=30)
+    return False
+
+
 def intercity_fare(
     city,
     ride_type: RideType,
@@ -155,6 +198,8 @@ def intercity_fare(
     round_trip: bool = False,
     days: int = 1,
     driven_km: Decimal | None = None,
+    dropoff: tuple[float, float] | None = None,
+    depart_at: datetime | None = None,
 ) -> FareBreakdown:
     terms = intercity_terms()
     rate = terms["per_km"].get(ride_type.code)
@@ -174,12 +219,31 @@ def intercity_fare(
         FareLine("INTERCITY", f"{label}: {billed:.0f} km × ₹{rate:.2f}", _m(billed * rate), "FARE")
     ]
     hours = route_km / HIGHWAY_KMH * 60
+    extra = [
+        FareLine(
+            "TOLLS",
+            "Tolls (estimated, paid by your driver)",
+            _m(route_km * TOLLED_SHARE * TOLL_PER_KM.get(ride_type.code, Decimal("1.6"))),
+            "BOOST",
+        )
+    ]
+    state = destination_state(dropoff)
+    if state and state != city.state:
+        extra.append(
+            FareLine(
+                "PERMIT", f"Interstate permit ({state})", INTERSTATE_PERMIT[ride_type.code], "BOOST"
+            )
+        )
+    one_way_minutes = distance_km / HIGHWAY_KMH * 60
+    if drives_at_night(depart_at, one_way_minutes):
+        extra.append(FareLine("NIGHT", "Night driving allowance", NIGHT_ALLOWANCE, "BOOST"))
     return _breakdown(
         lines,
         fees=_booking_fee(city, ride_type),
         allowance=terms["allowance"] * days,
         distance_km=route_km,
         duration_minutes=hours,
+        passthrough=extra,
     )
 
 
@@ -213,7 +277,15 @@ def quotes(
             if service == Service.RENTAL:
                 fare = rental_fare(city, ride_type, hours or 2)
             else:
-                fare = intercity_fare(city, ride_type, distance, round_trip=round_trip, days=days)
+                fare = intercity_fare(
+                    city,
+                    ride_type,
+                    distance,
+                    round_trip=round_trip,
+                    days=days,
+                    dropoff=dropoff,
+                    depart_at=at,
+                )
         except BusinessRuleViolation:
             continue  # this car type isn't offered in the city right now (see pricing.coverage)
         nearest = _nearby(
@@ -313,7 +385,15 @@ def request_package_trip(
         duration = Decimal(hours * 60)
     elif service == Service.INTERCITY:
         distance = _check_destination(city, pickup, dropoff)
-        fare = intercity_fare(city, ride_type, distance, round_trip=round_trip, days=days)
+        fare = intercity_fare(
+            city,
+            ride_type,
+            distance,
+            round_trip=round_trip,
+            days=days,
+            dropoff=dropoff,
+            depart_at=now,
+        )
         km, duration = None, fare.duration_minutes
     else:
         raise BusinessRuleViolation("Choose a rental or an intercity trip.", field="service")
@@ -404,6 +484,8 @@ def final_fare(trip: Trip, *, distance: Decimal, duration: Decimal) -> FareBreak
         round_trip=trip.round_trip,
         days=trip.trip_days,
         driven_km=distance,
+        dropoff=(trip.dropoff_lat, trip.dropoff_lng),
+        depart_at=trip.requested_at,
     )
 
 

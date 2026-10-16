@@ -83,7 +83,7 @@ def test_long_stretch_warns_then_forces_a_break(mini, make_driver, now):
     rides.cancel_trip(trip, user=trip.rider.user, now=later)
 
     # ...and the sweep takes them offline for a 20-minute break.
-    assert wellbeing.sweep(later) == {"warned": 0, "break": 1}
+    assert wellbeing.sweep(later)["break"] == 1
     driver.refresh_from_db()
     assert driver.availability == Availability.OFFLINE
     assert driver.break_until == later + timedelta(minutes=20)
@@ -125,3 +125,39 @@ def test_api(api, rider, mini, make_driver, now):
     assert summary["trips"] == 1 and "net_per_hour" in summary
     status = api(driver.user).get("/api/v1/driver/wellbeing/").json()
     assert status["limit_minutes"] == 360 and status["on_break_until"] is None
+
+
+def test_twelve_hours_in_a_day_means_eight_hours_off(make_driver, now):
+    driver = make_driver(now=now)
+    DriverSession.objects.filter(driver=driver).delete()
+    # Four 3h20m stretches with proper breaks between them: no single stretch is too long,
+    # but together they pass 12 hours in 24.
+    for k in range(4):
+        start = now - timedelta(hours=16) + timedelta(hours=4 * k)
+        DriverSession.objects.create(
+            driver=driver, started_at=start, ended_at=start + timedelta(hours=3, minutes=20)
+        )
+    DriverSession.objects.create(driver=driver, started_at=now - timedelta(minutes=30))
+    DriverProfile.objects.filter(pk=driver.pk).update(availability=Availability.ONLINE)
+    assert wellbeing.daily_minutes(driver, now) >= 720
+    assert wellbeing.needs_break(driver, now)
+    assert wellbeing.enforce(driver, now) == "break"
+    driver.refresh_from_db()
+    assert driver.break_until == now + timedelta(hours=8)
+    with pytest.raises(BusinessRuleViolation):
+        drivers.go_online(driver, lat=T_NAGAR[0], lng=T_NAGAR[1], now=now + timedelta(hours=2))
+    status = wellbeing.status(driver, now)
+    assert status["daily_limit_minutes"] == 720 and status["rest_stops"]  # nearby places to rest
+
+
+def test_six_working_days_nudges_a_day_off(make_driver, now):
+    driver = make_driver(now=now)
+    DriverSession.objects.filter(driver=driver).delete()
+    for back in range(6):
+        start = now - timedelta(days=back, hours=5)
+        DriverSession.objects.create(
+            driver=driver, started_at=start, ended_at=start + timedelta(hours=4, minutes=30)
+        )
+    assert wellbeing.days_driven(driver, now) >= 6
+    assert wellbeing.nudge_day_off(driver, now)
+    assert not wellbeing.nudge_day_off(driver, now)  # once a week

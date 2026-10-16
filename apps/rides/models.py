@@ -579,7 +579,21 @@ class LostItemStatus(models.TextChoices):
     REPORTED = "REPORTED", "Waiting for the driver"
     FOUND = "FOUND", "Driver found it"
     NOT_FOUND = "NOT_FOUND", "Driver couldn't find it"
+    ON_THE_WAY = "ON_THE_WAY", "On its way to you"
+    AT_HUB = "AT_HUB", "Kept at the Ride Pulse hub"
     RETURNED = "RETURNED", "Returned"
+    DISPOSED = "DISPOSED", "Unclaimed (donated)"
+
+
+class LostItemCategory(models.TextChoices):
+    PHONE = "PHONE", "Phone"
+    WALLET = "WALLET", "Wallet or purse"
+    KEYS = "KEYS", "Keys"
+    DOCUMENTS = "DOCUMENTS", "Documents or ID"
+    BAG = "BAG", "Bag"
+    ELECTRONICS = "ELECTRONICS", "Laptop or electronics"
+    CLOTHING = "CLOTHING", "Clothing"
+    OTHER = "OTHER", "Something else"
 
 
 class LostItemReport(models.Model):
@@ -587,8 +601,18 @@ class LostItemReport(models.Model):
 
     trip = models.OneToOneField(Trip, on_delete=models.CASCADE, related_name="lost_item")
     description = models.CharField(max_length=300)
+    category = models.CharField(
+        max_length=11, choices=LostItemCategory.choices, default=LostItemCategory.OTHER
+    )
+    # "Deliver it to me": a parcel from the driver to the rider, paid by the rider.
+    return_trip = models.ForeignKey(
+        Trip, null=True, blank=True, on_delete=models.SET_NULL, related_name="returning_item"
+    )
+    found_at = models.DateTimeField(null=True, blank=True)
+    hub_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
-        max_length=9, choices=LostItemStatus.choices, default=LostItemStatus.REPORTED
+        max_length=10, choices=LostItemStatus.choices, default=LostItemStatus.REPORTED
     )
     driver_note = models.CharField(max_length=300, blank=True)
     ticket = models.ForeignKey(
