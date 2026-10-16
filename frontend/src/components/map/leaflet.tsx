@@ -163,11 +163,11 @@ export function MapDot({ center, radius = 6, color, label, onClick }: DotProps) 
   );
 }
 
-export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey }: FitBoundsProps) {
+export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey, inset = false }: FitBoundsProps) {
   const map = useMap();
   const key = fitKey ?? JSON.stringify(points.map(([a, b]) => [a.toFixed(3), b.toFixed(3)]));
   const first = useRef(true);
-  const desktop = useLayout().mode === "desktop";
+  const desktop = useLayout().mode === "desktop" && !inset;
   useEffect(() => {
     if (!points.length) return;
     // Desktop: keep the route clear of the side panel on the left, not a bottom sheet.
@@ -179,6 +179,7 @@ export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey }
       animate: !first.current,
     };
     first.current = false;
+    map.invalidateSize(); // the container may have just appeared (a dialog opening)
     const bounds = points.length === 1 ? L.latLngBounds([points[0], points[0]]) : L.latLngBounds(points);
     map.fitBounds(bounds, points.length === 1 ? { ...options, maxZoom: Math.min(maxZoom, 15) } : options);
     // eslint-disable-next-line react-hooks/exhaustive-deps

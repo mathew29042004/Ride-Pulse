@@ -90,12 +90,13 @@ def test_morning_briefing(mini, make_driver, admin, now):
 
 
 def test_demand_forecast_and_nudges(chennai, mini, make_driver, now):
-    # Four weeks of the same hour: 6 trips each in T. Nagar (none of them right now).
+    # The same hour every day for two weeks and on the same weekday for four: 6 trips each in
+    # T. Nagar (none of them right now).
     hour = demand._hour_start(now) + timedelta(hours=1)
-    for weeks in range(1, 5):
+    for back in sorted({*range(1, 15), 21, 28}):
         ids = requests(mini, 6, now=now)
         Trip.objects.filter(pk__in=ids).update(
-            requested_at=hour - timedelta(weeks=weeks) + timedelta(minutes=10),
+            requested_at=hour - timedelta(days=back) + timedelta(minutes=10),
             status=TripStatus.CANCELLED,
         )
     zone_id = Trip.objects.values_list("pickup_zone", flat=True).first()

@@ -3,6 +3,7 @@ Python, churn scoring, and the surge optimiser."""
 
 import json
 import math
+import struct
 from datetime import timedelta
 from decimal import Decimal
 
@@ -264,3 +265,28 @@ def test_surge_optimiser_ranks_policies_and_proposes_a_test(chennai, mini, make_
     experiment = surge_policy.propose_experiment(result)
     assert experiment.key == "surge-cap" and experiment.status == "DRAFT"
     assert experiment.treatment_config == {"surge_cap": best["cap"]}
+
+
+def test_tree_churn_model_and_float32_thresholds(tmp_path, settings):
+    settings.ML_MODELS_DIR = tmp_path
+    # One split on overdue_ratio at a threshold that only float32 rounding gets right:
+    # float32(4.57142857) is just above it, so the rider goes right (high risk).
+    as_f32 = struct.unpack("f", struct.pack("f", 4.57142857))[0]
+    threshold = as_f32 - 1e-7  # between the float32 value and the plain float64 4.57142857
+    stump = {
+        "left": [1, -1, -1],
+        "right": [2, -1, -1],
+        "feature": [1, -2, -2],
+        "threshold": [threshold, -2, -2],
+        "value": [0, -2.0, 2.0],
+    }
+    model = {
+        "kind": "gradient_boosted_trees",
+        "features": ["days_since_last", "overdue_ratio"],
+        "init": 0.0,
+        "learning_rate": 1.0,
+        "trees": [stump],
+    }
+    risky = ml.churn_probability(model, {"days_since_last": 32, "overdue_ratio": 4.57142857})
+    calm = ml.churn_probability(model, {"days_since_last": 3, "overdue_ratio": 0.5})
+    assert risky == pytest.approx(1 / (1 + math.exp(-2))) and calm < 0.2

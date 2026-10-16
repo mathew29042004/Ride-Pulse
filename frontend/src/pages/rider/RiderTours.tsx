@@ -241,7 +241,7 @@ function TourSheet({ slug, onClose, onBooked }: { slug: string; onClose: () => v
           <p className="text-sm text-muted">{tr.tagline}</p>
           <div className="h-48 overflow-hidden rounded-2xl">
             <BaseMap center={points[0]} zoom={9}>
-              <FitBounds points={points} padding={30} fitKey={tr.slug} />
+              <FitBounds points={points} padding={24} fitKey={tr.slug} inset />
               <PinMarker lat={spot.lat} lng={spot.lng} kind="pickup" />
               {tr.stops.map((s) => (
                 <PinMarker key={s.order} lat={s.lat} lng={s.lng} kind="stop" label={`${s.order}. ${s.name}`} />
@@ -263,7 +263,7 @@ function TourSheet({ slug, onClose, onBooked }: { slug: string; onClose: () => v
             ))}
           </ol>
           <div className="rounded-2xl bg-surface-2 p-3 text-xs text-muted">
-            {t("Round trip of about {km} km, {h} hours in all. Includes the car, fuel, your driver, parking at every stop and GST. Entry tickets, boats and meals are paid on the spot.", { km: Math.round(Number(tr.km)), h: Math.round(tr.hours) })}
+            {t("Round trip of about {km} km, {h} hours in all. Includes the car, fuel, your driver, highway tolls, parking at every stop and GST. Entry tickets, boats and meals are paid on the spot.", { km: Math.round(Number(tr.km)), h: Math.round(tr.hours) })}
           </div>
 
           <div>

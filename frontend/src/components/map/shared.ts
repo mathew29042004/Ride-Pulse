@@ -285,6 +285,8 @@ export interface DotProps {
 export interface FitBoundsProps {
   points: LatLng[];
   padding?: number;
+  /** A small map inside a card or dialog: no room kept for the desktop side panel. */
+  inset?: boolean;
   bottom?: number;
   maxZoom?: number;
   /**

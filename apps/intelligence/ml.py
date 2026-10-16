@@ -7,11 +7,12 @@ a model when its file changes. Without a model file, callers fall back to the ap
 
 import json
 import math
+import struct
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from django.conf import settings
-from django.db.models import Avg, Count, Max, Q
+from django.db.models import Avg, Count, Max, Min, Q
 from django.utils import timezone
 
 _cache: dict[str, tuple[float, dict]] = {}
@@ -43,7 +44,14 @@ def load(name: str) -> dict | None:
 # --- ETA -------------------------------------------------------------------------------------
 
 
+def _f32(value: float) -> float:
+    """scikit-learn's trees compare float32 features: round each the same way, or a value
+    sitting on a split threshold can go down the other branch."""
+    return struct.unpack("f", struct.pack("f", value))[0]
+
+
 def _walk(tree: dict, x: list[float]) -> float:
+    x = [_f32(v) for v in x]
     node = 0
     while tree["left"][node] != -1:
         node = (
@@ -143,6 +151,7 @@ def churn_features(*, now: datetime | None = None) -> dict[int, dict]:
             "pk", filter=Q(status__in=[TripStatus.CANCELLED, TripStatus.NO_DRIVER_FOUND])
         ),
         last=Max("requested_at", filter=Q(status=TripStatus.COMPLETED)),
+        first=Min("requested_at", filter=Q(status=TripStatus.COMPLETED)),
         avg_fare=Avg("fare_total", filter=Q(status=TripStatus.COMPLETED)),
         surge=Count("pk", filter=Q(surge_multiplier__gt=1)),
         promo=Count("pk", filter=Q(promo__isnull=False)),
@@ -158,11 +167,18 @@ def churn_features(*, now: datetime | None = None) -> dict[int, dict]:
     for r in rows:
         if not r["trips_56d"]:
             continue
+        days_since = (now - r["last"]).days if r["last"] else 56
+        # Same definitions as the training data (dbt ml_rider_churn): whole days between dates.
+        span = (r["last"].date() - r["first"].date()).days if r["last"] and r["first"] else 0
+        gap = span / (r["trips_56d"] - 1) if r["trips_56d"] >= 2 else 56
         out[r["rider_id"]] = {
             "trips_28d": r["trips_28d"],
             "trips_56d": r["trips_56d"],
             "failed_56d": r["failed_56d"],
-            "days_since_last": (now - r["last"]).days if r["last"] else 56,
+            "days_since_last": days_since,
+            "avg_gap_days": gap,
+            "overdue_ratio": days_since / max(gap, 1),
+            "trend": r["trips_28d"] / (r["trips_56d"] - r["trips_28d"] + 1.0),
             "avg_fare": float(r["avg_fare"] or 0),
             "surge_share": r["surge"] / r["n"],
             "promo_share": r["promo"] / r["n"],
@@ -172,6 +188,10 @@ def churn_features(*, now: datetime | None = None) -> dict[int, dict]:
 
 
 def churn_probability(model: dict, features: dict) -> float:
+    if model["kind"] == "gradient_boosted_trees":
+        x = [float(features.get(name, 0)) for name in model["features"]]
+        z = model["init"] + model["learning_rate"] * sum(_walk(t, x) for t in model["trees"])
+        return 1 / (1 + math.exp(-z))
     z = model["intercept"] + sum(
         coef * (float(features[name]) - mean) / scale
         for name, coef, mean, scale in zip(

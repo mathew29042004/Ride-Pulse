@@ -223,7 +223,7 @@ interface Forecast {
   for_hour: string;
   total_expected: number;
   zones: ZoneForecast[];
-  accuracy: { hours: number; trips: number; model: number | null; seasonal: number | null; naive: number | null; method?: "blend" | "seasonal" };
+  accuracy: { hours: number; trips: number; model: number | null; seasonal: number | null; naive: number | null; method?: "blend" | "seasonal"; best_possible?: number | null; rain_scale?: number };
   method?: "blend" | "seasonal";
 }
 
@@ -249,7 +249,7 @@ export function OpsDemand() {
         <Stat
           label="Forecast accuracy"
           value={pct(f?.method === "seasonal" ? acc?.seasonal : acc?.model)}
-          sub={acc ? `${f?.method === "seasonal" ? `Seasonal baseline in use: it beat the full model (${pct(acc.model)}) over the last 72 h` : `Full model (seasonal ${pct(acc.seasonal)}, naive ${pct(acc.naive)})`} · ${acc.hours} steady hours, ${acc.trips} trips` : ""}
+          sub={acc ? `${f?.method === "seasonal" ? `Seasonal baseline in use: it beat the full model (${pct(acc.model)})` : `Full model (seasonal ${pct(acc.seasonal)}, naive ${pct(acc.naive)})`} · best possible at this volume ≈ ${pct(acc.best_possible)} · rain effect learned: ${Math.round((acc.rain_scale ?? 1) * 100)}% · last 72 h, ${acc.trips} trips` : ""}
           tone="info"
         />
         <Stat label="Compared with" value={`${pct(acc?.seasonal)} · ${pct(acc?.naive)}`} sub="History only · same as last hour" />

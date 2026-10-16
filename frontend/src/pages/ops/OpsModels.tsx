@@ -146,7 +146,7 @@ export default function OpsModels() {
       <PageHeader title="Models & experiments" subtitle="Trained in the data platform, served here in plain Python. Every change to riders goes through a flag or an A/B test, read with proper statistics before anyone decides." />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="ETA model error" value={eta ? `${etaM.model_mae_min} min` : "Not trained"} sub={eta ? `app estimate alone: ${etaM.baseline_mae_min} min (${pct(etaM.improvement as number, 0)} better)` : "run the data pipeline"} icon={<Brain className="size-4" />} tone="brand" />
-        <Stat label="Churn model AUC" value={churn ? String(churnM.auc ?? "—") : "Not trained"} sub={churn ? `recency alone: ${churnM.recency_only_auc ?? "—"}` : ""} icon={<TrendingUp className="size-4" />} tone="info" />
+        <Stat label="Churn model AUC" value={churn ? String(churnM.auc ?? "—") : "Not trained"} sub={churn ? `recency alone ${churnM.recency_only_auc ?? "—"} · model wins ${churnM.beats_recency_share != null ? pct(churnM.beats_recency_share as number, 0) : "—"} of resamples` : ""} icon={<TrendingUp className="size-4" />} tone="info" />
         <Stat label="Experiments running" value={manage ? running : "—"} icon={<FlaskConical className="size-4" />} tone="neutral" />
         <Stat label="Surge policy uplift" value={s?.recommended ? signed(s.uplift_completed) : "—"} sub={s?.recommended ? `trips, at ${s.recommended.cap}x cap · revenue ${signed(s.uplift_revenue)}` : "needs surge history"} tone="warning" />
       </div>
@@ -260,7 +260,7 @@ export default function OpsModels() {
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {[
           { name: "ETA", card: eta, rows: eta && [["Predicts", eta.target], ["Test rides", etaM.test_rows], ["Error (MAE)", `${etaM.model_mae_min} min vs ${etaM.baseline_mae_min} min`], ["Error (MAPE)", `${pct(etaM.model_mape as number)} vs ${pct(etaM.baseline_mape as number)}`], ["Strongest signals", ((etaM.top_features as unknown as [string, number][]) ?? []).slice(0, 5).map(([n]) => n).join(", ")]] },
-          { name: "Rider churn", card: churn, rows: churn && [["Predicts", churn.target], ["Test riders", `${churnM.test_rows} (snapshot ${churnM.test_cutoff})`], ["Churn rate", pct(churnM.churn_rate as number)], ["AUC", `${churnM.auc} (recency alone ${churnM.recency_only_auc})`]] },
+          { name: "Rider churn", card: churn, rows: churn && [["Predicts", churn.target], ["Test riders", `${churnM.test_rows} (snapshot ${churnM.test_cutoff})`], ["Churn rate", pct(churnM.churn_rate as number)], ["AUC", `${churnM.auc} (recency alone ${churnM.recency_only_auc})`], ["Beats recency", churnM.beats_recency_share != null ? `in ${pct(churnM.beats_recency_share as number, 0)} of 1,000 resamples (${churnM.churned_in_test} riders left in the test week)` : "—"], ["Strongest signals", ((churnM.top_features as unknown as [string, number][]) ?? []).slice(0, 4).map(([n]) => n.replaceAll("_", " ")).join(", ")]] },
         ].map(({ name, card, rows }) => (
           <Card key={name} className="p-4">
             <CardHeader title={`Model card · ${name}`} />

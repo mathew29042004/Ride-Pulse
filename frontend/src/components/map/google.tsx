@@ -247,10 +247,10 @@ export function MapDot({ center, radius = 6, color, label, onClick }: DotProps) 
   return null;
 }
 
-export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey }: FitBoundsProps) {
+export function FitBounds({ points, padding = 60, bottom, maxZoom = 16, fitKey, inset = false }: FitBoundsProps) {
   const map = useMap();
   const key = fitKey ?? JSON.stringify(points.map(([a, b]) => [a.toFixed(3), b.toFixed(3)]));
-  const desktop = useLayout().mode === "desktop";
+  const desktop = useLayout().mode === "desktop" && !inset;
   useEffect(() => {
     if (!map || !points.length) return;
     if (points.length === 1) {

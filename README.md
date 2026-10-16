@@ -680,11 +680,20 @@ Ops console → **Models & experiments** (`/ops/models`).
   of rides (a time split, never shuffled). On the demo data the error is 4.5 min against 9.8 min
   for the estimate alone (54% better). The ride's true time comes from a hidden traffic model in
   the simulator (`apps/simulation/traffic.py`), which the app never reads.
-* **Churn model** (logistic regression): the chance an active rider takes no trip in the next
-  28 days. AUC is 0.90 on the newest weekly snapshot. The model card also shows the obvious rule
-  "days since last trip" (0.91), which is honestly slightly better on simulated riders, whose
-  leaving depends mostly on recency. At-risk riders can be sent a win-back offer, but only those
-  who opted in to offers (DPDP consent).
+* **Churn model** (gradient-boosted trees): the chance an active rider takes no trip in the next
+  28 days.
+  * Its features include each rider's own rhythm: their usual gap between rides, how overdue
+    they are now, and whether they're riding more or less.
+  * AUC is 0.93 on the newest weekly snapshot, against 0.91 for "days since last ride". Only 31
+    test riders churned, so training also resamples the test set 1,000 times: the model wins in
+    82% of them. That's likely better, not certain.
+  * The strongest signal is average fare, which looks like a quirk of how the simulator made
+    riders. It would need checking on real data.
+  * The app scores the exported trees in plain Python and compares features as 32-bit floats,
+    exactly as scikit-learn does. Training checks that both give the same probabilities (that
+    check caught a rounding bug).
+  * At-risk riders can be sent a win-back offer, but only those who opted in to offers (DPDP
+    consent).
 * **Surge optimiser**: replays the recorded zone snapshots under 20 surge settings, using stated
   rider and driver responses. On the demo data a 1.5x cap completes about 15% more trips for
   about 1% less revenue. It is a model of the market, so **Propose A/B test** turns it into the
@@ -735,10 +744,17 @@ Ops console → **Models & experiments** (`/ops/models`).
   * consents are checked in bulk
 
   Tests cap the query count of these lists, so an N+1 can't creep back.
-* **Forecast honesty**: the weather lookup could read readings from after the moment being
-  replayed, which flattered the backtest; it can't any more. Each city's forecast now uses
-  whichever method (full model or plain seasonal baseline) was more accurate over the last 72
-  hours, and the demand page says which.
+* **Forecast honesty and accuracy**:
+  * The weather lookup could read readings from after the moment being replayed, which
+    flattered the backtest; it can't any more.
+  * The forecast's baseline pools the same hour across the last 14 days of the same kind
+    (weekday or weekend), with the same hour-of-week. Recent activity only nudges it (^0.25).
+  * The rain effect is learned per city from its own history. It's chosen on the 72 hours
+    before last and scored on the last 72, never on the same hours.
+  * Result on the demo data: 76% accuracy (up from 57%), against a best possible of about 80%.
+    At about 14 trips an hour, chance alone makes each hour vary by roughly ±27%, and the page
+    shows that ceiling.
+  * Each city uses whichever method was more accurate.
 
 ### Production checklist
 * `python manage.py check --deploy` passes with `config.settings.prod` (HSTS, secure cookies,

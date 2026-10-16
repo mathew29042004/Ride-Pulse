@@ -5,8 +5,11 @@
   city, time of week, rain, the centre, airports, vehicle. Evaluated on the most recent 20% of
   rides (a time split, never shuffled: the model must predict the future) against the app's
   estimate alone.
-* **Rider churn** (logistic regression): the chance an active rider takes no trip in the next
-  28 days. Evaluated by ROC AUC on the newest weekly snapshot, trained on the older ones.
+* **Rider churn** (gradient-boosted trees): the chance an active rider takes no trip in the next
+  28 days. Features include the rider's own rhythm (usual gap between rides, how overdue they
+  are now, rising or fading). Evaluated by ROC AUC on the newest weekly snapshot, trained on the
+  older ones, against "days since last ride" alone, with a bootstrap of the test set to show how
+  often the model really wins (few riders churn, so one AUC number can mislead).
 
 Both are exported as plain JSON (trees and coefficients) so the app scores them in pure Python
 without scikit-learn. ``models/*.json`` also records the training date, data size and metrics.
@@ -20,8 +23,7 @@ from pathlib import Path
 
 import duckdb
 import numpy as np
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.metrics import roc_auc_score
 
 DATA_DIR = Path(__file__).resolve().parent.parent
@@ -39,6 +41,9 @@ CHURN_FEATURES = [
     "surge_share",
     "promo_share",
     "tickets_56d",
+    "avg_gap_days",
+    "overdue_ratio",
+    "trend",
 ]
 
 
@@ -68,7 +73,8 @@ def _tree_json(tree) -> dict:
         "left": t.children_left.tolist(),
         "right": t.children_right.tolist(),
         "feature": t.feature.tolist(),
-        "threshold": [round(x, 6) for x in t.threshold.tolist()],
+        # Full precision: scikit-learn compares float32 features against these exactly.
+        "threshold": t.threshold.tolist(),
         "value": [round(v[0][0], 6) for v in t.value.tolist()],
     }
 
@@ -147,32 +153,69 @@ def train_churn() -> dict:
     x_train, x_test = matrix(train), matrix(test)
     y_train = np.array([1 if r["churned"] else 0 for r in train])
     y_test = np.array([1 if r["churned"] else 0 for r in test])
-    mean, scale = x_train.mean(axis=0), x_train.std(axis=0)
-    scale[scale == 0] = 1.0
-    model = LogisticRegression(max_iter=1000)
-    model.fit((x_train - mean) / scale, y_train)
-    scores = model.predict_proba((x_test - mean) / scale)[:, 1]
-    auc = float(roc_auc_score(y_test, scores)) if len(set(y_test)) > 1 else None
-    # How much better than "recency only" (days since the last trip), the obvious heuristic?
+    model = GradientBoostingClassifier(
+        n_estimators=150, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=7
+    )
+    model.fit(x_train, y_train)
+    prior = float(np.clip(y_train.mean(), 1e-6, 1 - 1e-6))
+    init = float(np.log(prior / (1 - prior)))
+    trees = [_tree_json(est[0]) for est in model.estimators_]
+    scores = model.predict_proba(x_test)[:, 1]
+    # The exported trees must score exactly like scikit-learn (the app walks them itself).
+    raw = init + model.learning_rate * sum(np.array([_walk(t, x) for x in x_test]) for t in trees)
+    assert np.allclose(1 / (1 + np.exp(-raw)), scores, atol=1e-4), "exported trees disagree"
     recency = x_test[:, CHURN_FEATURES.index("days_since_last")]
-    recency_auc = float(roc_auc_score(y_test, recency)) if len(set(y_test)) > 1 else None
+    two_classes = len(set(y_test)) > 1
+    auc = float(roc_auc_score(y_test, scores)) if two_classes else None
+    recency_auc = float(roc_auc_score(y_test, recency)) if two_classes else None
+    wins = None
+    if two_classes:
+        rng = np.random.default_rng(7)
+        better = total = 0
+        for _ in range(1000):
+            pick = rng.integers(0, len(y_test), len(y_test))
+            if len(set(y_test[pick])) < 2:
+                continue
+            total += 1
+            better += roc_auc_score(y_test[pick], scores[pick]) > roc_auc_score(
+                y_test[pick], recency[pick]
+            )
+        wins = round(better / total, 3) if total else None
+    importance = sorted(
+        zip(CHURN_FEATURES, model.feature_importances_.tolist(), strict=True), key=lambda kv: -kv[1]
+    )
     return {
-        "kind": "logistic_regression",
+        "kind": "gradient_boosted_trees",
         "target": "no completed trip in the next 28 days",
         "features": CHURN_FEATURES,
-        "mean": mean.round(6).tolist(),
-        "scale": scale.round(6).tolist(),
-        "coefficients": model.coef_[0].round(6).tolist(),
-        "intercept": round(float(model.intercept_[0]), 6),
+        "init": init,
+        "learning_rate": model.learning_rate,
+        "trees": trees,
         "metrics": {
             "train_rows": len(train),
             "test_rows": len(test),
             "test_cutoff": str(newest),
+            "churned_in_test": int(y_test.sum()),
             "churn_rate": round(float(y_test.mean()), 3),
             "auc": round(auc, 3) if auc is not None else None,
             "recency_only_auc": round(recency_auc, 3) if recency_auc is not None else None,
+            "beats_recency_share": wins,
+            "top_features": [[n, round(v, 3)] for n, v in importance[:5]],
         },
     }
+
+
+def _walk(tree: dict, x) -> float:
+    """Score one tree the way the app does (features as float32, like scikit-learn)."""
+    x = np.asarray(x, dtype=np.float32)
+    node = 0
+    while tree["left"][node] != -1:
+        node = (
+            tree["left"][node]
+            if x[tree["feature"][node]] <= tree["threshold"][node]
+            else tree["right"][node]
+        )
+    return tree["value"][node]
 
 
 def main() -> None:

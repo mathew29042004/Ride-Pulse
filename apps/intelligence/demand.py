@@ -17,6 +17,7 @@ nudged by the usual change from this hour to the next. Persistence copes with su
 the four-week history hasn't seen yet.
 """
 
+import math
 from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -42,7 +43,6 @@ TRIPS_PER_DRIVER_HOUR = 2.0
 NUDGE_EVERY = timedelta(minutes=45)
 NUDGE_RADIUS_KM = 6.0
 MIN_FORECAST = 4
-SEASONAL_WEIGHT = 0.4
 
 
 def _hour_start(at: datetime) -> datetime:
@@ -123,28 +123,47 @@ def _baseline(hour: datetime, city_id: int | None) -> dict[int, float]:
     return {zone: value / weight_seen for zone, value in totals.items()}
 
 
+POOL_DAYS = 14  # the same hour on the last 14 days of the same kind (weekday or weekend)
+POOL_MIX = 0.7  # share of the pooled daily baseline (the rest: same hour-of-week, 4 weeks)
+RECENT_DAMPING = 0.25  # how much a busy or quiet last hour moves the estimate (0 = not at all)
+
+
+def _pooled_baseline(hour: datetime, city_id: int | None) -> dict[int, float]:
+    """Per-zone trips expected in ``hour``: mostly the same hour on recent days of the same
+    kind (many more samples, so less noise), plus the same hour-of-week."""
+    weekend = hour.isoweekday() >= 6
+    totals: dict[int, float] = defaultdict(float)
+    days = 0
+    for back in range(1, POOL_DAYS + 1):
+        same = hour - timedelta(days=back)
+        if (same.isoweekday() >= 6) != weekend:
+            continue
+        for zone, n in _counts_by_zone(same, same + timedelta(hours=1), city_id).items():
+            totals[zone] += n
+        days += 1
+    daily = {zone: n / days for zone, n in totals.items()} if days else {}
+    weekly = _baseline(hour, city_id)
+    if not daily:
+        return weekly
+    return {
+        zone: POOL_MIX * daily.get(zone, 0) + (1 - POOL_MIX) * weekly.get(zone, 0)
+        for zone in set(daily) | set(weekly)
+    }
+
+
 def _base_predict(*, city_id: int | None = None, now: datetime | None = None) -> dict[int, float]:
-    """Expected trips per zone in the hour starting at the next full hour."""
+    """Expected trips per zone in the hour starting at the next full hour: the pooled
+    baseline, nudged (gently) by how busy the last hour was against its own baseline."""
     now = now or timezone.now()
     next_hour = _hour_start(now) + timedelta(hours=1)
-    baseline_next = _baseline(next_hour, city_id)
+    expected_next = _pooled_baseline(next_hour, city_id)
     last_start = now - timedelta(hours=1)
-    baseline_last = _baseline(_hour_start(last_start), city_id)
-    last_hour = _counts_by_zone(last_start, now, city_id)
-    expected_last, actual_last = sum(baseline_last.values()), sum(last_hour.values())
-    if actual_last == 0:
-        return baseline_next
-    # 1. Seasonal: the usual next hour, scaled by how busy the last hour was (clipped).
-    ratio = min(2.0, max(0.5, actual_last / expected_last)) if expected_last >= 5 else 1.0
-    seasonal = {zone: value * ratio for zone, value in baseline_next.items()}
-    # 2. Persistence: the last hour per zone, following the usual hour-to-hour shape.
-    shape = sum(baseline_next.values()) / expected_last if expected_last >= 5 else 1.0
-    persistence = {zone: n * min(1.5, max(0.67, shape)) for zone, n in last_hour.items()}
-    zones = set(seasonal) | set(persistence)
-    return {
-        z: SEASONAL_WEIGHT * seasonal.get(z, 0) + (1 - SEASONAL_WEIGHT) * persistence.get(z, 0)
-        for z in zones
-    }
+    expected_last = sum(_pooled_baseline(_hour_start(last_start), city_id).values())
+    actual_last = sum(_counts_by_zone(last_start, now, city_id).values())
+    if expected_last < 5 or not actual_last:
+        return expected_next
+    ratio = min(2.0, max(0.5, actual_last / expected_last)) ** RECENT_DAMPING
+    return {zone: value * ratio for zone, value in expected_next.items()}
 
 
 def predict(
@@ -153,6 +172,7 @@ def predict(
     now: datetime | None = None,
     with_context: bool = True,
     method: str = "blend",
+    rain_scale: float | None = None,
 ) -> dict[int, float]:
     """The forecast, lifted by rain (per city) and by events near each zone. ``method``
     "seasonal" is the plain seasonal baseline (used where it has been forecasting better)."""
@@ -176,9 +196,9 @@ def predict(
     result = {}
     for pk, zone in zones.items():
         if zone.city_id not in factors:
-            factors[zone.city_id] = context.weather_factor(
-                context.current_weather(zone.city_id, now=now)
-            )
+            lift = context.weather_factor(context.current_weather(zone.city_id, now=now)) - 1
+            scale = learned_rain_scale(city_id) if rain_scale is None else rain_scale
+            factors[zone.city_id] = 1 + lift * scale
         extra, _ = context.event_extra_trips(zone, next_hour, events)
         value = base.get(pk, 0.0) * factors[zone.city_id] + extra
         if value > 0:
@@ -308,7 +328,13 @@ def hot_zones_for(driver: DriverProfile, *, now: datetime | None = None, limit: 
     return near[:limit]
 
 
-def backtest(*, hours: int = 24, now: datetime | None = None, city_id: int | None = None) -> dict:
+def backtest(
+    *,
+    hours: int = 24,
+    now: datetime | None = None,
+    city_id: int | None = None,
+    rain_scale: float | None = None,
+) -> dict:
     """Forecast each of the past ``hours`` hours using only earlier data and compare the total
     with what really happened (for one city, or the whole platform).
 
@@ -325,12 +351,15 @@ def backtest(*, hours: int = 24, now: datetime | None = None, city_id: int | Non
         _preloaded_counts(end - timedelta(hours=hours + 1, weeks=len(WEEK_WEIGHTS)), end, city_id),
         context.preloaded_weather(end - timedelta(hours=hours + 1), end),
     ):
-        return _backtest(hours, end, city_id)
+        return _backtest(hours, end, city_id, rain_scale)
 
 
-def _backtest(hours: int, end: datetime, city_id: int | None) -> dict:
+def _backtest(
+    hours: int, end: datetime, city_id: int | None, rain_scale: float | None = None
+) -> dict:
     errors = {"model": 0.0, "seasonal": 0.0, "naive": 0.0}
     trips = tested = 0
+    chance = 0.0
     for back in range(hours, 0, -1):
         hour = end - timedelta(hours=back)
         actual = sum(_counts_by_zone(hour, hour + timedelta(hours=1), city_id).values())
@@ -338,18 +367,37 @@ def _backtest(hours: int, end: datetime, city_id: int | None) -> dict:
         if not actual or not before or not 1 / 3 <= actual / before <= 3:
             continue
         guesses = {
-            "model": sum(predict(city_id=city_id, now=hour - timedelta(minutes=1)).values()),
+            "model": sum(
+                predict(
+                    city_id=city_id, now=hour - timedelta(minutes=1), rain_scale=rain_scale
+                ).values()
+            ),
             "seasonal": sum(_baseline(hour, city_id).values()),
             "naive": before,
         }
         for name, guess in guesses.items():
             errors[name] += abs(guess - actual)
+        # Even a perfect forecast of the average misses by chance: for Poisson counts the
+        # expected absolute miss is about sqrt(2 x actual / pi).
+        chance += math.sqrt(2 * actual / math.pi)
         trips += actual
         tested += 1
     if not trips:
-        return {"hours": 0, "trips": 0, "model": None, "seasonal": None, "naive": None}
+        return {
+            "hours": 0,
+            "trips": 0,
+            "model": None,
+            "seasonal": None,
+            "naive": None,
+            "best_possible": None,
+        }
     accuracy = {name: max(0.0, round(100 - 100 * err / trips, 1)) for name, err in errors.items()}
-    return {"hours": tested, "trips": trips, **accuracy}
+    return {
+        "hours": tested,
+        "trips": trips,
+        **accuracy,
+        "best_possible": max(0.0, round(100 - 100 * chance / trips, 1)),
+    }
 
 
 METHOD_MARGIN = 3.0  # accuracy points the seasonal baseline must win by to take over
@@ -359,14 +407,26 @@ def accuracy_key(city_id: int | None) -> str:
     return f"intel:backtest:{city_id}"
 
 
+RAIN_SCALES = (0.0, 0.5, 1.0)  # rain lifts demand fully, half, or not at all
+
+
 @tracked("forecast-accuracy", every=timedelta(minutes=30))
 def refresh_accuracy(city_id: int | None = None, *, now: datetime | None = None) -> dict:
-    """Backtest, remember the result, and choose the forecasting method for the city: the
-    full model unless the plain seasonal baseline has clearly been more accurate."""
+    """Calibrate on the 72 hours before last, then score on the last 72 (never on the hours
+    used to choose): how much rain lifts demand here, and whether the model beats the plain
+    seasonal baseline. Kept for 3 hours."""
     from django.core.cache import cache
 
-    result = backtest(hours=72, now=now, city_id=city_id)
+    now = now or timezone.now()
+    earlier = now - timedelta(hours=72)
+    tried = {
+        scale: backtest(hours=72, now=earlier, city_id=city_id, rain_scale=scale)["model"] or 0
+        for scale in RAIN_SCALES
+    }
+    rain = max(tried, key=lambda scale: (tried[scale], scale))
+    result = backtest(hours=72, now=now, city_id=city_id, rain_scale=rain)
     model, seasonal = result.get("model"), result.get("seasonal")
+    result["rain_scale"] = rain
     result["method"] = (
         "seasonal"
         if model is not None and seasonal is not None and seasonal - model >= METHOD_MARGIN
@@ -374,6 +434,12 @@ def refresh_accuracy(city_id: int | None = None, *, now: datetime | None = None)
     )
     cache.set(accuracy_key(city_id), result, 3 * 3600)
     return result
+
+
+def learned_rain_scale(city_id: int | None) -> float:
+    """The calibrated rain effect (1.0, the real-world prior, until there's evidence)."""
+    accuracy = cached_accuracy(city_id) or cached_accuracy(None)
+    return accuracy.get("rain_scale", 1.0) if accuracy else 1.0
 
 
 def cached_accuracy(city_id: int | None) -> dict | None:
