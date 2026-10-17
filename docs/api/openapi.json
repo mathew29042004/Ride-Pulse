@@ -3955,6 +3955,23 @@
     ],
     "type": "object"
    },
+   "NpsAnswerRequest": {
+    "properties": {
+     "comment": {
+      "maxLength": 500,
+      "type": "string"
+     },
+     "score": {
+      "maximum": 10,
+      "minimum": 0,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "score"
+    ],
+    "type": "object"
+   },
    "OfferRange": {
     "properties": {
      "max": {
@@ -16987,6 +17004,146 @@
     ],
     "tags": [
      "notifications"
+    ]
+   }
+  },
+  "/api/v1/nps/answer/": {
+   "post": {
+    "description": "Riders and drivers answer the survey; ops read the report.",
+    "operationId": "nps_answer_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NpsAnswerRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/NpsAnswerRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/NpsAnswerRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "nps"
+    ]
+   }
+  },
+  "/api/v1/nps/prompt/": {
+   "get": {
+    "description": "Riders and drivers answer the survey; ops read the report.",
+    "operationId": "nps_prompt_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "nps"
+    ]
+   }
+  },
+  "/api/v1/nps/report/": {
+   "get": {
+    "description": "Riders and drivers answer the survey; ops read the report.",
+    "operationId": "nps_report_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "nps"
+    ]
+   }
+  },
+  "/api/v1/nps/snooze/": {
+   "post": {
+    "description": "Riders and drivers answer the survey; ops read the report.",
+    "operationId": "nps_snooze_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "nps"
     ]
    }
   },

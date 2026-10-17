@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { AnnouncementCard } from "@/components/Announcements";
+import { NpsCard } from "@/components/NpsCard";
 import { BaseMap, CarMarker, PinMarker, Recenter } from "@/components/map";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Sheet, StatusBadge } from "@/components/ui";
@@ -167,6 +168,7 @@ export default function RiderHome() {
 
         <div className="mt-3">
           <AnnouncementCard />
+          <NpsCard />
         </div>
         <div className="mt-2 text-xs text-muted">
           <MapPin className="mr-1 inline size-3.5" />

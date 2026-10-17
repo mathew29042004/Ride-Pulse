@@ -276,6 +276,7 @@ def seed(*, seed: int = 21, log=print) -> dict:
         stats.update(_cases(rng, now))
         stats.update(guardian_seed(rng, now))
         stats.update(lost_found_seed(rng, now))
+        stats["nps"] = _nps(rng, now)
     log(f"  {stats}")
     return stats
 
@@ -586,3 +587,82 @@ def lost_found_seed(rng: random.Random, now) -> dict:
                 )
     moved = lost_items.sweep(now=now)
     return {"lost_items": made, "lost_to_hub": moved["to_hub"]}
+
+
+NPS_COMMENTS = {
+    "RIDER": {
+        "hi": [
+            "Driver was polite and the car was clean",
+            "Cheap and quick, love it",
+            "Always safe at night",
+            "UPI payment is so easy",
+            "Never wait long for a ride",
+        ],
+        "mid": ["Fine, but surge is costly sometimes", "Okay, the app map could be better", ""],
+        "lo": [
+            "Too expensive during rain, surge is crazy",
+            "Had to wait a long time, no driver",
+            "Driver was rude and the AC was off",
+            "App crashed while booking",
+            "Refund took a week",
+        ],
+    },
+    "DRIVER": {
+        "hi": [
+            "Good earnings and weekly payout on time",
+            "Incentives are fair",
+            "Support is friendly",
+        ],
+        "mid": ["Earnings okay but fuel is costly", "App map sometimes slow", ""],
+        "lo": [
+            "Commission is too high",
+            "Incentive targets keep changing",
+            "Payout was late",
+            "Riders cancel after I reach, long wait",
+        ],
+    },
+}
+
+
+def _nps(rng: random.Random, now) -> int:
+    """About three months of answers: riders mostly happy, drivers more mixed."""
+    from apps.drivers.models import DriverProfile
+    from apps.riders.models import RiderProfile
+
+    from .models import NpsAudience, NpsPrompt, NpsResponse
+
+    pools = {
+        NpsAudience.RIDER: list(RiderProfile.objects.select_related("user")[:600]),
+        NpsAudience.DRIVER: list(DriverProfile.objects.select_related("user", "city")[:300]),
+    }
+    weights = {NpsAudience.RIDER: (0.55, 0.27), NpsAudience.DRIVER: (0.40, 0.30)}
+    cities = list(DriverProfile.objects.exclude(city=None).values_list("city_id", flat=True)[:200])
+    rows, prompts = [], []
+    for audience, people in pools.items():
+        promoter, passive = weights[audience]
+        for person in people:
+            if rng.random() > 0.45:
+                continue
+            roll = rng.random()
+            if roll < promoter:
+                score, band = rng.choice([9, 10]), "hi"
+            elif roll < promoter + passive:
+                score, band = rng.choice([7, 8]), "mid"
+            else:
+                score, band = rng.randint(0, 6), "lo"
+            when = now - timedelta(days=rng.uniform(0, 88))
+            city = getattr(person, "city_id", None) or (rng.choice(cities) if cities else None)
+            rows.append(
+                NpsResponse(
+                    user=person.user,
+                    audience=audience,
+                    score=score,
+                    comment=rng.choice(NPS_COMMENTS[audience][band]),
+                    city_id=city,
+                    created_at=when,
+                )
+            )
+            prompts.append(NpsPrompt(user=person.user, next_ask_after=when + timedelta(days=90)))
+    NpsResponse.objects.bulk_create(rows)
+    NpsPrompt.objects.bulk_create(prompts, ignore_conflicts=True)
+    return len(rows)

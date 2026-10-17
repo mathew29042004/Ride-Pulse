@@ -12,6 +12,7 @@ import { AirportQueueChip, EvCard } from "@/components/DriverBusiness";
 import { DriverTours } from "@/components/DriverTours";
 import { InductionDueCard } from "@/pages/driver/DriverAcademy";
 import { AnnouncementCard } from "@/components/Announcements";
+import { NpsCard } from "@/components/NpsCard";
 import { HotZones } from "@/components/HotZones";
 import { BreakCard, WellbeingChip } from "@/components/FairShare";
 import { DriverLostItems } from "@/components/LostItem";
@@ -526,6 +527,7 @@ export default function DriverHome() {
         <Sheet>
           {!trip && <InductionDueCard />}
           {!trip && <AnnouncementCard />}
+          {!trip && !online && <NpsCard />}
           <DriverTours pos={pos} tripId={trip?.id} />
           {!trip && (
             <>

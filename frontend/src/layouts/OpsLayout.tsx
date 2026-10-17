@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Siren, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -71,6 +71,7 @@ const NAV = [
       { to: "/ops/demand", label: "Demand forecast", icon: TrendingUp, cap: "reports.view" },
       { to: "/ops/outlook", label: "Weather & events", icon: CloudSun, cap: "reports.view" },
       { to: "/ops/fraud", label: "Fraud review", icon: ShieldX, cap: "fraud.review" },
+      { to: "/ops/nps", label: "NPS", icon: Smile, cap: "reports.view" },
       { to: "/ops/models", label: "Models & experiments", icon: FlaskConical, cap: "reports.view" },
     ],
   },

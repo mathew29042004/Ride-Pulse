@@ -511,3 +511,52 @@ class TrustOpsViewSet(BaseViewSet):
         data = OfferSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         return Response({"sent": privacy.announce_offer(actor=request.user, **data.validated_data)})
+
+
+# --- NPS ------------------------------------------------------------------------------------------
+
+
+class NpsAnswerSerializer(serializers.Serializer):
+    score = serializers.IntegerField(min_value=0, max_value=10)
+    comment = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+
+class NpsViewSet(BaseViewSet):
+    """Riders and drivers answer the survey; ops read the report."""
+
+    rider_actions = ("prompt", "answer", "snooze")
+    driver_actions = ("prompt", "answer", "snooze")
+    capabilities = {"report": Cap.REPORTS_VIEW}
+    queryset = HelpArticle.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def prompt(self, request):
+        from . import nps
+
+        return Response({"ask": nps.should_ask(request.user)})
+
+    @extend_schema(request=NpsAnswerSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def answer(self, request):
+        from . import nps
+
+        data = NpsAnswerSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        nps.answer(request.user, **data.validated_data)
+        return Response({"thanks": True}, status=201)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def snooze(self, request):
+        from . import nps
+
+        nps.snooze(request.user)
+        return Response({"ok": True})
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def report(self, request):
+        from . import nps
+
+        return Response(nps.report())

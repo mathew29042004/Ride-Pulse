@@ -286,3 +286,38 @@ class HelpVote(models.Model):
 
     def __str__(self) -> str:
         return f"{self.article_id} {self.user_id} {self.helpful}"
+
+
+# --- NPS (how likely are you to recommend us?) ---------------------------------------------------
+
+
+class NpsAudience(models.TextChoices):
+    RIDER = "RIDER", "Riders"
+    DRIVER = "DRIVER", "Drivers"
+
+
+class NpsResponse(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    audience = models.CharField(max_length=6, choices=NpsAudience.choices)
+    score = models.PositiveSmallIntegerField()  # 0–10
+    comment = models.CharField(max_length=500, blank=True)
+    city = models.ForeignKey("geo.City", null=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} {self.score}"
+
+
+class NpsPrompt(models.Model):
+    """When someone was last asked (answering or snoozing both count)."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+"
+    )
+    next_ask_after = models.DateTimeField()
+
+    def __str__(self) -> str:
+        return f"{self.user_id} after {self.next_ask_after:%Y-%m-%d}"

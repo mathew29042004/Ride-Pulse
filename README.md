@@ -688,6 +688,14 @@ Ops → **GST**, by month.
 * **Assumptions to confirm with a chartered accountant:** SAC 996412; place of supply is where
   the ride starts; registration in each state (so CGST + SGST, not IGST).
 
+### NPS surveys (`trust.nps`)
+
+Riders (after 3 trips) and drivers (after 10) are asked "How likely are you to recommend Ride
+Pulse?" (0–10, optional comment) at most every 90 days; "Not now" waits 30 days. Ops → NPS shows
+NPS (% promoters 9–10 − % detractors 0–6) for the last 90 days by month and city (cities with 5+
+answers), and what detractors and promoters talk about, using keyword themes (not AI).
+API: `GET nps/prompt/`, `POST nps/answer/`, `POST nps/snooze/`, `GET nps/report/` (reports.view).
+
 ### Incidents and the status page (`reliability.incidents`)
 
 Ops → **Incidents**.
