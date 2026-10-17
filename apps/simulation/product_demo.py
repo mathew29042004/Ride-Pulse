@@ -372,6 +372,14 @@ def _companies(rng: random.Random) -> int:
         profile.allowed_from_hour, profile.allowed_to_hour = (6, 23)
         profile.max_fare_per_trip = Decimal(rng.choice([800, 1200, 2000]))
         profile.cost_centers = centres
+        profile.billing_address = rng.choice(
+            [
+                "Tidel Park, Rajiv Gandhi Salai, Taramani",
+                "Olympia Tech Park, Guindy",
+                "DLF IT Park, Porur",
+            ]
+        )
+        profile.billing_pin = rng.choice(["600113", "600032", "600089"])
         profile.save()
         employees = (
             RiderProfile.objects.filter(user__email__endswith="@example.com")

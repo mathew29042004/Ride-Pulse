@@ -306,3 +306,100 @@ class RazorpayWebhookView(APIView):
                     order_id=entity["order_id"], payment_id=entity["id"], verified=True
                 )
         return Response({"ok": True})
+
+
+# --- GST -----------------------------------------------------------------------------------------
+
+
+class GstReturnView(APIView):
+    """GSTR-1 data for a month (``?month=2026-10``; ``&format=csv`` for the B2CS summary)."""
+
+    permission_classes = [CapabilityPermission]
+    capabilities = {"get": Cap.PAYMENTS_VIEW}
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("month", str, required=False),
+            OpenApiParameter("export", str, required=False),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def get(self, request):
+        import csv
+        from datetime import date
+
+        from django.http import HttpResponse
+        from django.utils import timezone
+
+        from . import gst
+
+        raw = request.query_params.get("month")
+        month = date.fromisoformat(f"{raw}-01") if raw else timezone.localdate().replace(day=1)
+        data = gst.gstr1(month)
+        if request.query_params.get("export") == "csv":
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = f'attachment; filename="gstr1-{data["month"]}.csv"'
+            writer = csv.writer(response)
+            writer.writerow(
+                [
+                    "Section",
+                    "GSTIN / place of supply",
+                    "Invoice",
+                    "Date",
+                    "Taxable",
+                    "Rate",
+                    "CGST",
+                    "SGST",
+                ]
+            )
+            for r in data["b2b"]:
+                writer.writerow(
+                    [
+                        "B2B",
+                        r["buyer_gstin"],
+                        r["invoice"],
+                        r["date"],
+                        r["taxable"],
+                        r["rate"],
+                        r["cgst"],
+                        r["sgst"],
+                    ]
+                )
+            for r in data["b2cs"]:
+                writer.writerow(
+                    [
+                        "B2CS",
+                        r["place_of_supply"],
+                        f"{r['rides']} rides",
+                        "",
+                        r["taxable"],
+                        r["rate"],
+                        r["cgst"],
+                        r["sgst"],
+                    ]
+                )
+            return response
+        return Response(data)
+
+
+class EInvoiceView(APIView):
+    """The INV-01 e-invoice JSON for a business trip: for finance staff, or the company's admin."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request, trip_id):
+        from django.shortcuts import get_object_or_404
+
+        from apps.core.exceptions import ActionNotPermitted
+        from apps.rides.models import Trip
+
+        from . import gst
+
+        trip = get_object_or_404(
+            Trip.objects.select_related("city", "payment_profile__owner", "ride_type"), pk=trip_id
+        )
+        owner = trip.payment_profile.owner.user_id if trip.payment_profile_id else None
+        if not (request.user.has_capability(Cap.PAYMENTS_VIEW) or request.user.pk == owner):
+            raise ActionNotPermitted("Only finance or the company's admin can download this.")
+        return Response(gst.e_invoice(trip))

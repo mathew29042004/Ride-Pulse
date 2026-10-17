@@ -127,6 +127,9 @@ class PaymentProfile(models.Model):
     name = models.CharField(max_length=80)
     owner = models.ForeignKey(RiderProfile, on_delete=models.CASCADE, related_name="owned_profiles")
     gstin = models.CharField(max_length=15, blank=True)
+    # Business only: the billing address on GST e-invoices.
+    billing_address = models.CharField(max_length=200, blank=True)
+    billing_pin = models.CharField(max_length=6, blank=True)
     # Business only: how far the company's balance may go below zero (settled monthly).
     credit_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)

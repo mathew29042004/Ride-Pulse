@@ -674,6 +674,20 @@ Ops → **City P&L**, by month.
 * The bottom line is a **contribution**, before salaries, marketing, offices and technology.
 * Finance can set a monthly revenue and promotions budget per city, and see actuals against it.
 
+### GST e-invoices and returns (`payments.gst`)
+
+Ops → **GST**, by month.
+* **GSTR-1 data:** business invoices by buyer GSTIN (B2B) and consumer rides summarised by state
+  (B2CS), as JSON or CSV.
+* **E-invoices:** each business trip gets the government's **INV-01 e-invoice JSON** (seller and
+  buyer details, SAC, CGST + SGST). Missing buyer billing details are flagged rather than
+  invented.
+* **Not included:** getting an IRN needs a GST account with a GST Suvidha Provider (an outside
+  account, like Maps); these are the files you'd upload. Cancellation fees, which also carry GST,
+  aren't in the return yet.
+* **Assumptions to confirm with a chartered accountant:** SAC 996412; place of supply is where
+  the ride starts; registration in each state (so CGST + SGST, not IGST).
+
 ### Incidents and the status page (`reliability.incidents`)
 
 Ops → **Incidents**.

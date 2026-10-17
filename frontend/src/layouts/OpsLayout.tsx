@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Siren, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Siren, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -60,6 +60,7 @@ const NAV = [
       { to: "/ops/airports", label: "Airports & EVs", icon: Plane, cap: "fleet.manage" },
       { to: "/ops/tds", label: "TDS", icon: Receipt, cap: "payments.view" },
       { to: "/ops/pnl", label: "City P&L", icon: PieChart, cap: "payments.view" },
+      { to: "/ops/gst", label: "GST", icon: FileText, cap: "payments.view" },
     ],
   },
   {

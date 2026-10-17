@@ -120,6 +120,8 @@ urlpatterns = [
     path("ops/live/", rides.LiveOpsView.as_view(), name="ops-live"),
     path("ops/dispatch/sweep/", rides.DispatchSweepView.as_view(), name="dispatch-sweep"),
     path("ledger/", payments.LedgerView.as_view(), name="ledger"),
+    path("gst/returns/", payments.GstReturnView.as_view(), name="gst-returns"),
+    path("gst/e-invoice/<int:trip_id>/", payments.EInvoiceView.as_view(), name="gst-e-invoice"),
     path("push/subscription/", PushSubscriptionView.as_view(), name="push-subscription"),
     path("webhooks/echo/", reliability.WebhookEchoView.as_view(), name="webhook-echo"),
     path(

@@ -15294,6 +15294,92 @@
     ]
    }
   },
+  "/api/v1/gst/e-invoice/{trip_id}/": {
+   "get": {
+    "description": "The INV-01 e-invoice JSON for a business trip: for finance staff, or the company's admin.",
+    "operationId": "gst_e_invoice_retrieve",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "trip_id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "gst"
+    ]
+   }
+  },
+  "/api/v1/gst/returns/": {
+   "get": {
+    "description": "GSTR-1 data for a month (``?month=2026-10``; ``&format=csv`` for the B2CS summary).",
+    "operationId": "gst_returns_retrieve",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "export",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "month",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "gst"
+    ]
+   }
+  },
   "/api/v1/help/": {
    "get": {
     "description": "Help articles for the signed-in person's app (riders or drivers).",
