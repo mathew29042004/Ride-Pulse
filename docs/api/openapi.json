@@ -1362,6 +1362,21 @@
     ],
     "type": "object"
    },
+   "DecideRequest": {
+    "properties": {
+     "approve": {
+      "type": "boolean"
+     },
+     "note": {
+      "maxLength": 200,
+      "type": "string"
+     }
+    },
+    "required": [
+     "approve"
+    ],
+    "type": "object"
+   },
    "DecisionRequest": {
     "properties": {
      "amount": {
@@ -2861,6 +2876,28 @@
     ],
     "type": "string"
    },
+   "GenerateRequest": {
+    "properties": {
+     "replace": {
+      "default": false,
+      "type": "boolean"
+     },
+     "state": {
+      "maxLength": 60,
+      "minLength": 1,
+      "type": "string"
+     },
+     "week_start": {
+      "format": "date",
+      "type": "string"
+     }
+    },
+    "required": [
+     "state",
+     "week_start"
+    ],
+    "type": "object"
+   },
    "GoingHomeRequest": {
     "properties": {
      "on": {
@@ -3249,6 +3286,40 @@
      "hi"
     ],
     "type": "string"
+   },
+   "LeaveRequestKindEnum": {
+    "description": "* `CASUAL` - CASUAL\n* `SICK` - SICK\n* `EARNED` - EARNED",
+    "enum": [
+     "CASUAL",
+     "SICK",
+     "EARNED"
+    ],
+    "type": "string"
+   },
+   "LeaveRequestRequest": {
+    "properties": {
+     "ends_on": {
+      "format": "date",
+      "type": "string"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/LeaveRequestKindEnum"
+     },
+     "reason": {
+      "maxLength": 200,
+      "type": "string"
+     },
+     "starts_on": {
+      "format": "date",
+      "type": "string"
+     }
+    },
+    "required": [
+     "ends_on",
+     "kind",
+     "starts_on"
+    ],
+    "type": "object"
    },
    "LevelEnum": {
     "description": "* `INFO` - Info\n* `SUCCESS` - Success\n* `WARNING` - Warning\n* `DANGER` - Urgent",
@@ -28090,6 +28161,241 @@
    "get": {
     "description": "People I can give work to, and the manager dashboard with scorecards.",
     "operationId": "work_people_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/roster/": {
+   "get": {
+    "description": "Support rosters by state and week; leave requests and approvals.",
+    "operationId": "work_roster_retrieve",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "state",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "week",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/roster/generate/": {
+   "post": {
+    "description": "Support rosters by state and week; leave requests and approvals.",
+    "operationId": "work_roster_generate_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GenerateRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/GenerateRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/GenerateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/roster/leave/": {
+   "get": {
+    "description": "Support rosters by state and week; leave requests and approvals.",
+    "operationId": "work_roster_leave_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   },
+   "post": {
+    "description": "Support rosters by state and week; leave requests and approvals.",
+    "operationId": "work_roster_leave_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LeaveRequestRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/LeaveRequestRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/LeaveRequestRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/roster/leave/{leave_id}/decide/": {
+   "post": {
+    "description": "Support rosters by state and week; leave requests and approvals.",
+    "operationId": "work_roster_leave_decide_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "leave_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DecideRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/DecideRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/DecideRequest"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "content": {

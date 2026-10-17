@@ -45,6 +45,7 @@ router.register("rider/business", riders.CorporateViewSet, basename="rider-busin
 router.register("team", accounts.TeamViewSet, basename="team")
 router.register("work/tasks", workspace.TaskViewSet, basename="work-task")
 router.register("work/meetings", workspace.MeetingViewSet, basename="work-meeting")
+router.register("work/roster", workspace.RosterViewSet, basename="work-roster")
 router.register("work", workspace.WorkTeamViewSet, basename="work")
 router.register("intel/alerts", intelligence.AlertViewSet, basename="intel-alert")
 router.register("intel/fraud", intelligence.FraudCaseViewSet, basename="intel-fraud")

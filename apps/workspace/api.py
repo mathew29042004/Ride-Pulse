@@ -379,3 +379,117 @@ class WorkTeamViewSet(BaseViewSet):
         days = request.query_params.get("days", "7")
         days = int(days) if days.isdigit() and 1 <= int(days) <= 90 else 7
         return Response(scorecards.scorecards(request.user, days=days))
+
+
+# --- Shifts and leave -------------------------------------------------------------------------
+
+
+class GenerateSerializer(serializers.Serializer):
+    state = serializers.CharField(max_length=60)
+    week_start = serializers.DateField()
+    replace = serializers.BooleanField(default=False)
+
+
+class LeaveRequestSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=["CASUAL", "SICK", "EARNED"])
+    starts_on = serializers.DateField()
+    ends_on = serializers.DateField()
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=200)
+
+
+class DecideSerializer(serializers.Serializer):
+    approve = serializers.BooleanField()
+    note = serializers.CharField(required=False, allow_blank=True, max_length=200)
+
+
+def _leave_row(leave) -> dict:
+    return {
+        "id": leave.pk,
+        "user_id": leave.user_id,
+        "name": leave.user.get_full_name(),
+        "kind": leave.kind,
+        "kind_label": leave.get_kind_display(),
+        "starts_on": leave.starts_on,
+        "ends_on": leave.ends_on,
+        "days": (leave.ends_on - leave.starts_on).days + 1,
+        "reason": leave.reason,
+        "status": leave.status,
+        "status_label": leave.get_status_display(),
+        "note": leave.note,
+        "decided_by": leave.decided_by.get_full_name() if leave.decided_by_id else None,
+    }
+
+
+class RosterViewSet(BaseViewSet):
+    """Support rosters by state and week; leave requests and approvals."""
+
+    capabilities = {"*": Cap.WORK_USE, "generate": Cap.TEAM_VIEW}
+    queryset = StaffProfile.objects.none()
+
+    @extend_schema(
+        parameters=[OpenApiParameter("state", str), OpenApiParameter("week", str, required=False)],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def list(self, request):
+        from datetime import date
+
+        from django.utils import timezone
+
+        from . import roster
+
+        state = (
+            request.query_params.get("state")
+            or getattr(getattr(request.user, "staff_profile", None), "state", "")
+            or "Tamil Nadu"
+        )
+        week = request.query_params.get("week")
+        week_start = date.fromisoformat(week) if week else timezone.localdate()
+        states = sorted(set(StaffProfile.objects.exclude(state="").values_list("state", flat=True)))
+        return Response({**roster.week_view(state, week_start), "states": states})
+
+    @extend_schema(request=GenerateSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def generate(self, request):
+        from . import roster
+
+        data = GenerateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return Response(roster.generate_week(**data.validated_data))
+
+    @extend_schema(methods=["GET"], responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        methods=["POST"], request=LeaveRequestSerializer, responses={201: OpenApiTypes.OBJECT}
+    )
+    @action(detail=False, methods=["get", "post"])
+    def leave(self, request):
+        from . import roster
+        from .models import LeaveRequest, LeaveStatus
+        from .services import team_of
+
+        if request.method == "POST":
+            data = LeaveRequestSerializer(data=request.data)
+            data.is_valid(raise_exception=True)
+            leave = roster.request_leave(request.user, **data.validated_data)
+            return Response(_leave_row(leave), status=status.HTTP_201_CREATED)
+        mine = LeaveRequest.objects.filter(user=request.user).select_related("user", "decided_by")[
+            :20
+        ]
+        to_decide = LeaveRequest.objects.filter(
+            user_id__in=team_of(request.user), status=LeaveStatus.PENDING
+        ).select_related("user", "decided_by")[:50]
+        return Response(
+            {"mine": [_leave_row(x) for x in mine], "to_decide": [_leave_row(x) for x in to_decide]}
+        )
+
+    @extend_schema(request=DecideSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"leave/(?P<leave_id>\d+)/decide")
+    def decide(self, request, leave_id=None):
+        from django.shortcuts import get_object_or_404
+
+        from . import roster
+        from .models import LeaveRequest
+
+        data = DecideSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        leave = get_object_or_404(LeaveRequest.objects.select_related("user"), pk=leave_id)
+        return Response(roster.decide(leave, manager=request.user, **data.validated_data))

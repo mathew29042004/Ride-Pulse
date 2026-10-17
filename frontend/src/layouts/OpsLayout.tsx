@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, MessagesSquare, Network, PackageSearch, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, CalendarDays, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, MessagesSquare, Network, PackageSearch, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -84,6 +84,7 @@ const NAV = [
       { to: "/ops/platform", label: "Platform health", icon: Activity, cap: "audit.view" },
       { to: "/ops/work", label: "Work", icon: ClipboardList, cap: "work.use" },
       { to: "/ops/chat", label: "Team chat", icon: MessagesSquare, cap: "work.use" },
+      { to: "/ops/roster", label: "Roster & leave", icon: CalendarDays, cap: "work.use" },
       { to: "/ops/security", label: "Security", icon: KeyRound, cap: "work.use" },
       { to: "/ops/team", label: "Team", icon: Network, cap: "team.view" },
     ],

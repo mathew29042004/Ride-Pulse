@@ -32,11 +32,16 @@ SOS_WINDOW_AFTER_TRIP = timedelta(minutes=30)
 
 
 def least_loaded_agent():
-    """Round-robin by load: the active support agent with the fewest open tickets."""
+    """Round-robin by load: the active support agent with the fewest open tickets, among those
+    on shift right now when the desk is rostered."""
+    from apps.workspace.roster import on_duty
+
+    agents = get_user_model().objects.filter(role=Role.SUPPORT_AGENT, is_active=True)
+    duty = on_duty()
+    if duty and agents.filter(pk__in=duty).exists():
+        agents = agents.filter(pk__in=duty)
     return (
-        get_user_model()
-        .objects.filter(role=Role.SUPPORT_AGENT, is_active=True)
-        .annotate(
+        agents.annotate(
             load=Count(
                 "tickets_assigned", filter=Q(tickets_assigned__status__in=OPEN_TICKET_STATUSES)
             )

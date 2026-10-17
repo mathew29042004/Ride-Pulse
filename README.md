@@ -662,6 +662,18 @@ Ops → **Security**.
   it on, and Security lists who still hasn't.
 * The demo logins don't have it on, so the demo still signs in with one click.
 
+### Roster and leave (`workspace.roster`)
+
+Ops → **Roster & leave**.
+* **Need:** support shifts (morning, evening, night) for each state, staffed from the last 4
+  weeks of tickets: the busiest hour of each shift, 3 tickets an hour per agent, and at least 2
+  agents by day and 1 at night.
+* **The roster** fills a week while respecting approved leave, at most 6 shifts a week, one shift
+  a day, and 11 hours' rest between shifts. Short slots are shown in red.
+* **Leave** goes to the person's manager. Approving it takes them off their shifts and finds
+  someone to cover each one, and the cover is notified.
+* New support tickets go to the agent with the lightest load **among those on shift now**.
+
 ### Team chat (`apps/chat`)
 
 Ops console → **Team chat** (`/ops/chat`), like Microsoft Teams for internal communication.

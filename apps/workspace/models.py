@@ -140,3 +140,75 @@ class MeetingAttendee(models.Model):
 
     def __str__(self) -> str:
         return f"{self.meeting_id} {self.user_id} {self.response}"
+
+
+# --- Shifts and leave -------------------------------------------------------------------------
+
+
+class ShiftSlot(models.TextChoices):
+    MORNING = "MORNING", "Morning (6 am – 2 pm)"
+    EVENING = "EVENING", "Evening (2 pm – 10 pm)"
+    NIGHT = "NIGHT", "Night (10 pm – 6 am)"
+
+
+class Shift(models.Model):
+    """One person on one shift on one day (support desks today; any team can use it)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shifts"
+    )
+    day = models.DateField(db_index=True)
+    slot = models.CharField(max_length=7, choices=ShiftSlot.choices)
+    state = models.CharField(max_length=60, blank=True)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    covering_for = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["day", "starts_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "day", "slot"], name="one_shift_per_slot")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} {self.day} {self.slot}"
+
+
+class LeaveKind(models.TextChoices):
+    CASUAL = "CASUAL", "Casual leave"
+    SICK = "SICK", "Sick leave"
+    EARNED = "EARNED", "Earned leave"
+
+
+class LeaveStatus(models.TextChoices):
+    PENDING = "PENDING", "Waiting for approval"
+    APPROVED = "APPROVED", "Approved"
+    REJECTED = "REJECTED", "Not approved"
+    CANCELLED = "CANCELLED", "Cancelled"
+
+
+class LeaveRequest(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="leave"
+    )
+    kind = models.CharField(max_length=6, choices=LeaveKind.choices)
+    starts_on = models.DateField()
+    ends_on = models.DateField()
+    reason = models.CharField(max_length=200, blank=True)
+    status = models.CharField(
+        max_length=9, choices=LeaveStatus.choices, default=LeaveStatus.PENDING
+    )
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    note = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-starts_on"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} {self.kind} {self.starts_on}–{self.ends_on}"
