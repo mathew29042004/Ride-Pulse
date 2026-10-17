@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 from apps.accounts import api as accounts
 from apps.analytics import api as analytics
+from apps.announcements import api as announcements
 from apps.audit.api import AuditLogViewSet
 from apps.chat import api as chat
 from apps.compliance import api as compliance
@@ -60,6 +61,7 @@ router.register("ops/experiments", experiments.ExperimentsOpsViewSet, basename="
 router.register("ops/tours", tours.TourOpsViewSet, basename="ops-tours")
 router.register("tours", tours.TourViewSet, basename="tour")
 router.register("chat", chat.ChatViewSet, basename="chat")
+router.register("announcements", announcements.AnnouncementViewSet, basename="announcement")
 router.register("ops/compliance", compliance.ComplianceViewSet, basename="ops-compliance")
 router.register("safety/guardian", rides.GuardianViewSet, basename="guardian")
 router.register("ops/lost-found", rides.LostFoundOpsViewSet, basename="ops-lost-found")

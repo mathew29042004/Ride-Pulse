@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "apps.tours",
     "apps.chat",
     "apps.compliance",
+    "apps.announcements",
 ]
 
 MIDDLEWARE = [

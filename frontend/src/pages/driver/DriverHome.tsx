@@ -11,6 +11,7 @@ import { GoalChip, GoingHomeButton } from "@/components/DriverGoals";
 import { AirportQueueChip, EvCard } from "@/components/DriverBusiness";
 import { DriverTours } from "@/components/DriverTours";
 import { InductionDueCard } from "@/pages/driver/DriverAcademy";
+import { AnnouncementCard } from "@/components/Announcements";
 import { HotZones } from "@/components/HotZones";
 import { BreakCard, WellbeingChip } from "@/components/FairShare";
 import { DriverLostItems } from "@/components/LostItem";
@@ -524,6 +525,7 @@ export default function DriverHome() {
       ) : (
         <Sheet>
           {!trip && <InductionDueCard />}
+          {!trip && <AnnouncementCard />}
           <DriverTours pos={pos} tripId={trip?.id} />
           {!trip && (
             <>

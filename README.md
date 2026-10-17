@@ -662,6 +662,16 @@ Ops → **Security**.
   it on, and Security lists who still hasn't.
 * The demo logins don't have it on, so the demo still signs in with one click.
 
+### Announcements (`apps/announcements`)
+
+Ops → **Announcements**.
+* Write once in English, with Tamil and Hindi versions if you like.
+* Choose drivers, riders or staff, and everywhere, a state or a city. Riders are reached by where
+  they've ridden in the last 90 days.
+* Everyone sees it in their app language (falling back to English) as a notification and as a
+  card on the rider or driver home. Important ones stay pinned until read.
+* Ops see the read rate. Only managers (permission `announce`) can send.
+
 ### Roster and leave (`workspace.roster`)
 
 Ops → **Roster & leave**.

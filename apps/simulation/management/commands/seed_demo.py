@@ -46,6 +46,9 @@ class Command(BaseCommand):
         from apps.workspace import demo as workspace_demo
 
         stats.update(workspace_demo.seed(seed=options["seed"], log=self.stdout.write))
+        from apps.announcements import demo as announcements_demo
+
+        stats.update(announcements_demo.seed(log=self.stdout.write))
         from apps.workspace import roster_demo
 
         stats.update(roster_demo.seed(log=self.stdout.write))

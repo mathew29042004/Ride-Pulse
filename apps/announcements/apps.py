@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class AnnouncementsConfig(AppConfig):
+    name = "apps.announcements"
+    label = "announcements"
+    verbose_name = "Announcements"

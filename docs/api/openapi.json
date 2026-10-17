@@ -282,15 +282,6 @@
     ],
     "type": "object"
    },
-   "AudienceEnum": {
-    "description": "* `RIDER` - Riders\n* `DRIVER` - Drivers\n* `ALL` - Everyone",
-    "enum": [
-     "RIDER",
-     "DRIVER",
-     "ALL"
-    ],
-    "type": "string"
-   },
    "AuditLog": {
     "properties": {
      "action": {
@@ -3008,7 +2999,7 @@
    "HelpArticle": {
     "properties": {
      "audience": {
-      "$ref": "#/components/schemas/AudienceEnum"
+      "$ref": "#/components/schemas/HelpArticleAudienceEnum"
      },
      "body": {
       "type": "string"
@@ -3052,10 +3043,19 @@
     ],
     "type": "object"
    },
+   "HelpArticleAudienceEnum": {
+    "description": "* `RIDER` - Riders\n* `DRIVER` - Drivers\n* `ALL` - Everyone",
+    "enum": [
+     "RIDER",
+     "DRIVER",
+     "ALL"
+    ],
+    "type": "string"
+   },
    "HelpArticleRequest": {
     "properties": {
      "audience": {
-      "$ref": "#/components/schemas/AudienceEnum"
+      "$ref": "#/components/schemas/HelpArticleAudienceEnum"
      },
      "body": {
       "minLength": 1,
@@ -6657,6 +6657,44 @@
      "valid_from",
      "valid_until",
      "value"
+    ],
+    "type": "object"
+   },
+   "PublishAudienceEnum": {
+    "description": "* `DRIVERS` - DRIVERS\n* `RIDERS` - RIDERS\n* `STAFF` - STAFF",
+    "enum": [
+     "DRIVERS",
+     "RIDERS",
+     "STAFF"
+    ],
+    "type": "string"
+   },
+   "PublishRequest": {
+    "properties": {
+     "audience": {
+      "$ref": "#/components/schemas/PublishAudienceEnum"
+     },
+     "city": {
+      "minLength": 1,
+      "nullable": true,
+      "type": "string"
+     },
+     "important": {
+      "default": false,
+      "type": "boolean"
+     },
+     "state": {
+      "maxLength": 60,
+      "type": "string"
+     },
+     "text": {
+      "additionalProperties": {},
+      "type": "object"
+     }
+    },
+    "required": [
+     "audience",
+     "text"
     ],
     "type": "object"
    },
@@ -10763,6 +10801,147 @@
     ],
     "tags": [
      "analytics"
+    ]
+   }
+  },
+  "/api/v1/announcements/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "announcements_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "announcements"
+    ]
+   },
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "announcements_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PublishRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/PublishRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/PublishRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "announcements"
+    ]
+   }
+  },
+  "/api/v1/announcements/mine/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "announcements_mine_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "announcements"
+    ]
+   }
+  },
+  "/api/v1/announcements/{id}/read/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "announcements_read_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this announcement.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "No response body"
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "announcements"
     ]
    }
   },

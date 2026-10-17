@@ -3,6 +3,7 @@ import { Briefcase, ChevronRight, Clock, House, Landmark, LocateFixed, MapPin, M
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
+import { AnnouncementCard } from "@/components/Announcements";
 import { BaseMap, CarMarker, PinMarker, Recenter } from "@/components/map";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Sheet, StatusBadge } from "@/components/ui";
@@ -164,6 +165,9 @@ export default function RiderHome() {
           ))}
         </div>
 
+        <div className="mt-3">
+          <AnnouncementCard />
+        </div>
         <div className="mt-2 text-xs text-muted">
           <MapPin className="mr-1 inline size-3.5" />
           {t("Pickup near {place}", { place: spot.name })}

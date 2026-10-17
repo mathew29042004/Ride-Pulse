@@ -35,6 +35,7 @@ class Cap:
     PRIVACY_MANAGE = "privacy.manage"  # data requests (DPDP), appeals, insurance claims
     EXPERIMENTS_MANAGE = "experiments.manage"  # feature flags and A/B tests
     TOURS_MANAGE = "tours.manage"  # tour packages, their prices and tour bookings
+    ANNOUNCE = "announce"  # announcements to drivers, riders or staff
 
     @classmethod
     def all(cls) -> frozenset[str]:
@@ -80,6 +81,7 @@ _MANAGERS = {
     Cap.PRIVACY_MANAGE,
     Cap.EXPERIMENTS_MANAGE,
     Cap.TOURS_MANAGE,
+    Cap.ANNOUNCE,
 }
 
 # Associate managers: each runs one line of the business across their state.
