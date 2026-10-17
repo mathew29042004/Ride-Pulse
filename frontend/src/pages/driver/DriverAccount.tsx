@@ -54,6 +54,9 @@ export default function DriverAccount() {
       </div>
       <p className="mt-2 text-xs text-muted">The safety score comes from braking, acceleration, speeding and night driving on your recent trips. Safer drivers rank higher in dispatch.</p>
 
+      <Link to="/drive/academy" className="mt-4 flex items-center justify-between rounded-3xl border border-line p-4 text-sm font-semibold">
+        Driver Academy: courses and certificates <span aria-hidden>→</span>
+      </Link>
       <VehicleCare />
 
       <div className="mt-6 divide-y divide-line">

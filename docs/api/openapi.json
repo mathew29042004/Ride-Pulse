@@ -11982,6 +11982,140 @@
     ]
    }
   },
+  "/api/v1/driver/academy/": {
+   "get": {
+    "description": "Driver Academy: the courses, which are passed, and whether induction is due.",
+    "operationId": "driver_academy_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
+  "/api/v1/driver/academy/{slug}/": {
+   "get": {
+    "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
+    "operationId": "driver_academy_retrieve_2",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "slug",
+      "required": true,
+      "schema": {
+       "pattern": "^[\\w-]+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
+  "/api/v1/driver/academy/{slug}/submit/": {
+   "post": {
+    "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
+    "operationId": "driver_academy_submit_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "slug",
+      "required": true,
+      "schema": {
+       "pattern": "^[\\w-]+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
   "/api/v1/driver/biz/airport/": {
    "get": {
     "description": "The driver's business: statements, quests, EV, vehicle care, airport queue.",

@@ -354,3 +354,6 @@ class DriverDayPass(models.Model):
 
     def __str__(self) -> str:
         return f"{self.reference} {self.driver_id} {self.day}"
+
+
+from .academy import CourseResult  # noqa: E402,F401  (registers the model)

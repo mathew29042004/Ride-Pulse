@@ -15,6 +15,7 @@ from rest_framework.viewsets import GenericViewSet
 from apps.accounts.roles import Cap
 from apps.core.api import BaseViewSet, ContextBindingMixin
 from apps.core.dates import day_bounds, week_start
+from apps.core.exceptions import BusinessRuleViolation
 from apps.core.validators import normalize_registration, registration_validator
 from apps.payments.services import driver_earnings, wallet_balance
 from apps.pricing.models import RideType
@@ -239,6 +240,31 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
             .prefetch_related("vehicles")
             .get(user=self.request.user)
         )
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def academy(self, request):
+        """Driver Academy: the courses, which are passed, and whether induction is due."""
+        from . import academy
+
+        return Response(academy.catalogue(self.driver))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"], url_path=r"academy/(?P<slug>[\w-]+)")
+    def course(self, request, slug=None):
+        from . import academy
+
+        return Response(academy.public(slug))
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"academy/(?P<slug>[\w-]+)/submit")
+    def course_submit(self, request, slug=None):
+        from . import academy
+
+        answers = request.data.get("answers")
+        if not isinstance(answers, list) or not all(isinstance(a, int) for a in answers):
+            raise BusinessRuleViolation("Send your answers as a list of option numbers.")
+        return Response(academy.submit(self.driver, slug, answers))
 
     @extend_schema(responses=DriverStatusSerializer)
     @action(detail=False, methods=["get"])

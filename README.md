@@ -639,6 +639,13 @@ Ops → **Compliance**: each state's checks, and the drivers and vehicles to fix
 * **Drivers** can't go online without police verification and induction training. Ops record
   the police certificate number, and training is refreshed every 12 months.
 * **Vehicles** older than 8 years are listed for replacement.
+* **Driver Academy** (driver app → Account → Driver Academy): short courses with a quiz (pass at
+  80%). Courses: induction (required, refreshed yearly), women's safety and respectful conduct,
+  first aid, EV driving, and helping riders with disabilities.
+  * Passing induction is what records the training the guidelines require.
+  * Passing the accessibility course makes a driver assist-trained, so dispatch prefers them for
+    riders who need help.
+  * The app never receives the answers; the driver sees what to review after a fail.
 * The limits come from the 2025 central guidelines as we understand them. Each state notifies
   its own rules, so **check them** and override per state in `AGGREGATOR_RULES`
   (e.g. `{"Karnataka": {"surge_cap": "1.5"}}`).

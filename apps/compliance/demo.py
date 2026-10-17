@@ -34,4 +34,46 @@ def seed(*, seed: int = 51, log=print) -> dict:
             f"Compliance: {pending} drivers awaiting police verification, "
             f"{refresher} due a refresher"
         )
-    return {"verification_pending": pending, "refresher_due": refresher}
+    return {
+        "verification_pending": pending,
+        "refresher_due": refresher,
+        "course_results": academy_seed(),
+    }
+
+
+def academy_seed(*, seed: int = 52) -> int:
+    """Course results that match the drivers' training records, plus some optional courses."""
+    from datetime import datetime, time
+
+    from apps.drivers.academy import CourseResult
+
+    if CourseResult.objects.exists():
+        return 0
+    rng = random.Random(seed)
+    rows = []
+    for pk, trained, assist in DriverProfile.objects.filter(
+        induction_trained_on__isnull=False
+    ).values_list("pk", "induction_trained_on", "assist_trained"):
+        at = timezone.make_aware(datetime.combine(trained, time(11)))
+        rows.append(
+            CourseResult(
+                driver_id=pk,
+                course="induction",
+                score=rng.choice([80, 100, 100]),
+                passed=True,
+                taken_at=at,
+            )
+        )
+        for course, share in (("womens-safety", 0.45), ("first-aid", 0.3), ("ev-driving", 0.12)):
+            if rng.random() < share:
+                rows.append(
+                    CourseResult(driver_id=pk, course=course, score=100, passed=True, taken_at=at)
+                )
+        if assist:
+            rows.append(
+                CourseResult(
+                    driver_id=pk, course="accessibility", score=100, passed=True, taken_at=at
+                )
+            )
+    CourseResult.objects.bulk_create(rows, batch_size=2000)
+    return len(rows)

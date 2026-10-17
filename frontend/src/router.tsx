@@ -31,6 +31,7 @@ const DriverHome = lazy(() => import("./pages/driver/DriverHome"));
 const DriverEarnings = lazy(() => import("./pages/driver/DriverEarnings"));
 const DriverDocuments = lazy(() => import("./pages/driver/DriverDocuments"));
 const DriverAccount = lazy(() => import("./pages/driver/DriverAccount"));
+const DriverAcademy = lazy(() => import("./pages/driver/DriverAcademy"));
 
 const OpsLayout = lazy(() => import("./layouts/OpsLayout"));
 const OpsDashboard = lazy(() => import("./pages/ops/OpsDashboard"));
@@ -169,6 +170,7 @@ export const router = createBrowserRouter([
       { path: "earnings", element: lazyPage(<DriverEarnings />) },
       { path: "documents", element: lazyPage(<DriverDocuments />) },
       { path: "account", element: lazyPage(<DriverAccount />) },
+      { path: "academy", element: lazyPage(<DriverAcademy />) },
       { path: "support", element: lazyPage(<SupportList base="/drive" />) },
       { path: "privacy", element: lazyPage(<PrivacyCentre base="/drive" />) },
       { path: "help", element: lazyPage(<HelpCentre base="/drive" />) },
