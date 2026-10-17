@@ -1409,6 +1409,17 @@
     ],
     "type": "string"
    },
+   "DirectRequest": {
+    "properties": {
+     "user_id": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "user_id"
+    ],
+    "type": "object"
+   },
    "DiscountTypeEnum": {
     "description": "* `PERCENT` - Percent off\n* `FLAT` - Flat amount off",
     "enum": [
@@ -2858,6 +2869,27 @@
     },
     "required": [
      "on"
+    ],
+    "type": "object"
+   },
+   "GroupRequest": {
+    "properties": {
+     "member_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 60,
+      "type": "array"
+     },
+     "name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "member_ids",
+     "name"
     ],
     "type": "object"
    },
@@ -7725,6 +7757,19 @@
     ],
     "type": "string"
    },
+   "SendRequest": {
+    "properties": {
+     "body": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "body"
+    ],
+    "type": "object"
+   },
    "SenderEnum": {
     "description": "* `RIDER` - Rider\n* `DRIVER` - Driver",
     "enum": [
@@ -8901,6 +8946,17 @@
      "speeding_seconds": {
       "default": 0,
       "minimum": 0,
+      "type": "integer"
+     }
+    },
+    "type": "object"
+   },
+   "ThreadRequest": {
+    "properties": {
+     "meeting_id": {
+      "type": "integer"
+     },
+     "task_id": {
       "type": "integer"
      }
     },
@@ -11208,6 +11264,374 @@
     },
     "tags": [
      "auth"
+    ]
+   }
+  },
+  "/api/v1/chat/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/direct/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_direct_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DirectRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/DirectRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/DirectRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/group/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_group_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GroupRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/GroupRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/GroupRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/people/": {
+   "get": {
+    "description": "Staff to start a conversation with (search by name, email or title).",
+    "operationId": "chat_people_retrieve",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/thread/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_thread_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ThreadRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ThreadRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ThreadRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/{id}/messages/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_messages_retrieve",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "before",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "description": "A unique integer value identifying this conversation.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/{id}/read/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_read_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this conversation.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/{id}/send/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_send_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this conversation.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SendRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/SendRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/SendRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
     ]
    }
   },

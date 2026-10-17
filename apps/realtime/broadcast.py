@@ -77,5 +77,14 @@ def driver_event(driver_id: int, event: str, data: dict) -> None:
     _send(driver_group(driver_id), event, data)
 
 
+def user_group(user_id: int) -> str:
+    return f"user-{user_id}"
+
+
+def user_event(user_id: int, event: str, data: dict) -> None:
+    """To one signed-in person on every device (team chat)."""
+    _send(user_group(user_id), event, data)
+
+
 def ops_event(event: str, data: dict) -> None:
     _send(OPS_GROUP, event, data)

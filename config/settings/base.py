@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.trust",
     "apps.experiments",
     "apps.tours",
+    "apps.chat",
 ]
 
 MIDDLEWARE = [

@@ -115,3 +115,15 @@ class OpsConsumer(BroadcastConsumer):
             return
         await self.join(broadcast.OPS_GROUP)
         await self.accept()
+
+
+class ChatConsumer(BroadcastConsumer):
+    """``/ws/chat/``: a staff member's own team-chat messages, live."""
+
+    async def connect(self):
+        user = self.scope.get("user")
+        if not (user and user.is_authenticated and user.is_staff_member):
+            await self.close(code=FORBIDDEN)
+            return
+        await self.join(broadcast.user_group(user.pk))
+        await self.accept()

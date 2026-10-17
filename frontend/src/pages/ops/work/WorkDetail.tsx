@@ -2,9 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, CalendarClock, MessageCircleQuestion, Plus, Repeat, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarClock, MessageCircleQuestion, Plus, Repeat, Send, Trash2, MessagesSquare } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { Badge, Button, Card, CardHeader, Field, Input, KeyValue, PageHeader, Select, Textarea } from "@/components/ui";
@@ -22,6 +22,20 @@ function Back() {
     <Link to="/ops/work" className="mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-fg">
       <ArrowLeft className="size-4" /> Work
     </Link>
+  );
+}
+
+/** Opens (and joins) the conversation on this task or meeting in Team chat. */
+function DiscussButton({ target }: { target: { task_id: number } | { meeting_id: number } }) {
+  const navigate = useNavigate();
+  const open = useMutation({
+    mutationFn: () => api.post<{ id: number }>("chat/thread/", target),
+    onSuccess: (r) => navigate(`/ops/chat/${r.id}`),
+  });
+  return (
+    <Button size="sm" variant="outline" icon={<MessagesSquare className="size-4" />} loading={open.isPending} onClick={() => open.mutate()}>
+      Discuss
+    </Button>
   );
 }
 
@@ -62,6 +76,7 @@ export function WorkTaskPage() {
           <div className="flex gap-2">
             <Badge tone={PRIORITY_TONE[t.priority]}>{t.priority_label}</Badge>
             <Badge tone={t.is_overdue ? "danger" : t.status === "DONE" ? "brand" : "neutral"}>{t.is_overdue ? "Overdue" : t.status_label}</Badge>
+            <DiscussButton target={{ task_id: t.id }} />
           </div>
         }
       />
@@ -225,7 +240,12 @@ export function WorkMeetingPage() {
           </span>
         }
         subtitle={`${dateTime(m.starts_at)} · ${m.duration_minutes} min · organised by ${m.organizer_name}`}
-        actions={<Badge tone={m.status === "DONE" ? "brand" : m.status === "CANCELLED" ? "danger" : "neutral"}>{m.status_label}</Badge>}
+        actions={
+          <div className="flex gap-2">
+            <Badge tone={m.status === "DONE" ? "brand" : m.status === "CANCELLED" ? "danger" : "neutral"}>{m.status_label}</Badge>
+            <DiscussButton target={{ meeting_id: m.id }} />
+          </div>
+        }
       />
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">

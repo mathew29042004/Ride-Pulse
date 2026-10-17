@@ -628,6 +628,21 @@ Celery worker and beat, simulator).
   tests with coverage, the React build, Playwright browser tests, a dependency vulnerability
   audit (pip-audit, npm audit), the dbt project, and the Docker image.
 
+### Team chat (`apps/chat`)
+
+Ops console → **Team chat** (`/ops/chat`), like Microsoft Teams for internal communication.
+
+* **Channels**: #general for everyone, one per department, and one per state. Staff are added
+  automatically from their profile.
+* **Direct messages** (one conversation per pair) and **groups** (named, up to 50 people).
+* **Threads**: every task and meeting has a **Discuss** button that opens its own conversation.
+  The people on it are members, and anyone who can see it joins by opening it.
+* **@mentions** (`@firstname` or `@email-name`) notify the person. Unread counts show in the list.
+* **Live** over WebSockets (`/ws/chat/`, each signed-in person's own stream).
+* **Replies**: anyone signed in replies themselves. The 171 employees are demo accounts, so when
+  you message one nobody is signed in as, they answer with a short pre-set line, labelled "demo
+  reply". Natural, written replies would need an AI service, which is on hold.
+
 ### Tour packages (`apps/tours`)
 
 Rider app → **Tours**, driver app → **Your tours**, Ops → **Tours**.
