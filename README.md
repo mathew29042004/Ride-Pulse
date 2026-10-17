@@ -628,6 +628,21 @@ Celery worker and beat, simulator).
   tests with coverage, the React build, Playwright browser tests, a dependency vulnerability
   audit (pip-audit, npm audit), the dbt project, and the Docker image.
 
+### Compliance with India's Aggregator Guidelines (`apps/compliance`)
+
+Ops → **Compliance**: each state's checks, and the drivers and vehicles to fix.
+
+* **Enforced as money moves:**
+  * Surge never goes above the state's cap (2× by default), even with a manual override.
+  * Cancellation fees are at most 10% of the fare and ₹100.
+  * Drivers keep at least 80% of the fare (the commission is checked).
+* **Drivers** can't go online without police verification and induction training. Ops record
+  the police certificate number, and training is refreshed every 12 months.
+* **Vehicles** older than 8 years are listed for replacement.
+* The limits come from the 2025 central guidelines as we understand them. Each state notifies
+  its own rules, so **check them** and override per state in `AGGREGATOR_RULES`
+  (e.g. `{"Karnataka": {"surge_cap": "1.5"}}`).
+
 ### Two-step sign-in for staff (`accounts.two_factor`)
 
 Ops → **Security**.

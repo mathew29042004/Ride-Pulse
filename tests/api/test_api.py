@@ -291,6 +291,20 @@ def test_staff_document_review_and_driver_self_service(api, chennai, ops):
             f"/api/v1/drivers/documents/{document['id']}/review/", {"approve": True}, format="json"
         )
     assert driver_client.get("/api/v1/driver/me/").json()["onboarding_status"] == "APPROVED"
+    # Aggregator Guidelines: police verification and induction before the first ride.
+    driver_id = driver_client.get("/api/v1/driver/me/").json()["id"]
+    assert (
+        driver_client.post(
+            "/api/v1/driver/online/", {"lat": 13.04, "lng": 80.23}, format="json"
+        ).status_code
+        == 422
+    )
+    api(ops).post(
+        f"/api/v1/ops/compliance/drivers/{driver_id}/police/",
+        {"reference": "TNPV-2026-0042"},
+        format="json",
+    )
+    api(ops).post(f"/api/v1/ops/compliance/drivers/{driver_id}/induction/")
     assert (
         driver_client.post(
             "/api/v1/driver/online/", {"lat": 13.04, "lng": 80.23}, format="json"

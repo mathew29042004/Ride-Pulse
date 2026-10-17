@@ -79,9 +79,11 @@ def test_late_rider_cancellation_charges_a_fee_shared_with_the_driver(
     trip = book(rider, mini, now=now)
     trip = dispatch.accept_offer(pending_offer(trip), driver=driver, now=now)
     trip = rides.cancel_trip(trip, user=rider.user, now=now + timedelta(minutes=5))
-    assert trip.cancellation_fee == Decimal(50)
-    assert wallet_balance(rider.user) == -50  # dues, to be paid before the next booking
-    assert wallet_balance(driver.user) == Decimal(40)  # fee minus 20% commission
+    # The city's ₹50 fee, capped by the Aggregator Guidelines at 10% of the fare (max ₹100).
+    fee = min(Decimal(50), (trip.estimated_fare / 10).quantize(Decimal("0.01")))
+    assert trip.cancellation_fee == fee > 0
+    assert wallet_balance(rider.user) == -fee  # dues, to be paid before the next booking
+    assert wallet_balance(driver.user) == (fee * Decimal("0.8")).quantize(Decimal("0.01"))
     assert verify_ledger()["balanced"]
     with pytest.raises(Exception, match="dues"):
         book(rider, mini, now=now + timedelta(minutes=10))

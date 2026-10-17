@@ -65,6 +65,7 @@ const OpsTours = lazy(() => import("./pages/ops/OpsTours"));
 const OpsLostFound = lazy(() => import("./pages/ops/OpsLostFound"));
 const OpsChat = lazy(() => import("./pages/ops/OpsChat"));
 const OpsSecurity = lazy(() => import("./pages/ops/OpsSecurity"));
+const OpsCompliance = lazy(() => import("./pages/ops/OpsCompliance"));
 const OpsTrust = lazy(() => import("./pages/ops/OpsTrust"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
@@ -221,6 +222,7 @@ export const router = createBrowserRouter([
       { path: "lost-found", element: lazyPage(<OpsLostFound />) },
       { path: "chat", element: lazyPage(<OpsChat />) },
       { path: "security", element: lazyPage(<OpsSecurity />) },
+      { path: "compliance", element: lazyPage(<OpsCompliance />) },
       { path: "chat/:id", element: lazyPage(<OpsChat />) },
       { path: "trust", element: lazyPage(<OpsTrust />) },
       { path: "fleet-owners", element: lazyPage(<OpsFleetOwners />) },

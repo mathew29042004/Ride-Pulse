@@ -259,6 +259,15 @@ def compliance_problems(driver: DriverProfile, *, on: date | None = None) -> lis
             problems.append(f"{label} is missing, pending review or expired.")
         elif document.expires_on and document.expires_on < on:
             problems.append(f"{label} has expired.")
+    from apps.compliance.rules import for_state
+
+    law = for_state(driver.city.state if driver.city_id else None)
+    if law["police_verification"] and not driver.police_verified_on:
+        problems.append(
+            "Police verification is pending; ops will confirm it before your first ride."
+        )
+    if law["induction_training"] and not driver.induction_trained_on:
+        problems.append("Finish the induction training to go online.")
     vehicle = driver.vehicles.filter(is_active=True).first()
     if vehicle and vehicle.insurance_expires_on and vehicle.insurance_expires_on < on:
         problems.append(

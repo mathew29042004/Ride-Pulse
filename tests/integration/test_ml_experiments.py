@@ -107,7 +107,8 @@ def test_surge_cap_experiment_end_to_end(mini, make_driver, now, chennai):
         ].surge_multiplier
     groups = {r.pk: experiments.variant(experiment, r.user) for r in riders}
     assert {seen[pk] for pk, v in groups.items() if v == "treatment"} <= {Decimal("1.5")}
-    assert {seen[pk] for pk, v in groups.items() if v == "control"} <= {Decimal("2.8")}
+    # Control pays the surge, but never above Tamil Nadu's legal cap (2x).
+    assert {seen[pk] for pk, v in groups.items() if v == "control"} <= {Decimal("2.0")}
     assert Exposure.objects.filter(experiment=experiment).count() == 12
 
     # Booking right after seeing the price converts the exposure (and is charged the same cap).

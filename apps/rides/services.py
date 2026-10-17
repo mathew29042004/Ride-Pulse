@@ -1081,7 +1081,7 @@ def cancel_trip(trip: Trip, *, user, reason: str = "", now: datetime | None = No
             trip,
             by=by,
             reason=reason or "Cancelled by rider",
-            fee=rule.cancellation_fee if late else Decimal(0),
+            fee=_legal_fee(rule.cancellation_fee, trip) if late else Decimal(0),
             actor=user,
             now=now,
         )
@@ -1098,7 +1098,7 @@ def cancel_trip(trip: Trip, *, user, reason: str = "", now: datetime | None = No
                 trip,
                 by=by,
                 reason="Rider didn't show up",
-                fee=rule.cancellation_fee,
+                fee=_legal_fee(rule.cancellation_fee, trip),
                 actor=user,
                 now=now,
             )
@@ -1107,6 +1107,14 @@ def cancel_trip(trip: Trip, *, user, reason: str = "", now: datetime | None = No
     return _cancel(
         trip, by=by, reason=reason or "Cancelled by operations", fee=Decimal(0), actor=user, now=now
     )
+
+
+def _legal_fee(fee: Decimal, trip: Trip) -> Decimal:
+    """The city's cancellation fee, within the state's legal cap (a share of the fare and a
+    rupee maximum, under India's Aggregator Guidelines)."""
+    from apps.compliance.rules import cap_cancellation_fee
+
+    return cap_cancellation_fee(fee, trip.estimated_fare, trip.city.state)
 
 
 def _cancel(trip: Trip, *, by: str, reason: str, fee: Decimal, actor, now: datetime) -> Trip:

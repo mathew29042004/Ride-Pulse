@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "apps.experiments",
     "apps.tours",
     "apps.chat",
+    "apps.compliance",
 ]
 
 MIDDLEWARE = [
@@ -360,6 +361,7 @@ RIDE_PULSE = {
     "FREE_CANCELLATION_SECONDS": 120,
     "MAX_DRIVER_DUES": "500",
     "ROAD_DISTANCE_FACTOR": "1.3",
+    # The platform-wide ceiling; each state's legal cap applies on top (apps.compliance.rules).
     "SURGE_MAX_MULTIPLIER": "3.0",
     "SURGE_WINDOW_MINUTES": 10,
     "SURGE_SMOOTHING": "0.5",
@@ -531,3 +533,8 @@ else:
 # "postgres": fan WebSocket events out across processes with LISTEN/NOTIFY (no Redis needed).
 # "layer": hand them straight to the channel layer (Redis already reaches every process).
 REALTIME_RELAY = env("REALTIME_RELAY", default="layer" if REDIS_URL else "postgres")
+
+
+# Per-state overrides of India's Motor Vehicle Aggregator Guidelines defaults
+# (apps/compliance/rules.py). Example: {"Karnataka": {"surge_cap": "1.5"}}.
+AGGREGATOR_RULES: dict[str, dict] = {}

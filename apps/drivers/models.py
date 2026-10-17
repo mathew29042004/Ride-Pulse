@@ -89,6 +89,10 @@ class DriverProfile(AuditedModel, TimeStampedModel):
     accepts_intercity = models.BooleanField(default=True)
     # Completed disability-awareness and boarding-assistance training.
     assist_trained = models.BooleanField(default=False)
+    # Aggregator Guidelines: police verification and induction training before the first ride.
+    police_verified_on = models.DateField(null=True, blank=True)
+    police_verification_ref = models.CharField(max_length=40, blank=True)
+    induction_trained_on = models.DateField(null=True, blank=True)
     # Driver Wellbeing (see drivers.wellbeing): enforced rest after long driving stretches.
     break_until = models.DateTimeField(null=True, blank=True)
     break_warned_at = models.DateTimeField(null=True, blank=True)

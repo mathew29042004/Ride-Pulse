@@ -12,7 +12,7 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Role
 from apps.drivers import services as drivers
-from apps.drivers.models import REQUIRED_DOCUMENTS
+from apps.drivers.models import REQUIRED_DOCUMENTS, DriverProfile
 from apps.geo.models import City
 from apps.notifications import services as notifications
 from apps.payments import services as payments
@@ -143,6 +143,10 @@ def make_driver(db, chennai, admin):
                 expires_on=date.today() + timedelta(days=400),
             )
             drivers.review_document(document, approve=True, reviewer=admin)
+        # Aggregator Guidelines: police-verified and trained before the first ride.
+        DriverProfile.objects.filter(pk=driver.pk).update(
+            police_verified_on=date.today(), induction_trained_on=date.today()
+        )
         driver.refresh_from_db()
         if online:
             lat, lng = at or (T_NAGAR[0] + 0.004, T_NAGAR[1] + 0.003)

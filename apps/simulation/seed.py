@@ -247,6 +247,15 @@ class Seeder:
             )
             if documents == "approved":
                 drivers_svc.review_document(document, approve=True, reviewer=self.ops_manager)
+        if documents == "approved":
+            # Aggregator Guidelines: police-verified and trained before the first ride.
+            joined = timezone.localdate() - timedelta(days=self.rng.randint(30, 700))
+            DriverProfile.objects.filter(pk=driver.pk).update(
+                police_verified_on=joined,
+                police_verification_ref=f"PV{self.rng.randint(10**7, 10**8 - 1)}",
+                induction_trained_on=timezone.localdate()
+                - timedelta(days=self.rng.randint(5, 340)),
+            )
         driver.refresh_from_db()
         self.profile[driver.pk] = {
             "quality": min(5.0, max(3.2, self.rng.gauss(4.65, 0.3))),

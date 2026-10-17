@@ -49,6 +49,12 @@ def current_surge(zone: Zone | None, *, now: datetime | None = None) -> Decimal:
     """A manual override wins; otherwise the latest fresh snapshot; otherwise no surge."""
     if zone is None:
         return Decimal(1)
+    from apps.compliance.rules import surge_cap
+
+    return min(_current_surge(zone, now=now), surge_cap(zone.city.state))
+
+
+def _current_surge(zone: Zone, *, now: datetime | None = None) -> Decimal:
     now = now or timezone.now()
     override = (
         SurgeOverride.objects.filter(zone=zone, starts_at__lte=now, ends_at__gt=now)
