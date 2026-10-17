@@ -249,7 +249,7 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
 
         return Response(academy.catalogue(self.driver))
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="driver_academy_course")
     @action(detail=False, methods=["get"], url_path=r"academy/(?P<slug>[\w-]+)")
     def course(self, request, slug=None):
         from . import academy

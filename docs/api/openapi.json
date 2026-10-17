@@ -12015,7 +12015,7 @@
   "/api/v1/driver/academy/{slug}/": {
    "get": {
     "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
-    "operationId": "driver_academy_retrieve_2",
+    "operationId": "driver_academy_course",
     "parameters": [
      {
       "in": "path",
