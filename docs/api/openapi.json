@@ -3216,11 +3216,69 @@
     ],
     "type": "object"
    },
+   "IncidentReviewRequest": {
+    "properties": {
+     "actions": {
+      "items": {
+       "additionalProperties": {},
+       "type": "object"
+      },
+      "maxItems": 10,
+      "type": "array"
+     },
+     "root_cause": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "summary": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "root_cause",
+     "summary"
+    ],
+    "type": "object"
+   },
    "IncidentStatusEnum": {
     "description": "* `OPEN` - Open\n* `ACKNOWLEDGED` - Acknowledged\n* `RESOLVED` - Resolved",
     "enum": [
      "OPEN",
      "ACKNOWLEDGED",
+     "RESOLVED"
+    ],
+    "type": "string"
+   },
+   "IncidentUpdateRequest": {
+    "properties": {
+     "message": {
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+     },
+     "public_message": {
+      "maxLength": 240,
+      "type": "string"
+     },
+     "status": {
+      "$ref": "#/components/schemas/IncidentUpdateStatusEnum"
+     }
+    },
+    "required": [
+     "message",
+     "status"
+    ],
+    "type": "object"
+   },
+   "IncidentUpdateStatusEnum": {
+    "description": "* `INVESTIGATING` - INVESTIGATING\n* `IDENTIFIED` - IDENTIFIED\n* `MONITORING` - MONITORING\n* `RESOLVED` - RESOLVED",
+    "enum": [
+     "INVESTIGATING",
+     "IDENTIFIED",
+     "MONITORING",
      "RESOLVED"
     ],
     "type": "string"
@@ -3262,13 +3320,22 @@
       "$ref": "#/components/schemas/VehicleIssueKindEnum"
      },
      "severity": {
-      "$ref": "#/components/schemas/SeverityEnum"
+      "$ref": "#/components/schemas/IssueSeverityEnum"
      }
     },
     "required": [
      "kind"
     ],
     "type": "object"
+   },
+   "IssueSeverityEnum": {
+    "description": "* `MINOR` - Minor (fix soon)\n* `MAJOR` - Major (fix this week)\n* `CRITICAL` - Critical (unsafe: off the road)",
+    "enum": [
+     "MINOR",
+     "MAJOR",
+     "CRITICAL"
+    ],
+    "type": "string"
    },
    "LabelEnum": {
     "description": "* `HOME` - Home\n* `WORK` - Work\n* `OTHER` - Other",
@@ -3914,6 +3981,48 @@
      "UPI",
      "CARD",
      "WALLET"
+    ],
+    "type": "string"
+   },
+   "OpenIncidentRequest": {
+    "properties": {
+     "components": {
+      "items": {
+       "maxLength": 13,
+       "minLength": 1,
+       "type": "string"
+      },
+      "maxItems": 6,
+      "type": "array"
+     },
+     "public_message": {
+      "maxLength": 240,
+      "minLength": 1,
+      "type": "string"
+     },
+     "severity": {
+      "$ref": "#/components/schemas/OpenIncidentSeverityEnum"
+     },
+     "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "components",
+     "public_message",
+     "severity",
+     "title"
+    ],
+    "type": "object"
+   },
+   "OpenIncidentSeverityEnum": {
+    "description": "* `MINOR` - MINOR\n* `MAJOR` - MAJOR\n* `CRITICAL` - CRITICAL",
+    "enum": [
+     "MINOR",
+     "MAJOR",
+     "CRITICAL"
     ],
     "type": "string"
    },
@@ -7963,15 +8072,6 @@
      }
     },
     "type": "object"
-   },
-   "SeverityEnum": {
-    "description": "* `MINOR` - Minor (fix soon)\n* `MAJOR` - Major (fix this week)\n* `CRITICAL` - Critical (unsafe: off the road)",
-    "enum": [
-     "MINOR",
-     "MAJOR",
-     "CRITICAL"
-    ],
-    "type": "string"
    },
    "ShareModeEnum": {
     "description": "* `ALWAYS` - Every ride\n* `NIGHT` - Night rides\n* `NEVER` - Only when I share",
@@ -17783,6 +17883,206 @@
     ]
    }
   },
+  "/api/v1/ops/incidents/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_incidents_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   },
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_incidents_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OpenIncidentRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/OpenIncidentRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/OpenIncidentRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/incidents/{id}/progress/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_incidents_progress_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this incident.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentUpdateRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentUpdateRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentUpdateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/incidents/{id}/review/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_incidents_review_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this incident.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentReviewRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentReviewRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentReviewRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/live/": {
    "get": {
     "description": "Everything on the live operations map: online drivers and active trips.",
@@ -23410,6 +23710,61 @@
     ],
     "tags": [
      "staff"
+    ]
+   }
+  },
+  "/api/v1/status/": {
+   "get": {
+    "description": "Public: the status of each part of Ride Pulse, open incidents and the last 14 days.",
+    "operationId": "status_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {}
+    ],
+    "tags": [
+     "status"
+    ]
+   }
+  },
+  "/api/v1/status/banner/": {
+   "get": {
+    "description": "For the signed-in rider or driver: the open incident that affects their app, if any.",
+    "operationId": "status_banner_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "status"
     ]
    }
   },

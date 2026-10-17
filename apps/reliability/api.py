@@ -5,11 +5,12 @@ import json
 
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -18,7 +19,7 @@ from apps.accounts.two_factor import coverage as two_factor_coverage
 from apps.core.api import BaseViewSet
 
 from . import jobs, outbox, security
-from .models import DeliveryStatus, WebhookDelivery, WebhookEndpoint
+from .models import DeliveryStatus, Incident, WebhookDelivery, WebhookEndpoint
 
 
 class EndpointSerializer(serializers.ModelSerializer):
@@ -151,3 +152,128 @@ class WebhookEchoView(APIView):
             seen.insert(0, {"id": event["id"], "topic": event["topic"], "at": event["created_at"]})
         cache.set("webhooks:echo", seen[:50], 3600)
         return Response({"ok": True})
+
+
+# --- Incidents and the status page --------------------------------------------------------------
+
+
+class OpenIncidentSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=160)
+    severity = serializers.ChoiceField(choices=["MINOR", "MAJOR", "CRITICAL"])
+    components = serializers.ListField(child=serializers.CharField(max_length=13), max_length=6)
+    public_message = serializers.CharField(max_length=240)
+
+
+class IncidentUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]
+    )
+    message = serializers.CharField(max_length=500)
+    public_message = serializers.CharField(required=False, allow_blank=True, max_length=240)
+
+
+class IncidentReviewSerializer(serializers.Serializer):
+    summary = serializers.CharField(max_length=4000)
+    root_cause = serializers.CharField(max_length=2000)
+    actions = serializers.ListField(child=serializers.DictField(), required=False, max_length=10)
+
+
+def _incident_row(i) -> dict:
+    return {
+        "id": i.pk,
+        "number": i.number,
+        "title": i.title,
+        "severity": i.severity,
+        "severity_label": i.get_severity_display(),
+        "status": i.status,
+        "status_label": i.get_status_display(),
+        "components": i.components,
+        "public_message": i.public_message,
+        "started_at": i.started_at,
+        "resolved_at": i.resolved_at,
+        "minutes": round(((i.resolved_at or timezone.now()) - i.started_at).total_seconds() / 60),
+        "summary": i.summary,
+        "root_cause": i.root_cause,
+        "reviewed_at": i.reviewed_at,
+        "updates": [
+            {
+                "status_label": u.get_status_display(),
+                "message": u.message,
+                "at": u.at,
+                "by": u.by.get_full_name() if u.by_id else None,
+            }
+            for u in i.updates.all()
+        ],
+    }
+
+
+class IncidentViewSet(BaseViewSet):
+    capabilities = {"list": Cap.TRIPS_VIEW, "*": Cap.TRIPS_MANAGE}
+    queryset = Incident.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def list(self, request):
+        rows = Incident.objects.prefetch_related("updates__by")[:50]
+        return Response([_incident_row(i) for i in rows])
+
+    @extend_schema(request=OpenIncidentSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from . import incidents
+
+        data = OpenIncidentSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        incident = incidents.open_incident(user=request.user, **data.validated_data)
+        return Response(_incident_row(incident), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=IncidentUpdateSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def progress(self, request, pk=None):
+        from . import incidents
+
+        data = IncidentUpdateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        incident = incidents.update(
+            get_object_or_404(Incident, pk=pk), user=request.user, **data.validated_data
+        )
+        return Response(_incident_row(incident))
+
+    @extend_schema(request=IncidentReviewSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def review(self, request, pk=None):
+        from . import incidents
+
+        data = IncidentReviewSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        incident, tasks = incidents.review(
+            get_object_or_404(Incident, pk=pk),
+            user=request.user,
+            summary=data.validated_data["summary"],
+            root_cause=data.validated_data["root_cause"],
+            actions=data.validated_data.get("actions", []),
+        )
+        return Response({**_incident_row(incident), "tasks": [t.number for t in tasks]})
+
+
+class StatusPageView(APIView):
+    """Public: the status of each part of Ride Pulse, open incidents and the last 14 days."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=["status"])
+    def get(self, request):
+        from . import incidents
+
+        return Response(incidents.status_page())
+
+
+class StatusBannerView(APIView):
+    """For the signed-in rider or driver: the open incident that affects their app, if any."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=["status"])
+    def get(self, request):
+        from . import incidents
+
+        return Response({"banner": incidents.banner_for(request.user)})

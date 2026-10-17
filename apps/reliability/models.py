@@ -160,3 +160,71 @@ class SlowRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.method} {self.route} {self.duration_ms} ms"
+
+
+# --- Incidents and the status page ---------------------------------------------------------------
+
+
+class Component(models.TextChoices):
+    BOOKING = "BOOKING", "Booking rides"
+    PAYMENTS = "PAYMENTS", "Payments"
+    MAPS = "MAPS", "Maps and ETAs"
+    DRIVER_APP = "DRIVER_APP", "Driver app"
+    NOTIFICATIONS = "NOTIFICATIONS", "Notifications and SMS"
+    SUPPORT = "SUPPORT", "Support"
+
+
+class IncidentSeverity(models.TextChoices):
+    MINOR = "MINOR", "Minor (degraded)"
+    MAJOR = "MAJOR", "Major (partly down)"
+    CRITICAL = "CRITICAL", "Critical (down)"
+
+
+class IncidentStatus(models.TextChoices):
+    INVESTIGATING = "INVESTIGATING", "Investigating"
+    IDENTIFIED = "IDENTIFIED", "Cause identified"
+    MONITORING = "MONITORING", "Fixed, monitoring"
+    RESOLVED = "RESOLVED", "Resolved"
+
+
+class Incident(models.Model):
+    number = models.CharField(max_length=20, unique=True)
+    title = models.CharField(max_length=160)
+    severity = models.CharField(max_length=8, choices=IncidentSeverity.choices)
+    status = models.CharField(
+        max_length=13, choices=IncidentStatus.choices, default=IncidentStatus.INVESTIGATING
+    )
+    components = ArrayField(models.CharField(max_length=13), default=list)
+    # What riders and drivers see (plain, short, with a workaround if there is one).
+    public_message = models.CharField(max_length=240)
+    started_at = models.DateTimeField(db_index=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    # The review afterwards (blameless): what happened, why, what changes.
+    summary = models.TextField(blank=True)
+    root_cause = models.TextField(blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.number} {self.title}"
+
+
+class IncidentUpdate(models.Model):
+    incident = models.ForeignKey(Incident, on_delete=models.CASCADE, related_name="updates")
+    status = models.CharField(max_length=13, choices=IncidentStatus.choices)
+    message = models.CharField(max_length=500)
+    at = models.DateTimeField()
+    by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["at"]
+
+    def __str__(self) -> str:
+        return f"{self.incident_id} {self.status}"

@@ -662,6 +662,17 @@ Ops → **Security**.
   it on, and Security lists who still hasn't.
 * The demo logins don't have it on, so the demo still signs in with one click.
 
+### Incidents and the status page (`reliability.incidents`)
+
+Ops → **Incidents**.
+* When part of the service breaks (booking, payments, maps, the driver app, notifications,
+  support), ops open an incident with a severity and a plain message with any workaround.
+* Riders and drivers see that message as a banner in their app, and **`/status`** shows every
+  component and the last 14 days to anyone, with no sign-in.
+* Every update is posted to the #operations chat channel.
+* After resolving, ops write a blameless review: what happened and the root cause. Follow-up
+  actions become tasks for people in the reviewer's team.
+
 ### Staff handbook
 
 Ops → **Handbook**: step-by-step procedures matching how the app works, covering:

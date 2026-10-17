@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router";
 
 import { GuardianBanner } from "@/components/Guardian";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { StatusBanner } from "@/components/StatusBanner";
 import { FrameAside, PhoneFrame } from "@/components/PhoneFrame";
 
 const TABS = [
@@ -39,6 +40,7 @@ export default function RiderLayout() {
     >
       <OfflineBanner />
       <GuardianBanner />
+      <StatusBanner />
       <Outlet />
     </PhoneFrame>
   );

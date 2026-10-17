@@ -15,6 +15,7 @@ import SwitchAccount from "./pages/public/SwitchAccount";
 const RiderLayout = lazy(() => import("./layouts/RiderLayout"));
 const TrackTrip = lazy(() => import("./pages/public/TrackTrip"));
 const SafeShare = lazy(() => import("./pages/public/SafeShare"));
+const StatusPage = lazy(() => import("./pages/public/StatusPage"));
 const RiderHome = lazy(() => import("./pages/rider/RiderHome"));
 const RiderBook = lazy(() => import("./pages/rider/RiderBook"));
 const RiderPackages = lazy(() => import("./pages/rider/RiderPackages"));
@@ -69,6 +70,7 @@ const OpsSecurity = lazy(() => import("./pages/ops/OpsSecurity"));
 const OpsCompliance = lazy(() => import("./pages/ops/OpsCompliance"));
 const OpsRoster = lazy(() => import("./pages/ops/work/OpsRoster"));
 const OpsAnnouncements = lazy(() => import("./pages/ops/OpsAnnouncements"));
+const OpsIncidents = lazy(() => import("./pages/ops/OpsIncidents"));
 const OpsTrust = lazy(() => import("./pages/ops/OpsTrust"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
@@ -132,6 +134,7 @@ export const router = createBrowserRouter([
   { path: "/signup/driver", element: <Signup kind="driver" />, errorElement: <ErrorPage /> },
   { path: "/track/:token", element: lazyPage(<TrackTrip />), errorElement: <ErrorPage /> },
   { path: "/safe/:token", element: lazyPage(<SafeShare />), errorElement: <ErrorPage /> },
+  { path: "/status", element: lazyPage(<StatusPage />), errorElement: <ErrorPage /> },
   {
     path: "/ride",
     errorElement: <ErrorPage />,
@@ -229,6 +232,7 @@ export const router = createBrowserRouter([
       { path: "compliance", element: lazyPage(<OpsCompliance />) },
       { path: "roster", element: lazyPage(<OpsRoster />) },
       { path: "announcements", element: lazyPage(<OpsAnnouncements />) },
+      { path: "incidents", element: lazyPage(<OpsIncidents />) },
       { path: "help", element: lazyPage(<HelpCentre base="/ops" />) },
       { path: "help/:slug", element: lazyPage(<HelpCentre base="/ops" />) },
       { path: "chat/:id", element: lazyPage(<OpsChat />) },
