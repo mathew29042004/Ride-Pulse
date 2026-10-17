@@ -3044,11 +3044,12 @@
     "type": "object"
    },
    "HelpArticleAudienceEnum": {
-    "description": "* `RIDER` - Riders\n* `DRIVER` - Drivers\n* `ALL` - Everyone",
+    "description": "* `RIDER` - Riders\n* `DRIVER` - Drivers\n* `ALL` - Everyone\n* `STAFF` - Staff handbook (internal)",
     "enum": [
      "RIDER",
      "DRIVER",
-     "ALL"
+     "ALL",
+     "STAFF"
     ],
     "type": "string"
    },
@@ -15082,6 +15083,13 @@
     "description": "Help articles for the signed-in person's app (riders or drivers).",
     "operationId": "help_list",
     "parameters": [
+     {
+      "in": "query",
+      "name": "category",
+      "schema": {
+       "type": "string"
+      }
+     },
      {
       "description": "Which field to use when ordering the results.",
       "in": "query",

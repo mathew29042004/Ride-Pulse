@@ -26,6 +26,7 @@ ignore = [
 "apps/trust/demo.py" = ["E501"]  # help articles and saved replies are prose
 "apps/drivers/academy_content.py" = ["E501"]  # course lessons and quizzes are prose
 "apps/announcements/demo.py" = ["E501"]  # announcement text is prose
+"apps/trust/handbook.py" = ["E501"]  # handbook procedures are prose
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]

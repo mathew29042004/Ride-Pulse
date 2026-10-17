@@ -302,28 +302,44 @@ class HelpViewSet(ContextBindingMixin, GenericViewSet):
     lookup_field = "slug"
 
     def _audience(self, request) -> str:
-        return Audience.DRIVER if request.user.is_driver else Audience.RIDER
+        if request.user.is_driver:
+            return Audience.DRIVER
+        if request.user.is_rider:
+            return Audience.RIDER
+        return Audience.STAFF  # staff read the internal handbook
+
+    def _visible(self, request):
+        """Riders and drivers never see internal handbook pages."""
+        audience = self._audience(request)
+        if audience == Audience.STAFF:
+            return HelpArticle.objects.filter(is_published=True)
+        return HelpArticle.objects.filter(is_published=True, audience__in=[audience, Audience.ALL])
 
     @extend_schema(
-        parameters=[OpenApiParameter("q", str, required=False)],
+        parameters=[
+            OpenApiParameter("q", str, required=False),
+            OpenApiParameter("category", str, required=False),
+        ],
         responses=HelpArticleSerializer(many=True),
     )
     def list(self, request):
         rows = support_quality.search(
-            request.query_params.get("q", ""), audience=self._audience(request)
+            request.query_params.get("q", ""),
+            audience=self._audience(request),
+            category=request.query_params.get("category", ""),
         )
         return Response(HelpArticleSerializer(rows, many=True).data)
 
     @extend_schema(responses=HelpArticleSerializer)
     def retrieve(self, request, slug=None):
-        article = get_object_or_404(HelpArticle, slug=slug, is_published=True)
+        article = get_object_or_404(self._visible(request), slug=slug)
         support_quality.view(article)
         return Response(HelpArticleSerializer(article).data)
 
     @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])
     def vote(self, request, slug=None):
-        article = get_object_or_404(HelpArticle, slug=slug, is_published=True)
+        article = get_object_or_404(self._visible(request), slug=slug)
         support_quality.vote(article, user=request.user, helpful=bool(request.data.get("helpful")))
         return Response({"ok": True})
 

@@ -124,8 +124,12 @@ def macros_for(category: str = ""):
 # --- Help centre -----------------------------------------------------------------------------
 
 
-def search(query: str = "", *, audience: str = Audience.RIDER, limit: int = 20):
-    articles = HelpArticle.objects.filter(is_published=True, audience__in=[audience, Audience.ALL])
+def search(query: str = "", *, audience: str = Audience.RIDER, category: str = "", limit: int = 20):
+    """Riders and drivers see theirs and everyone's; staff see only the internal handbook."""
+    audiences = [Audience.STAFF] if audience == Audience.STAFF else [audience, Audience.ALL]
+    articles = HelpArticle.objects.filter(is_published=True, audience__in=audiences)
+    if category:
+        articles = articles.filter(category__iexact=category)
     words = [w for w in query.lower().split() if len(w) > 2][:6]
     for word in words:
         articles = articles.filter(

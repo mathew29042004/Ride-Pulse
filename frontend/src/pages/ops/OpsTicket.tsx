@@ -125,6 +125,7 @@ export default function OpsTicket() {
             </div>
           </Card>
           {t.category === "SAFETY" && <SafetyRecordings ticketId={t.id} />}
+          <HandbookFor category={t.category} />
           {trip.data && (
             <Card>
               <CardHeader title="Trip" action={<Link className="text-xs font-semibold text-muted hover:text-fg" to={`/ops/trips/${trip.data.id}`}>Open →</Link>} />
@@ -191,5 +192,35 @@ function MacroPicker({ category, name, trip, ticket, onPick }: { category: strin
         </option>
       ))}
     </select>
+  );
+}
+
+
+/** The handbook procedures for this kind of ticket. */
+const HANDBOOK_CATEGORY: Record<string, string> = {
+  SAFETY: "Safety",
+  FARE_DISPUTE: "Refunds",
+  PAYMENT: "Refunds",
+  LOST_ITEM: "Lost & found",
+  DRIVER_BEHAVIOUR: "Fraud",
+};
+
+function HandbookFor({ category }: { category: string }) {
+  const group = HANDBOOK_CATEGORY[category];
+  const sops = useQuery({ queryKey: ["help", "category", group], queryFn: () => api.get<{ slug: string; title: string }[]>(`help/?category=${encodeURIComponent(group)}`), enabled: !!group });
+  if (!sops.data?.length) return null;
+  return (
+    <Card>
+      <CardHeader title="Handbook" />
+      <ul className="space-y-1 text-sm">
+        {sops.data.map((s) => (
+          <li key={s.slug}>
+            <Link className="text-brand hover:underline" to={`/ops/help/${s.slug}`}>
+              {s.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }

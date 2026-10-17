@@ -662,6 +662,21 @@ Ops → **Security**.
   it on, and Security lists who still hasn't.
 * The demo logins don't have it on, so the demo still signs in with one click.
 
+### Staff handbook
+
+Ops → **Handbook**: step-by-step procedures matching how the app works, covering:
+* SOS and unanswered Ride Checks
+* refunds and surge complaints
+* lost and found
+* fraud reviews
+* onboarding a driver
+* a car that's off the road
+* a tour with no driver
+* leave
+
+Each support ticket shows the procedures for its category. They're internal help-centre
+articles: riders and drivers can neither list nor open them, even with a link.
+
 ### Announcements (`apps/announcements`)
 
 Ops → **Announcements**.

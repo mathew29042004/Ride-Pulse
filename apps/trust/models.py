@@ -249,6 +249,7 @@ class Audience(models.TextChoices):
     RIDER = "RIDER", "Riders"
     DRIVER = "DRIVER", "Drivers"
     ALL = "ALL", "Everyone"
+    STAFF = "STAFF", "Staff handbook (internal)"
 
 
 class HelpArticle(models.Model):

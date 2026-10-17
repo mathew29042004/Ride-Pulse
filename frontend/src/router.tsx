@@ -229,6 +229,8 @@ export const router = createBrowserRouter([
       { path: "compliance", element: lazyPage(<OpsCompliance />) },
       { path: "roster", element: lazyPage(<OpsRoster />) },
       { path: "announcements", element: lazyPage(<OpsAnnouncements />) },
+      { path: "help", element: lazyPage(<HelpCentre base="/ops" />) },
+      { path: "help/:slug", element: lazyPage(<HelpCentre base="/ops" />) },
       { path: "chat/:id", element: lazyPage(<OpsChat />) },
       { path: "trust", element: lazyPage(<OpsTrust />) },
       { path: "fleet-owners", element: lazyPage(<OpsFleetOwners />) },

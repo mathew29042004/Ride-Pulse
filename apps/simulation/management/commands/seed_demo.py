@@ -107,3 +107,7 @@ def reload_reference_data():
     from apps.tours.models import TourPackage, TourStop
 
     load_tours(City, TourPackage, TourStop)
+    from apps.trust.handbook import load as load_handbook
+    from apps.trust.models import HelpArticle
+
+    load_handbook(HelpArticle)
