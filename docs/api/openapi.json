@@ -554,6 +554,35 @@
     ],
     "type": "object"
    },
+   "BudgetRequest": {
+    "properties": {
+     "city": {
+      "minLength": 1,
+      "type": "string"
+     },
+     "month": {
+      "format": "date",
+      "type": "string"
+     },
+     "promotions": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "revenue": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     }
+    },
+    "required": [
+     "city",
+     "month",
+     "promotions",
+     "revenue"
+    ],
+    "type": "object"
+   },
    "CancelMeetingRequest": {
     "properties": {
      "whole_series": {
@@ -10753,6 +10782,93 @@
       }
      }
     ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "analytics"
+    ]
+   }
+  },
+  "/api/v1/analytics/pnl/": {
+   "get": {
+    "description": "Profit and loss by city for a month (``?month=2026-10``), and setting budgets.",
+    "operationId": "analytics_pnl_retrieve",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "month",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "analytics"
+    ]
+   },
+   "post": {
+    "description": "Profit and loss by city for a month (``?month=2026-10``), and setting budgets.",
+    "operationId": "analytics_pnl_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BudgetRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/BudgetRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/BudgetRequest"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "content": {

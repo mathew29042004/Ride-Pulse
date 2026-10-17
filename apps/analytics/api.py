@@ -6,6 +6,7 @@ from django.http import StreamingHttpResponse
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -160,3 +161,51 @@ class WarehouseInsightsView(ContextBindingMixin, APIView):
         except ValueError:
             return Response({"available": False, "message": "The insights file is unreadable."})
         return Response({"available": True, **data})
+
+
+# --- City P&L -------------------------------------------------------------------------------
+
+
+class BudgetSerializer(serializers.Serializer):
+    city = serializers.SlugRelatedField(slug_field="slug", queryset=City.objects.all())
+    month = serializers.DateField()
+    revenue = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
+    promotions = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
+
+
+class PnlView(APIView):
+    """Profit and loss by city for a month (``?month=2026-10``), and setting budgets."""
+
+    permission_classes = [CapabilityPermission]
+    capabilities = {"get": Cap.PAYMENTS_VIEW, "post": Cap.PAYOUTS_MANAGE}
+
+    @extend_schema(
+        parameters=[OpenApiParameter("month", str, required=False)],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def get(self, request):
+        from datetime import date
+
+        from django.utils import timezone
+
+        from . import pnl
+
+        raw = request.query_params.get("month")
+        month = date.fromisoformat(f"{raw}-01") if raw else timezone.localdate().replace(day=1)
+        return Response(pnl.report(month))
+
+    @extend_schema(request=BudgetSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        from . import pnl
+
+        data = BudgetSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        budget = pnl.set_budget(
+            v["city"],
+            v["month"],
+            revenue=v["revenue"],
+            promotions=v["promotions"],
+            user=request.user,
+        )
+        return Response({"city": budget.city.slug, "month": budget.month})

@@ -103,6 +103,7 @@ analytics_urls = [
     path("breakdown/", analytics.BreakdownView.as_view(), name="analytics-breakdown"),
     path("trips.csv", analytics.TripExportView.as_view(), name="analytics-trips-csv"),
     path("warehouse/", analytics.WarehouseInsightsView.as_view(), name="analytics-warehouse"),
+    path("pnl/", analytics.PnlView.as_view(), name="analytics-pnl"),
 ]
 
 urlpatterns = [

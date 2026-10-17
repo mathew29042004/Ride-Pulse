@@ -662,6 +662,18 @@ Ops → **Security**.
   it on, and Security lists who still hasn't.
 * The demo logins don't have it on, so the demo still signs in with one click.
 
+### City P&L (`analytics.pnl`)
+
+Ops → **City P&L**, by month.
+* **From the ledger, exactly:** commission, booking fees, promotion spend and refunds. Each
+  transaction counts for the city of its trip, and money with no trip (Ride Pass, some bonuses)
+  is shown on its own line.
+* **Labelled estimates:** card gateway fees (2% of card fares; UPI has no merchant fee in
+  India) and support at ₹45 a ticket. Both can be changed in `PNL_ASSUMPTIONS`.
+* GST is shown separately (owed to the government).
+* The bottom line is a **contribution**, before salaries, marketing, offices and technology.
+* Finance can set a monthly revenue and promotions budget per city, and see actuals against it.
+
 ### Incidents and the status page (`reliability.incidents`)
 
 Ops → **Incidents**.
