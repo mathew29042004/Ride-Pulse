@@ -7,7 +7,8 @@ import { Logo } from "@/components/Logo";
 import { PhoneLogin } from "@/components/PhoneLogin";
 import { Button, Field, Input } from "@/components/ui";
 import { ApiError } from "@/lib/api";
-import { homeFor, useAuth } from "@/lib/auth";
+import { TwoStepPrompt } from "@/components/TwoStep";
+import { homeFor, TwoFactorRequired, useAuth } from "@/lib/auth";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/demo";
 
 const ICONS = { Rider: Car, Driver: CarTaxiFront, Operations: LayoutDashboard, Support: Headset, Business: Briefcase, "Fleet owner": Building2, Admin: ShieldCheck };
@@ -21,6 +22,7 @@ export default function Login() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [method, setMethod] = useState<"phone" | "email">("phone");
+  const [challenge, setChallenge] = useState<string | null>(null);
 
   // ?switch=1 shows the form even when signed in, to change accounts in this tab.
   if (user && !params.get("switch")) return <Navigate to={params.get("next") ?? homeFor(user.role)} replace />;
@@ -33,6 +35,10 @@ export default function Login() {
       toast.success(`Welcome back, ${me.first_name || me.email}`);
       navigate(params.get("next") ?? homeFor(me.role), { replace: true });
     } catch (err) {
+      if (err instanceof TwoFactorRequired) {
+        setChallenge(err.challenge);
+        return;
+      }
       setError(err instanceof ApiError && err.status === 401 ? "Wrong email or password." : (err as Error).message);
     } finally {
       setBusy(null);
@@ -46,6 +52,16 @@ export default function Login() {
 
   return (
     <div className="grid min-h-full lg:grid-cols-2">
+      {challenge && (
+        <TwoStepPrompt
+          challenge={challenge}
+          onCancel={() => setChallenge(null)}
+          onDone={(me) => {
+            toast.success(`Welcome back, ${me.first_name || me.email}`);
+            navigate(params.get("next") ?? homeFor(me.role), { replace: true });
+          }}
+        />
+      )}
       <div className="relative hidden overflow-hidden bg-[#070a10] p-10 text-white lg:flex lg:flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,rgb(16_185_129/0.35),transparent_50%),radial-gradient(ellipse_at_100%_100%,rgb(14_165_233/0.2),transparent_45%)]" />
         <Link to="/" className="relative">

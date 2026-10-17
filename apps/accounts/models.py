@@ -157,3 +157,6 @@ class StaffProfile(models.Model):
 
     def __str__(self) -> str:
         return f"{self.employee_id} {self.user.get_full_name()} ({self.title})"
+
+
+from .two_factor import TwoFactor  # noqa: E402,F401  (registers the model)

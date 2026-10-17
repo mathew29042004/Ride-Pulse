@@ -85,6 +85,10 @@ auth_urls = [
     path("otp/request/", accounts.OtpRequestView.as_view(), name="otp-request"),
     path("otp/verify/", accounts.OtpVerifyView.as_view(), name="otp-verify"),
     path("otp/signup/", accounts.OtpSignupView.as_view(), name="otp-signup"),
+    path("2fa/", accounts.TwoFactorView.as_view(), name="two-factor"),
+    path("2fa/enable/", accounts.TwoFactorEnableView.as_view(), name="two-factor-enable"),
+    path("2fa/disable/", accounts.TwoFactorDisableView.as_view(), name="two-factor-disable"),
+    path("2fa/verify/", accounts.TwoFactorVerifyView.as_view(), name="two-factor-verify"),
 ]
 
 analytics_urls = [

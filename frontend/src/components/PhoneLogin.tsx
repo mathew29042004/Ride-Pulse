@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { Button, Field, Input } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { TwoStepPrompt } from "@/components/TwoStep";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
 
@@ -16,6 +17,7 @@ type Tokens = { access: string; refresh: string; user: User };
 
 export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
   const { acceptTokens } = useAuth();
+  const [challenge, setChallenge] = useState<string | null>(null);
   const [step, setStep] = useState<"phone" | "code" | "name">("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -60,7 +62,11 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
 
   const verify = (value = code) =>
     run(async () => {
-      const res = await api.post<{ new_user: true; signup_token: string } | ({ new_user: false } & Tokens)>("auth/otp/verify/", { phone, code: value });
+      const res = await api.post<{ new_user: true; signup_token: string } | ({ new_user: false } & Tokens) | { two_factor_required: true; challenge: string; new_user?: undefined }>("auth/otp/verify/", { phone, code: value });
+      if ("two_factor_required" in res) {
+        setChallenge(res.challenge);
+        return;
+      }
       if (res.new_user) {
         setSignupToken(res.signup_token);
         setStep("name");
@@ -89,6 +95,7 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      {challenge && <TwoStepPrompt challenge={challenge} onCancel={() => setChallenge(null)} onDone={onDone} />}
       {step === "phone" && (
         <>
           <Field label="Mobile number" error={error}>

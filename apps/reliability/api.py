@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.roles import Cap
+from apps.accounts.two_factor import coverage as two_factor_coverage
 from apps.core.api import BaseViewSet
 
 from . import jobs, outbox, security
@@ -70,6 +71,7 @@ class PlatformViewSet(BaseViewSet):
                 "security": security.overview(),
                 "echo_received": cache.get("webhooks:echo", [])[:10],
                 "jobs": jobs.jobs_overview(),
+                "two_factor": two_factor_coverage(),
                 "speed": {**jobs.latency_by_route(), **jobs.slow_overview()},
             }
         )

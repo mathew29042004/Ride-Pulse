@@ -10038,6 +10038,38 @@
     ],
     "type": "object"
    },
+   "TwoFactorChallengeRequest": {
+    "properties": {
+     "challenge": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+     },
+     "code": {
+      "maxLength": 12,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "challenge",
+     "code"
+    ],
+    "type": "object"
+   },
+   "TwoFactorCodeRequest": {
+    "properties": {
+     "code": {
+      "maxLength": 12,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "code"
+    ],
+    "type": "object"
+   },
    "UnlockRequest": {
     "properties": {
      "email": {
@@ -10806,6 +10838,215 @@
     ],
     "tags": [
      "audit-logs"
+    ]
+   }
+  },
+  "/api/v1/auth/2fa/": {
+   "get": {
+    "description": "The signed-in staff member's own two-step settings: GET status, POST to start set-up.",
+    "operationId": "auth_2fa_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "auth"
+    ]
+   },
+   "post": {
+    "description": "The signed-in staff member's own two-step settings: GET status, POST to start set-up.",
+    "operationId": "auth_2fa_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/2fa/disable/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "auth_2fa_disable_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorCodeRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorCodeRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorCodeRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/2fa/enable/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "auth_2fa_enable_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorCodeRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorCodeRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorCodeRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/v1/auth/2fa/verify/": {
+   "post": {
+    "description": "Second step of sign-in: the challenge from the password step plus a 6-digit code (or a\nrecovery code) gives the tokens.",
+    "operationId": "auth_2fa_verify_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorChallengeRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorChallengeRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/TwoFactorChallengeRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     },
+     {}
+    ],
+    "tags": [
+     "auth"
     ]
    }
   },

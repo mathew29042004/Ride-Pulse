@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, Building2, FlaskConical, Landmark, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, MessagesSquare, Network, PackageSearch, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, Building2, FlaskConical, KeyRound, Landmark, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, MessagesSquare, Network, PackageSearch, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -83,10 +83,22 @@ const NAV = [
       { to: "/ops/platform", label: "Platform health", icon: Activity, cap: "audit.view" },
       { to: "/ops/work", label: "Work", icon: ClipboardList, cap: "work.use" },
       { to: "/ops/chat", label: "Team chat", icon: MessagesSquare, cap: "work.use" },
+      { to: "/ops/security", label: "Security", icon: KeyRound, cap: "work.use" },
       { to: "/ops/team", label: "Team", icon: Network, cap: "team.view" },
     ],
   },
 ];
+
+/** Admins and managers without two-step sign-in get a reminder on every ops page. */
+function TwoStepReminder() {
+  const status = useQuery({ queryKey: ["2fa"], queryFn: () => api.get<{ enabled: boolean; required: boolean }>("auth/2fa/"), staleTime: 300_000 });
+  if (!status.data || status.data.enabled || !status.data.required) return null;
+  return (
+    <NavLink to="/ops/security" className="mb-3 flex items-center gap-2 rounded-xl bg-amber-500/15 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+      <KeyRound className="size-4" /> Two-step sign-in is required for your role. Set it up in two minutes →
+    </NavLink>
+  );
+}
 
 export default function OpsLayout() {
   const { user, can, logout } = useAuth();
@@ -222,6 +234,7 @@ export default function OpsLayout() {
           <main className="min-h-0 flex-1 overflow-y-auto">
             <div className={clsx(pathname === "/ops/live" ? "h-full" : "mx-auto max-w-7xl px-4 py-6 lg:px-8")}>
               <OfflineBanner />
+              <TwoStepReminder />
               <Outlet />
             </div>
           </main>

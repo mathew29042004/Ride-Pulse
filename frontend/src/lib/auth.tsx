@@ -52,10 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const data = await api.post<{ access: string; refresh: string; user: User }>("auth/token/", {
+      const data = await api.post<{ access: string; refresh: string; user: User } | { two_factor_required: true; challenge: string }>("auth/token/", {
         email,
         password,
       });
+      if ("two_factor_required" in data) throw new TwoFactorRequired(data.challenge);
       acceptTokens(data);
       return data.user;
     },
@@ -96,6 +97,13 @@ export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
   return ctx;
+}
+
+/** The password was right; the caller asks for the two-step code next. */
+export class TwoFactorRequired extends Error {
+  constructor(public challenge: string) {
+    super("Enter your two-step code.");
+  }
 }
 
 export function homeFor(role: Role): string {

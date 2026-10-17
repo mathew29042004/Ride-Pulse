@@ -95,6 +95,11 @@ class RidePulseTokenSerializer(TokenObtainPairSerializer):
                     "Too many wrong passwords. Your account is locked for 15 minutes."
                 ) from None
             raise
+        from . import two_factor
+
+        if self.user.is_staff_member and two_factor.is_enabled(self.user):
+            # Password was right; now the second step. No tokens until the code checks out.
+            return {"two_factor_required": True, "challenge": two_factor.challenge_for(self.user)}
         data["user"] = UserSerializer(self.user).data
         return data
 
@@ -325,6 +330,12 @@ class OtpVerifyView(APIView):
         result = otp.verify_code(**serializer.validated_data)
         if result.user is None:
             return Response({"new_user": True, "signup_token": result.signup_token})
+        from . import two_factor
+
+        if result.user.is_staff_member and two_factor.is_enabled(result.user):
+            return Response(
+                {"two_factor_required": True, "challenge": two_factor.challenge_for(result.user)}
+            )
         return Response(
             {"new_user": False, "user": UserSerializer(result.user).data, **tokens_for(result.user)}
         )
@@ -415,3 +426,83 @@ class TeamViewSet(mixins.ListModelMixin, BaseViewSet):
         from . import org
 
         return Response(org.summary())
+
+
+# --- Two-step sign-in (staff) -------------------------------------------------------------------
+
+
+class TwoFactorCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=12)
+
+
+class TwoFactorChallengeSerializer(TwoFactorCodeSerializer):
+    challenge = serializers.CharField(max_length=300)
+
+
+class TwoFactorVerifyView(APIView):
+    """Second step of sign-in: the challenge from the password step plus a 6-digit code (or a
+    recovery code) gives the tokens."""
+
+    permission_classes = [AllowAny]
+    throttle_scope = "login"
+
+    @extend_schema(request=TwoFactorChallengeSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        from apps.reliability import security
+
+        from . import two_factor
+
+        data = TwoFactorChallengeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = two_factor.user_from_challenge(data.validated_data["challenge"])
+        if security.locked_until(user.email):
+            raise AccountLocked("Too many wrong codes. Try again in a few minutes.")
+        if not two_factor.verify(user, data.validated_data["code"]):
+            if security.login_failed(user.email, request=request):
+                raise AccountLocked("Too many wrong codes. Your account is locked for 15 minutes.")
+            raise serializers.ValidationError({"code": ["That code didn't match."]})
+        return Response({"user": UserSerializer(user).data, **tokens_for(user)})
+
+
+class TwoFactorView(ContextBindingMixin, APIView):
+    """The signed-in staff member's own two-step settings: GET status, POST to start set-up."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request):
+        from . import two_factor
+
+        return Response(two_factor.status(request.user))
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        from . import two_factor
+
+        return Response(two_factor.begin(request.user))
+
+
+class TwoFactorEnableView(ContextBindingMixin, APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=TwoFactorCodeSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        from . import two_factor
+
+        data = TwoFactorCodeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        codes = two_factor.enable(request.user, data.validated_data["code"])
+        return Response({"recovery_codes": codes, **two_factor.status(request.user)})
+
+
+class TwoFactorDisableView(ContextBindingMixin, APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=TwoFactorCodeSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        from . import two_factor
+
+        data = TwoFactorCodeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        two_factor.disable(request.user, data.validated_data["code"])
+        return Response(two_factor.status(request.user))

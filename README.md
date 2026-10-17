@@ -628,6 +628,18 @@ Celery worker and beat, simulator).
   tests with coverage, the React build, Playwright browser tests, a dependency vulnerability
   audit (pip-audit, npm audit), the dbt project, and the Docker image.
 
+### Two-step sign-in for staff (`accounts.two_factor`)
+
+Ops → **Security**.
+* After the password, staff with two-step on enter a 6-digit code from an authenticator app
+  (Google or Microsoft Authenticator). It works for phone-code sign-in too.
+* Codes are standard TOTP (RFC 6238, checked against the RFC's own examples), implemented in
+  plain Python. A code can't be used twice, and wrong codes count towards the account lockout.
+* Turning it on gives 10 one-time recovery codes, stored hashed.
+* It's required for admins and managers: they see a reminder on every ops page until they turn
+  it on, and Security lists who still hasn't.
+* The demo logins don't have it on, so the demo still signs in with one click.
+
 ### Team chat (`apps/chat`)
 
 Ops console → **Team chat** (`/ops/chat`), like Microsoft Teams for internal communication.
