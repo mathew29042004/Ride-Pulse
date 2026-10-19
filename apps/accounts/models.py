@@ -160,6 +160,11 @@ class StaffProfile(models.Model):
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reports"
     )
     joined_on = models.DateField()
+    # Where they work (an office or support desk). If set, clock-ins must be made within the
+    # radius; field staff with no fixed site leave it empty.
+    work_lat = models.FloatField(null=True, blank=True)
+    work_lng = models.FloatField(null=True, blank=True)
+    work_radius_m = models.PositiveSmallIntegerField(default=300)
 
     class Meta:
         ordering = ["employee_id"]

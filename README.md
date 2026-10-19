@@ -755,7 +755,7 @@ their own payslips with a PDF (Ops → My payslips).
 
 ### Staff attendance (`workspace.attendance`)
 
-Every employee clocks in and out in Ops → Attendance. Clock-ins match the roster shift (from 30
+Every employee clocks in and out in Ops → Attendance. Staff with a work site (support desks) must clock in within 300 m of it; the browser's location is checked. Field staff have no fixed site. Clock-ins match the roster shift (from 30
 minutes before it starts) or, for staff without shifts, office hours 9:30–6:30. More than 10
 minutes after the start is late; under 4 hours is a half day. An hourly job closes forgotten
 clock-outs at the shift end (marked "Didn't clock out") and marks rostered shifts with no clock-in

@@ -56,7 +56,14 @@ export default function OpsAttendance() {
   const mine = useQuery({ queryKey: ["attendance", "mine"], queryFn: () => api.get<Mine>("work/attendance/") });
   const team = useQuery({ queryKey: ["attendance", "team"], queryFn: () => api.get<Team>("work/attendance/team/") });
   const refresh = () => qc.invalidateQueries({ queryKey: ["attendance"] });
-  const clockIn = useMutation({ mutationFn: () => api.post<Mine>("work/attendance/clock-in/"), onSuccess: refresh, onError: fail });
+  // Staff with a work site must be there: send the browser's location when we can get it.
+  const where = () =>
+    new Promise<{ lat?: number; lng?: number }>((resolve) =>
+      "geolocation" in navigator
+        ? navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }), () => resolve({}), { timeout: 8000 })
+        : resolve({}),
+    );
+  const clockIn = useMutation({ mutationFn: async () => api.post<Mine>("work/attendance/clock-in/", await where()), onSuccess: refresh, onError: fail });
   const clockOut = useMutation({ mutationFn: () => api.post<Mine>("work/attendance/clock-out/"), onSuccess: refresh, onError: fail });
   const decide = useMutation({ mutationFn: ({ id, approve }: { id: number; approve: boolean }) => api.post(`work/attendance/${id}/decide/`, { approve }), onSuccess: refresh, onError: fail });
   const [fixing, setFixing] = useState<Row | null>(null);

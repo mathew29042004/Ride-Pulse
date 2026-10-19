@@ -515,12 +515,17 @@ class AttendanceViewSet(BaseViewSet):
 
         return Response(attendance.mine(request.user))
 
-    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["post"], url_path="clock-in")
     def clock_in(self, request):
         from . import attendance
 
-        attendance.clock_in(request.user)
+        lat, lng = request.data.get("lat"), request.data.get("lng")
+        attendance.clock_in(
+            request.user,
+            lat=float(lat) if lat is not None else None,
+            lng=float(lng) if lng is not None else None,
+        )
         return Response(attendance.mine(request.user))
 
     @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})

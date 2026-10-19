@@ -129,3 +129,23 @@ def test_api(api):
     assert made.status_code in (200, 422)
     mine = client.get("/api/v1/work/attendance/").json()
     assert "month" in mine and "next" in mine
+
+
+def test_clock_in_only_at_the_work_site(now):
+    agent = hire(Role.SUPPORT_AGENT)
+    StaffProfile.objects.filter(user=agent).update(
+        work_lat=13.0418, work_lng=80.2341, work_radius_m=300
+    )
+    agent.refresh_from_db()
+    Shift.objects.create(
+        user=agent,
+        day=now.date(),
+        slot="MORNING",
+        starts_at=now - timedelta(minutes=5),
+        ends_at=now + timedelta(hours=7),
+    )
+    with pytest.raises(BusinessRuleViolation, match="Allow location"):
+        attendance.clock_in(agent, now=now)
+    with pytest.raises(BusinessRuleViolation, match="km from your workplace"):
+        attendance.clock_in(agent, now=now, lat=13.08, lng=80.27)
+    assert attendance.clock_in(agent, now=now, lat=13.0420, lng=80.2343).clock_in

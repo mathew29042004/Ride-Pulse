@@ -127,8 +127,28 @@ def _settle(record: Attendance) -> Attendance:
     return record
 
 
-def clock_in(user, *, now=None) -> Attendance:
+def check_site(user, lat, lng) -> None:
+    """Staff with a work site must clock in there (within its radius)."""
+    from apps.geo.distance import haversine_km
+
+    profile = getattr(user, "staff_profile", None)
+    if not profile or profile.work_lat is None:
+        return
+    if lat is None or lng is None:
+        raise BusinessRuleViolation(
+            "Allow location so we can check you're at work.", field="location"
+        )
+    metres = haversine_km(profile.work_lat, profile.work_lng, lat, lng) * 1000
+    if metres > profile.work_radius_m:
+        raise BusinessRuleViolation(
+            f"You're {metres / 1000:.1f} km from your workplace. Clock in when you get there.",
+            field="location",
+        )
+
+
+def clock_in(user, *, now=None, lat=None, lng=None) -> Attendance:
     now = now or timezone.now()
+    check_site(user, lat, lng)
     shift, day, start, end = _expected(user, now)
     if now < start - EARLY:
         raise BusinessRuleViolation(
@@ -483,3 +503,20 @@ def seed_demo(*, seed: int = 51, log=print) -> dict:
     Attendance.objects.bulk_create(rows, ignore_conflicts=True)
     log(f"  attendance: {len(rows)} days")
     return {"attendance": len(rows)}
+
+
+def seed_work_sites(*, log=print) -> dict:
+    """Support desks work from the city office (the city centre in the demo); field staff
+    (fleet executives) and managers who travel have no fixed site."""
+    from apps.accounts.models import StaffProfile
+
+    rows = list(
+        StaffProfile.objects.filter(
+            user__role__in=["SUPPORT_AGENT", "SUPPORT_LEAD"], city__isnull=False
+        ).select_related("city")
+    )
+    for p in rows:
+        p.work_lat, p.work_lng, p.work_radius_m = p.city.center_lat, p.city.center_lng, 300
+    StaffProfile.objects.bulk_update(rows, ["work_lat", "work_lng", "work_radius_m"])
+    log(f"  work sites: {len(rows)} desk staff")
+    return {"work_sites": len(rows)}
