@@ -107,7 +107,7 @@ export default function RiderHome() {
         <button
           onClick={() => setSpot(DEFAULT_SPOT)}
           className="ml-auto flex size-11 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]"
-          aria-label="Recenter"
+          aria-label={t("Recenter")}
         >
           <LocateFixed className="size-5" />
         </button>
@@ -146,7 +146,7 @@ export default function RiderHome() {
               navigate("/ride/book?later=1");
             }}
             className="flex items-center gap-1 rounded-full bg-surface px-3 py-1.5 text-xs font-semibold hover:bg-line"
-            aria-label="Schedule a ride for later"
+            aria-label={t("Schedule a ride for later")}
           >
             <Clock className="size-3.5" /> {t("Later")}
           </span>
@@ -154,10 +154,10 @@ export default function RiderHome() {
 
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
-            { to: "/ride/book?service=PARCEL", icon: Package, label: "Parcel", hint: "Send by bike" },
-            { to: "/ride/packages?service=RENTAL", icon: Timer, label: "Rentals", hint: "By the hour" },
-            { to: "/ride/packages?service=INTERCITY", icon: MapPinned, label: "Intercity", hint: "Outstation" },
-            { to: "/ride/tours", icon: Landmark, label: "Tours", hint: "Day trips to famous places" },
+            { to: "/ride/book?service=PARCEL", icon: Package, label: "Parcel", hint: t("Send by bike") },
+            { to: "/ride/packages?service=RENTAL", icon: Timer, label: "Rentals", hint: t("By the hour") },
+            { to: "/ride/packages?service=INTERCITY", icon: MapPinned, label: "Intercity", hint: t("Outstation") },
+            { to: "/ride/tours", icon: Landmark, label: "Tours", hint: t("Day trips to famous places") },
           ].map(({ to, icon: Icon, label, hint }) => (
             <button key={to} onClick={() => navigate(to)} title={t(hint)} className="flex items-center justify-center gap-1.5 rounded-full border border-line px-2 py-2 text-xs font-semibold transition hover:bg-surface-2">
               <Icon className="size-4 text-brand" />
@@ -177,8 +177,8 @@ export default function RiderHome() {
 
         <div className="mt-4 divide-y divide-line">
           {[
-            { place: home, icon: House, label: "Home" },
-            { place: work, icon: Briefcase, label: "Work" },
+            { place: home, icon: House, label: t("Home") },
+            { place: work, icon: Briefcase, label: t("Work") },
           ].map(({ place, icon: Icon, label }) =>
             place ? (
               <button key={label} onClick={() => goTo(place.lat, place.lng, place.name)} className="flex w-full items-center gap-3 py-3 text-left">

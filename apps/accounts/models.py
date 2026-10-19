@@ -55,7 +55,16 @@ class User(AbstractUser):
     phone = models.CharField(max_length=15, blank=True)
     # App language (en, ta, hi): chat messages are translated into it (rides.translate).
     language = models.CharField(
-        max_length=2, choices=[("en", "English"), ("ta", "Tamil"), ("hi", "Hindi")], default="en"
+        max_length=2,
+        choices=[
+            ("en", "English"),
+            ("ta", "Tamil"),
+            ("hi", "Hindi"),
+            ("ml", "Malayalam"),
+            ("kn", "Kannada"),
+            ("te", "Telugu"),
+        ],
+        default="en",
     )
 
     USERNAME_FIELD = "email"

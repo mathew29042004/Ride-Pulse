@@ -145,3 +145,14 @@ def test_api(api, rider, mini, make_driver, now):
     )
     summary = client.get("/api/v1/rider/eco/").json()
     assert summary["co2_saved_kg_total"] >= 0 and summary["redeem_points"] == 100
+
+
+def test_phrasebook_covers_all_six_languages(api, rider):
+    language, out = translate.translate("ഞാൻ വരുന്നു", sender_language="ml", target="te")
+    assert language == "ml" and out["te"] == "నేను వస్తున్నాను" and out["kn"] == "ನಾನು ಬರುತ್ತಿದ್ದೇನೆ"
+    assert all(len(row) == len(translate.LANGUAGES) for row in translate.PHRASES)
+    # People can pick the new languages for their account.
+    client = api(rider.user)
+    assert client.patch("/api/v1/auth/me/", {"language": "kn"}, format="json").status_code == 200
+    rider.user.refresh_from_db()
+    assert rider.user.language == "kn"

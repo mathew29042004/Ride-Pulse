@@ -26,7 +26,7 @@ export function ThemeRow() {
   return (
     <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="flex w-full items-center gap-3 py-3.5 text-left">
       {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
-      <span className="flex-1 font-medium">{t(theme === "dark" ? "Light mode" : "Dark mode")}</span>
+      <span className="flex-1 font-medium">{(theme === "dark" ? t("Light mode") : t("Dark mode"))}</span>
     </button>
   );
 }
@@ -38,14 +38,14 @@ export function LanguageRow() {
     <div className="flex items-center gap-3 py-3.5">
       <Languages className="size-5" />
       <span className="flex-1 font-medium">{t("Language")}</span>
-      <div className="flex gap-1" role="radiogroup" aria-label="Language">
+      <div className="flex gap-1" role="radiogroup" aria-label={t("Language")}>
         {LANGUAGES.map(({ code, label }) => (
           <button
             key={code}
             role="radio"
             aria-checked={language === code}
             onClick={() => {
-              setLanguage(code);
+              void setLanguage(code);
               // So chat messages reach this person in their language (Language Bridge).
               api.patch("auth/me/", { language: code }).catch(() => undefined);
             }}
@@ -99,12 +99,12 @@ export default function RiderAccount() {
         lng: place.picked!.lng,
       }),
     onSuccess: () => {
-      toast.success("Place saved");
+      toast.success(t("Place saved"));
       setPlaceOpen(false);
       setPlace({ label: "HOME", query: "", picked: null });
       qc.invalidateQueries({ queryKey: ["places", "saved"] });
     },
-    onError: (err) => toast.error(err instanceof ApiError && err.code === "validation_error" ? "You already have a place with that label." : (err as Error).message),
+    onError: (err) => toast.error(err instanceof ApiError && err.code === "validation_error" ? t("You already have a place with that label.") : (err as Error).message),
   });
   const removePlace = useMutation({
     mutationFn: (id: number) => api.del(`rider/places/${id}/`),
@@ -119,7 +119,7 @@ export default function RiderAccount() {
         <div>
           <h1 className="text-xl font-bold">{rider?.name}</h1>
           <div className="mt-0.5 flex items-center gap-3 text-sm text-muted">
-            <Stars value={rider?.rating ?? 5} /> · {rider?.completed_trips ?? 0} trips
+            <Stars value={rider?.rating ?? 5} /> · {t("{n} trips", { n: rider?.completed_trips ?? 0 })}
           </div>
         </div>
       </div>
@@ -136,16 +136,16 @@ export default function RiderAccount() {
       {rider && <PreferencesAndFavourites rider={rider} />}
       {rider && <AccessibilitySettings rider={rider} />}
 
-      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Saved places</h2>
+      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">{t("Saved places")}</h2>
       <div className="divide-y divide-line">
         {(places.data ?? []).map((p) => (
           <div key={p.id} className="flex items-center gap-3 py-3">
             {p.label === "HOME" ? <House className="size-5" /> : p.label === "WORK" ? <Briefcase className="size-5" /> : <MapPin className="size-5" />}
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">{p.label === "OTHER" ? p.name : p.label === "HOME" ? "Home" : "Work"}</div>
+              <div className="text-sm font-semibold">{p.label === "OTHER" ? p.name : p.label === "HOME" ? t("Home") : t("Work")}</div>
               <div className="truncate text-xs text-muted">{p.name}</div>
             </div>
-            <button onClick={() => removePlace.mutate(p.id)} className="p-1 text-muted hover:text-danger" aria-label="Remove place">
+            <button onClick={() => removePlace.mutate(p.id)} className="p-1 text-muted hover:text-danger" aria-label={t("Remove place")}>
               <Trash2 className="size-4" />
             </button>
           </div>
@@ -155,7 +155,7 @@ export default function RiderAccount() {
         </button>
       </div>
 
-      <h2 className="mt-4 text-xs font-semibold tracking-wide text-muted uppercase">Safety & help</h2>
+      <h2 className="mt-4 text-xs font-semibold tracking-wide text-muted uppercase">{t("Safety & help")}</h2>
       <div className="divide-y divide-line">
         <PushToggle audience="rider" />
         <SafetySettings rider={rider} />
@@ -163,12 +163,12 @@ export default function RiderAccount() {
         <TrustLinks base="/ride" />
         <Link to="/ride/commute" className="flex items-center gap-3 py-3.5">
           <Building2 className="size-5" />
-          <span className="flex-1 font-medium">Office commute</span>
+          <span className="flex-1 font-medium">{t("Office commute")}</span>
           <ChevronRight className="size-4 text-muted" />
         </Link>
         <Link to="/ride/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
-          <span className="flex-1 font-medium">Help & support tickets</span>
+          <span className="flex-1 font-medium">{t("Help & support tickets")}</span>
           <ChevronRight className="size-4 text-muted" />
         </Link>
         <LanguageRow />
@@ -179,22 +179,22 @@ export default function RiderAccount() {
       <Modal
         open={placeOpen}
         onClose={() => setPlaceOpen(false)}
-        title="Save a place"
+        title={t("Save a place")}
         footer={
           <Button onClick={() => addPlace.mutate()} disabled={!place.picked} loading={addPlace.isPending}>
-            Save place
+            {t("Save place")}
           </Button>
         }
       >
-        <Field label="Label">
+        <Field label={t("Label")}>
           <Select value={place.label} onChange={(e) => setPlace((p) => ({ ...p, label: e.target.value }))}>
-            <option value="HOME">Home</option>
-            <option value="WORK">Work</option>
-            <option value="OTHER">Other</option>
+            <option value="HOME">{t("Home")}</option>
+            <option value="WORK">{t("Work")}</option>
+            <option value="OTHER">{t("Other")}</option>
           </Select>
         </Field>
-        <Field label="Search" className="mt-3">
-          <Input value={place.picked?.name ?? place.query} onChange={(e) => setPlace((p) => ({ ...p, query: e.target.value, picked: null }))} placeholder="Landmark or area" />
+        <Field label={t("Search")} className="mt-3">
+          <Input value={place.picked?.name ?? place.query} onChange={(e) => setPlace((p) => ({ ...p, query: e.target.value, picked: null }))} placeholder={t("Landmark or area")} />
         </Field>
         <div className="mt-2 space-y-1">
           {(search.data ?? []).map((result) => (
@@ -213,7 +213,7 @@ function InviteCard({ rider }: { rider: Rider }) {
   const bonus = Number(rider.referrals?.bonus ?? 50);
   const link = `${location.origin}/signup?ref=${rider.referral_code}`;
   async function share() {
-    const text = `Ride with me on Ride Pulse! Sign up with my code ${rider.referral_code} and we both get ₹${bonus} after your first ride.`;
+    const text = t("Ride with me on Ride Pulse! Sign up with my code {code} and we both get ₹{bonus} after your first ride.", { code: rider.referral_code, bonus });
     try {
       if (navigator.share) {
         await navigator.share({ title: "Ride Pulse", text, url: link });
@@ -223,7 +223,7 @@ function InviteCard({ rider }: { rider: Rider }) {
       return; // the share sheet was dismissed
     }
     await navigator.clipboard?.writeText(`${text} ${link}`);
-    toast.success("Invite link copied");
+    toast.success(t("Invite link copied"));
   }
   return (
     <div className="mt-5 rounded-2xl bg-brand-soft p-4">
@@ -232,24 +232,24 @@ function InviteCard({ rider }: { rider: Rider }) {
           <Gift className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="font-semibold text-brand-fg">Invite friends, you both get ₹{bonus}</div>
-          <div className="text-xs text-brand-strong dark:text-brand-fg/80">Paid to both wallets after their first ride.</div>
+          <div className="font-semibold text-brand-fg">{t("Invite friends, you both get ₹{bonus}", { bonus })}</div>
+          <div className="text-xs text-brand-strong dark:text-brand-fg/80">{t("Paid to both wallets after their first ride.")}</div>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2">
         <button
           onClick={() => {
             navigator.clipboard?.writeText(rider.referral_code);
-            toast.success("Referral code copied");
+            toast.success(t("Referral code copied"));
           }}
           className="flex flex-1 items-center justify-between rounded-xl border border-dashed border-brand/50 bg-surface px-3 py-2 font-mono text-sm font-bold"
-          aria-label="Copy referral code"
+          aria-label={t("Copy referral code")}
         >
           {rider.referral_code}
           <Copy className="size-4 text-muted" />
         </button>
         <Button variant="brand" onClick={share} icon={<Share2 className="size-4" />}>
-          Invite
+          {t("Invite")}
         </Button>
       </div>
       {rider.referrals && rider.referrals.joined > 0 && (
@@ -272,9 +272,9 @@ function InvoiceEmailRow() {
     onSuccess: async () => {
       await refreshUser();
       setOpen(false);
-      toast.success("Invoices will be emailed to " + email.toLowerCase());
+      toast.success(t("Invoices will be emailed to ") + email.toLowerCase());
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't save the email."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't save the email.")),
   });
   return (
     <>
@@ -287,25 +287,25 @@ function InvoiceEmailRow() {
       >
         <Mail className="size-5 shrink-0 text-muted" />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">{missing ? "Add an email for ride invoices" : "Ride invoices"}</span>
-          <span className="block truncate text-xs text-muted">{missing ? "We'll email a GST invoice after every ride" : `Sent to ${user?.email}`}</span>
+          <span className="block text-sm font-semibold">{missing ? t("Add an email for ride invoices") : t("Ride invoices")}</span>
+          <span className="block truncate text-xs text-muted">{missing ? t("We'll email a GST invoice after every ride") : t("Sent to {email}", { email: user?.email ?? "" })}</span>
         </span>
         <ChevronRight className="size-4 text-muted" />
       </button>
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Invoice email"
+        title={t("Invoice email")}
         footer={
           <Button block onClick={() => save.mutate()} loading={save.isPending} disabled={!email.includes("@")}>
-            Save
+            {t("Save")}
           </Button>
         }
       >
-        <Field label="Email address">
+        <Field label={t("Email address")}>
           <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
         </Field>
-        <p className="mt-2 text-xs text-muted">Invoices and receipts are sent here after each paid ride.</p>
+        <p className="mt-2 text-xs text-muted">{t("Invoices and receipts are sent here after each paid ride.")}</p>
       </Modal>
     </>
   );
@@ -318,7 +318,7 @@ function PreferencesAndFavourites({ rider }: { rider: Rider }) {
   const save = useMutation({
     mutationFn: (values: string[]) => api.patch("rider/me/", { default_preferences: values }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["rider", "me"] }),
-    onError: () => toast.error("Couldn't save your preferences."),
+    onError: () => toast.error(t("Couldn't save your preferences.")),
   });
   const remove = useMutation({
     mutationFn: (id: number) => api.del(`rider/favourites/${id}/`),
@@ -326,8 +326,8 @@ function PreferencesAndFavourites({ rider }: { rider: Rider }) {
   });
   return (
     <>
-      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Ride preferences</h2>
-      <p className="mb-2 text-xs text-muted">Selected for you every time you book. You can still change them per ride.</p>
+      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">{t("Ride preferences")}</h2>
+      <p className="mb-2 text-xs text-muted">{t("Selected for you every time you book. You can still change them per ride.")}</p>
       <div className="flex flex-wrap gap-1.5">
         {PREFERENCES.map(({ value, label, icon: Icon }) => {
           const on = defaults.includes(value);
@@ -344,9 +344,9 @@ function PreferencesAndFavourites({ rider }: { rider: Rider }) {
         })}
       </div>
 
-      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">Favourite drivers</h2>
+      <h2 className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">{t("Favourite drivers")}</h2>
       {(rider.favourites ?? []).length === 0 ? (
-        <p className="mt-1 text-xs text-muted">Tap the heart after a ride to save a driver. Favourites nearby are asked first.</p>
+        <p className="mt-1 text-xs text-muted">{t("Tap the heart after a ride to save a driver. Favourites nearby are asked first.")}</p>
       ) : (
         <div className="divide-y divide-line">
           {rider.favourites!.map((f) => (

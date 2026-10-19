@@ -98,7 +98,7 @@ export default function RiderPackages() {
       qc.invalidateQueries({ queryKey: ["trips"] });
       navigate(`/ride/trips/${trip.id}`, { replace: true });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't book."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't book.")),
   });
 
   return (
@@ -111,7 +111,7 @@ export default function RiderPackages() {
         </BaseMap>
       </div>
       <div className="rp-overlay relative z-[600] flex items-center gap-2 p-3">
-        <Link to="/ride" className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Back">
+        <Link to="/ride" className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label={t("Back")}>
           <ArrowLeft className="size-5" />
         </Link>
         <div className="rounded-full bg-surface px-4 py-2 text-sm font-semibold shadow-[var(--shadow-float)]">{t("From {place}", { place: spot.name })}</div>
@@ -179,11 +179,11 @@ export default function RiderPackages() {
               />
               {roundTrip && (
                 <div className="ml-auto flex items-center gap-2 text-sm">
-                  <button onClick={() => setDays((d) => Math.max(1, d - 1))} className="rounded-full bg-surface-3 p-1.5" aria-label="One day less">
+                  <button onClick={() => setDays((d) => Math.max(1, d - 1))} className="rounded-full bg-surface-3 p-1.5" aria-label={t("One day less")}>
                     <Minus className="size-3.5" />
                   </button>
                   <span className="font-semibold">{t("{n} days", { n: days })}</span>
-                  <button onClick={() => setDays((d) => Math.min(7, d + 1))} className="rounded-full bg-surface-3 p-1.5" aria-label="One day more">
+                  <button onClick={() => setDays((d) => Math.min(7, d + 1))} className="rounded-full bg-surface-3 p-1.5" aria-label={t("One day more")}>
                     <Plus className="size-3.5" />
                   </button>
                 </div>
@@ -228,7 +228,7 @@ export default function RiderPackages() {
         <div className="mt-3 grid grid-cols-4 gap-1.5">
           {PAYMENT.map((m) => (
             <button key={m} onClick={() => setPayment(m)} className={clsx("rounded-xl border py-2 text-xs font-semibold", payment === m ? "border-fg bg-surface-2" : "border-line text-muted")}>
-              {t(m === "UPI" ? "UPI" : m === "CASH" ? "Cash" : m === "CARD" ? "Card" : "Wallet")}
+              {(m === "UPI" ? "UPI" : m === "CASH" ? t("Cash") : m === "CARD" ? t("Card") : t("Wallet"))}
             </button>
           ))}
         </div>

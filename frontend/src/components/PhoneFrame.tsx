@@ -58,7 +58,7 @@ function MobileFrame({ children, aside, tabs, hideTabs }: FrameProps) {
         <aside className="hidden max-w-sm lg:block">
           {aside}
           <button onClick={() => setMode("desktop")} className="mt-6 flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold text-fg hover:bg-surface-2">
-            <Monitor className="size-4" /> Switch to the desktop layout
+            <Monitor className="size-4" /> {t("Switch to the desktop layout")}
           </button>
         </aside>
       )}
@@ -67,7 +67,7 @@ function MobileFrame({ children, aside, tabs, hideTabs }: FrameProps) {
         onClick={() => setMode("desktop")}
         className="fixed top-4 right-4 z-[1000] hidden items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-ink-fg shadow-lg md:flex"
       >
-        <Monitor className="size-4" /> Website view
+        <Monitor className="size-4" /> {t("Website view")}
       </button>
       <div className="relative h-dvh w-full md:h-[min(860px,calc(100dvh-48px))] md:w-[400px] md:shrink-0 md:rounded-[52px] md:border-[12px] md:border-[#0b0f19] md:bg-[#0b0f19] md:shadow-[0_40px_80px_-20px_rgb(15_23_42/0.45)]">
         <div id="phone-screen" className="relative flex h-full flex-col overflow-hidden bg-surface md:rounded-[40px]">
@@ -110,8 +110,8 @@ function DesktopFrame({ children, tabs, mapScreen, title }: FrameProps) {
         )}
         <div className="ml-auto flex items-center gap-2">
           {tabs && <NotificationBell />}
-          <button onClick={() => setMode("phone")} className="flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-sm font-semibold hover:bg-surface-2" title="See the mobile app design">
-            <Smartphone className="size-4" /> Phone view
+          <button onClick={() => setMode("phone")} className="flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-sm font-semibold hover:bg-surface-2" title={t("See the mobile app design")}>
+            <Smartphone className="size-4" /> {t("Phone view")}
           </button>
         </div>
       </header>
@@ -134,7 +134,7 @@ export function FrameAside({ title, children }: { title: string; children: React
       <div className="mb-6 flex items-center gap-3">
         <LogoMark size={44} />
         <div>
-          <div className="text-xs font-semibold tracking-widest text-brand uppercase">Ride Pulse</div>
+          <div className="text-xs font-semibold tracking-widest text-brand uppercase">{t("Ride Pulse")}</div>
           <div className="text-2xl font-bold tracking-tight">{title}</div>
         </div>
       </div>

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import type { Trip } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 /** "Maruti Suzuki Swift · TN 09 AB 1234" -> model and plate. */
 function splitVehicle(vehicle: string | null): { model: string; plate: string } {
@@ -28,9 +29,9 @@ export function CarCheck({ trip }: { trip: Trip }) {
     mutationFn: (isMyCar: boolean) => api.post<Trip>(`trips/${trip.id}/confirm-car/`, { is_my_car: isMyCar }),
     onSuccess: (_, isMyCar) => {
       qc.invalidateQueries({ queryKey: ["trips"] });
-      if (!isMyCar) toast.warning("Our safety team has been alerted and will call you. Don't get in.", { duration: 10_000 });
+      if (!isMyCar) toast.warning(t("Our safety team has been alerted and will call you. Don't get in."), { duration: 10_000 });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Something went wrong."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Something went wrong.")),
   });
   if (!plate) return null;
   if (trip.car_confirmed_at) {
@@ -42,12 +43,12 @@ export function CarCheck({ trip }: { trip: Trip }) {
   }
   return (
     <div className="mt-3 rounded-2xl border-2 border-dashed border-line p-4">
-      <div className="text-xs font-semibold tracking-wide text-muted uppercase">Check before you get in</div>
+      <div className="text-xs font-semibold tracking-wide text-muted uppercase">{t("Check before you get in")}</div>
       <div className="mt-2 flex items-center gap-3">
         <div className="shrink-0 rounded-lg border-2 border-fg bg-yellow-300 px-3 py-1 font-mono text-lg font-black tracking-wider whitespace-nowrap text-black">{plate}</div>
         <div className="min-w-0 text-sm text-muted">{model}</div>
       </div>
-      <p className="mt-2 text-sm font-semibold">Is this your car?</p>
+      <p className="mt-2 text-sm font-semibold">{t("Is this your car?")}</p>
       <div className="mt-2 grid grid-cols-2 gap-2">
         <Button variant="outline" onClick={() => confirm.mutate(false)} disabled={confirm.isPending} icon={<ShieldAlert className="size-4" />}>
           No
@@ -78,7 +79,7 @@ export function StartCode({ trip }: { trip: Trip }) {
 
   if (!trip.otp) return null;
   const readAloud = () => {
-    const speech = new SpeechSynthesisUtterance(`Your ride PIN is ${trip.otp!.split("").join(", ")}`);
+    const speech = new SpeechSynthesisUtterance(t("Your ride PIN is {pin}", { pin: trip.otp!.split("").join(", ") }));
     speech.lang = "en-IN";
     speech.rate = 0.8;
     window.speechSynthesis?.cancel();
@@ -88,7 +89,7 @@ export function StartCode({ trip }: { trip: Trip }) {
   return (
     <div className="mt-3 rounded-2xl bg-surface-2 p-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold">{mode === "qr" ? "Show this to your driver" : "Tell your driver this PIN"}</div>
+        <div className="text-sm font-semibold">{mode === "qr" ? t("Show this to your driver") : t("Tell your driver this PIN")}</div>
         <div className="flex rounded-full bg-surface-3 p-0.5 text-xs font-semibold" role="tablist">
           {(["qr", "pin"] as const).map((m) => (
             <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)} className={clsx("rounded-full px-3 py-1", mode === m && "bg-surface shadow-sm")}>
@@ -100,29 +101,29 @@ export function StartCode({ trip }: { trip: Trip }) {
       {mode === "qr" ? (
         <div className="mt-3 flex flex-col items-center gap-2">
           {svg ? (
-            <div className="size-44 rounded-xl bg-white p-2" aria-label="Ride start QR code" role="img" dangerouslySetInnerHTML={{ __html: svg }} />
+            <div className="size-44 rounded-xl bg-white p-2" aria-label={t("Ride start QR code")} role="img" dangerouslySetInnerHTML={{ __html: svg }} />
           ) : (
             <div className="flex size-44 items-center justify-center rounded-xl bg-surface-3">
               <QrCode className="size-8 text-muted" />
             </div>
           )}
-          <p className="text-center text-xs text-muted">Changes every 30 seconds, so a photo of it won't work later.</p>
+          <p className="text-center text-xs text-muted">{t("Changes every 30 seconds, so a photo of it won't work later.")}</p>
         </div>
       ) : (
         <div className="mt-3 flex items-center gap-3">
           <button
             onClick={() => setRevealed((r) => !r)}
             className="flex-1 rounded-xl bg-ink py-3 text-center font-mono text-3xl font-bold tracking-[0.4em] text-ink-fg"
-            aria-label={revealed ? "Hide PIN" : "Show PIN"}
+            aria-label={revealed ? t("Hide PIN") : t("Show PIN")}
           >
             {revealed ? trip.otp : "••••"}
           </button>
           <div className="flex flex-col gap-2">
-            <button onClick={() => setRevealed((r) => !r)} className="flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label="Show PIN">
+            <button onClick={() => setRevealed((r) => !r)} className="flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label={t("Show PIN")}>
               <Eye className="size-4" />
             </button>
             {"speechSynthesis" in window && (
-              <button onClick={readAloud} className="flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label="Read PIN aloud">
+              <button onClick={readAloud} className="flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label={t("Read PIN aloud")}>
                 <Volume2 className="size-4" />
               </button>
             )}

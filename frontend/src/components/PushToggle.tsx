@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { configQuery } from "@/components/map";
 import { Button } from "@/components/ui";
 import { disablePush, enablePush, pushStatus, type PushStatus } from "@/lib/push";
+import { t } from "@/lib/i18n";
 
 export function usePush() {
   const config = useQuery(configQuery);
@@ -27,7 +28,7 @@ export function usePush() {
       } else {
         await enablePush(key);
         setStatus("on");
-        toast.success("Notifications are on for this device");
+        toast.success(t("Notifications are on for this device"));
       }
     } catch (err) {
       toast.error((err as Error).message);
@@ -44,24 +45,21 @@ export function PushToggle({ audience }: { audience: "rider" | "driver" }) {
   if (status === null || status === "disabled") return null;
   const detail =
     status === "unsupported"
-      ? "This browser can't receive push notifications. On iPhone, add Ride Pulse to your home screen first."
-      : status === "blocked"
-        ? "Blocked in your browser's site settings."
-        : audience === "driver"
-          ? "Get trip offers even when the app is in the background."
-          : "Know when your driver is assigned or has arrived, even with the app closed.";
+      ? t("This browser can't receive push notifications. On iPhone, add Ride Pulse to your home screen first.") : status === "blocked"
+        ? t("Blocked in your browser's site settings.") : audience === "driver"
+          ? t("Get trip offers even when the app is in the background.") : "Know when your driver is assigned or has arrived, even with the app closed.";
   return (
     <div className="flex items-center gap-3 py-3">
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-3">
         <BellRing className="size-[18px]" />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="font-semibold">Push notifications</div>
+        <div className="font-semibold">{t("Push notifications")}</div>
         <div className="text-xs text-muted">{detail}</div>
       </div>
       {(status === "on" || status === "off") && (
         <Button size="sm" variant={status === "on" ? "outline" : "brand"} loading={busy} onClick={toggle}>
-          {status === "on" ? "Turn off" : "Turn on"}
+          {status === "on" ? t("Turn off") : t("Turn on")}
         </Button>
       )}
     </div>

@@ -20,7 +20,7 @@ export function CounterOffers({ trip }: { trip: Trip }) {
       qc.invalidateQueries({ queryKey: ["trips"] });
       toast.success(t("Driver booked at their price"));
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't accept the counter-offer."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't accept the counter-offer.")),
   });
   if (trip.fare_offer === null) return null;
 

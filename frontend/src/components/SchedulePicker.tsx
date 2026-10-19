@@ -2,6 +2,7 @@
 
 import { clsx } from "clsx";
 import { useMemo } from "react";
+import { t } from "@/lib/i18n";
 
 const MIN_LEAD_MS = 20 * 60_000;
 const STEP_MS = 15 * 60_000;
@@ -69,7 +70,7 @@ export function SchedulePicker({ value, onChange }: { value: Date | null; onChan
           value={value.getTime()}
           onChange={(e) => onChange(new Date(Number(e.target.value)))}
           className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-semibold"
-          aria-label="Pickup time"
+          aria-label={t("Pickup time")}
         >
           {slots.map((slot) => (
             <option key={slot.getTime()} value={slot.getTime()}>

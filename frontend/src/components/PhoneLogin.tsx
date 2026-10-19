@@ -12,6 +12,7 @@ import { api, ApiError } from "@/lib/api";
 import { TwoStepPrompt } from "@/components/TwoStep";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 type Tokens = { access: string; refresh: string; user: User };
 
@@ -41,7 +42,7 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
     try {
       await fn();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Try again.");
+      setError(err instanceof ApiError ? err.message : t("Something went wrong. Try again."));
     } finally {
       setBusy(false);
     }
@@ -81,7 +82,7 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
       const [first, ...rest] = name.trim().split(/\s+/);
       const res = await api.post<Tokens>("auth/otp/signup/", { signup_token: signupToken, first_name: first, last_name: rest.join(" ") });
       acceptTokens(res);
-      toast.success(`Welcome to Ride Pulse, ${res.user.first_name}!`);
+      toast.success(t("Welcome to Ride Pulse, {name}!", { name: res.user.first_name }));
       onDone(res.user);
     });
 
@@ -98,7 +99,7 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
       {challenge && <TwoStepPrompt challenge={challenge} onCancel={() => setChallenge(null)} onDone={onDone} />}
       {step === "phone" && (
         <>
-          <Field label="Mobile number" error={error}>
+          <Field label={t("Mobile number")} error={error}>
             <div className="flex items-stretch gap-2">
               <span className="flex items-center gap-1.5 rounded-xl border border-line bg-surface-2 px-3 text-sm font-semibold">🇮🇳 +91</span>
               <Input
@@ -114,9 +115,9 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
             </div>
           </Field>
           <Button type="submit" block size="lg" loading={busy} icon={<Smartphone className="size-4" />}>
-            Send code
+            {t("Send code")}
           </Button>
-          <p className="text-center text-xs text-muted">We'll text you a 6-digit code. New here? You'll create an account in seconds.</p>
+          <p className="text-center text-xs text-muted">{t("We'll text you a 6-digit code. New here? You'll create an account in seconds.")}</p>
         </>
       )}
 
@@ -125,7 +126,7 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
           <button type="button" onClick={() => setStep("phone")} className="flex items-center gap-1 text-sm text-muted hover:text-fg">
             <ArrowLeft className="size-4" /> +91 {phone}
           </button>
-          <Field label="Enter the 6-digit code" error={error}>
+          <Field label={t("Enter the 6-digit code")} error={error}>
             <Input
               ref={codeInput}
               inputMode="numeric"
@@ -138,18 +139,18 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
               }}
               placeholder="••••••"
               className="text-center font-mono text-2xl font-bold tracking-[0.5em]"
-              aria-label="Login code"
+              aria-label={t("Login code")}
             />
           </Field>
           <Button type="submit" block size="lg" loading={busy} disabled={code.length !== 6}>
-            Verify
+            {t("Verify")}
           </Button>
           <p className="text-center text-xs text-muted">
             {wait > 0 ? (
-              `Resend code in ${wait}s`
+              t("Resend code in {n}s", { n: wait })
             ) : (
               <button type="button" onClick={sendCode} className="font-semibold text-fg underline">
-                Resend code
+                {t("Resend code")}
               </button>
             )}
           </p>
@@ -159,14 +160,14 @@ export function PhoneLogin({ onDone }: { onDone: (user: User) => void }) {
       {step === "name" && (
         <>
           <div>
-            <h2 className="text-lg font-bold">Welcome to Ride Pulse</h2>
+            <h2 className="text-lg font-bold">{t("Welcome to Ride Pulse")}</h2>
             <p className="text-sm text-muted">+91 {phone} is verified. What should drivers call you?</p>
           </div>
-          <Field label="Your name" error={error}>
-            <Input autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" autoComplete="name" />
+          <Field label={t("Your name")} error={error}>
+            <Input autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Full name")} autoComplete="name" />
           </Field>
           <Button type="submit" block size="lg" loading={busy} disabled={!name.trim()}>
-            Create account
+            {t("Create account")}
           </Button>
         </>
       )}

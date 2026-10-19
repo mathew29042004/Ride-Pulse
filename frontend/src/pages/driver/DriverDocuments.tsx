@@ -10,6 +10,7 @@ import { api, ApiError } from "@/lib/api";
 import { date } from "@/lib/format";
 import { useDriverMe } from "@/lib/hooks";
 import type { DriverDocument, RideType } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 const DOCS = [
   { type: "DRIVING_LICENSE", label: "Driving licence", required: true },
@@ -41,21 +42,21 @@ export default function DriverDocuments() {
       return api.post<DriverDocument[]>("driver/documents/", data);
     },
     onSuccess: () => {
-      toast.success("Document uploaded for review");
+      toast.success(t("Document uploaded for review"));
       setUploading(null);
       setForm({ number_last4: "", expires_on: "", file: null });
       qc.invalidateQueries({ queryKey: ["driver"] });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Upload failed"),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Upload failed")),
   });
   const addVehicle = useMutation({
     mutationFn: () => api.post("driver/vehicle/", { ...vehicle, year: Number(vehicle.year), seats: Number(vehicle.seats) }),
     onSuccess: () => {
-      toast.success("Vehicle registered");
+      toast.success(t("Vehicle registered"));
       setVehicleOpen(false);
       qc.invalidateQueries({ queryKey: ["driver"] });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't save the vehicle"),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't save the vehicle")),
   });
 
   const driver = me.data;
@@ -64,13 +65,13 @@ export default function DriverDocuments() {
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-5 pb-6">
-      <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
-      <p className="text-sm text-muted">Everything we need to keep riders safe.</p>
+      <h1 className="text-2xl font-bold tracking-tight">{t("Documents")}</h1>
+      <p className="text-sm text-muted">{t("Everything we need to keep riders safe.")}</p>
 
       {driver && (
         <div className="mt-4 rounded-2xl border border-line p-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold">Onboarding</span>
+            <span className="text-sm font-semibold">{t("Onboarding")}</span>
             <StatusBadge status={driver.onboarding_status} />
           </div>
           {driver.onboarding_status !== "SUSPENDED" && (
@@ -87,7 +88,7 @@ export default function DriverDocuments() {
         </div>
       )}
 
-      <h2 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Vehicle</h2>
+      <h2 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{t("Vehicle")}</h2>
       {driver?.vehicle ? (
         <div className="flex items-center gap-3 rounded-2xl bg-surface-2 p-4">
           <RideTypeArt code={driver.vehicle.ride_type} className="h-10 w-18" />
@@ -103,11 +104,11 @@ export default function DriverDocuments() {
         </div>
       ) : (
         <Button variant="outline" block onClick={() => setVehicleOpen(true)}>
-          Register your vehicle
+          {t("Register your vehicle")}
         </Button>
       )}
 
-      <h2 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Documents</h2>
+      <h2 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{t("Documents")}</h2>
       <div className="divide-y divide-line rounded-2xl border border-line">
         {DOCS.map(({ type, label, required }) => {
           const doc = byType.get(type);
@@ -127,7 +128,7 @@ export default function DriverDocuments() {
               </div>
               {(!doc || doc.status !== "PENDING") && (
                 <Button size="sm" variant={doc?.status === "APPROVED" ? "ghost" : "secondary"} icon={<Upload className="size-3.5" />} onClick={() => setUploading(type)}>
-                  {doc ? "Replace" : "Upload"}
+                  {doc ? t("Replace") : t("Upload")}
                 </Button>
               )}
             </div>
@@ -138,23 +139,23 @@ export default function DriverDocuments() {
       <Modal
         open={!!uploading}
         onClose={() => setUploading(null)}
-        title={`Upload ${DOCS.find((d) => d.type === uploading)?.label ?? "document"}`}
+        title={t("Upload {document}", { document: t(DOCS.find((d) => d.type === uploading)?.label ?? "document") })}
         footer={
           <Button onClick={() => upload.mutate()} loading={upload.isPending}>
-            Submit for review
+            {t("Submit for review")}
           </Button>
         }
       >
-        <Field label="Last 4 characters of the document number" hint="We only store the last 4 characters.">
+        <Field label={t("Last 4 characters of the document number")} hint="We only store the last 4 characters.">
           <Input maxLength={4} value={form.number_last4} onChange={(e) => setForm((f) => ({ ...f, number_last4: e.target.value.toUpperCase() }))} />
         </Field>
-        <Field label="Expiry date" className="mt-3">
+        <Field label={t("Expiry date")} className="mt-3">
           <Input type="date" value={form.expires_on} onChange={(e) => setForm((f) => ({ ...f, expires_on: e.target.value }))} />
         </Field>
-        <Field label="Photo or PDF" className="mt-3">
+        <Field label={t("Photo or PDF")} className="mt-3">
           <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-line px-4 py-4 text-sm text-muted hover:bg-surface-2">
             <FileText className="size-5" />
-            {form.file ? form.file.name : "Choose a file"}
+            {form.file ? form.file.name : t("Choose a file")}
             <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setForm((f) => ({ ...f, file: e.target.files?.[0] ?? null }))} />
           </label>
         </Field>
@@ -163,15 +164,15 @@ export default function DriverDocuments() {
       <Modal
         open={vehicleOpen}
         onClose={() => setVehicleOpen(false)}
-        title="Register your vehicle"
+        title={t("Register your vehicle")}
         footer={
           <Button onClick={() => addVehicle.mutate()} loading={addVehicle.isPending}>
-            Save vehicle
+            {t("Save vehicle")}
           </Button>
         }
       >
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Ride type" className="col-span-2">
+          <Field label={t("Ride type")} className="col-span-2">
             <Select value={vehicle.ride_type} onChange={(e) => setVehicle((v) => ({ ...v, ride_type: e.target.value }))}>
               {(rideTypes.data ?? []).map((rt) => (
                 <option key={rt.code} value={rt.code}>
@@ -180,20 +181,20 @@ export default function DriverDocuments() {
               ))}
             </Select>
           </Field>
-          <Field label="Make">
-            <Input value={vehicle.make} onChange={(e) => setVehicle((v) => ({ ...v, make: e.target.value }))} placeholder="Maruti Suzuki" />
+          <Field label={t("Make")}>
+            <Input value={vehicle.make} onChange={(e) => setVehicle((v) => ({ ...v, make: e.target.value }))} placeholder={t("Maruti Suzuki")} />
           </Field>
-          <Field label="Model">
-            <Input value={vehicle.model} onChange={(e) => setVehicle((v) => ({ ...v, model: e.target.value }))} placeholder="Swift" />
+          <Field label={t("Model")}>
+            <Input value={vehicle.model} onChange={(e) => setVehicle((v) => ({ ...v, model: e.target.value }))} placeholder={t("Swift")} />
           </Field>
-          <Field label="Registration" className="col-span-2">
-            <Input value={vehicle.registration_number} onChange={(e) => setVehicle((v) => ({ ...v, registration_number: e.target.value.toUpperCase() }))} placeholder="TN 09 AB 1234" />
+          <Field label={t("Registration")} className="col-span-2">
+            <Input value={vehicle.registration_number} onChange={(e) => setVehicle((v) => ({ ...v, registration_number: e.target.value.toUpperCase() }))} placeholder={t("TN 09 AB 1234")} />
           </Field>
-          <Field label="Year">
+          <Field label={t("Year")}>
             <Input type="number" value={vehicle.year} onChange={(e) => setVehicle((v) => ({ ...v, year: e.target.value }))} />
           </Field>
-          <Field label="Colour">
-            <Input value={vehicle.color} onChange={(e) => setVehicle((v) => ({ ...v, color: e.target.value }))} placeholder="White" />
+          <Field label={t("Colour")}>
+            <Input value={vehicle.color} onChange={(e) => setVehicle((v) => ({ ...v, color: e.target.value }))} placeholder={t("White")} />
           </Field>
         </div>
       </Modal>

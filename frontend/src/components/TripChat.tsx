@@ -74,7 +74,7 @@ function useTripChat(tripId: number, me: Sender) {
     },
     onError: (err, _body, ctx) => {
       qc.setQueryData<ChatMessage[]>(key, (old = []) => old.filter((m) => m.id !== ctx?.temp.id));
-      toast.error(err instanceof ApiError ? err.message : "Message not sent.");
+      toast.error(err instanceof ApiError ? err.message : t("Message not sent."));
     },
   });
 
@@ -131,14 +131,14 @@ export function TripChat({
   return (
     <>
       {compact ? (
-        <button onClick={() => setOpen(true)} className="relative flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label={`Message ${otherName}`}>
+        <button onClick={() => setOpen(true)} className="relative flex size-10 items-center justify-center rounded-full bg-surface-3" aria-label={t("Message {name}", { name: otherName })}>
           <MessageCircle className="size-4" />
           {badge}
         </button>
       ) : (
         <button onClick={() => setOpen(true)} className="relative mt-4 flex w-full items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3 text-left text-sm">
           <MessageCircle className="size-4 text-muted" />
-          <span className="flex-1 truncate text-muted">{unread > 0 && latest ? latest.body : `Message ${otherName.split(" ")[0]}…`}</span>
+          <span className="flex-1 truncate text-muted">{unread > 0 && latest ? latest.body : t("Message {name}…", { name: otherName.split(" ")[0] })}</span>
           {badge}
         </button>
       )}
@@ -193,23 +193,23 @@ function ChatPanel({
       transition={{ type: "spring", stiffness: 380, damping: 38 }}
       className="rp-chat absolute inset-0 z-[890] flex flex-col bg-canvas"
       role="dialog"
-      aria-label={`Chat with ${otherName}`}
+      aria-label={t("Chat with {name}", { name: otherName })}
     >
       <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-3 md:pt-12">
-        <button onClick={onClose} className="rounded-full p-2 hover:bg-surface-3" aria-label="Close chat">
+        <button onClick={onClose} className="rounded-full p-2 hover:bg-surface-3" aria-label={t("Close chat")}>
           <ArrowLeft className="size-5" />
         </button>
         <Avatar name={otherName} size={36} />
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate font-semibold">{otherName}</div>
-          <div className="text-xs text-muted">{me === "RIDER" ? "Your driver" : "Your rider"}</div>
+          <div className="text-xs text-muted">{me === "RIDER" ? t("Your driver") : t("Your rider")}</div>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-4">
         <div className="mx-auto mb-3 flex max-w-[85%] items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-center text-[11px] text-muted">
           <ShieldCheck className="size-4 shrink-0" />
-          Chats are kept with the trip so our safety team can help if anything goes wrong.
+          {t("Chats are kept with the trip so our safety team can help if anything goes wrong.")}
         </div>
         {list.map((m) => {
           const mine = m.sender === me;
@@ -227,7 +227,7 @@ function ChatPanel({
                     <Languages className="size-3" /> {showOriginal ? t("Show translation") : t("Translated · show original")}
                   </button>
                 )}
-                <div className={clsx("mt-0.5 text-right text-[10px]", mine ? "opacity-60" : "text-muted")}>{m.pending ? "Sending…" : time(m.created_at)}</div>
+                <div className={clsx("mt-0.5 text-right text-[10px]", mine ? "opacity-60" : "text-muted")}>{m.pending ? t("Sending…") : time(m.created_at)}</div>
               </div>
             </div>
           );
@@ -256,16 +256,16 @@ function ChatPanel({
               value={text}
               onChange={(e) => setText(e.target.value)}
               maxLength={500}
-              placeholder={`Message ${otherName.split(" ")[0]}`}
+              placeholder={t("Message {name}", { name: otherName.split(" ")[0] })}
               className="min-w-0 flex-1 rounded-full bg-surface-2 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand/40"
             />
-            <button type="submit" disabled={!text.trim()} className="flex size-10 items-center justify-center rounded-full bg-brand text-white disabled:opacity-40" aria-label="Send">
+            <button type="submit" disabled={!text.trim()} className="flex size-10 items-center justify-center rounded-full bg-brand text-white disabled:opacity-40" aria-label={t("Send")}>
               <SendHorizontal className="size-4" />
             </button>
           </form>
         </div>
       ) : (
-        <p className="border-t border-line bg-surface px-4 py-4 text-center text-xs text-muted">Chat is closed for this trip.</p>
+        <p className="border-t border-line bg-surface px-4 py-4 text-center text-xs text-muted">{t("Chat is closed for this trip.")}</p>
       )}
     </motion.div>
   );

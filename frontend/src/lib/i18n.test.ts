@@ -1,20 +1,58 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { setLanguage, t } from "./i18n";
+import { LANGUAGES, setLanguage, t } from "./i18n";
 
 describe("t", () => {
-  it("translates, fills placeholders and falls back to English", () => {
-    setLanguage("en");
+  it("translates, fills placeholders and falls back to English", async () => {
+    await setLanguage("en");
     expect(t("Where to?")).toBe("Where to?");
     expect(t("Meet at {place}", { place: "T. Nagar" })).toBe("Meet at T. Nagar");
 
-    setLanguage("ta");
+    await setLanguage("ta");
     expect(t("Where to?")).toBe("எங்கே செல்ல வேண்டும்?");
     expect(t("Meet at {place}", { place: "T. Nagar" })).toBe("T. Nagar-ல் சந்திக்கவும்");
 
-    setLanguage("hi");
+    await setLanguage("hi");
     expect(t("Book {ride} · {fare}", { ride: "Mini", fare: "₹120" })).toBe("Mini बुक करें · ₹120");
-    expect(t("Not translated yet")).toBe("Not translated yet");
-    setLanguage("en");
+    expect(t("A phrase nobody wrote")).toBe("A phrase nobody wrote");
+
+    await setLanguage("ml");
+    expect(t("Where to?")).toBe("എങ്ങോട്ട്?");
+    await setLanguage("en");
+  });
+});
+
+// Every literal t("…") in the rider and driver apps must exist in every language, with the
+// same {placeholders}; otherwise people see English in the middle of their language.
+const SKIP = new Set(["Maruti Suzuki", "Swift", "TN 09 AB 1234", "Ride Pulse"]);
+
+function files(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return files(path);
+    return /\.tsx?$/.test(name) && !name.endsWith(".test.ts") ? [path] : [];
+  });
+}
+
+const root = join(__dirname, "..");
+const used = new Set<string>();
+for (const file of [...files(join(root, "pages/rider")), ...files(join(root, "pages/driver")), ...files(join(root, "components"))]) {
+  for (const match of readFileSync(file, "utf8").matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/g)) {
+    const key = JSON.parse(`"${match[1]}"`) as string;
+    if (!SKIP.has(key)) used.add(key);
+  }
+}
+const placeholders = (text: string) => (text.match(/\{\w+\}/g) ?? []).sort().join();
+
+describe.each(LANGUAGES.filter((l) => l.code !== "en"))("$label", ({ code }) => {
+  const dictionary = JSON.parse(readFileSync(join(root, "locales", `${code}.json`), "utf8")) as Record<string, string>;
+  it("has every phrase the apps use", () => {
+    expect([...used].filter((key) => !(key in dictionary))).toEqual([]);
+  });
+  it("keeps the placeholders", () => {
+    expect(Object.entries(dictionary).filter(([key, value]) => placeholders(key) !== placeholders(value))).toEqual([]);
   });
 });

@@ -122,13 +122,13 @@ export function SafetyRecordings({ ticketId }: { ticketId: number }) {
       const url = URL.createObjectURL(await response.blob());
       setUrls((u) => ({ ...u, [id]: url }));
     } catch {
-      toast.error("Couldn't load the recording.");
+      toast.error(t("Couldn't load the recording."));
     }
   };
   return (
     <div className="mt-4 rounded-2xl border border-line p-4">
       <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <Mic className="size-4" /> Audio recordings
+        <Mic className="size-4" /> {t("Audio recordings")}
       </div>
       {rows.data.results.map((r) => (
         <div key={r.id} className="flex flex-wrap items-center gap-3 py-1.5 text-sm">
@@ -139,7 +139,7 @@ export function SafetyRecordings({ ticketId }: { ticketId: number }) {
             <audio controls src={urls[r.id]} className="h-8" autoPlay />
           ) : (
             <button onClick={() => play(r.id)} className="rounded-full bg-surface-3 px-3 py-1 text-xs font-semibold">
-              Play (logged)
+              {t("Play (logged)")}
             </button>
           )}
         </div>

@@ -7,6 +7,7 @@ import jsQR from "jsqr";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { t } from "@/lib/i18n";
 
 type Detector = { detect(source: CanvasImageSource): Promise<{ rawValue: string }[]> };
 
@@ -65,10 +66,10 @@ export function QrScanner({ onScan, onClose }: { onScan: (text: string) => void;
   }, []);
 
   return createPortal(
-    <div className="absolute inset-0 z-[890] flex flex-col bg-black text-white" role="dialog" aria-label="Scan the rider's QR code">
+    <div className="absolute inset-0 z-[890] flex flex-col bg-black text-white" role="dialog" aria-label={t("Scan the rider's QR code")}>
       <div className="flex items-center justify-between p-4 md:pt-12">
-        <div className="font-semibold">Scan the rider's code</div>
-        <button onClick={onClose} className="rounded-full bg-white/10 p-2" aria-label="Close scanner">
+        <div className="font-semibold">{t("Scan the rider's code")}</div>
+        <button onClick={onClose} className="rounded-full bg-white/10 p-2" aria-label={t("Close scanner")}>
           <X className="size-5" />
         </button>
       </div>

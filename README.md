@@ -696,6 +696,15 @@ NPS (% promoters 9–10 − % detractors 0–6) for the last 90 days by month an
 answers), and what detractors and promoters talk about, using keyword themes (not AI).
 API: `GET nps/prompt/`, `POST nps/answer/`, `POST nps/snooze/`, `GET nps/report/` (reports.view).
 
+### Languages
+
+The rider and driver apps speak English, Tamil, Hindi, Malayalam, Kannada and Telugu (Account →
+Language). Text is keyed by its English wording (`t("Where to?")`); each language is a JSON file
+in `frontend/src/locales/` and is only downloaded when someone picks it. A test fails the build
+if any phrase the apps use is missing from a language or a `{placeholder}` doesn't match. The
+rider–driver chat phrasebook and announcements cover the same six languages. The ops console is
+in English.
+
 ### Staff attendance (`workspace.attendance`)
 
 Every employee clocks in and out in Ops → Attendance. Clock-ins match the roster shift (from 30

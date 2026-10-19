@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { date } from "@/lib/format";
+import { t } from "@/lib/i18n";
 
 type PassInfo = {
   plan: { price: string; days: string; percent: string; max_discount: string };
@@ -25,9 +26,9 @@ export function RidePassCard() {
     onSuccess: (data) => {
       qc.setQueryData(["ride-pass"], data);
       qc.invalidateQueries({ queryKey: ["wallet"] });
-      toast.success(`Ride Pass active until ${date(data.ends_at)}`);
+      toast.success(t("Ride Pass active until {date}", { date: date(data.ends_at) }));
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't buy the pass."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't buy the pass.")),
   });
   const pass = info.data;
   if (!pass) return null;
@@ -39,18 +40,18 @@ export function RidePassCard() {
           <Crown className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="font-bold">Ride Pass</div>
+          <div className="font-bold">{t("Ride Pass")}</div>
           <div className="text-xs">
-            {Number(percent)}% off every ride (up to ₹{Number(max_discount)}) and no booking fee
+            {t("{percent}% off every ride (up to ₹{max}) and no booking fee", { percent: Number(percent), max: Number(max_discount) })}
           </div>
         </div>
       </div>
       {pass.active ? (
         <div className="mt-3 flex items-center justify-between rounded-xl bg-white/60 px-3 py-2 text-sm">
           <span>
-            Active until <b>{date(pass.ends_at)}</b>
+            {t("Active until")} <b>{date(pass.ends_at)}</b>
           </span>
-          <span className="text-xs">Saved ₹{Number(pass.savings).toFixed(0)}</span>
+          <span className="text-xs">{t("Saved ₹{n}", { n: Number(pass.savings).toFixed(0) })}</span>
         </div>
       ) : (
         <div className="mt-3 flex items-center gap-2">
@@ -58,13 +59,13 @@ export function RidePassCard() {
             value={method}
             onChange={(e) => setMethod(e.target.value as "UPI" | "WALLET")}
             className="rounded-xl border border-amber-950/20 bg-white/70 px-2 py-2 text-sm"
-            aria-label="Pay with"
+            aria-label={t("Pay with")}
           >
             <option value="UPI">UPI</option>
-            <option value="WALLET">Wallet</option>
+            <option value="WALLET">{t("Wallet")}</option>
           </select>
           <Button className="flex-1" onClick={() => buy.mutate()} loading={buy.isPending}>
-            Get it for ₹{Number(price)} / {days} days
+            {t("Get it for ₹{price} / {days} days", { price: Number(price), days })}
           </Button>
         </div>
       )}

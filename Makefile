@@ -75,6 +75,7 @@ contract: ## Refresh the API contract snapshot after a deliberate API change
 	$(MANAGE) api_contract --update
 
 check: lint test ## Everything CI runs
+	$(NPM) run test --silent
 	$(MANAGE) makemigrations --check --dry-run
 	$(MANAGE) spectacular --fail-on-warn --file /dev/null
 	$(MANAGE) api_contract

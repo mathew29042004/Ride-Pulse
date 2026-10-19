@@ -17,7 +17,7 @@ class Announcement(models.Model):
     city = models.ForeignKey(
         "geo.City", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
-    # {"en": {"title": …, "body": …}, "ta": {…}, "hi": {…}}; English is required.
+    # {"en": {"title": …, "body": …}, "ta": {…}, "hi": {…}, "ml", "kn", "te"}; English is required.
     text = models.JSONField()
     important = models.BooleanField(default=False)  # pinned on the home screen until read
     created_by = models.ForeignKey(

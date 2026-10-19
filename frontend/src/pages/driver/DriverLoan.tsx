@@ -74,7 +74,7 @@ export default function DriverLoan() {
   return (
     <div className="mx-auto max-w-xl px-4 pb-24 pt-3">
       <div className="flex items-center gap-2">
-        <Link to="/drive/account" className="flex size-10 items-center justify-center rounded-full bg-surface-2" aria-label="Back">
+        <Link to="/drive/account" className="flex size-10 items-center justify-center rounded-full bg-surface-2" aria-label={t("Back")}>
           <ArrowLeft className="size-5" />
         </Link>
         <h1 className="text-xl font-bold">{t("Vehicle loan")}</h1>

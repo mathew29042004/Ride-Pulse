@@ -157,9 +157,9 @@ export default function RiderBook() {
       }),
     onSuccess: () => {
       setWatching(selected);
-      toast.success("We'll notify you when prices drop on this route.");
+      toast.success(t("We'll notify you when prices drop on this route."));
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't set the alert."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't set the alert.")),
   });
 
   const schedule = useMutation({
@@ -174,11 +174,11 @@ export default function RiderBook() {
         scheduled_for: scheduleAt!.toISOString(),
       }),
     onSuccess: () => {
-      toast.success(`Ride scheduled for ${formatWhen(scheduleAt!)}. We'll find your driver a few minutes before.`);
+      toast.success(t("Ride scheduled for {when}. We'll find your driver a few minutes before.", { when: formatWhen(scheduleAt!) }));
       qc.invalidateQueries({ queryKey: ["scheduled-rides"] });
       navigate("/ride/activity", { replace: true });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't schedule the ride."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't schedule the ride.")),
   });
 
   const book = useMutation({
@@ -204,7 +204,7 @@ export default function RiderBook() {
       qc.invalidateQueries({ queryKey: ["trips"] });
       navigate(`/ride/trips/${trip.id}`, { replace: true });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't book the ride."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't book the ride.")),
   });
 
   function startPicking() {
@@ -278,7 +278,7 @@ export default function RiderBook() {
   const locationInputs = (
       <div className={desktop ? "-mx-1 mb-4 rounded-2xl bg-surface-2 p-3" : "relative z-[600] m-3 rounded-2xl bg-surface p-3 shadow-[var(--shadow-float)]"}>
         <div className="flex items-start gap-2">
-          <Link to="/ride" className="mt-1 rounded-full p-1.5 hover:bg-surface-3" aria-label="Back">
+          <Link to="/ride" className="mt-1 rounded-full p-1.5 hover:bg-surface-3" aria-label={t("Back")}>
             <ArrowLeft className="size-5" />
           </Link>
           <div className="relative flex-1 space-y-2">
@@ -287,7 +287,7 @@ export default function RiderBook() {
               const slot = stopIndex(field);
               const value = field === "pickup" ? pickup.name : slot >= 0 ? (stopSlots[slot]?.name ?? "") : (dropoff?.name ?? "");
               const isEditing = editing === field;
-              const placeholder = slot >= 0 ? t("Stop {n}", { n: slot + 1 }) : t(field === "pickup" ? "Pickup location" : "Where to?");
+              const placeholder = slot >= 0 ? t("Stop {n}", { n: slot + 1 }) : (field === "pickup" ? t("Pickup location") : t("Where to?"));
               return (
                 <div key={field} className="flex items-center gap-3">
                   <span
@@ -332,7 +332,7 @@ export default function RiderBook() {
       <div className="absolute inset-0">
         <BaseMap center={[pickup.lat, pickup.lng]} zoom={14}>
           {!pickOnMap && <FitBounds points={points} padding={50} bottom={380} />}
-          {!(pickOnMap && editing === "pickup") && <PinMarker lat={pickup.lat} lng={pickup.lng} kind="pickup" label={dropoff && !pickOnMap ? "Pickup" : undefined} />}
+          {!(pickOnMap && editing === "pickup") && <PinMarker lat={pickup.lat} lng={pickup.lng} kind="pickup" label={dropoff && !pickOnMap ? t("Pickup") : undefined} />}
           {dropoff && !(pickOnMap && editing === "dropoff") && (
             <PinMarker lat={dropoff.lat} lng={dropoff.lng} kind="dropoff" label={option && !pickOnMap ? minutes(option.duration_minutes) : undefined} />
           )}
@@ -410,7 +410,7 @@ export default function RiderBook() {
                   <MapPin className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold">{p.label === "OTHER" ? p.name : t(p.label === "HOME" ? "Home" : "Work")}</span>
+                  <span className="block text-sm font-semibold">{p.label === "OTHER" ? p.name : (p.label === "HOME" ? t("Home") : t("Work"))}</span>
                   <span className="block truncate text-xs text-muted">{p.address || p.name}</span>
                 </span>
               </button>
@@ -451,7 +451,7 @@ export default function RiderBook() {
           {estimate.data && estimate.data.options.length > 0 && (
             <>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <h2 className="font-semibold">{t(service === "PARCEL" ? "Send a parcel" : "Choose a ride")}</h2>
+                <h2 className="font-semibold">{(service === "PARCEL" ? t("Send a parcel") : t("Choose a ride"))}</h2>
                 <button
                   onClick={() => setPickingTime((v) => !v)}
                   className="ml-auto flex items-center gap-1 rounded-full bg-surface-3 px-3 py-1 text-xs font-semibold"
@@ -460,7 +460,7 @@ export default function RiderBook() {
                   <Clock className="size-3.5" /> {scheduleAt ? formatWhen(scheduleAt) : t("Now")}
                   <ChevronDown className="size-3.5" />
                 </button>
-                {option?.fare.lines.some((l) => l.code === "RIDE_PASS") && <Badge tone="brand">Ride Pass</Badge>}
+                {option?.fare.lines.some((l) => l.code === "RIDE_PASS") && <Badge tone="brand">{t("Ride Pass")}</Badge>}
                 {option?.fare_lock && <Badge tone="brand">{t("Fare locked")}</Badge>}
                 {option && Number(option.fare.surge_multiplier) > 1 && (
                   <Badge tone="warning">
@@ -475,7 +475,7 @@ export default function RiderBook() {
                   className="mb-2 flex w-full items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-left text-xs font-semibold text-amber-900 disabled:opacity-80 dark:bg-amber-400/10 dark:text-amber-200"
                 >
                   <BellRing className="size-4 shrink-0" />
-                  {t(watching === selected ? "We'll tell you when prices drop (for the next 2 hours)" : "Prices are high right now. Tell me when they drop")}
+                  {(watching === selected ? t("We'll tell you when prices drop (for the next 2 hours)") : t("Prices are high right now. Tell me when they drop"))}
                 </button>
               )}
               {pickingTime && (
@@ -708,7 +708,7 @@ function PriceOptions({
               </button>
             </div>
             <input type="range" min={low} max={high} step={1} value={bid} onChange={(e) => onBid(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-brand)]" aria-label={t("Your offer")} />
-            <p className="text-[11px] text-muted">{t(bid < usual ? "Drivers may accept or counter. Lower offers can take longer." : "A higher offer gets you a driver faster. The extra is all theirs.")}</p>
+            <p className="text-[11px] text-muted">{(bid < usual ? t("Drivers may accept or counter. Lower offers can take longer.") : t("A higher offer gets you a driver faster. The extra is all theirs."))}</p>
           </div>
         )}
       </div>
@@ -719,7 +719,7 @@ function PriceOptions({
             <span className="block font-semibold">{t("Sure Ride · +{fee}", { fee: inr(option.sure_ride.fee) })}</span>
             <span className="block text-[11px] text-muted">{t("Driver at your pickup within {n} min, or {refund} back in your wallet", { n: option.sure_ride.minutes, refund: inr(option.sure_ride.refund) })}</span>
           </span>
-          <Toggle checked={sureRide} onChange={onSureRide} label="Sure Ride" />
+          <Toggle checked={sureRide} onChange={onSureRide} label={t("Sure Ride")} />
         </div>
       )}
     </div>

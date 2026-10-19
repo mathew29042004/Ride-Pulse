@@ -12,6 +12,7 @@ import { api, ApiError } from "@/lib/api";
 import { dateTime, inr } from "@/lib/format";
 import { useTrips } from "@/lib/hooks";
 import type { Paginated, ScheduledRide } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 /** Rides booked for later, with cancel. (Rider only.) */
 function Upcoming() {
@@ -24,16 +25,16 @@ function Upcoming() {
   const cancel = useMutation({
     mutationFn: (id: number) => api.post(`scheduled-rides/${id}/cancel/`),
     onSuccess: () => {
-      toast.success("Scheduled ride cancelled");
+      toast.success(t("Scheduled ride cancelled"));
       qc.invalidateQueries({ queryKey: ["scheduled-rides"] });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't cancel."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't cancel.")),
   });
   const rides = upcoming.data?.results ?? [];
   if (!rides.length) return null;
   return (
     <div className="mb-3 px-2">
-      <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Upcoming</h2>
+      <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{t("Upcoming")}</h2>
       {rides.map((ride) => (
         <div key={ride.id} className="mb-2 flex items-center gap-3 rounded-2xl border border-line p-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand-strong">
@@ -46,7 +47,7 @@ function Upcoming() {
             </div>
           </div>
           <Button size="sm" variant="outline" loading={cancel.isPending && cancel.variables === ride.id} onClick={() => cancel.mutate(ride.id)}>
-            Cancel
+            {t("Cancel")}
           </Button>
         </div>
       ))}
@@ -71,8 +72,8 @@ export default function TripHistory({ base = "/ride", title = "Activity" }: { ba
         {trips.isLoading &&
           [0, 1, 2, 3].map((i) => <Skeleton key={i} className="mx-2 mb-3 h-20" />)}
         {!trips.isLoading && results.length === 0 && (
-          <EmptyState icon={<Clock />} title="No trips yet">
-            Your past rides will show up here.
+          <EmptyState icon={<Clock />} title={t("No trips yet")}>
+            {t("Your past rides will show up here.")}
           </EmptyState>
         )}
         {results.map((trip) => (
@@ -101,10 +102,10 @@ export default function TripHistory({ base = "/ride", title = "Activity" }: { ba
       {trips.data && (trips.data.next || trips.data.previous) && (
         <div className="flex justify-center gap-2 p-4">
           <Button size="sm" variant="outline" disabled={!trips.data.previous} onClick={() => setPage((p) => p - 1)}>
-            Newer
+            {t("Newer")}
           </Button>
           <Button size="sm" variant="outline" disabled={!trips.data.next} onClick={() => setPage((p) => p + 1)}>
-            Older
+            {t("Older")}
           </Button>
         </div>
       )}

@@ -62,7 +62,7 @@ function OfferCard({ offer, onAccept, onDecline, onCounter, busy }: { offer: Off
     <div className={clsx("rp-offer absolute inset-x-3 bottom-3 z-[800] animate-[slide-up_0.35s_ease-out] rounded-3xl bg-surface p-5 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.45)] ring-2 transition", urgent ? "ring-amber-400/70" : "ring-transparent")}>
       <div className="flex items-start justify-between">
         <div>
-          <Badge tone="brand">{offer.service === "PARCEL" ? t("New parcel delivery") : `New ${offer.ride_type} request`}</Badge>
+          <Badge tone="brand">{offer.service === "PARCEL" ? t("New parcel delivery") : t("New {ride} request", { ride: offer.ride_type })}</Badge>
           {offer.day_pass && <div className="mt-1 text-xs font-semibold text-brand-strong">{t("Day pass: you keep 100%")}</div>}
           {offer.package && (
             <div className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
@@ -89,8 +89,8 @@ function OfferCard({ offer, onAccept, onDecline, onCounter, busy }: { offer: Off
           {offer.preferences.length > 0 && <PreferenceChips values={offer.preferences} />}
           {(Number(offer.boost) > 0 || Number(offer.tip) > 0) && (
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {Number(offer.boost) > 0 && <Badge tone="warning">+₹{Number(offer.boost)} boost</Badge>}
-              {Number(offer.tip) > 0 && <Badge tone="brand">+₹{Number(offer.tip)} tip</Badge>}
+              {Number(offer.boost) > 0 && <Badge tone="warning">{t("+₹{n} boost", { n: Number(offer.boost) })}</Badge>}
+              {Number(offer.tip) > 0 && <Badge tone="brand">{t("+₹{n} tip", { n: Number(offer.tip) })}</Badge>}
             </div>
           )}
           <div className="text-xs text-muted">
@@ -283,7 +283,7 @@ export default function DriverHome() {
     if (msg.event === "offer") setOffer(msg.data as Offer);
     if (msg.event === "offer_closed") setOffer(null);
     if (msg.event === "trip_cancelled") {
-      toast.warning("The rider cancelled the trip.");
+      toast.warning(t("The rider cancelled the trip."));
       qc.invalidateQueries({ queryKey: ["trips"] });
     }
   });
@@ -306,8 +306,8 @@ export default function DriverHome() {
     pushLocation({ lat: fix.lat, lng: fix.lng, heading: fix.heading ?? posRef.current?.heading ?? null });
   });
   useEffect(() => {
-    if (gpsState === "denied") toast.error("Location permission is blocked. Allow it in the browser to use phone GPS.");
-    if (gpsState === "unavailable") toast.error("This device can't share its location right now.");
+    if (gpsState === "denied") toast.error(t("Location permission is blocked. Allow it in the browser to use phone GPS."));
+    if (gpsState === "unavailable") toast.error(t("This device can't share its location right now."));
   }, [gpsState]);
   const toggleGps = () => {
     const next = !phoneGps;
@@ -349,7 +349,7 @@ export default function DriverHome() {
     return () => clearInterval(t);
   }, [autopilot, target, following, route, pushLocation]);
 
-  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : "Something went wrong.");
+  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : t("Something went wrong."));
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["driver"] });
     qc.invalidateQueries({ queryKey: ["trips"] });
@@ -357,7 +357,7 @@ export default function DriverHome() {
   const toggle = useMutation({
     mutationFn: () => (online ? api.post("driver/offline/") : api.post("driver/online/", { lat: pos?.lat, lng: pos?.lng })),
     onSuccess: () => {
-      toast.success(online ? "You're offline" : "You're online. Finding trips near you…");
+      toast.success(online ? t("You're offline") : t("You're online. Finding trips near you…"));
       refresh();
     },
     onError,
@@ -368,7 +368,7 @@ export default function DriverHome() {
       setOffer(null);
       // Show the trip straight away rather than waiting for the next poll.
       qc.setQueryData(["trips", "active"], accepted);
-      toast.success("Trip accepted. Head to the pickup.");
+      toast.success(t("Trip accepted. Head to the pickup."));
       refresh();
     },
     onError: (err) => {
@@ -388,7 +388,7 @@ export default function DriverHome() {
   const start = useMutation({
     mutationFn: (proof: { otp: string } | { qr: string }) => api.post(`trips/${trip!.id}/start/`, proof),
     onSuccess: () => {
-      toast.success("Trip started. Drive safe!");
+      toast.success(t("Trip started. Drive safe!"));
       refresh();
     },
     onError,
@@ -443,7 +443,7 @@ export default function DriverHome() {
           <CarMarker lat={pos.lat} lng={pos.lng} heading={pos.heading} rideType={driver.vehicle?.ride_type} />
           {trip && <PinMarker lat={trip.pickup_lat} lng={trip.pickup_lng} kind="pickup" />}
           {(trip?.stops ?? []).map((s, i, all) => (
-            <PinMarker key={i} lat={s.lat} lng={s.lng} kind="stop" label={all.length > 1 ? `Stop ${i + 1}` : "Stop"} />
+            <PinMarker key={i} lat={s.lat} lng={s.lng} kind="stop" label={all.length > 1 ? t("Stop {n}", { n: i + 1 }) : t("Stop")} />
           ))}
           {trip && <PinMarker lat={trip.dropoff_lat} lng={trip.dropoff_lng} kind="dropoff" />}
           {trip && trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[pos.lat, pos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#10b981" />}
@@ -456,7 +456,7 @@ export default function DriverHome() {
               progress={following ? [pos.lat, pos.lng] : null}
             />
           )}
-          {offer && <PinMarker lat={offer.pickup.lat} lng={offer.pickup.lng} kind="pickup" label="Pickup" />}
+          {offer && <PinMarker lat={offer.pickup.lat} lng={offer.pickup.lng} kind="pickup" label={t("Pickup")} />}
           {!autopilot && !phoneGps && <MapClick onClick={(lat, lng) => pushLocation({ lat, lng, heading: pos.heading })} />}
         </BaseMap>
       </div>
@@ -485,7 +485,7 @@ export default function DriverHome() {
         >
           <BellRing className="size-4 shrink-0 text-brand" />
           <span className="flex-1">
-            <b>Turn on notifications</b> to get trip offers when the app is in the background.
+            <b>{t("Turn on notifications")}</b> to get trip offers when the app is in the background.
           </span>
         </button>
       )}
@@ -505,7 +505,7 @@ export default function DriverHome() {
             className={clsx("flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-lg", phoneGps ? "bg-info text-white" : "bg-surface")}
             aria-pressed={phoneGps}
           >
-            <Satellite className="size-4" /> {phoneGps ? (gpsState === "tracking" ? "Phone GPS live" : "Finding GPS…") : "Use phone GPS"}
+            <Satellite className="size-4" /> {phoneGps ? (gpsState === "tracking" ? t("Phone GPS live") : t("Finding GPS…")) : t("Use phone GPS")}
           </button>
         )}
         {trip && !phoneGps && (
@@ -516,7 +516,7 @@ export default function DriverHome() {
             <Bot className="size-4" /> Demo autopilot {autopilot ? "on" : "off"}
           </button>
         )}
-        <button onClick={() => setRecenter((n) => n + 1)} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Re-centre map">
+        <button onClick={() => setRecenter((n) => n + 1)} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label={t("Re-centre map")}>
           <LocateFixed className="size-5" />
         </button>
       </div>
@@ -553,8 +553,8 @@ export default function DriverHome() {
               )}
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <div className="text-lg font-bold">{t(online ? "You're online" : "You're offline")}</div>
-                  <div className="text-sm text-muted">{t(online ? "Finding trips near you" : "Go online to start earning")}</div>
+                  <div className="text-lg font-bold">{(online ? t("You're online") : t("You're offline"))}</div>
+                  <div className="text-sm text-muted">{(online ? t("Finding trips near you") : t("Go online to start earning"))}</div>
                 </div>
                 <button
                   onClick={() => toggle.mutate()}
@@ -563,7 +563,7 @@ export default function DriverHome() {
                     "flex size-16 items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 disabled:opacity-50",
                     online ? "bg-danger" : "bg-brand",
                   )}
-                  aria-label={online ? "Go offline" : "Go online"}
+                  aria-label={online ? t("Go offline") : t("Go online")}
                 >
                   <Power className="size-7" />
                 </button>
@@ -598,10 +598,10 @@ export default function DriverHome() {
               <div className="mt-4 flex gap-3 rounded-2xl bg-surface-2 p-3 text-sm">
                 <MapPin className={clsx("mt-0.5 size-4 shrink-0", trip.status === "IN_PROGRESS" ? "text-fg" : "text-brand")} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-muted uppercase">{t(trip.status === "IN_PROGRESS" ? "Drop" : "Pickup")}</div>
+                  <div className="text-xs font-semibold text-muted uppercase">{(trip.status === "IN_PROGRESS" ? t("Drop") : t("Pickup"))}</div>
                   <div className="truncate font-semibold">{trip.status === "IN_PROGRESS" ? trip.dropoff_address : trip.pickup_address}</div>
                   {trip.stop && <div className="truncate text-xs text-muted">Stop on the way: {trip.stop.address || "marked on the map"}</div>}
-                  {trip.status === "DRIVER_ASSIGNED" && <div className="text-xs text-muted">{km(distanceToPickup)} away</div>}
+                  {trip.status === "DRIVER_ASSIGNED" && <div className="text-xs text-muted">{t("{distance} away", { distance: km(distanceToPickup) })}</div>}
                   {trip.status === "IN_PROGRESS" && (
                     <div className="text-xs text-muted">
                       {km(distanceToDrop)} · {minutes(etaFromKm(distanceToDrop))} · drop by {clockIn(etaFromKm(distanceToDrop))}
@@ -613,7 +613,7 @@ export default function DriverHome() {
                   rel="noreferrer"
                   href={`https://www.google.com/maps/dir/?api=1&destination=${trip.status === "IN_PROGRESS" ? `${trip.dropoff_lat},${trip.dropoff_lng}` : `${trip.pickup_lat},${trip.pickup_lng}`}`}
                   className="flex size-9 items-center justify-center rounded-full bg-info text-white"
-                  aria-label="Navigate"
+                  aria-label={t("Navigate")}
                 >
                   <Navigation className="size-4" />
                 </a>
@@ -628,7 +628,7 @@ export default function DriverHome() {
                     <Button block size="lg" variant="brand" onClick={() => arrive.mutate()} loading={arrive.isPending}>
                       {t("I've arrived")}
                     </Button>
-                    {distanceToPickup > 0.5 && <p className="text-center text-xs text-muted">Get within 500 m of the pickup (tap the map or use autopilot).</p>}
+                    {distanceToPickup > 0.5 && <p className="text-center text-xs text-muted">{t("Get within 500 m of the pickup (tap the map or use autopilot).")}</p>}
                     <Button block variant="ghost" onClick={() => cancel.mutate()} loading={cancel.isPending}>
                       {t("Cancel trip")}
                     </Button>
@@ -646,7 +646,7 @@ export default function DriverHome() {
                   <>
                     {trip.payment_method === "CASH" && (
                       <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">
-                        <Banknote className="size-4" /> Collect about {inr(trip.estimated_fare)} in cash at drop-off
+                        <Banknote className="size-4" /> {t("Collect about {amount} in cash at drop-off", { amount: inr(trip.estimated_fare) })}
                       </div>
                     )}
                     {trip.service === "PARCEL" && trip.parcel && (
@@ -679,14 +679,14 @@ export default function DriverHome() {
                       loading={complete.isPending}
                       disabled={trip.service === "PARCEL" && deliveryCode.length !== 4}
                     >
-                      {t(trip.service === "PARCEL" ? "Mark delivered" : "Complete trip")}
+                      {(trip.service === "PARCEL" ? t("Mark delivered") : t("Complete trip"))}
                     </Button>
                   </>
                 )}
               </div>
               {trip.flags.includes("SOS") && (
                 <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-danger">
-                  <ShieldAlert className="size-3.5" /> The safety team is monitoring this trip
+                  <ShieldAlert className="size-3.5" /> {t("The safety team is monitoring this trip")}
                 </p>
               )}
             </>
@@ -711,8 +711,8 @@ export default function DriverHome() {
             <div className="mt-1 text-sm text-muted">
               Fare {inr(completed.fare_total)} · {km(completed.actual_distance_km)} · {minutes(completed.actual_duration_min)}
             </div>
-            {completed.payment_method === "CASH" && <p className="mt-3 rounded-xl bg-surface-2 p-2 text-sm">Collect {inr(completed.fare_total)} in cash from the rider.</p>}
-            <p className="mt-5 mb-2 text-sm font-semibold">Rate {completed.rider.name.split(" ")[0]}</p>
+            {completed.payment_method === "CASH" && <p className="mt-3 rounded-xl bg-surface-2 p-2 text-sm">{t("Collect {amount} in cash from the rider.", { amount: inr(completed.fare_total) })}</p>}
+            <p className="mt-5 mb-2 text-sm font-semibold">{t("Rate {name}", { name: completed.rider.name.split(" ")[0] })}</p>
             <StarInput value={riderStars} onChange={setRiderStars} />
           </div>
         )}

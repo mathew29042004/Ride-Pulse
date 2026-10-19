@@ -13,6 +13,7 @@ import { api, newIdempotencyKey } from "@/lib/api";
 import { date, inr, km } from "@/lib/format";
 import { useDriverMe } from "@/lib/hooks";
 import type { Earnings, Paginated, Payout } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 type Period = "today" | "week" | "month";
 
@@ -25,7 +26,7 @@ export default function DriverEarnings() {
   const payDues = useMutation({
     mutationFn: () => api.post<{ status: string; failure_reason: string }>("wallet/pay-dues/", { method: "UPI" }, { idempotencyKey: newIdempotencyKey() }),
     onSuccess: (p) => {
-      if (p.status === "SUCCEEDED") toast.success("Dues cleared");
+      if (p.status === "SUCCEEDED") toast.success(t("Dues cleared"));
       else toast.error(p.failure_reason);
       qc.invalidateQueries({ queryKey: ["driver"] });
     },
@@ -42,14 +43,14 @@ export default function DriverEarnings() {
   return (
     <div className="h-full overflow-y-auto px-5 pt-5 pb-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Earnings</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Earnings")}</h1>
         <Segmented
           value={period}
           onChange={setPeriod}
           options={[
-            { value: "today", label: "Today" },
-            { value: "week", label: "Week" },
-            { value: "month", label: "Month" },
+            { value: "today", label: t("Today") },
+            { value: "week", label: t("Week") },
+            { value: "month", label: t("Month") },
           ]}
         />
       </div>
@@ -59,7 +60,7 @@ export default function DriverEarnings() {
       <RealEarningsCard />
 
       <div className="mt-4 rounded-3xl bg-[#0b0f19] p-5 text-white">
-        <div className="text-xs font-medium tracking-wide text-white/60 uppercase">Total earnings</div>
+        <div className="text-xs font-medium tracking-wide text-white/60 uppercase">{t("Total earnings")}</div>
         {e ? <div className="mt-1 text-4xl font-bold tracking-tight">{inr(e.earnings)}</div> : <Skeleton className="mt-2 h-10 w-36 bg-white/10" />}
         <div className="mt-1 text-sm text-white/60">
           {e?.trips ?? 0} trips · {km(e?.distance_km)}
@@ -82,37 +83,37 @@ export default function DriverEarnings() {
       </div>
 
       <div className="mt-4 divide-y divide-line rounded-2xl border border-line px-4">
-        <KeyValue label="Trip earnings">{inr(e?.trip_earnings)}</KeyValue>
-        <KeyValue label="Tips (100% yours)">{inr(e?.tips)}</KeyValue>
-        <KeyValue label="Cancellation fees">{inr(e?.cancellation_fees)}</KeyValue>
-        <KeyValue label="Fares collected">{inr(e?.fares)}</KeyValue>
-        <KeyValue label="Platform commission">{inr(e?.commission)}</KeyValue>
-        <KeyValue label="Cash collected">{inr(e?.cash_collected)}</KeyValue>
+        <KeyValue label={t("Trip earnings")}>{inr(e?.trip_earnings)}</KeyValue>
+        <KeyValue label={t("Tips (100% yours)")}>{inr(e?.tips)}</KeyValue>
+        <KeyValue label={t("Cancellation fees")}>{inr(e?.cancellation_fees)}</KeyValue>
+        <KeyValue label={t("Fares collected")}>{inr(e?.fares)}</KeyValue>
+        <KeyValue label={t("Platform commission")}>{inr(e?.commission)}</KeyValue>
+        <KeyValue label={t("Cash collected")}>{inr(e?.cash_collected)}</KeyValue>
       </div>
 
       <div className="mt-4 flex items-center justify-between rounded-2xl bg-surface-2 p-4">
         <div>
-          <div className="text-xs font-semibold text-muted uppercase">Wallet balance</div>
+          <div className="text-xs font-semibold text-muted uppercase">{t("Wallet balance")}</div>
           <div className={balance < 0 ? "text-xl font-bold text-danger" : "text-xl font-bold"}>{inr(balance)}</div>
-          <div className="text-xs text-muted">{balance < 0 ? "Commission due on cash trips" : "Paid out every Monday"}</div>
+          <div className="text-xs text-muted">{balance < 0 ? t("Commission due on cash trips") : t("Paid out every Monday")}</div>
         </div>
         {balance < 0 && (
           <Button size="sm" onClick={() => payDues.mutate()} loading={payDues.isPending}>
-            Pay dues
+            {t("Pay dues")}
           </Button>
         )}
       </div>
       {balance < -500 && (
         <p className="mt-2 flex items-center gap-1.5 text-xs text-danger">
-          <AlertTriangle className="size-3.5" /> Dues over ₹500 stop you from going online.
+          <AlertTriangle className="size-3.5" /> {t("Dues over ₹500 stop you from going online.")}
         </p>
       )}
 
       <StatementsCard />
 
-      <h2 className="mt-6 mb-2 text-sm font-semibold">Payouts</h2>
+      <h2 className="mt-6 mb-2 text-sm font-semibold">{t("Payouts")}</h2>
       <div className="divide-y divide-line">
-        {payouts.data?.results.length === 0 && <p className="py-6 text-center text-sm text-muted">No payouts yet.</p>}
+        {payouts.data?.results.length === 0 && <p className="py-6 text-center text-sm text-muted">{t("No payouts yet.")}</p>}
         {payouts.data?.results.map((p) => (
           <div key={p.id} className="flex items-center gap-3 py-3">
             <div className="flex-1">

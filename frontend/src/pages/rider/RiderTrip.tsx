@@ -63,7 +63,7 @@ function BoostChips({ trip, show }: { trip: Trip; show: boolean }) {
       qc.setQueryData(["trips", String(trip.id)], updated);
       toast.success(`+₹${amount} boost added. Asking more drivers now.`);
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't add the boost."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't add the boost.")),
   });
   const boosted = Number(trip.boost_amount);
   if (!show) return null;
@@ -73,7 +73,7 @@ function BoostChips({ trip, show }: { trip: Trip; show: boolean }) {
         <Zap className="size-4" />
         {boosted > 0 ? `₹${boosted} boost added · new fare ${inr(trip.estimated_fare)}` : t("Taking a while? Boost your request")}
       </div>
-      <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/70">100% goes to your driver. More drivers see your ride, and those who passed get asked again.</p>
+      <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/70">{t("100% goes to your driver. More drivers see your ride, and those who passed get asked again.")}</p>
       <div className="mt-2.5 grid grid-cols-3 gap-2">
         {[10, 20, 30].map((amount) => (
           <button
@@ -136,9 +136,9 @@ export default function RiderTrip() {
   const now = useNow(5000);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["trips"] });
-  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : "Something went wrong.");
+  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : t("Something went wrong."));
   const cancel = useMutation({ mutationFn: () => api.post<Trip>(`trips/${id}/cancel/`, { reason: "Changed my plans" }), onSuccess: () => { setConfirmCancel(false); refresh(); }, onError });
-  const rate = useMutation({ mutationFn: () => api.post<Trip>(`trips/${id}/rate/`, { stars, tags, comment }), onSuccess: () => { toast.success("Thanks for rating your driver!"); refresh(); }, onError });
+  const rate = useMutation({ mutationFn: () => api.post<Trip>(`trips/${id}/rate/`, { stars, tags, comment }), onSuccess: () => { toast.success(t("Thanks for rating your driver!")); refresh(); }, onError });
   const tip = useMutation({
     mutationFn: (amount: number) => api.post<Trip>(`trips/${id}/tip/`, { amount, method: "UPI" }, { idempotencyKey: newIdempotencyKey() }),
     onSuccess: (_, amount) => { toast.success(`₹${amount} tip sent. 100% goes to your driver.`); refresh(); },
@@ -159,14 +159,14 @@ export default function RiderTrip() {
         return; // the share sheet was dismissed
       }
       await navigator.clipboard?.writeText(url);
-      toast.success("Live trip link copied. Anyone with it can follow your ride until you arrive.");
+      toast.success(t("Live trip link copied. Anyone with it can follow your ride until you arrive."));
     },
     onError,
   });
   const sos = useMutation({
     // The phone's own location if it gives one (the server falls back to the car's).
     mutationFn: async (ambulance: boolean) => api.post(`trips/${id}/sos/`, { note: "Rider pressed SOS in the app", ambulance, ...((await currentPosition()) ?? {}) }),
-    onSuccess: (_d, ambulance) => { setSosOpen(false); toast.success(ambulance ? "Safety team alerted and an ambulance requested. Also call 108 if you can." : "Safety team alerted. Stay on the line; we're calling you now."); },
+    onSuccess: (_d, ambulance) => { setSosOpen(false); toast.success(ambulance ? t("Safety team alerted and an ambulance requested. Also call 108 if you can.") : t("Safety team alerted. Stay on the line; we're calling you now.")); },
     onError,
   });
 
@@ -236,7 +236,7 @@ export default function RiderTrip() {
       </div>
 
       <div className="rp-overlay relative z-[600] flex items-center justify-between p-3">
-        <button onClick={() => navigate(active ? "/ride" : "/ride/activity")} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Back">
+        <button onClick={() => navigate(active ? "/ride" : "/ride/activity")} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label={t("Back")}>
           <ArrowLeft className="size-5" />
         </button>
         {active && trip.status !== "REQUESTED" && (
@@ -249,7 +249,7 @@ export default function RiderTrip() {
       <div className="flex-1" />
 
       <div className="rp-overlay relative z-[600] flex justify-end px-3 pb-2">
-        <button onClick={() => setRecenter((n) => n + 1)} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label="Re-centre map">
+        <button onClick={() => setRecenter((n) => n + 1)} className="flex size-10 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-float)]" aria-label={t("Re-centre map")}>
           <LocateFixed className="size-5" />
         </button>
       </div>
@@ -273,7 +273,7 @@ export default function RiderTrip() {
               <div>
                 <h2 className="text-xl font-bold">
                   {trip.status === "DRIVER_ASSIGNED" && t("Arriving in {time}", { time: minutes(toPickupEta) })}
-                  {trip.status === "DRIVER_ARRIVED" && t(trip.service === "PARCEL" ? "Driver is here to pick up your parcel" : "Your driver is here")}
+                  {trip.status === "DRIVER_ARRIVED" && (trip.service === "PARCEL" ? t("Driver is here to pick up your parcel") : t("Your driver is here"))}
                   {trip.status === "IN_PROGRESS" &&
                     (trip.service === "RENTAL"
                       ? t("Rental · {h} h / {km} km", { h: trip.package_hours ?? 0, km: trip.package_km ?? 0 })
@@ -364,7 +364,7 @@ export default function RiderTrip() {
             )}
 
             <div className="mt-4">
-              <p className="mb-2 text-center text-xs font-semibold text-muted uppercase">Add a tip · goes 100% to your driver</p>
+              <p className="mb-2 text-center text-xs font-semibold text-muted uppercase">{t("Add a tip · goes 100% to your driver")}</p>
               <div className="grid grid-cols-3 gap-2">
                 {[20, 50, 100].map((amount) => (
                   <Button key={amount} variant="outline" onClick={() => tip.mutate(amount)} loading={tip.isPending && tip.variables === amount}>
@@ -372,7 +372,7 @@ export default function RiderTrip() {
                   </Button>
                 ))}
               </div>
-              {Number(trip.tip_amount) > 0 && <p className="mt-2 text-center text-xs text-brand-strong">You tipped {inr(trip.tip_amount)}. Thank you!</p>}
+              {Number(trip.tip_amount) > 0 && <p className="mt-2 text-center text-xs text-brand-strong">{t("You tipped {amount}. Thank you!", { amount: inr(trip.tip_amount) })}</p>}
             </div>
 
             <details className="mt-4 rounded-2xl border border-line px-4 py-3 text-sm">
@@ -388,7 +388,7 @@ export default function RiderTrip() {
                   <span>{t("Total")}</span>
                   <span>{inr(trip.fare.total)}</span>
                 </div>
-                <p className="pt-1 text-muted">{trip.pricing_mode === "UPFRONT" ? "Your upfront price was honoured." : "Re-priced because the route was much longer than estimated."}</p>
+                <p className="pt-1 text-muted">{trip.pricing_mode === "UPFRONT" ? t("Your upfront price was honoured.") : t("Re-priced because the route was much longer than estimated.")}</p>
               </div>
             </details>
 
@@ -421,9 +421,9 @@ export default function RiderTrip() {
             <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-surface-3">
               <X className="size-6 text-muted" />
             </div>
-            <h2 className="text-lg font-bold">{trip.status === "NO_DRIVER_FOUND" ? "No drivers available" : "Trip cancelled"}</h2>
+            <h2 className="text-lg font-bold">{trip.status === "NO_DRIVER_FOUND" ? t("No drivers available") : t("Trip cancelled")}</h2>
             <p className="mt-1 text-sm text-muted">{trip.cancellation_reason}</p>
-            {Number(trip.cancellation_fee) > 0 && <p className="mt-2 text-sm font-semibold text-danger">Cancellation fee {inr(trip.cancellation_fee)}</p>}
+            {Number(trip.cancellation_fee) > 0 && <p className="mt-2 text-sm font-semibold text-danger">{t("Cancellation fee {amount}", { amount: inr(trip.cancellation_fee) })}</p>}
             <p className="mt-1 text-xs text-muted">{dateTime(trip.cancelled_at)}</p>
             {trip.status === "NO_DRIVER_FOUND" && <NoDriverAlternative trip={trip} />}
             <Button className="mt-4" block onClick={() => navigate(`/ride/book?to=${trip.dropoff_lat},${trip.dropoff_lng}&name=${encodeURIComponent(trip.dropoff_address)}`)}>
@@ -449,28 +449,28 @@ export default function RiderTrip() {
         }
       >
         <p className="text-sm text-muted">
-          Cancelling is free for 2 minutes after a driver accepts. After that, or once the driver has arrived, a cancellation fee is charged to your wallet.
+          {t("Cancelling is free for 2 minutes after a driver accepts. After that, or once the driver has arrived, a cancellation fee is charged to your wallet.")}
         </p>
       </Modal>
 
       <Modal
         open={sosOpen}
         onClose={() => setSosOpen(false)}
-        title="Emergency help"
+        title={t("Emergency help")}
         footer={
           <div className="grid gap-2">
             <Button variant="danger" block onClick={() => sos.mutate(false)} loading={sos.isPending}>
-              Alert the safety team now
+              {t("Alert the safety team now")}
             </Button>
             <Button variant="secondary" block onClick={() => sos.mutate(true)} disabled={sos.isPending}>
-              Medical emergency: send an ambulance
+              {t("Medical emergency: send an ambulance")}
             </Button>
           </div>
         }
       >
-        <p className="text-sm">We'll share your trip and live location with the Ride Pulse safety team, who will call you right away.</p>
+        <p className="text-sm">{t("We'll share your trip and live location with the Ride Pulse safety team, who will call you right away.")}</p>
         <p className="mt-3 text-sm text-muted">
-          In a life-threatening emergency, call <a className="font-bold text-danger" href="tel:112">112</a> (ambulance: <a className="font-bold text-danger" href="tel:108">108</a>).
+          {t("In a life-threatening emergency, call")} <a className="font-bold text-danger" href="tel:112">112</a> (ambulance: <a className="font-bold text-danger" href="tel:108">108</a>).
         </p>
         <TripGuardian active={active} />
       </Modal>
@@ -494,7 +494,7 @@ export function HelpModal({ open, onClose, tripId, base = "/ride" }: { open: boo
         trip: tripId ?? null,
       }),
     onSuccess: (ticket) => {
-      toast.success("Ticket created. Our support team will reply shortly.");
+      toast.success(t("Ticket created. Our support team will reply shortly."));
       onClose();
       navigate(`${base}/support/${ticket.id}`);
     },
@@ -511,10 +511,10 @@ export function HelpModal({ open, onClose, tripId, base = "/ride" }: { open: boo
     <Modal
       open={open}
       onClose={onClose}
-      title="Get help with this trip"
+      title={t("Get help with this trip")}
       footer={
         <Button onClick={() => create.mutate()} loading={create.isPending} disabled={description.trim().length < 5}>
-          Send to support
+          {t("Send to support")}
         </Button>
       }
     >
@@ -526,9 +526,9 @@ export function HelpModal({ open, onClose, tripId, base = "/ride" }: { open: boo
           </label>
         ))}
       </div>
-      <Textarea className="mt-3" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell us what happened" />
+      <Textarea className="mt-3" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("Tell us what happened")} />
       <p className="mt-2 text-xs text-muted">
-        Or see <Link to={`${base}/support`} className="font-semibold underline" onClick={onClose}>your tickets</Link>.
+        {t("Or see")} <Link to={`${base}/support`} className="font-semibold underline" onClick={onClose}>your tickets</Link>.
       </p>
     </Modal>
   );
@@ -542,28 +542,28 @@ function InvoiceCard({ trip }: { trip: Trip }) {
   const resend = useMutation({
     mutationFn: () => api.post<{ sent_to: string }>(`trips/${trip.id}/email-invoice/`),
     onSuccess: ({ sent_to }) => {
-      toast.success(`Invoice sent to ${sent_to}`);
+      toast.success(t("Invoice sent to {email}", { email: sent_to }));
       qc.invalidateQueries({ queryKey: ["trips"] });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't send the invoice."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't send the invoice.")),
   });
   if (trip.payment_status !== "PAID") {
-    return <p className="mt-4 rounded-2xl bg-surface-2 px-4 py-3 text-xs text-muted">Your invoice will be emailed once the payment goes through.</p>;
+    return <p className="mt-4 rounded-2xl bg-surface-2 px-4 py-3 text-xs text-muted">{t("Your invoice will be emailed once the payment goes through.")}</p>;
   }
   return (
     <div className="mt-4 flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3">
       <Mail className="size-5 shrink-0 text-muted" />
       <div className="min-w-0 flex-1 text-sm">
-        <div className="font-semibold">{trip.invoice_number ? `Invoice ${trip.invoice_number}` : "Invoice"}</div>
+        <div className="font-semibold">{trip.invoice_number ? t("Invoice {number}", { number: trip.invoice_number }) : t("Invoice")}</div>
         <div className="truncate text-xs text-muted">
-          {trip.invoice_emailed_at ? `Sent to ${hasEmail ? user!.email : "your email"}` : hasEmail ? "Tap Email to get a copy" : "Add an email in Account to receive it"}
+          {trip.invoice_emailed_at ? t("Sent to {email}", { email: hasEmail ? user!.email : t("your email") }) : hasEmail ? t("Tap Email to get a copy") : t("Add an email in Account to receive it")}
         </div>
       </div>
       <button onClick={() => openFile(`/api/v1/trips/${trip.id}/invoice/`)} className="text-xs font-semibold text-brand-strong">
-        View
+        {t("View")}
       </button>
       <button onClick={() => resend.mutate()} disabled={resend.isPending} className="text-xs font-semibold text-brand-strong disabled:opacity-50">
-        {resend.isPending ? "Sending…" : "Email"}
+        {resend.isPending ? t("Sending…") : t("Email")}
       </button>
     </div>
   );
@@ -588,7 +588,7 @@ function FavouriteDriver({ trip }: { trip: Trip }) {
       className={clsx("mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border py-2.5 text-sm font-semibold transition", on ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-400/30 dark:bg-rose-400/10 dark:text-rose-200" : "border-line")}
       aria-pressed={on}
     >
-      <Heart className={clsx("size-4", on && "fill-current")} /> {on ? `${trip.driver!.name.split(" ")[0]} is a favourite driver` : `Add ${trip.driver!.name.split(" ")[0]} to favourite drivers`}
+      <Heart className={clsx("size-4", on && "fill-current")} /> {on ? t("{name} is a favourite driver", { name: trip.driver!.name.split(" ")[0] }) : t("Add {name} to favourite drivers", { name: trip.driver!.name.split(" ")[0] })}
     </button>
   );
 }

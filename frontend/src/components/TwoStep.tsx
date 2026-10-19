@@ -9,8 +9,9 @@ import { Button, Input, Modal } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
-const errorText = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
+const errorText = (err: unknown) => (err instanceof ApiError ? err.message : t("Something went wrong."));
 
 /** After a correct password: the 6-digit code (or a recovery code) finishes signing in. */
 export function TwoStepPrompt({ challenge, onDone, onCancel }: { challenge: string; onDone: (user: User) => void; onCancel: () => void }) {
@@ -22,21 +23,21 @@ export function TwoStepPrompt({ challenge, onDone, onCancel }: { challenge: stri
       acceptTokens(data);
       onDone(data.user);
     },
-    onError: (err) => toast.error(err instanceof ApiError && err.status === 400 ? "That code didn't match." : errorText(err)),
+    onError: (err) => toast.error(err instanceof ApiError && err.status === 400 ? t("That code didn't match.") : errorText(err)),
   });
   return (
     <Modal
       open
       onClose={onCancel}
-      title="Two-step sign-in"
+      title={t("Two-step sign-in")}
       footer={
         <Button block loading={verify.isPending} disabled={code.replace(/\D/g, "").length < 6} onClick={() => verify.mutate()}>
-          Verify
+          {t("Verify")}
         </Button>
       }
     >
-      <p className="mb-3 text-sm text-muted">Enter the 6-digit code from your authenticator app, or one of your recovery codes.</p>
-      <Input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && verify.mutate()} placeholder="123 456" aria-label="Code" />
+      <p className="mb-3 text-sm text-muted">{t("Enter the 6-digit code from your authenticator app, or one of your recovery codes.")}</p>
+      <Input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && verify.mutate()} placeholder="123 456" aria-label={t("Code")} />
     </Modal>
   );
 }
@@ -71,7 +72,7 @@ export function TwoStepSettings() {
   const disable = useMutation({
     mutationFn: () => api.post("auth/2fa/disable/", { code }),
     onSuccess: () => {
-      toast.success("Two-step sign-in is off");
+      toast.success(t("Two-step sign-in is off"));
       setTurningOff(false);
       setCode("");
       refresh();
@@ -91,16 +92,16 @@ export function TwoStepSettings() {
               ? `After your password you enter a code from your authenticator app. ${s.recovery_codes_left} recovery codes left.`
               : s.required
                 ? `Required for your role (${user?.role.replaceAll("_", " ").toLowerCase()}): a stolen password alone won't open your account.`
-                : "Recommended: a stolen password alone won't open your account."}
+                : t("Recommended: a stolen password alone won't open your account.")}
           </p>
         </div>
         {s.enabled ? (
           <Button variant="outline" size="sm" onClick={() => setTurningOff(true)}>
-            Turn off
+            {t("Turn off")}
           </Button>
         ) : (
           <Button size="sm" icon={<KeyRound className="size-4" />} loading={begin.isPending} onClick={() => begin.mutate()}>
-            Set up
+            {t("Set up")}
           </Button>
         )}
       </div>
@@ -108,7 +109,7 @@ export function TwoStepSettings() {
       {setup && (
         <div className="mt-4 space-y-3 rounded-xl bg-surface-2 p-3 text-sm">
           <p>
-            1. In Google Authenticator or Microsoft Authenticator, choose <b>Add account → Enter a setup key</b>, and type this key (time-based):
+            {t("1. In Google Authenticator or Microsoft Authenticator, choose")} <b>Add account → Enter a setup key</b>, and type this key (time-based):
           </p>
           <code className="block select-all break-all rounded-lg bg-surface p-2 font-mono text-base tracking-wider">{setup.secret.match(/.{1,4}/g)?.join(" ")}</code>
           <p className="text-xs text-muted">
@@ -118,19 +119,19 @@ export function TwoStepSettings() {
             </a>{" "}
             to add it directly.
           </p>
-          <p>2. Enter the 6-digit code it shows:</p>
+          <p>{t("2. Enter the 6-digit code it shows:")}</p>
           <div className="flex gap-2">
-            <Input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123 456" aria-label="Code" />
+            <Input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123 456" aria-label={t("Code")} />
             <Button loading={enable.isPending} disabled={code.replace(/\D/g, "").length < 6} onClick={() => enable.mutate()}>
-              Turn on
+              {t("Turn on")}
             </Button>
           </div>
         </div>
       )}
 
       {recovery && (
-        <Modal open onClose={() => setRecovery(null)} title="Save your recovery codes" footer={<Button block onClick={() => setRecovery(null)}>I've saved them</Button>}>
-          <p className="mb-2 text-sm">If you lose your phone, each of these signs you in once. They won't be shown again.</p>
+        <Modal open onClose={() => setRecovery(null)} title={t("Save your recovery codes")} footer={<Button block onClick={() => setRecovery(null)}>{t("I've saved them")}</Button>}>
+          <p className="mb-2 text-sm">{t("If you lose your phone, each of these signs you in once. They won't be shown again.")}</p>
           <div className="grid grid-cols-2 gap-2 rounded-xl bg-surface-2 p-3 font-mono text-sm">
             {recovery.map((c) => (
               <span key={c}>{c}</span>
@@ -140,9 +141,9 @@ export function TwoStepSettings() {
       )}
 
       {turningOff && (
-        <Modal open onClose={() => setTurningOff(false)} title="Turn off two-step sign-in" footer={<Button block variant="danger" loading={disable.isPending} onClick={() => disable.mutate()}>Turn off</Button>}>
-          <p className="mb-2 text-sm">Enter a current code (or a recovery code) to confirm.</p>
-          <Input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} aria-label="Code" />
+        <Modal open onClose={() => setTurningOff(false)} title={t("Turn off two-step sign-in")} footer={<Button block variant="danger" loading={disable.isPending} onClick={() => disable.mutate()}>{t("Turn off")}</Button>}>
+          <p className="mb-2 text-sm">{t("Enter a current code (or a recovery code) to confirm.")}</p>
+          <Input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} aria-label={t("Code")} />
         </Modal>
       )}
     </div>

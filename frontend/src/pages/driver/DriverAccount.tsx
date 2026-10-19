@@ -15,6 +15,7 @@ import { useDriverMe } from "@/lib/hooks";
 import type { Driver } from "@/lib/types";
 
 import { LanguageRow, LogoutRow, ThemeRow } from "../rider/RiderAccount";
+import { t } from "@/lib/i18n";
 
 function Meter({ label, value, max = 100, suffix = "", good = 80 }: { label: string; value: number | null; max?: number; suffix?: string; good?: number }) {
   const pct = value === null ? 0 : Math.min(100, (value / max) * 100);
@@ -42,23 +43,23 @@ export default function DriverAccount() {
           <div className="text-sm text-muted">
             <Stars value={d?.rating ?? 5} /> · {d?.rating_count ?? 0} ratings
           </div>
-          <div className="text-xs text-muted">Driving since {date(d?.approved_at ?? null)}</div>
+          <div className="text-xs text-muted">{t("Driving since {date}", { date: date(d?.approved_at ?? null) })}</div>
         </div>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-2">
-        <Meter label="Acceptance" value={d ? Math.round(Number(d.acceptance_rate)) : null} suffix="%" good={85} />
-        <Meter label="Safety score" value={d?.safety_score ?? null} good={80} />
-        <Meter label="Rating" value={d ? Number(d.rating) : null} max={5} good={4.6} />
-        <Meter label="Trips" value={d?.completed_trips ?? null} max={Math.max(100, d?.completed_trips ?? 0)} good={0} />
+        <Meter label={t("Acceptance")} value={d ? Math.round(Number(d.acceptance_rate)) : null} suffix="%" good={85} />
+        <Meter label={t("Safety score")} value={d?.safety_score ?? null} good={80} />
+        <Meter label={t("Rating")} value={d ? Number(d.rating) : null} max={5} good={4.6} />
+        <Meter label={t("Trips")} value={d?.completed_trips ?? null} max={Math.max(100, d?.completed_trips ?? 0)} good={0} />
       </div>
-      <p className="mt-2 text-xs text-muted">The safety score comes from braking, acceleration, speeding and night driving on your recent trips. Safer drivers rank higher in dispatch.</p>
+      <p className="mt-2 text-xs text-muted">{t("The safety score comes from braking, acceleration, speeding and night driving on your recent trips. Safer drivers rank higher in dispatch.")}</p>
 
       <Link to="/drive/academy" className="mt-4 flex items-center justify-between rounded-3xl border border-line p-4 text-sm font-semibold">
-        Driver Academy: courses and certificates <span aria-hidden>→</span>
+        {t("Driver Academy: courses and certificates")} <span aria-hidden>→</span>
       </Link>
       <Link to="/drive/loan" className="mt-2 flex items-center justify-between rounded-3xl border border-line p-4 text-sm font-semibold">
-        Vehicle loan: buy or upgrade your vehicle <span aria-hidden>→</span>
+        {t("Vehicle loan: buy or upgrade your vehicle")} <span aria-hidden>→</span>
       </Link>
       <VehicleCare />
 
@@ -68,12 +69,12 @@ export default function DriverAccount() {
         <TrustLinks base="/drive" />
         <Link to="/drive/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
-          <span className="flex-1 font-medium">Help & support</span>
+          <span className="flex-1 font-medium">{t("Help & support")}</span>
           <ChevronRight className="size-4 text-muted" />
         </Link>
         <div className="flex items-center gap-3 py-3.5">
           <Clock className="size-5" />
-          <span className="flex-1 font-medium">Licence expires</span>
+          <span className="flex-1 font-medium">{t("Licence expires")}</span>
           <span className="text-sm text-muted">{date(d?.license_expiry ?? null)}</span>
         </div>
         <LanguageRow />
@@ -96,7 +97,7 @@ function HomeRow({ driver }: { driver: Driver }) {
     },
     onSuccess: (updated) => {
       qc.setQueryData(["driver", "me"], updated);
-      toast.success(`Home set to ${updated.home_address}`);
+      toast.success(t("Home set to {place}", { place: updated.home_address }));
     },
     onError: (err) => toast.error((err as Error).message),
   });
@@ -104,11 +105,11 @@ function HomeRow({ driver }: { driver: Driver }) {
     <div className="flex items-center gap-3 py-3.5">
       <Home className="size-5" />
       <div className="min-w-0 flex-1">
-        <div className="font-medium">Home (for going-home mode)</div>
+        <div className="font-medium">{t("Home (for going-home mode)")}</div>
         <div className="truncate text-xs text-muted">{driver.home_address || "Not set"}</div>
       </div>
       <Button size="sm" variant="outline" loading={save.isPending} onClick={() => save.mutate()}>
-        Set to here
+        {t("Set to here")}
       </Button>
     </div>
   );

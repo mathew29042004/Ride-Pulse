@@ -10,6 +10,7 @@ import { api, ApiError, newIdempotencyKey } from "@/lib/api";
 import { dateTime, inr } from "@/lib/format";
 import { useWallet } from "@/lib/hooks";
 import { razorpayTopUp } from "@/lib/razorpay";
+import { t } from "@/lib/i18n";
 
 export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
   const wallet = useWallet();
@@ -26,26 +27,26 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
     qc.invalidateQueries({ queryKey: ["driver"] });
     setTopUpOpen(false);
   };
-  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : "Payment failed.");
+  const onError = (err: unknown) => toast.error(err instanceof ApiError ? err.message : t("Payment failed."));
   type Payment = { status: string; failure_reason: string; amount: string };
-  const handle = (p: Payment, ok: string) => (p.status === "SUCCEEDED" ? done(ok) : toast.error(`Payment declined: ${p.failure_reason}`));
+  const handle = (p: Payment, ok: string) => (p.status === "SUCCEEDED" ? done(ok) : toast.error(t("Payment declined: {reason}", { reason: p.failure_reason })));
 
   // With Razorpay keys configured, top-ups go through real (test-mode) Razorpay Checkout.
   const config = useQuery(configQuery);
   const razorpay = !!config.data?.payments?.razorpay_key_id;
   const checkout = useMutation({
     mutationFn: () => razorpayTopUp(amount),
-    onSuccess: (outcome) => outcome === "paid" && done(`${inr(amount, { whole: true })} added to your wallet`),
+    onSuccess: (outcome) => outcome === "paid" && done(t("{amount} added to your wallet", { amount: inr(amount, { whole: true }) })),
     onError,
   });
   const topUp = useMutation({
     mutationFn: () => api.post<Payment>("wallet/top-up/", { amount, method, payer_reference: payer }, { idempotencyKey: newIdempotencyKey() }),
-    onSuccess: (p) => handle(p, `${inr(p.amount)} added to your wallet`),
+    onSuccess: (p) => handle(p, t("{amount} added to your wallet", { amount: inr(p.amount) })),
     onError,
   });
   const payDues = useMutation({
     mutationFn: () => api.post<Payment>("wallet/pay-dues/", { method: "UPI" }, { idempotencyKey: newIdempotencyKey() }),
-    onSuccess: (p) => handle(p, `Dues of ${inr(p.amount)} cleared`),
+    onSuccess: (p) => handle(p, t("Dues of {amount} cleared", { amount: inr(p.amount) })),
     onError,
   });
 
@@ -56,7 +57,7 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
       <div className="relative mt-4 overflow-hidden rounded-3xl bg-[#0b0f19] p-5 text-white">
         <div className="absolute -top-10 -right-10 size-40 rounded-full bg-emerald-500/30 blur-2xl" />
         <div className="relative">
-          <div className="text-xs font-medium tracking-wide text-white/60 uppercase">Ride Pulse balance</div>
+          <div className="text-xs font-medium tracking-wide text-white/60 uppercase">{t("Ride Pulse balance")}</div>
           {wallet.isLoading ? (
             <Skeleton className="mt-2 h-9 w-32 bg-white/10" />
           ) : (
@@ -64,11 +65,11 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
           )}
           <div className="mt-4 flex gap-2">
             <Button size="sm" variant="brand" onClick={() => setTopUpOpen(true)}>
-              Add money
+              {t("Add money")}
             </Button>
             {balance < 0 && (
               <Button size="sm" className="bg-white text-[#0b0f19]" onClick={() => payDues.mutate()} loading={payDues.isPending}>
-                Pay dues
+                {t("Pay dues")}
               </Button>
             )}
           </div>
@@ -78,14 +79,14 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
       {balance < 0 && (
         <div className="mt-4 flex gap-3 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">
           <AlertTriangle className="size-5 shrink-0" />
-          <p>You have pending dues from an unpaid fare, a cancellation fee or cash commission. Clear them to keep using Ride Pulse.</p>
+          <p>{t("You have pending dues from an unpaid fare, a cancellation fee or cash commission. Clear them to keep using Ride Pulse.")}</p>
         </div>
       )}
 
-      <h2 className="mt-6 mb-2 text-sm font-semibold">Transactions</h2>
+      <h2 className="mt-6 mb-2 text-sm font-semibold">{t("Transactions")}</h2>
       <div className="divide-y divide-line">
         {wallet.isLoading && [0, 1, 2].map((i) => <Skeleton key={i} className="my-2 h-12" />)}
-        {wallet.data?.statement.length === 0 && <p className="py-8 text-center text-sm text-muted">No transactions yet.</p>}
+        {wallet.data?.statement.length === 0 && <p className="py-8 text-center text-sm text-muted">{t("No transactions yet.")}</p>}
         {wallet.data?.statement.map((entry) => {
           const credit = Number(entry.amount) > 0;
           return (
@@ -113,7 +114,7 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
       <Modal
         open={topUpOpen}
         onClose={() => setTopUpOpen(false)}
-        title="Add money"
+        title={t("Add money")}
         footer={
           razorpay ? (
             <Button onClick={() => checkout.mutate()} loading={checkout.isPending} block>
@@ -137,11 +138,11 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
             </button>
           ))}
         </div>
-        <Field label="Amount" className="mt-3">
+        <Field label={t("Amount")} className="mt-3">
           <Input type="number" min={50} max={10000} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
         </Field>
         {razorpay ? (
-          <p className="mt-3 text-xs text-muted">Pay by UPI, card, netbanking or wallet in Razorpay's secure checkout.</p>
+          <p className="mt-3 text-xs text-muted">{t("Pay by UPI, card, netbanking or wallet in Razorpay's secure checkout.")}</p>
         ) : (
           <>
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -154,12 +155,12 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
                     method === m ? "border-fg bg-surface-2" : "border-line",
                   )}
                 >
-                  {m === "UPI" ? <Smartphone className="size-4" /> : <CreditCard className="size-4" />} {m === "UPI" ? "UPI" : "Card"}
+                  {m === "UPI" ? <Smartphone className="size-4" /> : <CreditCard className="size-4" />} {m === "UPI" ? "UPI" : t("Card")}
                 </button>
               ))}
             </div>
-            <Field label={method === "UPI" ? "UPI ID" : "Card holder"} hint='Demo gateway: anything containing "fail" is declined.' className="mt-3">
-              <Input value={payer} onChange={(e) => setPayer(e.target.value)} placeholder={method === "UPI" ? "name@okbank" : "Name on card"} />
+            <Field label={method === "UPI" ? "UPI ID" : t("Card holder")} hint='Demo gateway: anything containing "fail" is declined.' className="mt-3">
+              <Input value={payer} onChange={(e) => setPayer(e.target.value)} placeholder={method === "UPI" ? "name@okbank" : t("Name on card")} />
             </Field>
           </>
         )}

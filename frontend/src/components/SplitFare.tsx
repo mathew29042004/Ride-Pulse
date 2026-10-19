@@ -9,6 +9,7 @@ import { Button, Input, Modal, StatusBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { inr } from "@/lib/format";
 import type { Paginated, Trip } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 export interface FareSplit {
   id: number;
@@ -39,9 +40,9 @@ export function SplitFareCard({ trip }: { trip: Trip }) {
     onSuccess: (rows) => {
       qc.setQueryData(key, rows);
       setOpen(false);
-      toast.success(`Asked ${rows.length} ${rows.length === 1 ? "friend" : "friends"} for ${inr(rows[0].amount)} each`);
+      toast.success(t(rows.length === 1 ? "Asked {n} friend for {amount} each" : "Asked {n} friends for {amount} each", { n: rows.length, amount: inr(rows[0].amount) }));
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't split the fare."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't split the fare.")),
   });
   if (trip.payment_status !== "PAID") return null;
   const active = (splits.data ?? []).filter((s) => s.status !== "CANCELLED");
@@ -52,7 +53,7 @@ export function SplitFareCard({ trip }: { trip: Trip }) {
       {active.length ? (
         <div className="mt-3 rounded-2xl bg-surface-2 px-4 py-3">
           <div className="mb-1 flex items-center gap-2 text-sm font-semibold">
-            <Users className="size-4" /> Fare split
+            <Users className="size-4" /> {t("Fare split")}
           </div>
           {active.map((s) => (
             <div key={s.id} className="flex items-center justify-between py-1 text-sm">
@@ -65,26 +66,26 @@ export function SplitFareCard({ trip }: { trip: Trip }) {
         </div>
       ) : (
         <button onClick={() => setOpen(true)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-line py-2.5 text-sm font-semibold">
-          <Users className="size-4" /> Split fare with friends
+          <Users className="size-4" /> {t("Split fare with friends")}
         </button>
       )}
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Split this fare"
+        title={t("Split this fare")}
         footer={
           <Button block onClick={() => send.mutate()} loading={send.isPending} disabled={!phones.some((p) => p.trim())}>
             Ask for {inr(each)} each
           </Button>
         }
       >
-        <p className="mb-3 text-sm text-muted">Add friends' phone numbers (Ride Pulse riders). Everyone pays an equal share of {inr(trip.fare_total)}; it comes back to your wallet.</p>
+        <p className="mb-3 text-sm text-muted">{t("Add friends' phone numbers (Ride Pulse riders). Everyone pays an equal share of {fare}; it comes back to your wallet.", { fare: inr(trip.fare_total) })}</p>
         <div className="space-y-2">
           {phones.map((phone, i) => (
             <div key={i} className="flex gap-2">
-              <Input inputMode="tel" value={phone} onChange={(e) => setPhones(phones.map((p, j) => (j === i ? e.target.value : p)))} placeholder="Friend's mobile number" />
+              <Input inputMode="tel" value={phone} onChange={(e) => setPhones(phones.map((p, j) => (j === i ? e.target.value : p)))} placeholder={t("Friend's mobile number")} />
               {phones.length > 1 && (
-                <button onClick={() => setPhones(phones.filter((_, j) => j !== i))} className="rounded-full p-2 text-muted hover:bg-surface-3" aria-label="Remove">
+                <button onClick={() => setPhones(phones.filter((_, j) => j !== i))} className="rounded-full p-2 text-muted hover:bg-surface-3" aria-label={t("Remove")}>
                   <X className="size-4" />
                 </button>
               )}
@@ -93,7 +94,7 @@ export function SplitFareCard({ trip }: { trip: Trip }) {
         </div>
         {phones.length < 3 && (
           <button onClick={() => setPhones([...phones, ""])} className="mt-2 flex items-center gap-1 text-sm font-semibold text-brand-strong">
-            <Plus className="size-4" /> Add another friend
+            <Plus className="size-4" /> {t("Add another friend")}
           </button>
         )}
       </Modal>
@@ -114,36 +115,36 @@ export function SplitRequests() {
     mutationFn: ({ id, action }: { id: number; action: "pay" | "decline" }) =>
       api.post<FareSplit>(`fare-splits/${id}/${action}/`, action === "pay" ? { method, payer_reference: "me@upi" } : undefined),
     onSuccess: (split) => {
-      toast.success(split.status === "PAID" ? `Paid ${inr(split.amount)} to ${split.rider_name}` : "Request declined");
+      toast.success(split.status === "PAID" ? t("Paid {amount} to {name}", { amount: inr(split.amount), name: split.rider_name }) : t("Request declined"));
       qc.invalidateQueries({ queryKey: ["fare-splits"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Something went wrong."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Something went wrong.")),
   });
   // Only requests sent to me (the API also returns the ones I sent).
   const incoming = (requests.data?.results ?? []).filter((s) => s.incoming && s.status === "REQUESTED");
   if (!incoming.length) return null;
   return (
     <div className="mb-3 px-2">
-      <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Payment requests</h2>
+      <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{t("Payment requests")}</h2>
       {incoming.map((s) => (
         <div key={s.id} className="mb-2 rounded-2xl border border-line p-3">
           <div className="text-sm">
-            <b>{s.rider_name}</b> split a {s.ride_type} ride to {s.dropoff_address || "their destination"}
+            <b>{s.rider_name}</b> {t("split a {ride} ride to {place}", { ride: s.ride_type, place: s.dropoff_address || t("their destination") })}
           </div>
           <div className="mt-0.5 text-xs text-muted">
             Your share {inr(s.amount)} of {inr(s.trip_fare)}
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <select value={method} onChange={(e) => setMethod(e.target.value as "UPI" | "WALLET")} className="rounded-xl border border-line bg-surface px-2 py-1.5 text-sm" aria-label="Pay with">
+            <select value={method} onChange={(e) => setMethod(e.target.value as "UPI" | "WALLET")} className="rounded-xl border border-line bg-surface px-2 py-1.5 text-sm" aria-label={t("Pay with")}>
               <option value="UPI">UPI</option>
-              <option value="WALLET">Wallet</option>
+              <option value="WALLET">{t("Wallet")}</option>
             </select>
             <Button size="sm" className="flex-1" onClick={() => act.mutate({ id: s.id, action: "pay" })} loading={act.isPending && act.variables?.id === s.id && act.variables.action === "pay"}>
               Pay {inr(s.amount)}
             </Button>
             <Button size="sm" variant="outline" onClick={() => act.mutate({ id: s.id, action: "decline" })}>
-              Decline
+              {t("Decline")}
             </Button>
           </div>
         </div>

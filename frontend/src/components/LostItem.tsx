@@ -54,11 +54,11 @@ export function LostItemCard({ trip }: { trip: Trip }) {
       const here = await new Promise<{ lat: number; lng: number } | null>((resolve) =>
         "geolocation" in navigator ? navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }), () => resolve(null), { timeout: 5000 }) : resolve(null),
       );
-      return api.post<{ trip_id: number }>(`trips/${trip.id}/lost-item/deliver/`, { ...(here ?? { lat: trip.pickup_lat, lng: trip.pickup_lng }), address: here ? "My location" : trip.pickup_address });
+      return api.post<{ trip_id: number }>(`trips/${trip.id}/lost-item/deliver/`, { ...(here ?? { lat: trip.pickup_lat, lng: trip.pickup_lng }), address: here ? t("My location") : trip.pickup_address });
     },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: key });
-      toast.success("A courier will bring it to you.");
+      toast.success(t("A courier will bring it to you."));
       navigate(`/ride/trips/${r.trip_id}`);
     },
     onError: (err) => toast.error(errorText(err, "Couldn't book the delivery.")),
@@ -68,7 +68,7 @@ export function LostItemCard({ trip }: { trip: Trip }) {
     onSuccess: (row) => {
       qc.setQueryData(key, row);
       setOpen(false);
-      toast.success("We've told your driver. You'll hear back here.");
+      toast.success(t("We've told your driver. You'll hear back here."));
     },
     onError: (err) => toast.error(errorText(err, "Couldn't send the report.")),
   });
@@ -93,27 +93,27 @@ export function LostItemCard({ trip }: { trip: Trip }) {
             <StatusBadge status={row.status} label={row.status_label} />
           </div>
           {row.driver_note && <p className="mt-1 text-muted">Driver: “{row.driver_note}”</p>}
-          {row.status === "REPORTED" && <p className="mt-1 text-xs text-muted">Waiting for your driver to check the car.</p>}
-          {row.status === "NOT_FOUND" && <p className="mt-1 text-xs text-muted">Our support team will follow up on your ticket.</p>}
+          {row.status === "REPORTED" && <p className="mt-1 text-xs text-muted">{t("Waiting for your driver to check the car.")}</p>}
+          {row.status === "NOT_FOUND" && <p className="mt-1 text-xs text-muted">{t("Our support team will follow up on your ticket.")}</p>}
           {row.status === "FOUND" && (
             <>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <CallButton tripId={trip.id} name={trip.driver?.name ?? "your driver"} />
                 <Button variant="secondary" loading={returned.isPending} onClick={() => returned.mutate()}>
-                  I got it back
+                  {t("I got it back")}
                 </Button>
               </div>
               <Button className="mt-2 w-full" variant="outline" loading={deliver.isPending} onClick={() => deliver.mutate()}>
-                Deliver it to me (bike parcel)
+                {t("Deliver it to me (bike parcel)")}
               </Button>
             </>
           )}
           {row.status === "ON_THE_WAY" && row.return_trip_id && (
             <Button className="mt-2 w-full" variant="outline" onClick={() => navigate(`/ride/trips/${row.return_trip_id}`)}>
-              Track the delivery
+              {t("Track the delivery")}
             </Button>
           )}
-          {row.status === "AT_HUB" && <p className="mt-1 text-xs text-muted">It's at our hub in your city. Collect it within 30 days with your ID, or ask support to deliver it.</p>}
+          {row.status === "AT_HUB" && <p className="mt-1 text-xs text-muted">{t("It's at our hub in your city. Collect it within 30 days with your ID, or ask support to deliver it.")}</p>}
         </div>
       ) : (
         <button onClick={() => setOpen(true)} className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-surface-2 px-4 py-3 text-left text-sm font-semibold">
@@ -123,15 +123,15 @@ export function LostItemCard({ trip }: { trip: Trip }) {
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Report a lost item"
+        title={t("Report a lost item")}
         footer={
           <Button className="w-full" loading={send.isPending} disabled={description.trim().length < 3} onClick={() => send.mutate()}>
-            Tell my driver
+            {t("Tell my driver")}
           </Button>
         }
       >
-        <p className="mb-2 text-sm text-muted">Describe it so your driver can find it. You can call each other through the app for 24 hours.</p>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="mb-2 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm" aria-label="What did you lose?">
+        <p className="mb-2 text-sm text-muted">{t("Describe it so your driver can find it. You can call each other through the app for 24 hours.")}</p>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="mb-2 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm" aria-label={t("What did you lose?")}>
           {CATEGORIES.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -166,17 +166,17 @@ export function DriverLostItems() {
           {item.status === "REPORTED" ? (
             <div className="mt-2 grid grid-cols-2 gap-2">
               <Button size="sm" loading={answer.isPending} onClick={() => answer.mutate({ item, path: "answer", body: { found: true } })}>
-                Found it
+                {t("Found it")}
               </Button>
               <Button size="sm" variant="secondary" loading={answer.isPending} onClick={() => answer.mutate({ item, path: "answer", body: { found: false } })}>
-                Not in my car
+                {t("Not in my car")}
               </Button>
             </div>
           ) : (
             <div className="mt-2 flex items-center gap-2">
               <CallButton tripId={item.trip_id} name={item.rider_name} compact />
               <Button size="sm" variant="secondary" className="flex-1" loading={answer.isPending} onClick={() => answer.mutate({ item, path: "returned" })}>
-                Handed it back
+                {t("Handed it back")}
               </Button>
             </div>
           )}

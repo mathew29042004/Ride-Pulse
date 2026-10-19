@@ -9,7 +9,7 @@ from apps.notifications.services import notify
 
 from .models import Announcement, AnnouncementRead, Audience
 
-LANGUAGES = ("en", "ta", "hi")
+LANGUAGES = ("en", "ta", "hi", "ml", "kn", "te")
 
 
 RIDER_RECENT_DAYS = 90

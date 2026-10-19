@@ -42,7 +42,7 @@ export function RideCheckPrompt({ trip, role }: { trip: Trip; role: "rider" | "d
         </span>
         <div className="min-w-0 flex-1">
           <h2 id="ride-check-title" className="font-bold">
-            {t(role === "rider" ? "Is everything OK?" : "Are you OK?")}
+            {(role === "rider" ? t("Is everything OK?") : t("Are you OK?"))}
           </h2>
           <p className="text-sm text-muted">{t(check.kind_label)}.</p>
           {role === "rider" && <p className="mt-1 text-xs text-muted">{t("If we don't hear back in a few minutes, our safety team will check on you.")}</p>}
@@ -87,7 +87,7 @@ export function NightSafeBar({ trip, role }: { trip: Trip; role: "rider" | "driv
             </>
           ) : (
             <>
-              <b>{t("Night Safe is on")}</b> · {t(trip.contacts_notified_at ? "Your contacts are following this ride." : "Extra safety checks are on.")}
+              <b>{t("Night Safe is on")}</b> · {(trip.contacts_notified_at ? t("Your contacts are following this ride.") : t("Extra safety checks are on."))}
             </>
           )}
         </span>
@@ -139,9 +139,9 @@ export function HomeSafeButton({ trip }: { trip: Trip }) {
 }
 
 const SHARE_MODES: { value: TrustedContact["share_mode"]; label: string }[] = [
-  { value: "NIGHT", label: "Night rides" },
-  { value: "ALWAYS", label: "Every ride" },
-  { value: "NEVER", label: "Only when I share" },
+  { value: "NIGHT", label: t("Night rides") },
+  { value: "ALWAYS", label: t("Every ride") },
+  { value: "NEVER", label: t("Only when I share") },
 ];
 
 /** Account: Night Safe mode and up to three trusted contacts. */
@@ -256,10 +256,10 @@ export function OpsRideChecks() {
   const rows = checks.data?.results ?? [];
   return (
     <Card className="mt-4">
-      <CardHeader title="Ride Checks" subtitle="Automatic “Is everything OK?” questions: long stops, off-route, running late, lost signal. Unanswered ones become SOS incidents." />
+      <CardHeader title={t("Ride Checks")} subtitle="Automatic “Is everything OK?” questions: long stops, off-route, running late, lost signal. Unanswered ones become SOS incidents." />
       {rows.length === 0 ? (
-        <EmptyState icon={<HeartHandshake />} title="No Ride Checks yet">
-          They appear when a trip in progress looks unusual.
+        <EmptyState icon={<HeartHandshake />} title={t("No Ride Checks yet")}>
+          {t("They appear when a trip in progress looks unusual.")}
         </EmptyState>
       ) : (
         <div className="divide-y divide-line">

@@ -138,7 +138,7 @@ export function ProfilesSection() {
             <div className="flex items-center gap-2">
               {p.kind === "BUSINESS" ? <Briefcase className="size-4" /> : <Home className="size-4" />}
               <span className="flex-1 font-semibold">{p.name}</span>
-              <span className="text-xs text-muted">{t(p.role === "OWNER" ? "You pay" : p.role === "INVITED" ? "Invitation" : "Paid by {owner}", { owner: p.owner_name })}</span>
+              <span className="text-xs text-muted">{t(p.role === "OWNER" ? t("You pay") : p.role === "INVITED" ? t("Invitation") : "Paid by {owner}", { owner: p.owner_name })}</span>
             </div>
             {p.role === "INVITED" && (
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -204,7 +204,7 @@ export function ProfilesSection() {
           ]}
         />
         <Field label={t("Name")} className="mt-3">
-          <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={form.kind === "BUSINESS" ? "Acme Pvt Ltd" : "Raman family"} />
+          <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={form.kind === "BUSINESS" ? t("Acme Pvt Ltd") : t("Raman family")} />
         </Field>
         {form.kind === "BUSINESS" && (
           <Field label="GSTIN" className="mt-3">

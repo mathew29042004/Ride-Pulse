@@ -7,6 +7,7 @@ import { useNavigate } from "react-router";
 import { api } from "@/lib/api";
 import { ago } from "@/lib/format";
 import type { Notification, Paginated } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 const DOT: Record<Notification["level"], string> = {
   INFO: "bg-sky-500",
@@ -74,13 +75,13 @@ export function NotificationBell({ className, align = "right" }: { className?: s
           )}
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <span className="text-sm font-semibold">Notifications</span>
+            <span className="text-sm font-semibold">{t("Notifications")}</span>
             <button onClick={() => markAll.mutate()} className="flex items-center gap-1 text-xs font-medium text-muted hover:text-fg">
-              <CheckCheck className="size-3.5" /> Mark all read
+              <CheckCheck className="size-3.5" /> {t("Mark all read")}
             </button>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {(list.data?.results ?? []).length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">You're all caught up.</p>}
+            {(list.data?.results ?? []).length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">{t("You're all caught up.")}</p>}
             {list.data?.results.map((n) => (
               <button key={n.id} onClick={() => openNotification(n)} className={clsx("flex w-full gap-3 border-b border-line px-4 py-3 text-left transition last:border-0 hover:bg-surface-2", !n.is_read && "bg-brand-soft/40")}>
                 <span className={clsx("mt-1.5 size-2 shrink-0 rounded-full", DOT[n.level])} />

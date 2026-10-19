@@ -9,6 +9,7 @@ import { api, ApiError } from "@/lib/api";
 import { inr } from "@/lib/format";
 import { useNow } from "@/lib/hooks";
 import type { Driver } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 export interface GoalProgress {
   date: string;
@@ -29,7 +30,7 @@ export function GoalChip() {
   return (
     <div className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold text-brand-strong">
       <Target className="size-3" />
-      {next ? `${goals.completed_today}/${next.trips} trips · ₹${Number(next.bonus)} bonus` : `All goals done · ${inr(goals.earned_today)} earned`}
+      {next ? t("{done}/{trips} trips · ₹{bonus} bonus", { done: goals.completed_today, trips: next.trips, bonus: Number(next.bonus) }) : t("All goals done · {amount} earned", { amount: inr(goals.earned_today) })}
     </div>
   );
 }
@@ -42,7 +43,7 @@ export function GoalsCard() {
     <div className="mt-4 rounded-2xl border border-line p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 font-semibold">
-          <Target className="size-4 text-brand" /> Today's goals
+          <Target className="size-4 text-brand" /> {t("Today's goals")}
         </div>
         <div className="text-sm text-muted">{goals.completed_today} trips done</div>
       </div>
@@ -52,7 +53,7 @@ export function GoalsCard() {
           return (
             <div key={tier.trips}>
               <div className="flex justify-between text-sm">
-                <span>{tier.trips} trips</span>
+                <span>{t("{n} trips", { n: tier.trips })}</span>
                 <span className={clsx("font-semibold", tier.reached && "text-brand-strong")}>
                   {tier.reached ? "✓ " : ""}+₹{Number(tier.bonus)}
                 </span>
@@ -64,7 +65,7 @@ export function GoalsCard() {
           );
         })}
       </div>
-      <p className="mt-3 text-xs text-muted">Bonuses are paid straight into your wallet when you reach each goal. They reset at midnight.</p>
+      <p className="mt-3 text-xs text-muted">{t("Bonuses are paid straight into your wallet when you reach each goal. They reset at midnight.")}</p>
     </div>
   );
 }
@@ -77,9 +78,9 @@ export function GoingHomeButton({ driver }: { driver: Driver }) {
     mutationFn: (on: boolean) => api.post<Driver>("driver/going-home/", { on }),
     onSuccess: (updated) => {
       qc.setQueryData(["driver", "me"], updated);
-      toast.success(updated.going_home_until ? `Going home: only trips towards ${updated.home_address || "home"}` : "Going-home mode is off");
+      toast.success(updated.going_home_until ? t("Going home: only trips towards {place}", { place: updated.home_address || t("home") }) : t("Going-home mode is off"));
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't change going-home mode."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't change going-home mode.")),
   });
   if (driver.home_lat === null) return null;
   const until = driver.going_home_until ? new Date(driver.going_home_until).getTime() : 0;
@@ -91,9 +92,9 @@ export function GoingHomeButton({ driver }: { driver: Driver }) {
       disabled={toggle.isPending || (!active && driver.going_home_uses_left === 0)}
       className={clsx("flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-lg disabled:opacity-50", active ? "bg-violet-600 text-white" : "bg-surface")}
       aria-pressed={active}
-      title={active ? "Only trips towards home" : `${driver.going_home_uses_left} uses left today`}
+      title={active ? t("Only trips towards home") : t("{n} uses left today", { n: driver.going_home_uses_left })}
     >
-      <Home className="size-4" /> {active ? `Going home · ${minutesLeft} min` : "Going home"}
+      <Home className="size-4" /> {active ? t("Going home · {m} min", { m: minutesLeft }) : t("Going home")}
     </button>
   );
 }

@@ -28,7 +28,7 @@ export function DayPassCard() {
       qc.setQueryData(["driver", "day-pass"], data);
       toast.success(t("Day pass active: 0% commission today"));
     },
-    onError: (err) => toast.error(err instanceof ApiError ? err.message : "Couldn't buy the day pass."),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't buy the day pass.")),
   });
   if (!pass) return null;
   return (

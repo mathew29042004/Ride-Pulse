@@ -3507,11 +3507,14 @@
     "type": "string"
    },
    "LanguageEnum": {
-    "description": "* `en` - English\n* `ta` - Tamil\n* `hi` - Hindi",
+    "description": "* `en` - English\n* `ta` - Tamil\n* `hi` - Hindi\n* `ml` - Malayalam\n* `kn` - Kannada\n* `te` - Telugu",
     "enum": [
      "en",
      "ta",
-     "hi"
+     "hi",
+     "ml",
+     "kn",
+     "te"
     ],
     "type": "string"
    },

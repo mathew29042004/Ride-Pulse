@@ -1,4 +1,4 @@
-/** Ops → Announcements: write once (English, plus Tamil and Hindi if you like), choose who and
+/** Ops → Announcements: write once (English, plus Tamil, Hindi, Malayalam, Kannada and Telugu if you like), choose who and
  * where, and see how many have read it. */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,14 +31,19 @@ const LANGS = [
   ["en", "English"],
   ["ta", "தமிழ்"],
   ["hi", "हिन्दी"],
+  ["ml", "മലയാളം"],
+  ["kn", "ಕನ್ನಡ"],
+  ["te", "తెలుగు"],
 ] as const;
+
+const emptyText = () => Object.fromEntries(LANGS.map(([code]) => [code, { title: "", body: "" }]));
 
 export default function OpsAnnouncements() {
   const qc = useQueryClient();
   const rows = useQuery({ queryKey: ["announcements"], queryFn: () => api.get<Row[]>("announcements/") });
   const cities = useQuery({ queryKey: ["cities"], queryFn: () => api.get<City[]>("cities/") });
-  const [lang, setLang] = useState<"en" | "ta" | "hi">("en");
-  const [text, setText] = useState<Record<string, { title: string; body: string }>>({ en: { title: "", body: "" }, ta: { title: "", body: "" }, hi: { title: "", body: "" } });
+  const [lang, setLang] = useState<"en" | "ta" | "hi" | "ml" | "kn" | "te">("en");
+  const [text, setText] = useState<Record<string, { title: string; body: string }>>(emptyText());
   const [audience, setAudience] = useState("DRIVERS");
   const [where, setWhere] = useState("");
   const [important, setImportant] = useState(false);
@@ -53,7 +58,7 @@ export default function OpsAnnouncements() {
       }),
     onSuccess: (r) => {
       toast.success(`Sent to ${r.recipients.toLocaleString("en-IN")} people`);
-      setText({ en: { title: "", body: "" }, ta: { title: "", body: "" }, hi: { title: "", body: "" } });
+      setText(emptyText());
       qc.invalidateQueries({ queryKey: ["announcements"] });
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : "Couldn't send."),
