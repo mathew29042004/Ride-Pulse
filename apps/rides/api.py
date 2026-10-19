@@ -1823,3 +1823,81 @@ class LostFoundOpsViewSet(BaseViewSet):
         else:
             item = lost_items.dispose(item)
         return Response(LostItemSerializer(item).data)
+
+
+class CounterBookSerializer(serializers.Serializer):
+    ride_type = serializers.CharField(max_length=10)
+    dropoff = PointSerializer()
+    passenger_name = serializers.CharField(max_length=80)
+    passenger_phone = serializers.CharField(
+        max_length=15, required=False, allow_blank=True, default=""
+    )
+
+
+class CounterViewSet(BaseViewSet):
+    """Station booking counters: book for walk-up passengers who pay cash; slips; day summary."""
+
+    capabilities = {"*": Cap.COUNTER_OPERATE}
+    queryset = ScheduledRide.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="counters_list")
+    def list(self, request):
+        from .counters import Counter
+
+        rows = (
+            Counter.objects.filter(is_active=True)
+            .select_related("landmark__city")
+            .order_by("landmark__city__name")
+        )
+        return Response(
+            [{"id": c.pk, "name": c.landmark.name, "city": c.landmark.city.name} for c in rows]
+        )
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def retrieve(self, request, pk=None):
+        from . import counters
+
+        counter = get_object_or_404(
+            counters.Counter.objects.select_related("landmark__city"), pk=pk
+        )
+        today = counters.CounterBooking.objects.filter(
+            counter=counter, created_at__date=timezone.localdate()
+        )
+        return Response(
+            {
+                "id": counter.pk,
+                "name": counter.landmark.name,
+                "city": counter.landmark.city.name,
+                "summary": counters.day_summary(counter),
+                "bookings": [
+                    counters.slip(b)
+                    for b in today.select_related(
+                        "trip__driver__user", "trip__vehicle", "trip__ride_type", "booked_by"
+                    )[:100]
+                ],
+            }
+        )
+
+    @extend_schema(request=CounterBookSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def book(self, request, pk=None):
+        from apps.pricing.models import RideType
+
+        from . import counters
+
+        data = CounterBookSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        counter = get_object_or_404(
+            counters.Counter.objects.select_related("landmark__city", "account"), pk=pk
+        )
+        b = counters.book(
+            counter,
+            staff=request.user,
+            ride_type=get_object_or_404(RideType, code=v["ride_type"]),
+            dropoff=(v["dropoff"]["lat"], v["dropoff"]["lng"]),
+            dropoff_address=v["dropoff"].get("address", ""),
+            passenger_name=v["passenger_name"],
+            passenger_phone=v["passenger_phone"],
+        )
+        return Response(counters.slip(b), status=status.HTTP_201_CREATED)

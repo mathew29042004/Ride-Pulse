@@ -1242,6 +1242,34 @@
     ],
     "type": "object"
    },
+   "CounterBookRequest": {
+    "properties": {
+     "dropoff": {
+      "$ref": "#/components/schemas/PointRequest"
+     },
+     "passenger_name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     },
+     "passenger_phone": {
+      "default": "",
+      "maxLength": 15,
+      "type": "string"
+     },
+     "ride_type": {
+      "maxLength": 10,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "dropoff",
+     "passenger_name",
+     "ride_type"
+    ],
+    "type": "object"
+   },
    "CounterOffer": {
     "properties": {
      "counter_amount": {
@@ -13131,6 +13159,138 @@
     ],
     "tags": [
      "cities"
+    ]
+   }
+  },
+  "/api/v1/counters/": {
+   "get": {
+    "description": "Station booking counters: book for walk-up passengers who pay cash; slips; day summary.",
+    "operationId": "counters_list",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "counters"
+    ]
+   }
+  },
+  "/api/v1/counters/{id}/": {
+   "get": {
+    "description": "Station booking counters: book for walk-up passengers who pay cash; slips; day summary.",
+    "operationId": "counters_retrieve",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this scheduled ride.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "counters"
+    ]
+   }
+  },
+  "/api/v1/counters/{id}/book/": {
+   "post": {
+    "description": "Station booking counters: book for walk-up passengers who pay cash; slips; day summary.",
+    "operationId": "counters_book_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this scheduled ride.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CounterBookRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CounterBookRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CounterBookRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "counters"
     ]
    }
   },

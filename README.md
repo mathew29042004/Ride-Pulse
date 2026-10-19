@@ -773,6 +773,14 @@ ledger still balances, times the restore, then drops the scratch database. A fai
 alerts the admins. Ops → Backups shows every run and can run either now. In production the file
 would also be copied to storage in another region.
 
+### Station booking counters (`rides.counters`)
+
+A counter at every railway station and bus stand lets staff (`counter.operate`, support agents)
+book rides for walk-up passengers without a smartphone. The upfront fare is taken in cash; the
+cash goes into the counter's account on the ledger and the trip is paid from it, so drivers are
+paid as usual. The passenger gets a printed slip with the Ride PIN (and an SMS if they gave a
+number). Ops → Booking counter shows today's bookings and the cash per staff member for the drawer.
+
 ### Flight-aware airport pickups (`rides.flights`)
 
 Scheduling a pickup at an airport, the rider can add a flight number and set the time to when the

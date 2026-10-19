@@ -53,6 +53,9 @@ class Command(BaseCommand):
         from apps.drivers import loans
 
         stats.update(loans.seed_demo(log=self.stdout.write))
+        from apps.rides import counters
+
+        stats.update(counters.seed_demo(log=self.stdout.write))
         from apps.riders import commute
 
         stats.update(commute.seed_demo(log=self.stdout.write))

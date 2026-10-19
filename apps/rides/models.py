@@ -763,3 +763,6 @@ class EmergencyShare(models.Model):
     @property
     def is_active(self) -> bool:
         return self.ended_at is None
+
+
+from .counters import Counter, CounterBooking  # noqa: E402,F401  (registers the models)

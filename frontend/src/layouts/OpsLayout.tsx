@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Store, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -89,6 +89,7 @@ const NAV = [
       { to: "/ops/incidents", label: "Incidents", icon: Siren, cap: "trips.view" },
       { to: "/ops/loans", label: "Vehicle loans", icon: Landmark, cap: "payouts.manage" },
       { to: "/ops/weather", label: "Monsoon mode", icon: CloudRain, cap: "pricing.view" },
+      { to: "/ops/counter", label: "Booking counter", icon: Store, cap: "counter.operate" },
       { to: "/ops/backups", label: "Backups", icon: DatabaseBackup, cap: "audit.view" },
       { to: "/ops/work", label: "Work", icon: ClipboardList, cap: "work.use" },
       { to: "/ops/chat", label: "Team chat", icon: MessagesSquare, cap: "work.use" },

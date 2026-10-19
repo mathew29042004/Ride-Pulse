@@ -37,6 +37,7 @@ class Cap:
     TOURS_MANAGE = "tours.manage"  # tour packages, their prices and tour bookings
     ANNOUNCE = "announce"  # announcements to drivers, riders or staff
     PAYROLL_MANAGE = "payroll.manage"  # salaries, the monthly payroll run and payslips (HR)
+    COUNTER_OPERATE = "counter.operate"  # book rides for walk-up passengers at a station counter
 
     @classmethod
     def all(cls) -> frozenset[str]:
@@ -63,6 +64,7 @@ _OPS_MANAGER = {
 }
 
 _SUPPORT_AGENT = {
+    Cap.COUNTER_OPERATE,
     Cap.RIDERS_VIEW,
     Cap.DRIVERS_VIEW,
     Cap.TRIPS_VIEW,

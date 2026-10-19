@@ -57,6 +57,7 @@ class TransactionKind(models.TextChoices):
     FLEET_SHARE = "FLEET_SHARE", "Fleet owner share"
     INSURANCE = "INSURANCE", "Insurance claim payout"
     LOAN_EMI = "LOAN_EMI", "Vehicle loan EMI"
+    COUNTER_CASH = "COUNTER_CASH", "Cash at a booking counter"
 
 
 class LedgerTransaction(models.Model):
