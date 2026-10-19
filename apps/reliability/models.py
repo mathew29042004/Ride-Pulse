@@ -283,3 +283,35 @@ class BackupRun(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_kind_display()} {self.started_at:%Y-%m-%d %H:%M}"
+
+
+class OrderKind(models.TextChoices):
+    PAUSE_BOOKINGS = "PAUSE_BOOKINGS", "Pause all bookings"
+    PAUSE_VEHICLE = "PAUSE_VEHICLE", "Pause one vehicle type"
+    SURGE_OFF = "SURGE_OFF", "Turn surge off"
+
+
+class CommandOrder(models.Model):
+    """A standing order from the commander: pause bookings, pause a vehicle type or switch surge
+    off, in one city or everywhere (``city`` empty), until it's lifted or ``ends_at``."""
+
+    kind = models.CharField(max_length=16, choices=OrderKind.choices)
+    city = models.ForeignKey(
+        "geo.City", null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
+    vehicle_code = models.CharField(max_length=10, blank=True)
+    reason = models.CharField(max_length=240)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    lifted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-starts_at"]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} in {self.city or 'all cities'}"

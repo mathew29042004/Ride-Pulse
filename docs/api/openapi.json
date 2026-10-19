@@ -594,6 +594,33 @@
     ],
     "type": "object"
    },
+   "BroadcastRequest": {
+    "properties": {
+     "audiences": {
+      "items": {
+       "minLength": 1,
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "body": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "title": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "audiences",
+     "body",
+     "title"
+    ],
+    "type": "object"
+   },
    "BudgetRequest": {
     "properties": {
      "city": {
@@ -3652,6 +3679,46 @@
     },
     "required": [
      "phone"
+    ],
+    "type": "object"
+   },
+   "IssueOrderKindEnum": {
+    "description": "* `PAUSE_BOOKINGS` - Pause all bookings\n* `PAUSE_VEHICLE` - Pause one vehicle type\n* `SURGE_OFF` - Turn surge off",
+    "enum": [
+     "PAUSE_BOOKINGS",
+     "PAUSE_VEHICLE",
+     "SURGE_OFF"
+    ],
+    "type": "string"
+   },
+   "IssueOrderRequest": {
+    "properties": {
+     "city": {
+      "nullable": true,
+      "type": "integer"
+     },
+     "hours": {
+      "default": 2,
+      "maximum": 72,
+      "minimum": 1,
+      "type": "integer"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/IssueOrderKindEnum"
+     },
+     "reason": {
+      "maxLength": 240,
+      "minLength": 1,
+      "type": "string"
+     },
+     "vehicle_code": {
+      "default": "",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "reason"
     ],
     "type": "object"
    },
@@ -8144,8 +8211,9 @@
     "type": "object"
    },
    "RoleEnum": {
-    "description": "* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+    "description": "* `COMMANDER` - Commander\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
     "enum": [
+     "COMMANDER",
      "ADMIN",
      "REGIONAL_MANAGER",
      "OPS_MANAGER",
@@ -18625,6 +18693,175 @@
     ]
    }
   },
+  "/api/v1/ops/command/": {
+   "get": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "command_overview",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   },
+   "post": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueOrderRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueOrderRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/IssueOrderRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/command/broadcast/": {
+   "post": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_broadcast_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BroadcastRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/BroadcastRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/BroadcastRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/command/{id}/lift/": {
+   "post": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_lift_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this command order.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/compliance/": {
    "get": {
     "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
@@ -26418,7 +26655,7 @@
       }
      },
      {
-      "description": "* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+      "description": "* `COMMANDER` - Commander\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
       "in": "query",
       "name": "role",
       "schema": {
@@ -26429,6 +26666,7 @@
         "ASSOC_PARCELS",
         "ASSOC_RIDES",
         "ASSOC_SUPPORT",
+        "COMMANDER",
         "DRIVER",
         "FLEET_EXECUTIVE",
         "FLEET_OWNER",
@@ -27362,7 +27600,7 @@
       }
      },
      {
-      "description": "* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+      "description": "* `COMMANDER` - Commander\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
       "in": "query",
       "name": "user__role",
       "schema": {
@@ -27373,6 +27611,7 @@
         "ASSOC_PARCELS",
         "ASSOC_RIDES",
         "ASSOC_SUPPORT",
+        "COMMANDER",
         "DRIVER",
         "FLEET_EXECUTIVE",
         "FLEET_OWNER",

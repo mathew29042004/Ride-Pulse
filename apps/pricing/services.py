@@ -50,11 +50,13 @@ def current_surge(zone: Zone | None, *, now: datetime | None = None) -> Decimal:
     if zone is None:
         return Decimal(1)
     from apps.compliance.rules import surge_cap
-    from apps.reliability import weather
+    from apps.reliability import command, weather
 
     cap = surge_cap(zone.city.state)
-    monsoon = weather.surge_cap(zone.city, now=now)
-    return min(_current_surge(zone, now=now), cap, monsoon if monsoon is not None else cap)
+    for limit in (weather.surge_cap(zone.city, now=now), command.surge_cap(zone.city, now=now)):
+        if limit is not None:
+            cap = min(cap, limit)
+    return min(_current_surge(zone, now=now), cap)
 
 
 def _current_surge(zone: Zone, *, now: datetime | None = None) -> Decimal:

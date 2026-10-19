@@ -847,6 +847,19 @@ e-invoices apply. Employees skip any day (leave, work from home) and booked ride
 night rides get Night Safe like any other. The portal shows each plan's employees and this
 month's rides and cost. A plan can pool: colleagues whose homes are within 1.5 km are paired into one Share cab (picked up a minute apart so the second joins the first's driver).
 
+### Commander and the command centre (`reliability.command`)
+
+The **Commander** (`commander@ridepulse.dev`) sits at the top of the organisation: the
+administrator reports to them, and they hold every capability plus `command`, which no other role
+(not even a superuser) has. Ops → Command centre shows every city at a glance (drivers live, trips
+today, completion, riders waiting, monsoon or order flags) and lets the commander issue standing
+orders, in one city or every city: pause all bookings, pause one vehicle type, or switch surge off.
+Orders end by themselves or when lifted; booking refuses with the order's reason, quotes show the
+ride type as unavailable, and surge is held at 1x. Every order, lift and broadcast is audited and
+posted to #leadership and #operations, drivers in the affected cities get a notice, and a
+broadcast reaches staff, drivers and riders at once. The commander and administrators are members
+of every team channel.
+
 ### EV subsidy finder (`drivers.ev_subsidy`)
 
 Drivers thinking of switching to electric (Driver → Vehicle loan → subsidies) choose an electric

@@ -110,5 +110,6 @@ export function homeFor(role: Role): string {
   if (role === "RIDER") return "/ride";
   if (role === "DRIVER") return "/drive";
   if (role === "FLEET_OWNER") return "/fleet";
+  if (role === "COMMANDER") return "/ops/command";
   return "/ops";
 }

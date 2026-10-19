@@ -43,6 +43,9 @@ class Command(BaseCommand):
         from apps.simulation.network import NetworkBuilder
 
         stats.update(NetworkBuilder(seed=options["seed"], log=self.stdout.write).run())
+        from apps.reliability import command
+
+        stats.update(command.seed_commander(log=self.stdout.write))
         from apps.workspace import demo as workspace_demo
 
         stats.update(workspace_demo.seed(seed=options["seed"], log=self.stdout.write))

@@ -80,6 +80,16 @@ def sync_channels(*, now: datetime | None = None) -> dict:
         channel = _channel(slugify(state), slugify(state), f"Everyone working in {state}", now)
         wanted[channel.pk] = {uid for uid, _, s in profiles if s == state}
     added = 0
+    # The commander and administrators sit in every channel.
+    from apps.accounts.models import Role
+
+    top = {uid for uid, *_ in profiles} & set(
+        StaffProfile.objects.filter(
+            user__role__in=[Role.COMMANDER, Role.ADMIN], user__is_active=True
+        ).values_list("user_id", flat=True)
+    )
+    for users in wanted.values():
+        users |= top
     for conversation_id, users in wanted.items():
         have = set(
             Member.objects.filter(conversation_id=conversation_id).values_list("user_id", flat=True)

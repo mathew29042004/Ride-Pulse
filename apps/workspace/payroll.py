@@ -443,6 +443,7 @@ def render_pdf(slip: Payslip) -> bytes:
 
 # Monthly gross by role (₹), a realistic band for each; the demo picks within it.
 SALARY_BANDS = {
+    "COMMANDER": (300_000, 350_000),
     "ADMIN": (180_000, 220_000),
     "REGIONAL_MANAGER": (140_000, 170_000),
     "OPS_MANAGER": (75_000, 95_000),

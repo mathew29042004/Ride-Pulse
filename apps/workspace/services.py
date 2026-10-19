@@ -50,7 +50,7 @@ def _children() -> dict[int | None, list[tuple[int, int]]]:
 
 def team_of(user, *, direct_only: bool = False) -> set[int]:
     """User ids of everyone below ``user`` in the org chart (admins: every employee)."""
-    if user.role == Role.ADMIN and not direct_only:
+    if user.role in (Role.COMMANDER, Role.ADMIN) and not direct_only:
         return set(StaffProfile.objects.exclude(user=user).values_list("user_id", flat=True))
     profile = StaffProfile.objects.filter(user=user).values_list("pk", flat=True).first()
     if profile is None:
@@ -66,7 +66,7 @@ def team_of(user, *, direct_only: bool = False) -> set[int]:
 
 def direct_reports(user) -> set[int]:
     direct = team_of(user, direct_only=True)
-    if user.role == Role.ADMIN:
+    if user.role in (Role.COMMANDER, Role.ADMIN):
         # Anyone at the top of the chart without a manager also reports to the admin.
         roots = StaffProfile.objects.filter(reports_to__isnull=True).exclude(user=user)
         direct |= set(roots.values_list("user_id", flat=True))

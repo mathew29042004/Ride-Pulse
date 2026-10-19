@@ -5,6 +5,7 @@ from .roles import capabilities_for
 
 
 class Role(models.TextChoices):
+    COMMANDER = "COMMANDER", "Commander"
     ADMIN = "ADMIN", "Administrator"
     REGIONAL_MANAGER = "REGIONAL_MANAGER", "Regional manager"
     OPS_MANAGER = "OPS_MANAGER", "City operations manager"
@@ -106,6 +107,8 @@ class User(AbstractUser):
         return capabilities_for(self.role) if self.is_active else frozenset()
 
     def has_capability(self, capability: str) -> bool:
+        if capability == "command":  # the commander's own, not even a superuser's
+            return self.is_active and self.role == Role.COMMANDER
         return self.is_active and (self.is_superuser or capability in self.capabilities)
 
     @property

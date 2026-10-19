@@ -1,4 +1,5 @@
 export type Role =
+  | "COMMANDER"
   | "ADMIN"
   | "REGIONAL_MANAGER"
   | "OPS_MANAGER"

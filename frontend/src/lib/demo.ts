@@ -9,4 +9,5 @@ export const DEMO_ACCOUNTS = [
   { label: "Business", email: "business@ridepulse.dev", description: "Acme Technologies' travel admin: spend dashboard, travel policy, GST invoice, webhooks." },
   { label: "Fleet owner", email: "owner@ridepulse.dev", description: "Your drivers and cars: trips, your share of earnings, vehicle upkeep, payouts." },
   { label: "Admin", email: "admin@ridepulse.dev", description: "Everything, including the audit trail and staff accounts." },
+  { label: "Commander", email: "commander@ridepulse.dev", description: "Top of the organisation: the command centre, orders across every city, broadcasts, every team channel." },
 ] as const;

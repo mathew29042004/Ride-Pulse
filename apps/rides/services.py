@@ -366,7 +366,11 @@ def estimate_options(
         accessible_type = ride_type.served_by.code not in TWO_WHEELERS_AND_AUTOS
         if needs_wheelchair:
             nearest = [d for d in nearest if accessible_type and _wheelchair_ok(d)][:1]
-        flood_paused = weather.paused_vehicle(city, ride_type.served_by.code, now=at)
+        from apps.reliability import command
+
+        flood_paused = weather.paused_vehicle(city, ride_type.served_by.code, now=at) or bool(
+            command.refusal(city, ride_type.served_by.code, now=at)
+        )
         open_now = (
             ride_type.is_open(at) and (accessible_type or not needs_wheelchair) and not flood_paused
         )
@@ -537,8 +541,10 @@ def request_trip(
         )
     city = require_city(*pickup)
     _validate_points(city, pickup, dropoff, stop, extra_stops)
-    from apps.reliability import weather
+    from apps.reliability import command, weather
 
+    if refused := command.refusal(city, ride_type.served_by.code, now=now):
+        raise BusinessRuleViolation(refused, field="ride_type")
     if weather.paused_vehicle(city, ride_type.served_by.code, now=now):
         raise BusinessRuleViolation(
             f"{ride_type.name} rides are paused while parts of {city.name} are flooded. "

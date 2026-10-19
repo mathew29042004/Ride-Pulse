@@ -21,8 +21,10 @@ from apps.core.api import BaseViewSet
 
 from . import jobs, outbox, security
 from .models import (
+    CommandOrder,
     DeliveryStatus,
     Incident,
+    OrderKind,
     WeatherAlert,
     WeatherLevel,
     WebhookDelivery,
@@ -385,3 +387,68 @@ class BackupViewSet(BaseViewSet):
         with contextlib.suppress(RuntimeError):
             backups.restore_drill(user=request.user)
         return Response(backups.overview())
+
+
+class IssueOrderSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=OrderKind.choices)
+    city = serializers.IntegerField(required=False, allow_null=True, default=None)
+    vehicle_code = serializers.CharField(required=False, allow_blank=True, default="")
+    reason = serializers.CharField(max_length=240)
+    hours = serializers.IntegerField(min_value=1, max_value=72, default=2)
+
+
+class BroadcastSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=120)
+    body = serializers.CharField(max_length=2000)
+    audiences = serializers.ListField(child=serializers.CharField())
+
+
+class CommandViewSet(BaseViewSet):
+    """The commander's command centre (see ``reliability.command``)."""
+
+    capabilities = {"*": Cap.COMMAND}
+    queryset = CommandOrder.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="command_overview")
+    def list(self, request):
+        from . import command
+
+        return Response(command.overview())
+
+    @extend_schema(request=IssueOrderSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from apps.geo.models import City
+
+        from . import command
+
+        data = IssueOrderSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        city = get_object_or_404(City, pk=v["city"]) if v["city"] else None
+        order = command.issue(
+            user=request.user,
+            kind=v["kind"],
+            reason=v["reason"],
+            city=city,
+            vehicle_code=v["vehicle_code"],
+            hours=v["hours"],
+        )
+        return Response(command.row(order), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def lift(self, request, pk=None):
+        from . import command
+
+        order = command.lift(get_object_or_404(CommandOrder, pk=pk), user=request.user)
+        return Response(command.row(order))
+
+    @extend_schema(request=BroadcastSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def broadcast(self, request):
+        from . import command
+
+        data = BroadcastSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        sent = command.broadcast(user=request.user, **data.validated_data)
+        return Response({"sent": sent})
