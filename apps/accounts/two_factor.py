@@ -29,7 +29,18 @@ DIGITS = 6
 WINDOW = 1  # accept the previous and next 30 s as clocks drift
 CHALLENGE_SALT = "rp.two-factor"
 CHALLENGE_MAX_AGE = 300
-REQUIRED_ROLES = {"COMMANDER", "CHIEF_OF_STAFF", "ADMIN", "REGIONAL_MANAGER", "OPS_MANAGER"}
+REQUIRED_ROLES = {
+    "COMMANDER",
+    "CHIEF_OF_STAFF",
+    # Roles that move money, ban people or change who works where.
+    "FINANCE_MANAGER",
+    "HR_MANAGER",
+    "SAFETY_OFFICER",
+    "COMPLIANCE_OFFICER",
+    "ADMIN",
+    "REGIONAL_MANAGER",
+    "OPS_MANAGER",
+}
 ISSUER = "Ride Pulse"
 
 
