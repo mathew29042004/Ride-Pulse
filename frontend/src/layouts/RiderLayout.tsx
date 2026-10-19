@@ -1,10 +1,13 @@
+import { useQuery } from "@tanstack/react-query";
 import { Clock, House, User, Wallet } from "lucide-react";
+import { useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 
 import { GuardianBanner } from "@/components/Guardian";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { StatusBanner } from "@/components/StatusBanner";
 import { FrameAside, PhoneFrame } from "@/components/PhoneFrame";
+import { api } from "@/lib/api";
 
 const TABS = [
   { to: "/ride", label: "Ride", icon: House, end: true },
@@ -13,7 +16,21 @@ const TABS = [
   { to: "/ride/account", label: "Account", icon: User },
 ];
 
+/** Senior citizen mode: everything one step bigger (the app is sized in rem). */
+function useSeniorText() {
+  const me = useQuery({ queryKey: ["rider", "me"], queryFn: () => api.get<{ accessibility?: string[] }>("rider/me/"), staleTime: 300_000 });
+  const senior = !!me.data?.accessibility?.includes("SENIOR");
+  useEffect(() => {
+    if (!senior) return;
+    document.documentElement.style.fontSize = "112.5%";
+    return () => {
+      document.documentElement.style.fontSize = "";
+    };
+  }, [senior]);
+}
+
 export default function RiderLayout() {
+  useSeniorText();
   const { pathname } = useLocation();
   const immersive = pathname.startsWith("/ride/book") || pathname.startsWith("/ride/packages") || pathname.startsWith("/ride/trips/");
   const mapScreen = immersive || pathname === "/ride" || pathname === "/ride/";

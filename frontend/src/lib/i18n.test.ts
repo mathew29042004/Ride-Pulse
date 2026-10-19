@@ -45,6 +45,10 @@ for (const file of [...files(join(root, "pages/rider")), ...files(join(root, "pa
     if (!SKIP.has(key)) used.add(key);
   }
 }
+// Labels kept as data (ride preferences and accessibility needs) are shown through t() too.
+for (const match of readFileSync(join(root, "lib/preferences.ts"), "utf8").matchAll(/(?:label|hint|driverLabel): "([^"]+)"/g)) {
+  used.add(match[1]);
+}
 const placeholders = (text: string) => (text.match(/\{\w+\}/g) ?? []).sort().join();
 
 describe.each(LANGUAGES.filter((l) => l.code !== "en"))("$label", ({ code }) => {

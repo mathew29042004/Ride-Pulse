@@ -63,6 +63,7 @@ class Candidate:
 # How much a preference moves a driver up the queue, in minutes of pickup time.
 FAVOURITE_BONUS_MINUTES = 6.0
 WOMAN_DRIVER_BONUS_MINUTES = 30.0
+SENIOR_BONUS_MINUTES, SENIOR_MIN_RATING = 6.0, Decimal("4.7")
 ASSIST_BONUS_MINUTES = 10.0  # effectively "women first" among nearby drivers
 
 
@@ -104,10 +105,16 @@ def candidates_for(
     wants_woman = RidePreference.WOMAN_DRIVER in trip.preferences
     wants_electric = RidePreference.ELECTRIC in trip.preferences
     needs_wheelchair = RidePreference.WHEELCHAIR in trip.preferences
+    senior = RidePreference.SENIOR in trip.preferences
     needs_child_seat = RidePreference.CHILD_SEAT in trip.preferences
     has_pet = RidePreference.PET in trip.preferences
     needs_help = bool(
-        {RidePreference.WHEELCHAIR, RidePreference.ASSIST, RidePreference.LOW_VISION}
+        {
+            RidePreference.WHEELCHAIR,
+            RidePreference.ASSIST,
+            RidePreference.LOW_VISION,
+            RidePreference.SENIOR,
+        }
         & set(trip.preferences)
     )
     ranked = []
@@ -160,6 +167,9 @@ def candidates_for(
         # Riders who need a hand get drivers trained in boarding assistance first.
         if needs_help and driver.assist_trained:
             score -= ASSIST_BONUS_MINUTES
+        # Seniors: the calmest, best-rated drivers first.
+        if senior and driver.rating >= SENIOR_MIN_RATING:
+            score -= SENIOR_BONUS_MINUTES
         # Airport pickups go to the airport queue first, in order of arrival.
         score -= airport.queue_bonus(trip, driver.pk, queue_cache)
         ranked.append(Candidate(driver, driver.distance_km, eta, score))

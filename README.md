@@ -780,6 +780,14 @@ per trip by vehicle type (electric vehicles at the grid's share), the saving aga
 driving their own petrol cars, the electric share of km, a six-month trend, and a per-trip CSV
 for auditors. Estimates, labelled as such, using the rider eco-score factors.
 
+### Senior citizen mode
+
+A rider (or the family member who set up their phone) turns on Senior citizen mode in Account →
+Accessibility. The app gets bigger text and a simpler booking screen (no fare offers or extras);
+every ride asks for help boarding with 5 extra minutes of free waiting, assist-trained and
+top-rated (4.7+) drivers are offered it first, and all their trusted contacts get the live trip
+link on every ride, whatever each contact's usual sharing setting.
+
 ### Child seats and pets
 
 Riders can ask for a child seat (cars) or say they're travelling with a pet (cars and autos).

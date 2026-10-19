@@ -1010,5 +1010,16 @@
  "Online payments are down right now. Pay in cash or from your wallet.": "ऑनलाइन भुगतान अभी बंद है। नकद या वॉलेट से भुगतान करें।",
  "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "सुरक्षित ड्राइवर कम ब्याज देते हैं: {s} या ज़्यादा सुरक्षा स्कोर पर {rate}% सालाना।",
  "Your score: {n}": "आपका स्कोर: {n}",
- "Colleagues who live close share a cab (cheaper)": "पास रहने वाले सहकर्मी एक कैब शेयर करें (सस्ता)"
+ "Colleagues who live close share a cab (cheaper)": "पास रहने वाले सहकर्मी एक कैब शेयर करें (सस्ता)",
+ "I use a wheelchair": "मैं व्हीलचेयर इस्तेमाल करता/करती हूँ",
+ "Only wheelchair-accessible cars are sent (ramp or lift).": "सिर्फ़ व्हीलचेयर-सुलभ कारें भेजी जाती हैं (रैंप या लिफ़्ट)।",
+ "Help getting in and out": "बैठने-उतरने में मदद",
+ "Drivers trained in boarding assistance come first.": "बैठाने में प्रशिक्षित ड्राइवरों को पहले भेजा जाता है।",
+ "Deaf or hard of hearing": "बधिर या कम सुनाई देता है",
+ "Drivers are asked to message, not call.": "ड्राइवरों से कॉल नहीं, मैसेज करने को कहा जाता है।",
+ "Blind or low vision": "दृष्टिहीन या कम दिखता है",
+ "Drivers are asked to come and find you.": "ड्राइवरों से आपको ढूँढकर आने को कहा जाता है।",
+ "Senior citizen mode": "वरिष्ठ नागरिक मोड",
+ "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "बड़े अक्षर और आसान बुकिंग, बैठने में मदद, टॉप-रेटेड ड्राइवर पहले, और आपके भरोसेमंद संपर्क हर राइड देखते हैं।",
+ "Senior citizen: help boarding, drive gently": "वरिष्ठ नागरिक: बैठने में मदद करें, धीरे चलाएँ"
 }

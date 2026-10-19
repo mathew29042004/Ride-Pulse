@@ -66,6 +66,8 @@ class RidePreference(models.TextChoices):
     ASSIST = "ASSIST", "Help getting in and out"
     HEARING = "HEARING", "Deaf or hard of hearing: message, don't call"
     LOW_VISION = "LOW_VISION", "Blind or low vision: please find me"
+    # Senior citizen mode: help boarding, gentle driving, family kept updated on every trip.
+    SENIOR = "SENIOR", "Senior citizen"
 
 
 # AC and luggage only make sense in a car.
@@ -82,6 +84,7 @@ ACCESSIBILITY_NEEDS = {
     RidePreference.ASSIST,
     RidePreference.HEARING,
     RidePreference.LOW_VISION,
+    RidePreference.SENIOR,
 }
 # Riders who need more time to board get this much extra free waiting at the pickup.
 ACCESSIBLE_EXTRA_WAIT_MINUTES = 5

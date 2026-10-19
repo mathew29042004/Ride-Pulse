@@ -6882,7 +6882,7 @@
     "type": "object"
    },
    "PreferencesEnum": {
-    "description": "* `QUIET` - Quiet ride\n* `AC` - AC on\n* `LUGGAGE` - Extra luggage\n* `WOMAN_DRIVER` - Woman driver preferred\n* `ELECTRIC` - Electric vehicle preferred\n* `CHILD_SEAT` - Child seat\n* `PET` - Travelling with a pet\n* `WHEELCHAIR` - Wheelchair-accessible vehicle\n* `ASSIST` - Help getting in and out\n* `HEARING` - Deaf or hard of hearing: message, don't call\n* `LOW_VISION` - Blind or low vision: please find me",
+    "description": "* `QUIET` - Quiet ride\n* `AC` - AC on\n* `LUGGAGE` - Extra luggage\n* `WOMAN_DRIVER` - Woman driver preferred\n* `ELECTRIC` - Electric vehicle preferred\n* `CHILD_SEAT` - Child seat\n* `PET` - Travelling with a pet\n* `WHEELCHAIR` - Wheelchair-accessible vehicle\n* `ASSIST` - Help getting in and out\n* `HEARING` - Deaf or hard of hearing: message, don't call\n* `LOW_VISION` - Blind or low vision: please find me\n* `SENIOR` - Senior citizen",
     "enum": [
      "QUIET",
      "AC",
@@ -6894,7 +6894,8 @@
      "WHEELCHAIR",
      "ASSIST",
      "HEARING",
-     "LOW_VISION"
+     "LOW_VISION",
+     "SENIOR"
     ],
     "type": "string"
    },

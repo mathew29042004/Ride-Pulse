@@ -111,6 +111,12 @@ def _share_link(trip: Trip) -> str:
 def contacts_for(trip: Trip):
     from apps.riders.models import ShareMode
 
+    from .models import RidePreference
+
+    senior = RidePreference.SENIOR in (trip.preferences or [])
+    # Seniors' family follows every ride, whatever each contact's sharing setting.
+    if senior:
+        return trip.rider.contacts.all()
     modes = [ShareMode.ALWAYS, *([ShareMode.NIGHT] if trip.night_safe else [])]
     return trip.rider.contacts.filter(share_mode__in=modes)
 

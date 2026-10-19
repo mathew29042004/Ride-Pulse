@@ -1010,5 +1010,16 @@
  "Online payments are down right now. Pay in cash or from your wallet.": "ఆన్‌లైన్ చెల్లింపులు ఇప్పుడు పనిచేయడం లేదు. నగదు లేదా వాలెట్ ద్వారా చెల్లించండి.",
  "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "సురక్షిత డ్రైవర్లకు తక్కువ వడ్డీ: భద్రతా స్కోర్ {s} లేదా అంతకంటే ఎక్కువ ఉంటే సంవత్సరానికి {rate}%.",
  "Your score: {n}": "మీ స్కోర్: {n}",
- "Colleagues who live close share a cab (cheaper)": "దగ్గరగా ఉండే సహోద్యోగులు ఒకే క్యాబ్ పంచుకుంటారు (చౌక)"
+ "Colleagues who live close share a cab (cheaper)": "దగ్గరగా ఉండే సహోద్యోగులు ఒకే క్యాబ్ పంచుకుంటారు (చౌక)",
+ "I use a wheelchair": "నేను వీల్‌చైర్ వాడతాను",
+ "Only wheelchair-accessible cars are sent (ramp or lift).": "వీల్‌చైర్ ఎక్కించగల కార్లు మాత్రమే పంపబడతాయి (ర్యాంప్ లేదా లిఫ్ట్).",
+ "Help getting in and out": "ఎక్కడానికి, దిగడానికి సహాయం",
+ "Drivers trained in boarding assistance come first.": "ఎక్కడంలో సహాయానికి శిక్షణ పొందిన డ్రైవర్లకు ప్రాధాన్యత.",
+ "Deaf or hard of hearing": "చెవిటి లేదా వినికిడి లోపం",
+ "Drivers are asked to message, not call.": "కాల్ చేయకుండా మెసేజ్ చేయమని డ్రైవర్లకు చెబుతాం.",
+ "Blind or low vision": "అంధులు లేదా దృష్టి లోపం",
+ "Drivers are asked to come and find you.": "మిమ్మల్ని వెతికి రమ్మని డ్రైవర్లకు చెబుతాం.",
+ "Senior citizen mode": "సీనియర్ సిటిజన్ మోడ్",
+ "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "పెద్ద అక్షరాలు, సులభమైన బుకింగ్ తెర, ఎక్కడానికి సహాయం, టాప్-రేటెడ్ డ్రైవర్లకు ప్రాధాన్యత, మీ విశ్వసనీయ కాంటాక్ట్‌లు ప్రతి రైడ్‌ను అనుసరిస్తారు.",
+ "Senior citizen: help boarding, drive gently": "సీనియర్ సిటిజన్: ఎక్కడానికి సహాయం చేయండి, నెమ్మదిగా నడపండి"
 }

@@ -114,6 +114,8 @@ export default function RiderBook() {
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
   // Ride preferences: pre-selected from the rider's saved defaults, changeable per ride.
   const me = useQuery({ queryKey: ["rider", "me"], queryFn: () => api.get<Rider>("rider/me/") });
+  // Senior citizen mode: a simpler screen (no fare offers, boosts or extra stops).
+  const senior = !!(me.data?.accessibility as string[] | undefined)?.includes("SENIOR");
   const [prefs, setPrefs] = useState<string[] | null>(null);
   const chosenPrefs = prefs ?? me.data?.default_preferences ?? [];
   const togglePref = (value: string) => setPrefs(chosenPrefs.includes(value) ? chosenPrefs.filter((p) => p !== value) : [...chosenPrefs, value]);
@@ -559,7 +561,7 @@ export default function RiderBook() {
                 </div>
               )}
 
-              {option && option.availability !== "CLOSED" && !scheduleAt && (
+              {option && option.availability !== "CLOSED" && !scheduleAt && !senior && (
                 <PriceOptions option={option} bidding={bidding} bid={bid} sureRide={sureRide} onBidding={(on) => { setBidding(on); setBid(Math.round(Number(option.fare.total))); }} onBid={setBid} onSureRide={setSureRide} />
               )}
 

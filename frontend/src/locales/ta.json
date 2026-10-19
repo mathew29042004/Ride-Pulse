@@ -1010,5 +1010,16 @@
  "Online payments are down right now. Pay in cash or from your wallet.": "ஆன்லைன் கட்டணம் இப்போது இயங்கவில்லை. பணமாக அல்லது வாலெட்டிலிருந்து செலுத்துங்கள்.",
  "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "பாதுகாப்பான ஓட்டுநர்களுக்கு குறைந்த வட்டி: பாதுகாப்பு மதிப்பெண் {s} அல்லது அதற்கு மேல் இருந்தால் ஆண்டுக்கு {rate}%.",
  "Your score: {n}": "உங்கள் மதிப்பெண்: {n}",
- "Colleagues who live close share a cab (cheaper)": "அருகில் வசிக்கும் சக ஊழியர்கள் ஒரு காரைப் பகிர்வார்கள் (மலிவு)"
+ "Colleagues who live close share a cab (cheaper)": "அருகில் வசிக்கும் சக ஊழியர்கள் ஒரு காரைப் பகிர்வார்கள் (மலிவு)",
+ "I use a wheelchair": "நான் சக்கர நாற்காலி பயன்படுத்துகிறேன்",
+ "Only wheelchair-accessible cars are sent (ramp or lift).": "சக்கர நாற்காலி ஏற்ற வசதியுள்ள கார்கள் மட்டுமே அனுப்பப்படும் (சரிவு அல்லது தூக்கி).",
+ "Help getting in and out": "ஏற இறங்க உதவி",
+ "Drivers trained in boarding assistance come first.": "ஏற உதவுவதில் பயிற்சி பெற்ற ஓட்டுநர்களுக்கு முன்னுரிமை.",
+ "Deaf or hard of hearing": "காது கேளாதவர் அல்லது குறைவாகக் கேட்பவர்",
+ "Drivers are asked to message, not call.": "ஓட்டுநர்கள் அழைக்காமல் செய்தி அனுப்பக் கேட்கப்படுவார்கள்.",
+ "Blind or low vision": "பார்வையற்றவர் அல்லது குறைந்த பார்வை",
+ "Drivers are asked to come and find you.": "ஓட்டுநர்கள் உங்களைத் தேடி வரக் கேட்கப்படுவார்கள்.",
+ "Senior citizen mode": "மூத்த குடிமக்கள் பயன்முறை",
+ "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "பெரிய எழுத்து, எளிய பதிவுத் திரை, ஏற உதவி, உயர் மதிப்பீட்டு ஓட்டுநர்களுக்கு முன்னுரிமை, உங்கள் நம்பகமான தொடர்புகள் ஒவ்வொரு பயணத்தையும் பின்தொடர்வார்கள்.",
+ "Senior citizen: help boarding, drive gently": "மூத்த குடிமகன்: ஏற உதவுங்கள், மெதுவாக ஓட்டுங்கள்"
 }

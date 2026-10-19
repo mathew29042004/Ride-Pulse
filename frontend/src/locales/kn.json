@@ -1010,5 +1010,16 @@
  "Online payments are down right now. Pay in cash or from your wallet.": "ಆನ್‌ಲೈನ್ ಪಾವತಿ ಈಗ ಸ್ಥಗಿತಗೊಂಡಿದೆ. ನಗದು ಅಥವಾ ವಾಲೆಟ್ ಮೂಲಕ ಪಾವತಿಸಿ.",
  "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "ಸುರಕ್ಷಿತ ಚಾಲಕರಿಗೆ ಕಡಿಮೆ ಬಡ್ಡಿ: ಸುರಕ್ಷತಾ ಸ್ಕೋರ್ {s} ಅಥವಾ ಹೆಚ್ಚಿದ್ದರೆ ವರ್ಷಕ್ಕೆ {rate}%.",
  "Your score: {n}": "ನಿಮ್ಮ ಸ್ಕೋರ್: {n}",
- "Colleagues who live close share a cab (cheaper)": "ಹತ್ತಿರ ವಾಸಿಸುವ ಸಹೋದ್ಯೋಗಿಗಳು ಒಂದೇ ಕ್ಯಾಬ್ ಹಂಚಿಕೊಳ್ಳುತ್ತಾರೆ (ಅಗ್ಗ)"
+ "Colleagues who live close share a cab (cheaper)": "ಹತ್ತಿರ ವಾಸಿಸುವ ಸಹೋದ್ಯೋಗಿಗಳು ಒಂದೇ ಕ್ಯಾಬ್ ಹಂಚಿಕೊಳ್ಳುತ್ತಾರೆ (ಅಗ್ಗ)",
+ "I use a wheelchair": "ನಾನು ಗಾಲಿಕುರ್ಚಿ ಬಳಸುತ್ತೇನೆ",
+ "Only wheelchair-accessible cars are sent (ramp or lift).": "ಗಾಲಿಕುರ್ಚಿ ಹತ್ತಿಸಬಹುದಾದ ಕಾರುಗಳನ್ನು ಮಾತ್ರ ಕಳುಹಿಸಲಾಗುತ್ತದೆ (ರ‍್ಯಾಂಪ್ ಅಥವಾ ಲಿಫ್ಟ್).",
+ "Help getting in and out": "ಹತ್ತಲು ಮತ್ತು ಇಳಿಯಲು ಸಹಾಯ",
+ "Drivers trained in boarding assistance come first.": "ಹತ್ತಲು ಸಹಾಯ ಮಾಡುವಲ್ಲಿ ತರಬೇತಿ ಪಡೆದ ಚಾಲಕರಿಗೆ ಆದ್ಯತೆ.",
+ "Deaf or hard of hearing": "ಕಿವುಡು ಅಥವಾ ಕಡಿಮೆ ಶ್ರವಣ",
+ "Drivers are asked to message, not call.": "ಕರೆ ಮಾಡದೆ ಸಂದೇಶ ಕಳುಹಿಸಲು ಚಾಲಕರಿಗೆ ಹೇಳಲಾಗುತ್ತದೆ.",
+ "Blind or low vision": "ದೃಷ್ಟಿಹೀನ ಅಥವಾ ಕಡಿಮೆ ದೃಷ್ಟಿ",
+ "Drivers are asked to come and find you.": "ನಿಮ್ಮನ್ನು ಹುಡುಕಿ ಬರಲು ಚಾಲಕರಿಗೆ ಹೇಳಲಾಗುತ್ತದೆ.",
+ "Senior citizen mode": "ಹಿರಿಯ ನಾಗರಿಕರ ಮೋಡ್",
+ "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "ದೊಡ್ಡ ಅಕ್ಷರ, ಸರಳ ಬುಕಿಂಗ್ ಪರದೆ, ಹತ್ತಲು ಸಹಾಯ, ಉನ್ನತ ರೇಟಿಂಗ್ ಚಾಲಕರಿಗೆ ಆದ್ಯತೆ, ಮತ್ತು ನಿಮ್ಮ ವಿಶ್ವಾಸಾರ್ಹ ಸಂಪರ್ಕಗಳು ಪ್ರತಿ ಸವಾರಿಯನ್ನು ಹಿಂಬಾಲಿಸುತ್ತಾರೆ.",
+ "Senior citizen: help boarding, drive gently": "ಹಿರಿಯ ನಾಗರಿಕ: ಹತ್ತಲು ಸಹಾಯ ಮಾಡಿ, ನಿಧಾನವಾಗಿ ಚಲಾಯಿಸಿ"
 }

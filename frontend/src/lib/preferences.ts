@@ -1,7 +1,7 @@
-import { Accessibility, Baby, Briefcase, Ear, Eye, HandHelping, Leaf, PawPrint, Snowflake, UserRound, VolumeX } from "lucide-react";
+import { Accessibility, Baby, Briefcase, Ear, Eye, HandHelping, HeartHandshake, Leaf, PawPrint, Snowflake, UserRound, VolumeX } from "lucide-react";
 
 export type RidePreference = "QUIET" | "AC" | "LUGGAGE" | "WOMAN_DRIVER" | "ELECTRIC" | "CHILD_SEAT" | "PET";
-export type AccessibilityNeed = "WHEELCHAIR" | "ASSIST" | "HEARING" | "LOW_VISION";
+export type AccessibilityNeed = "WHEELCHAIR" | "ASSIST" | "HEARING" | "LOW_VISION" | "SENIOR";
 
 /** Ride preferences, in the order shown. AC and luggage are for cars only. */
 export const PREFERENCES: { value: RidePreference; label: string; driverLabel: string; icon: typeof VolumeX; carsOnly?: boolean; notOnBikes?: boolean }[] = [
@@ -22,4 +22,5 @@ export const ACCESSIBILITY: { value: AccessibilityNeed; label: string; hint: str
   { value: "ASSIST", label: "Help getting in and out", hint: "Drivers trained in boarding assistance come first.", driverLabel: "Needs help boarding", icon: HandHelping },
   { value: "HEARING", label: "Deaf or hard of hearing", hint: "Drivers are asked to message, not call.", driverLabel: "Deaf / hard of hearing: message, don't call", icon: Ear },
   { value: "LOW_VISION", label: "Blind or low vision", hint: "Drivers are asked to come and find you.", driverLabel: "Blind / low vision: please find the rider", icon: Eye },
+  { value: "SENIOR", label: "Senior citizen mode", hint: "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.", driverLabel: "Senior citizen: help boarding, drive gently", icon: HeartHandshake },
 ];

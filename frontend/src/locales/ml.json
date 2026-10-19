@@ -1010,5 +1010,16 @@
  "Online payments are down right now. Pay in cash or from your wallet.": "ഓൺലൈൻ പേയ്‌മെന്റ് ഇപ്പോൾ പ്രവർത്തിക്കുന്നില്ല. പണമായോ വാലറ്റിൽ നിന്നോ അടയ്ക്കുക.",
  "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "സുരക്ഷിത ഡ്രൈവർമാർക്ക് കുറഞ്ഞ പലിശ: സുരക്ഷാ സ്കോർ {s} അല്ലെങ്കിൽ കൂടുതലെങ്കിൽ വർഷം {rate}%.",
  "Your score: {n}": "നിങ്ങളുടെ സ്കോർ: {n}",
- "Colleagues who live close share a cab (cheaper)": "അടുത്ത് താമസിക്കുന്ന സഹപ്രവർത്തകർ ഒരു ക്യാബ് പങ്കിടും (വില കുറവ്)"
+ "Colleagues who live close share a cab (cheaper)": "അടുത്ത് താമസിക്കുന്ന സഹപ്രവർത്തകർ ഒരു ക്യാബ് പങ്കിടും (വില കുറവ്)",
+ "I use a wheelchair": "ഞാൻ വീൽചെയർ ഉപയോഗിക്കുന്നു",
+ "Only wheelchair-accessible cars are sent (ramp or lift).": "വീൽചെയർ കയറ്റാവുന്ന കാറുകൾ മാത്രം അയയ്ക്കും (റാമ്പ് അല്ലെങ്കിൽ ലിഫ്റ്റ്).",
+ "Help getting in and out": "കയറാനും ഇറങ്ങാനും സഹായം",
+ "Drivers trained in boarding assistance come first.": "കയറാൻ സഹായിക്കാൻ പരിശീലനം ലഭിച്ച ഡ്രൈവർമാർക്ക് മുൻഗണന.",
+ "Deaf or hard of hearing": "കേൾവിയില്ലാത്തവർ അല്ലെങ്കിൽ കേൾവിക്കുറവ്",
+ "Drivers are asked to message, not call.": "വിളിക്കാതെ സന്ദേശം അയയ്ക്കാൻ ഡ്രൈവർമാരോട് ആവശ്യപ്പെടും.",
+ "Blind or low vision": "കാഴ്ചയില്ലാത്തവർ അല്ലെങ്കിൽ കാഴ്ചക്കുറവ്",
+ "Drivers are asked to come and find you.": "നിങ്ങളെ കണ്ടെത്തി വരാൻ ഡ്രൈവർമാരോട് ആവശ്യപ്പെടും.",
+ "Senior citizen mode": "മുതിർന്ന പൗരന്മാർക്കുള്ള മോഡ്",
+ "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "വലിയ അക്ഷരങ്ങളും ലളിതമായ ബുക്കിംഗും, കയറാൻ സഹായം, ഉയർന്ന റേറ്റിംഗുള്ള ഡ്രൈവർമാർ ആദ്യം, വിശ്വസ്ത കോൺടാക്റ്റുകൾ എല്ലാ യാത്രയും പിന്തുടരും.",
+ "Senior citizen: help boarding, drive gently": "മുതിർന്ന പൗരൻ: കയറാൻ സഹായിക്കുക, പതുക്കെ ഓടിക്കുക"
 }
