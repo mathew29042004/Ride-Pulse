@@ -1026,5 +1026,16 @@
  "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} మెట్రోలో. మొత్తం రైడ్: {fare}, సుమారు {m} నిమి.",
  "Save {amount}: book the ride to {station}": "{amount} ఆదా: {station}కి రైడ్ బుక్ చేయండి",
  "I'm at the station: send my ride": "నేను స్టేషన్‌లో ఉన్నాను: నా రైడ్ పంపండి",
- "Finding your driver": "మీ డ్రైవర్‌ను వెతుకుతోంది"
+ "Finding your driver": "మీ డ్రైవర్‌ను వెతుకుతోంది",
+ "Switch to electric": "ఎలక్ట్రిక్‌కు మారండి",
+ "Subsidies in {state} for the vehicle you're looking at. Amounts are indicative: rules change, and we'll confirm them before you apply.": "మీరు చూస్తున్న వాహనానికి {state}లో సబ్సిడీలు. మొత్తాలు సుమారు: నియమాలు మారతాయి, దరఖాస్తుకు ముందు మేము నిర్ధారిస్తాం.",
+ "Bike": "బైక్",
+ "Auto": "ఆటో",
+ "On-road price (₹)": "ఆన్-రోడ్ ధర (₹)",
+ "Battery (kWh)": "బ్యాటరీ (kWh)",
+ "Subsidies": "సబ్సిడీలు",
+ "Price after subsidies": "సబ్సిడీల తర్వాత ధర",
+ "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% వద్ద {yr} ఏళ్ల రుణంతో: వారానికి సుమారు {emi}.",
+ "Apply for a vehicle loan": "వాహన రుణానికి దరఖాస్తు చేయండి",
+ "Switching to electric? See the subsidies →": "ఎలక్ట్రిక్‌కు మారుతున్నారా? సబ్సిడీలు చూడండి →"
 }

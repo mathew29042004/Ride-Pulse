@@ -1026,5 +1026,16 @@
  "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} മെട്രോയിൽ. മുഴുവൻ ദൂരം യാത്ര: {fare}, ഏകദേശം {m} മിനിറ്റ്.",
  "Save {amount}: book the ride to {station}": "{amount} ലാഭിക്കൂ: {station}ലേക്ക് യാത്ര ബുക്ക് ചെയ്യുക",
  "I'm at the station: send my ride": "ഞാൻ സ്റ്റേഷനിലുണ്ട്: എന്റെ യാത്ര അയയ്ക്കൂ",
- "Finding your driver": "ഡ്രൈവറെ തിരയുന്നു"
+ "Finding your driver": "ഡ്രൈവറെ തിരയുന്നു",
+ "Switch to electric": "ഇലക്ട്രിക്കിലേക്ക് മാറൂ",
+ "Subsidies in {state} for the vehicle you're looking at. Amounts are indicative: rules change, and we'll confirm them before you apply.": "നിങ്ങൾ നോക്കുന്ന വാഹനത്തിന് {state}ലെ സബ്സിഡികൾ. തുകകൾ ഏകദേശമാണ്: നിയമങ്ങൾ മാറും, അപേക്ഷിക്കും മുമ്പ് ഞങ്ങൾ ഉറപ്പാക്കും.",
+ "Bike": "ബൈക്ക്",
+ "Auto": "ഓട്ടോ",
+ "On-road price (₹)": "ഓൺ-റോഡ് വില (₹)",
+ "Battery (kWh)": "ബാറ്ററി (kWh)",
+ "Subsidies": "സബ്സിഡികൾ",
+ "Price after subsidies": "സബ്സിഡിക്ക് ശേഷമുള്ള വില",
+ "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% നിരക്കിൽ {yr} വർഷ വായ്പയോടെ: ആഴ്ചയിൽ ഏകദേശം {emi}.",
+ "Apply for a vehicle loan": "വാഹന വായ്പയ്ക്ക് അപേക്ഷിക്കുക",
+ "Switching to electric? See the subsidies →": "ഇലക്ട്രിക്കിലേക്ക് മാറുന്നോ? സബ്സിഡികൾ കാണൂ →"
 }

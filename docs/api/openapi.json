@@ -14212,6 +14212,59 @@
     ]
    }
   },
+  "/api/v1/driver/ev-subsidy/": {
+   "get": {
+    "description": "Subsidies for switching to an electric vehicle in the driver's state (indicative).",
+    "operationId": "driver_ev_subsidy",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "battery_kwh",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "price",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "vehicle",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
   "/api/v1/driver/fair-share/": {
    "get": {
     "description": "Real earnings: gross, commission, running costs and the hourly figure after costs.",

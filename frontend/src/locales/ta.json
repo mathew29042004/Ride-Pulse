@@ -1026,5 +1026,16 @@
  "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} மெட்ரோவில். முழுவதும் சவாரி: {fare}, சுமார் {m} நிமி.",
  "Save {amount}: book the ride to {station}": "{amount} சேமி: {station}க்குப் பயணத்தைப் பதிவு செய்",
  "I'm at the station: send my ride": "நிலையத்தில் இருக்கிறேன்: என் பயணத்தை அனுப்பு",
- "Finding your driver": "உங்கள் ஓட்டுநரைத் தேடுகிறது"
+ "Finding your driver": "உங்கள் ஓட்டுநரைத் தேடுகிறது",
+ "Switch to electric": "மின்வாகனத்திற்கு மாறுங்கள்",
+ "Subsidies in {state} for the vehicle you're looking at. Amounts are indicative: rules change, and we'll confirm them before you apply.": "நீங்கள் பார்க்கும் வாகனத்திற்கு {state}இல் உள்ள மானியங்கள். தொகைகள் தோராயமானவை: விதிகள் மாறும், விண்ணப்பிக்கும் முன் உறுதிப்படுத்துவோம்.",
+ "Bike": "பைக்",
+ "Auto": "ஆட்டோ",
+ "On-road price (₹)": "சாலை விலை (₹)",
+ "Battery (kWh)": "பேட்டரி (kWh)",
+ "Subsidies": "மானியங்கள்",
+ "Price after subsidies": "மானியத்திற்குப் பின் விலை",
+ "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% இல் {yr} ஆண்டுக் கடனுடன்: வாரம் சுமார் {emi}.",
+ "Apply for a vehicle loan": "வாகனக் கடனுக்கு விண்ணப்பி",
+ "Switching to electric? See the subsidies →": "மின்வாகனத்திற்கு மாறுகிறீர்களா? மானியங்களைப் பாருங்கள் →"
 }

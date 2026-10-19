@@ -303,6 +303,26 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
             }
         )
 
+    @extend_schema(
+        parameters=[OpenApiParameter(n, str) for n in ("vehicle", "price", "battery_kwh")],
+        responses={200: OpenApiTypes.OBJECT},
+        operation_id="driver_ev_subsidy",
+    )
+    @action(detail=False, methods=["get"], url_path="ev-subsidy")
+    def ev_subsidy(self, request):
+        """Subsidies for switching to an electric vehicle in the driver's state (indicative)."""
+        from . import ev_subsidy
+
+        driver = self.driver
+        q = request.query_params
+        result = ev_subsidy.estimate(
+            state=driver.city.state,
+            vehicle=q.get("vehicle", "AUTO"),
+            price=q.get("price", "350000"),
+            battery_kwh=q.get("battery_kwh", "8"),
+        )
+        return Response({**result, "loan": ev_subsidy.with_loan(driver, result)})
+
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="driver_loan")
     @action(detail=False, methods=["get"])
     def loan(self, request):

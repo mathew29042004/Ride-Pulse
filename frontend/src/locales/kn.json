@@ -1026,5 +1026,16 @@
  "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} ಮೆಟ್ರೋದಲ್ಲಿ. ಪೂರ್ತಿ ಸವಾರಿ: {fare}, ಸುಮಾರು {m} ನಿಮಿಷ.",
  "Save {amount}: book the ride to {station}": "{amount} ಉಳಿಸಿ: {station}ಗೆ ಸವಾರಿ ಬುಕ್ ಮಾಡಿ",
  "I'm at the station: send my ride": "ನಾನು ನಿಲ್ದಾಣದಲ್ಲಿದ್ದೇನೆ: ನನ್ನ ಸವಾರಿ ಕಳುಹಿಸಿ",
- "Finding your driver": "ನಿಮ್ಮ ಚಾಲಕರನ್ನು ಹುಡುಕುತ್ತಿದೆ"
+ "Finding your driver": "ನಿಮ್ಮ ಚಾಲಕರನ್ನು ಹುಡುಕುತ್ತಿದೆ",
+ "Switch to electric": "ವಿದ್ಯುತ್ ವಾಹನಕ್ಕೆ ಬದಲಾಗಿ",
+ "Subsidies in {state} for the vehicle you're looking at. Amounts are indicative: rules change, and we'll confirm them before you apply.": "ನೀವು ನೋಡುತ್ತಿರುವ ವಾಹನಕ್ಕೆ {state}ನಲ್ಲಿ ಸಬ್ಸಿಡಿಗಳು. ಮೊತ್ತಗಳು ಅಂದಾಜು: ನಿಯಮಗಳು ಬದಲಾಗುತ್ತವೆ, ಅರ್ಜಿಗೆ ಮುನ್ನ ನಾವು ಖಚಿತಪಡಿಸುತ್ತೇವೆ.",
+ "Bike": "ಬೈಕ್",
+ "Auto": "ಆಟೋ",
+ "On-road price (₹)": "ಆನ್-ರೋಡ್ ಬೆಲೆ (₹)",
+ "Battery (kWh)": "ಬ್ಯಾಟರಿ (kWh)",
+ "Subsidies": "ಸಬ್ಸಿಡಿಗಳು",
+ "Price after subsidies": "ಸಬ್ಸಿಡಿ ನಂತರದ ಬೆಲೆ",
+ "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% ದರದ {yr} ವರ್ಷದ ಸಾಲದೊಂದಿಗೆ: ವಾರಕ್ಕೆ ಸುಮಾರು {emi}.",
+ "Apply for a vehicle loan": "ವಾಹನ ಸಾಲಕ್ಕೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ",
+ "Switching to electric? See the subsidies →": "ವಿದ್ಯುತ್ ವಾಹನಕ್ಕೆ ಬದಲಾಗುತ್ತಿದ್ದೀರಾ? ಸಬ್ಸಿಡಿಗಳನ್ನು ನೋಡಿ →"
 }

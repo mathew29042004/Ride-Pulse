@@ -1026,5 +1026,16 @@
  "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} मेट्रो से। पूरे रास्ते राइड: {fare}, लगभग {m} मिनट।",
  "Save {amount}: book the ride to {station}": "{amount} बचाएँ: {station} तक राइड बुक करें",
  "I'm at the station: send my ride": "मैं स्टेशन पर हूँ: मेरी राइड भेजें",
- "Finding your driver": "आपका ड्राइवर ढूँढ रहे हैं"
+ "Finding your driver": "आपका ड्राइवर ढूँढ रहे हैं",
+ "Switch to electric": "इलेक्ट्रिक पर जाएँ",
+ "Subsidies in {state} for the vehicle you're looking at. Amounts are indicative: rules change, and we'll confirm them before you apply.": "आपके देखे वाहन के लिए {state} में सब्सिडी। राशि अनुमानित है: नियम बदलते हैं, आवेदन से पहले हम पुष्टि करेंगे।",
+ "Bike": "बाइक",
+ "Auto": "ऑटो",
+ "On-road price (₹)": "ऑन-रोड कीमत (₹)",
+ "Battery (kWh)": "बैटरी (kWh)",
+ "Subsidies": "सब्सिडी",
+ "Price after subsidies": "सब्सिडी के बाद कीमत",
+ "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% पर {yr} साल के लोन से: लगभग {emi} प्रति हफ़्ता।",
+ "Apply for a vehicle loan": "वाहन लोन के लिए आवेदन करें",
+ "Switching to electric? See the subsidies →": "इलेक्ट्रिक पर जा रहे हैं? सब्सिडी देखें →"
 }

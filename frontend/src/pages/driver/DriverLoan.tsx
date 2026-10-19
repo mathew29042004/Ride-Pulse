@@ -87,6 +87,7 @@ export default function DriverLoan() {
           {t("From {partner} at {rate}% a year. The EMI comes out of your weekly earnings before payout; you always keep at least {keep}. No fee to pay off early.", { partner: d.partner, rate: d.annual_rate, keep: inr(d.keep_at_least, { whole: true }) })}
         </p>
       )}
+      <Link to="/drive/ev" className="mt-3 block rounded-2xl bg-brand/10 p-3 text-sm font-semibold">{t("Switching to electric? See the subsidies →")}</Link>
       {d && (
         <p className="mt-1 text-xs text-muted">
           {t("Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.", { s: d.safe_driver_score, rate: d.safe_driver_rate })}

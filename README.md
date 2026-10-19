@@ -847,6 +847,15 @@ e-invoices apply. Employees skip any day (leave, work from home) and booked ride
 night rides get Night Safe like any other. The portal shows each plan's employees and this
 month's rides and cost. A plan can pool: colleagues whose homes are within 1.5 km are paired into one Share cab (picked up a minute apart so the second joins the first's driver).
 
+### EV subsidy finder (`drivers.ev_subsidy`)
+
+Drivers thinking of switching to electric (Driver → Vehicle loan → subsidies) choose an electric
+bike, auto or car, its on-road price and battery size, and see the central scheme (PM E-DRIVE for
+2- and 3-wheelers, per kWh with caps) and their state's benefits (road tax exemptions or rebates,
+Kerala's e-auto support), the price after subsidies, and the weekly EMI on a vehicle loan for the
+rest at their rate. Amounts are indicative and labelled so; `SCHEMES` is the one place to update
+when rules change.
+
 ### Vehicle loans (`drivers.loans`)
 
 Drivers with 200+ trips, 90+ days and a 4.5+ rating can apply in the app (Account → Vehicle loan)
