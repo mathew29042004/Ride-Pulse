@@ -1,5 +1,6 @@
 """Manager workspace API: /work/tasks, /work/meetings, /work/team, /work/dashboard."""
 
+from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, serializers, status
@@ -568,3 +569,150 @@ class AttendanceViewSet(BaseViewSet):
             record, manager=request.user, approve=bool(request.data.get("approve"))
         )
         return Response(attendance.row(record))
+
+
+class MonthSerializer(serializers.Serializer):
+    month = serializers.DateField()
+
+
+class PaySerializer(MonthSerializer):
+    bank_reference = serializers.CharField(max_length=40)
+
+
+class SalarySerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    monthly_gross = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=10_000)
+    pf = serializers.BooleanField(default=True)
+    bank_account_last4 = serializers.CharField(
+        max_length=4, required=False, allow_blank=True, default=""
+    )
+
+
+class PayrollViewSet(BaseViewSet):
+    """HR: salaries, the monthly payroll run, approval and payment."""
+
+    capabilities = {"*": Cap.PAYROLL_MANAGE}
+    queryset = StaffProfile.objects.none()
+
+    def _month(self, request):
+        """The ``month`` asked for, or last month (the one usually being paid)."""
+        from datetime import date, timedelta
+
+        from django.utils import timezone
+
+        raw = request.query_params.get("month") or request.data.get("month")
+        if raw:
+            return date.fromisoformat(str(raw)[:10]).replace(day=1)
+        return (timezone.localdate().replace(day=1) - timedelta(days=1)).replace(day=1)
+
+    @extend_schema(
+        parameters=[OpenApiParameter("month", str, required=False)],
+        responses={200: OpenApiTypes.OBJECT},
+        operation_id="payroll_summary",
+    )
+    def list(self, request):
+        from . import payroll
+
+        month = self._month(request)
+        missing = StaffProfile.objects.filter(user__is_active=True, user__salary__isnull=True)
+        return Response(
+            {
+                **payroll.summary(month),
+                "without_salary": [
+                    {"user_id": p.user_id, "name": p.user.get_full_name(), "title": p.title}
+                    for p in missing.select_related("user")[:100]
+                ],
+            }
+        )
+
+    @extend_schema(request=MonthSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="run")
+    def run_payroll(self, request):
+        from . import payroll
+
+        month = self._month(request)
+        result = payroll.run(month, user=request.user)
+        return Response({**result, **payroll.summary(month)})
+
+    @extend_schema(request=MonthSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def approve(self, request):
+        from . import payroll
+
+        month = self._month(request)
+        payroll.approve(month, user=request.user)
+        return Response(payroll.summary(month))
+
+    @extend_schema(request=PaySerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def pay(self, request):
+        from . import payroll
+
+        data = PaySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        month = data.validated_data["month"]
+        payroll.mark_paid(
+            month, user=request.user, bank_reference=data.validated_data["bank_reference"]
+        )
+        return Response(payroll.summary(month))
+
+    @extend_schema(request=SalarySerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def salary(self, request):
+        from django.utils import timezone
+
+        from . import payroll
+
+        data = SalarySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        profile = get_object_or_404(StaffProfile, user_id=v["user_id"])
+        salary, _ = payroll.SalaryStructure.objects.update_or_create(
+            user=profile.user,
+            defaults={
+                "monthly_gross": v["monthly_gross"],
+                "pf": v["pf"],
+                "bank_account_last4": v["bank_account_last4"],
+                "effective_from": timezone.localdate().replace(day=1),
+            },
+        )
+        return Response({"user_id": salary.user_id, "monthly_gross": salary.monthly_gross})
+
+
+class PayslipViewSet(BaseViewSet):
+    """Everyone: my payslips and their PDFs (HR can open anyone's)."""
+
+    capabilities = {"*": Cap.WORK_USE}
+    queryset = StaffProfile.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="payslips_mine")
+    def list(self, request):
+        from . import payroll
+
+        slips = payroll.Payslip.objects.filter(
+            user=request.user,
+            status__in=[payroll.PayslipStatus.APPROVED, payroll.PayslipStatus.PAID],
+        ).select_related("user")[:24]
+        salary = getattr(request.user, "salary", None)
+        return Response(
+            {
+                "monthly_gross": salary.monthly_gross if salary else None,
+                "payslips": [payroll.row(s) for s in slips],
+            }
+        )
+
+    @extend_schema(responses={(200, "application/pdf"): OpenApiTypes.BINARY})
+    @action(detail=True, methods=["get"])
+    def pdf(self, request, pk=None):
+        from django.http import HttpResponse
+
+        from apps.core.exceptions import ActionNotPermitted
+
+        from . import payroll
+
+        slip = get_object_or_404(payroll.Payslip, pk=pk)
+        if slip.user_id != request.user.pk and not request.user.has_capability(Cap.PAYROLL_MANAGE):
+            raise ActionNotPermitted("You can only open your own payslips.")
+        response = HttpResponse(payroll.render_pdf(slip), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="payslip-{slip.month:%Y-%m}.pdf"'
+        return response

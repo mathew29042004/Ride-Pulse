@@ -36,6 +36,7 @@ class Cap:
     EXPERIMENTS_MANAGE = "experiments.manage"  # feature flags and A/B tests
     TOURS_MANAGE = "tours.manage"  # tour packages, their prices and tour bookings
     ANNOUNCE = "announce"  # announcements to drivers, riders or staff
+    PAYROLL_MANAGE = "payroll.manage"  # salaries, the monthly payroll run and payslips (HR)
 
     @classmethod
     def all(cls) -> frozenset[str]:

@@ -705,6 +705,18 @@ if any phrase the apps use is missing from a language or a `{placeholder}` doesn
 rider–driver chat phrasebook and announcements cover the same six languages. The ops console is
 in English.
 
+### Payroll and payslips (`workspace.payroll`)
+
+HR (Ops → Payroll, `payroll.manage`) runs each month from attendance and leave: absent days are
+loss of pay (a half day is half), approved leave is paid, time beyond the shift (30+ minutes) is
+overtime at twice the hourly basic, and each night shift adds ₹200. The salary splits into basic
+(50%), HRA (50% of basic in metros, 40% elsewhere) and a special allowance. Deductions follow
+Indian rules: PF 12% of basic (capped at ₹1,800), ESI 0.75% up to ₹21,000 gross, professional tax
+by state, and TDS under the new regime (₹75,000 standard deduction, 87A rebate to ₹12 lakh, 4%
+cess) spread over the year. Employer PF and ESI show as cost to company. Drafts can be re-run;
+approve, then mark paid with the bank reference and everyone is notified. Every employee sees
+their own payslips with a PDF (Ops → My payslips).
+
 ### Staff attendance (`workspace.attendance`)
 
 Every employee clocks in and out in Ops → Attendance. Clock-ins match the roster shift (from 30

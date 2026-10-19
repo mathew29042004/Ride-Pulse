@@ -4084,6 +4084,18 @@
     ],
     "type": "object"
    },
+   "MonthRequest": {
+    "properties": {
+     "month": {
+      "format": "date",
+      "type": "string"
+     }
+    },
+    "required": [
+     "month"
+    ],
+    "type": "object"
+   },
    "Notification": {
     "properties": {
      "body": {
@@ -6246,6 +6258,24 @@
     },
     "type": "object"
    },
+   "PayRequest": {
+    "properties": {
+     "bank_reference": {
+      "maxLength": 40,
+      "minLength": 1,
+      "type": "string"
+     },
+     "month": {
+      "format": "date",
+      "type": "string"
+     }
+    },
+    "required": [
+     "bank_reference",
+     "month"
+    ],
+    "type": "object"
+   },
    "Payment": {
     "properties": {
      "amount": {
@@ -7923,6 +7953,32 @@
      "FLEET_OWNER"
     ],
     "type": "string"
+   },
+   "SalaryRequest": {
+    "properties": {
+     "bank_account_last4": {
+      "default": "",
+      "maxLength": 4,
+      "type": "string"
+     },
+     "monthly_gross": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "pf": {
+      "default": true,
+      "type": "boolean"
+     },
+     "user_id": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "monthly_gross",
+     "user_id"
+    ],
+    "type": "object"
    },
    "SavedPlace": {
     "properties": {
@@ -30451,6 +30507,316 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/Meeting"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/payroll/": {
+   "get": {
+    "description": "HR: salaries, the monthly payroll run, approval and payment.",
+    "operationId": "payroll_summary",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "month",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/payroll/approve/": {
+   "post": {
+    "description": "HR: salaries, the monthly payroll run, approval and payment.",
+    "operationId": "work_payroll_approve_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MonthRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/MonthRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/MonthRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/payroll/pay/": {
+   "post": {
+    "description": "HR: salaries, the monthly payroll run, approval and payment.",
+    "operationId": "work_payroll_pay_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PayRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/PayRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/PayRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/payroll/run/": {
+   "post": {
+    "description": "HR: salaries, the monthly payroll run, approval and payment.",
+    "operationId": "work_payroll_run_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MonthRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/MonthRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/MonthRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/payroll/salary/": {
+   "post": {
+    "description": "HR: salaries, the monthly payroll run, approval and payment.",
+    "operationId": "work_payroll_salary_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SalaryRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/SalaryRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/SalaryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/payslips/": {
+   "get": {
+    "description": "Everyone: my payslips and their PDFs (HR can open anyone's).",
+    "operationId": "payslips_mine",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/payslips/{id}/pdf/": {
+   "get": {
+    "description": "Everyone: my payslips and their PDFs (HR can open anyone's).",
+    "operationId": "work_payslips_pdf_retrieve",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/pdf": {
+        "schema": {
+         "format": "binary",
+         "type": "string"
         }
        }
       },
