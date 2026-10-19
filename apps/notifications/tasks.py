@@ -41,3 +41,10 @@ def send_push(
     from . import push
 
     return push.send(user_id, title=title, body=body, url=url, tag=tag, ttl=ttl, urgent=urgent)
+
+
+@shared_task(name="notifications.send_digests")
+def send_digests() -> int:
+    from .services import send_digests
+
+    return send_digests()

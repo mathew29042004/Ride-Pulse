@@ -276,6 +276,7 @@ CELERY_BEAT_SCHEDULE = {
     "grievances": {"task": "trust.grievance_sweep", "schedule": timedelta(hours=1)},
     "flights": {"task": "rides.follow_flights", "schedule": timedelta(minutes=5)},
     "watchtower": {"task": "reliability.watchtower", "schedule": timedelta(minutes=1)},
+    "digests": {"task": "notifications.send_digests", "schedule": crontab(hour=8, minute=0)},
     "prune": {"task": "reliability.prune", "schedule": crontab(hour=3, minute=40)},
     "celebrate": {"task": "workspace.celebrate", "schedule": crontab(hour=9, minute=0)},
     "auto-briefing": {"task": "reliability.auto_briefing", "schedule": timedelta(minutes=15)},

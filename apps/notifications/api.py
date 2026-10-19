@@ -1,3 +1,4 @@
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import mixins, serializers, status
 from rest_framework.decorators import action
@@ -49,6 +50,28 @@ class NotificationViewSet(
     @extend_schema(
         responses=inline_serializer("UnreadCount", {"unread": serializers.IntegerField()})
     )
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get", "post"])
+    def preferences(self, request):
+        """Quiet hours and the daily digest."""
+        from apps.core.exceptions import BusinessRuleViolation
+
+        from .models import NotificationPreference
+
+        pref, _ = NotificationPreference.objects.get_or_create(user=request.user)
+        if request.method == "POST":
+            data = request.data
+            hours = [data.get("quiet_from"), data.get("quiet_until")]
+            if any(h not in (None, "") and not 0 <= int(h) <= 23 for h in hours):
+                raise BusinessRuleViolation("Quiet hours are whole hours from 0 to 23.")
+            pref.quiet_from = int(hours[0]) if hours[0] not in (None, "") else None
+            pref.quiet_until = int(hours[1]) if hours[1] not in (None, "") else None
+            pref.digest = bool(data.get("digest", pref.digest))
+            pref.save()
+        return Response(
+            {"quiet_from": pref.quiet_from, "quiet_until": pref.quiet_until, "digest": pref.digest}
+        )
+
     @action(detail=False, methods=["get"], url_path="unread-count")
     def unread_count(self, request):
         return Response({"unread": services.unread_count(request.user)})

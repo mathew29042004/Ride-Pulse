@@ -19413,6 +19413,84 @@
     ]
    }
   },
+  "/api/v1/notifications/preferences/": {
+   "get": {
+    "description": "Quiet hours and the daily digest.",
+    "operationId": "notifications_preferences_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UnreadCount"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "notifications"
+    ]
+   },
+   "post": {
+    "description": "Quiet hours and the daily digest.",
+    "operationId": "notifications_preferences_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UnreadCount"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "notifications"
+    ]
+   }
+  },
   "/api/v1/notifications/unread-count/": {
    "get": {
     "description": "The signed-in user's own notifications. Only ``is_read`` can be changed.",
@@ -19422,7 +19500,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/UnreadCount"
+         "$ref": "#/components/schemas/Notification"
         }
        }
       },

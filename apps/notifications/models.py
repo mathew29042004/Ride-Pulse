@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Level(models.TextChoices):
@@ -20,6 +21,8 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     emailed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Kept quiet (no pop-up) by the person's preferences: quiet hours or the daily digest.
+    held = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -50,3 +53,30 @@ class PushSubscription(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} {self.endpoint[:40]}"
+
+
+class NotificationPreference(models.Model):
+    """Quiet hours (no pop-ups except urgent ones) and the daily digest (routine updates held and
+    summed up once a morning). Everything still appears in the bell list straight away."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_preference"
+    )
+    quiet_from = models.PositiveSmallIntegerField(null=True, blank=True)  # hour, 0–23
+    quiet_until = models.PositiveSmallIntegerField(null=True, blank=True)
+    digest = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f"Preferences for {self.user_id}"
+
+    def is_quiet(self, when) -> bool:
+        if (
+            self.quiet_from is None
+            or self.quiet_until is None
+            or self.quiet_from == self.quiet_until
+        ):
+            return False
+        hour = timezone.localtime(when).hour
+        if self.quiet_from < self.quiet_until:
+            return self.quiet_from <= hour < self.quiet_until
+        return hour >= self.quiet_from or hour < self.quiet_until  # e.g. 22 → 7

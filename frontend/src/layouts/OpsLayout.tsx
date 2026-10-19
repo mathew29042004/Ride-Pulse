@@ -313,7 +313,7 @@ export default function OpsLayout() {
                 {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
               </button>
               {can("command") && <ChiefBell />}
-              <NotificationBell />
+              <NotificationBell settings />
             </div>
           </header>
           <main className="rp-glow min-h-0 flex-1 overflow-y-auto">

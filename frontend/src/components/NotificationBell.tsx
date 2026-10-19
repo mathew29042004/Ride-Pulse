@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -16,8 +16,9 @@ const DOT: Record<Notification["level"], string> = {
   DANGER: "bg-rose-500",
 };
 
-export function NotificationBell({ className, align = "right" }: { className?: string; align?: "left" | "right" }) {
+export function NotificationBell({ className, align = "right", settings = false }: { className?: string; align?: "left" | "right"; settings?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -76,10 +77,18 @@ export function NotificationBell({ className, align = "right" }: { className?: s
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <span className="text-sm font-semibold">{t("Notifications")}</span>
-            <button onClick={() => markAll.mutate()} className="flex items-center gap-1 text-xs font-medium text-muted hover:text-fg">
-              <CheckCheck className="size-3.5" /> {t("Mark all read")}
-            </button>
+            <span className="flex items-center gap-2">
+              <button onClick={() => markAll.mutate()} className="flex items-center gap-1 text-xs font-medium text-muted hover:text-fg">
+                <CheckCheck className="size-3.5" /> {t("Mark all read")}
+              </button>
+              {settings && (
+                <button onClick={() => setPrefsOpen(!prefsOpen)} className="rounded-full p-1 text-muted hover:bg-surface-3 hover:text-fg" aria-label="Notification settings" aria-expanded={prefsOpen}>
+                  <Settings2 className="size-3.5" />
+                </button>
+              )}
+            </span>
           </div>
+          {settings && prefsOpen && <Preferences />}
           <div className="max-h-96 overflow-y-auto">
             {(list.data?.results ?? []).length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">{t("You're all caught up.")}</p>}
             {list.data?.results.map((n) => (
@@ -95,6 +104,46 @@ export function NotificationBell({ className, align = "right" }: { className?: s
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface Prefs {
+  quiet_from: number | null;
+  quiet_until: number | null;
+  digest: boolean;
+}
+
+/** Staff: quiet hours (no pop-ups except urgent ones) and a once-a-morning digest. */
+function Preferences() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["notifications", "prefs"], queryFn: () => api.get<Prefs>("notifications/preferences/") });
+  const save = useMutation({
+    mutationFn: (p: Partial<Prefs>) => api.post<Prefs>("notifications/preferences/", { ...q.data, ...p }),
+    onSuccess: (p) => qc.setQueryData(["notifications", "prefs"], p),
+  });
+  const p = q.data;
+  if (!p) return null;
+  const hours = Array.from({ length: 24 }, (_, h) => h);
+  const label = (h: number) => `${h % 12 || 12} ${h < 12 ? "am" : "pm"}`;
+  return (
+    <div className="space-y-2 border-b border-line bg-surface-2 px-4 py-3 text-xs">
+      <div className="font-semibold">Quiet hours (urgent alerts still come through)</div>
+      <div className="flex items-center gap-2">
+        <select className="input !w-auto !py-1 !text-xs" value={p.quiet_from ?? ""} onChange={(e) => save.mutate({ quiet_from: e.target.value === "" ? null : Number(e.target.value) })} aria-label="Quiet from">
+          <option value="">Off</option>
+          {hours.map((h) => <option key={h} value={h}>{label(h)}</option>)}
+        </select>
+        to
+        <select className="input !w-auto !py-1 !text-xs" value={p.quiet_until ?? ""} onChange={(e) => save.mutate({ quiet_until: e.target.value === "" ? null : Number(e.target.value) })} aria-label="Quiet until">
+          <option value="">Off</option>
+          {hours.map((h) => <option key={h} value={h}>{label(h)}</option>)}
+        </select>
+      </div>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={p.digest} onChange={(e) => save.mutate({ digest: e.target.checked })} />
+        Daily digest: hold routine updates and sum them up at 8 am
+      </label>
     </div>
   );
 }
