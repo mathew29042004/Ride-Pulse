@@ -7,13 +7,13 @@ export type LatLng = [number, number];
 export const RIDE_TYPE_COLORS: Record<string, string> = {
   BIKE: "#8b5cf6",
   AUTO: "#eab308",
-  MINI: "#10b981",
+  MINI: "#6366f1",
   SEDAN: "#0f172a",
   SUV: "#2563eb",
 };
 
 export function carColor(rideType: string | null | undefined): string {
-  return RIDE_TYPE_COLORS[rideType ?? ""] ?? "#10b981";
+  return RIDE_TYPE_COLORS[rideType ?? ""] ?? "#6366f1";
 }
 
 /** Top-down car, drawn inline so markers need no image assets. */
@@ -143,7 +143,7 @@ export function snapToPath(path: LatLng[], point: LatLng): { at: LatLng; offMetr
 }
 
 export const PIN_HTML = {
-  pickup: `<div style="width:22px;height:22px;border-radius:999px;background:#10b981;border:4px solid white;box-shadow:0 2px 8px rgba(0,0,0,.35)"></div>`,
+  pickup: `<div style="width:22px;height:22px;border-radius:999px;background:#6366f1;border:4px solid white;box-shadow:0 2px 8px rgba(0,0,0,.35)"></div>`,
   dropoff: `<div style="width:20px;height:20px;background:#0b0f19;border:4px solid white;box-shadow:0 2px 8px rgba(0,0,0,.35)"></div>`,
   me: `<div style="position:relative;width:18px;height:18px">
       <div style="position:absolute;inset:-10px;border-radius:999px;background:rgba(14,165,233,.25);animation:pulse-ring 1.8s infinite"></div>
@@ -154,7 +154,7 @@ export const PIN_HTML = {
   searching: `<div style="position:relative;width:22px;height:22px">
       <div style="position:absolute;inset:-34px;border-radius:999px;background:rgba(16,185,129,.22);animation:radar 2.4s ease-out infinite"></div>
       <div style="position:absolute;inset:-34px;border-radius:999px;background:rgba(16,185,129,.22);animation:radar 2.4s ease-out 1.2s infinite"></div>
-      <div style="position:absolute;inset:0;border-radius:999px;background:#10b981;border:4px solid white;box-shadow:0 2px 8px rgba(0,0,0,.35)"></div>
+      <div style="position:absolute;inset:0;border-radius:999px;background:#6366f1;border:4px solid white;box-shadow:0 2px 8px rgba(0,0,0,.35)"></div>
     </div>`,
 } as const;
 

@@ -53,7 +53,7 @@ export function PhoneFrame(props: FrameProps) {
 function MobileFrame({ children, aside, tabs, hideTabs }: FrameProps) {
   const { setMode } = useLayout();
   return (
-    <div data-layout="phone" className="min-h-full bg-canvas md:flex md:items-center md:justify-center md:gap-14 md:bg-[radial-gradient(ellipse_at_top_left,rgb(16_185_129/0.18),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgb(14_165_233/0.12),transparent_50%)] md:p-6">
+    <div data-layout="phone" className="min-h-full bg-canvas md:flex md:items-center md:justify-center md:gap-14 md:bg-[radial-gradient(ellipse_at_top_left,rgb(99_102_241/0.18),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgb(14_165_233/0.12),transparent_50%)] md:p-6">
       {aside && (
         <aside className="hidden max-w-sm lg:block">
           {aside}

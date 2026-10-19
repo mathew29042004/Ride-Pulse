@@ -173,8 +173,8 @@ export default function OpsLayout() {
                     end={"end" in rest && rest.end}
                     className={({ isActive }) =>
                       clsx(
-                        "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                        isActive ? "bg-brand-soft text-brand-fg shadow-[inset_3px_0_0_var(--color-brand)]" : "text-muted hover:bg-surface-3 hover:text-fg",
+                        "flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-medium transition",
+                        isActive ? "bg-[image:var(--gradient-brand)] text-white shadow-[0_8px_18px_-8px_rgb(124_58_237/0.8)]" : "text-muted hover:bg-white/5 hover:text-fg",
                       )
                     }
                   >
@@ -216,15 +216,17 @@ export default function OpsLayout() {
   return (
     <OpsContext.Provider value={{ city, setCity, cities: cities.data ?? [], cityInfo: cities.data?.find((c) => c.slug === city) }}>
       <div className="flex h-full">
-        <aside className="hidden w-64 shrink-0 border-r border-line bg-surface lg:block">{sidebar}</aside>
+        <aside className="hidden w-[264px] shrink-0 p-3 pr-0 lg:block">
+          <div className="dark h-full overflow-hidden rounded-[26px] bg-[var(--color-sidebar)] text-fg shadow-[0_24px_50px_-24px_rgb(15_14_36/0.7)]">{sidebar}</div>
+        </aside>
         {menuOpen && (
           <div className="fixed inset-0 z-[1100] lg:hidden">
             <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
-            <aside className="absolute inset-y-0 left-0 w-72 bg-surface">{sidebar}</aside>
+            <aside className="dark absolute inset-y-0 left-0 w-72 bg-[var(--color-sidebar)] text-fg">{sidebar}</aside>
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface/85 px-4 backdrop-blur lg:px-8">
+          <header className="flex h-16 shrink-0 items-center gap-3 bg-canvas/80 px-4 backdrop-blur lg:px-8">
             <button className="rounded-lg p-2 hover:bg-surface-3 lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
               <Menu className="size-5" />
             </button>

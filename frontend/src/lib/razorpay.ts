@@ -54,7 +54,7 @@ export async function razorpayTopUp(amount: number): Promise<"paid" | "dismissed
       name: "Ride Pulse",
       description: "Wallet top-up",
       prefill: order.prefill,
-      theme: { color: "#10b981" },
+      theme: { color: "#6366f1" },
       handler: (response: CheckoutResult) => resolve(response),
       modal: { ondismiss: () => resolve(null) },
     });

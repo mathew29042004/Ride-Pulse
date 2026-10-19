@@ -75,7 +75,7 @@ export default function DriverEarnings() {
                   contentStyle={{ background: "#111827", border: "none", borderRadius: 12, fontSize: 12 }}
                   formatter={(v) => [inr(Number(v)), "Earned"]}
                 />
-                <Bar dataKey="earnings" fill="#10b981" radius={[6, 6, 2, 2]} />
+                <Bar dataKey="earnings" fill="#6366f1" radius={[6, 6, 2, 2]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -79,7 +79,7 @@ export default function OpsTripDetail() {
               <PinMarker lat={trip.dropoff_lat} lng={trip.dropoff_lng} kind="dropoff" label="Drop" />
               <RouteLine from={[trip.pickup_lat, trip.pickup_lng]} to={[trip.dropoff_lat, trip.dropoff_lng]} encoded={trip.route_polyline} via={trip.stop && [trip.stop.lat, trip.stop.lng]} dashed={!!route.data?.length} />
               {trip.stop && <PinMarker lat={trip.stop.lat} lng={trip.stop.lng} kind="stop" />}
-              {route.data && route.data.length > 1 && <MapPolyline positions={route.data} color="#10b981" weight={4} />}
+              {route.data && route.data.length > 1 && <MapPolyline positions={route.data} color="#6366f1" weight={4} />}
               {driverPos && isActive(trip) && <CarMarker lat={driverPos.lat} lng={driverPos.lng} heading={driverPos.heading} rideType={trip.ride_type} />}
             </BaseMap>
           </div>

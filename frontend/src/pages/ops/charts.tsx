@@ -45,8 +45,8 @@ export function TripsChart({ series, unit }: { series: SeriesPoint[]; unit: stri
             <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="done" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke="var(--color-line)" />
@@ -55,7 +55,7 @@ export function TripsChart({ series, unit }: { series: SeriesPoint[]; unit: stri
         <Tooltip contentStyle={tooltipStyle} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
         <Area type="monotone" dataKey="requested" name="Requested" stroke="#0ea5e9" fill="url(#req)" strokeWidth={2} />
-        <Area type="monotone" dataKey="completed" name="Completed" stroke="#10b981" fill="url(#done)" strokeWidth={2} />
+        <Area type="monotone" dataKey="completed" name="Completed" stroke="#6366f1" fill="url(#done)" strokeWidth={2} />
       </AreaChart>
     </ResponsiveContainer>
   );
@@ -70,7 +70,7 @@ export function GmvChart({ series, unit }: { series: SeriesPoint[]; unit: string
         <XAxis dataKey="label" tick={axis} axisLine={false} tickLine={false} minTickGap={16} />
         <YAxis tick={axis} axisLine={false} tickLine={false} tickFormatter={(v) => inrCompact(v)} width={64} />
         <Tooltip contentStyle={tooltipStyle} formatter={(v) => [inr(Number(v)), "GMV"]} cursor={{ fill: "var(--color-surface-3)" }} />
-        <Bar dataKey="gmv" fill="#10b981" radius={[6, 6, 0, 0]} />
+        <Bar dataKey="gmv" fill="#6366f1" radius={[6, 6, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

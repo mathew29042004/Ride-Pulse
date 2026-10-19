@@ -63,7 +63,7 @@ export default function Login() {
         />
       )}
       <div className="relative hidden overflow-hidden bg-[#070a10] p-10 text-white lg:flex lg:flex-col">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,rgb(16_185_129/0.35),transparent_50%),radial-gradient(ellipse_at_100%_100%,rgb(14_165_233/0.2),transparent_45%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,rgb(99_102_241/0.35),transparent_50%),radial-gradient(ellipse_at_100%_100%,rgb(14_165_233/0.2),transparent_45%)]" />
         <Link to="/" className="relative">
           <Logo light />
         </Link>
@@ -80,9 +80,9 @@ export default function Login() {
                   key={account.email}
                   onClick={() => signIn(account.email, DEMO_PASSWORD, account.email)}
                   disabled={busy !== null}
-                  className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-emerald-400/50 hover:bg-white/10 disabled:opacity-60"
+                  className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-violet-400/50 hover:bg-white/10 disabled:opacity-60"
                 >
-                  <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-violet-400/15 text-violet-300">
                     <Icon className="size-5" />
                   </span>
                   <span className="flex-1">

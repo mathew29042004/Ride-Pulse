@@ -446,7 +446,7 @@ export default function DriverHome() {
             <PinMarker key={i} lat={s.lat} lng={s.lng} kind="stop" label={all.length > 1 ? t("Stop {n}", { n: i + 1 }) : t("Stop")} />
           ))}
           {trip && <PinMarker lat={trip.dropoff_lat} lng={trip.dropoff_lng} kind="dropoff" />}
-          {trip && trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[pos.lat, pos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#10b981" />}
+          {trip && trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[pos.lat, pos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#6366f1" />}
           {trip && trip.status !== "DRIVER_ASSIGNED" && (
             <RouteLine
               from={[trip.pickup_lat, trip.pickup_lng]}

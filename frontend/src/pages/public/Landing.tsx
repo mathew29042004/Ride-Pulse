@@ -51,7 +51,7 @@ export default function Landing() {
   return (
     <div className="min-h-full bg-surface">
       <header className="relative overflow-hidden bg-[#070a10] text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_10%,rgb(16_185_129/0.35),transparent_45%),radial-gradient(ellipse_at_90%_80%,rgb(14_165_233/0.25),transparent_40%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_10%,rgb(99_102_241/0.35),transparent_45%),radial-gradient(ellipse_at_90%_80%,rgb(14_165_233/0.25),transparent_40%)]" />
         <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(white_1px,transparent_1px),linear-gradient(90deg,white_1px,transparent_1px)] [background-size:44px_44px]" />
         <nav className="relative mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
           <Logo light />
@@ -79,13 +79,13 @@ export default function Landing() {
 
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pt-10 pb-24 md:grid-cols-[1.1fr_0.9fr] md:pt-16">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-emerald-300">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-violet-300">
               <Radio className="size-3.5" /> Live in Chennai · Bengaluru · Coimbatore
             </span>
             <h1 className="mt-5 text-4xl leading-[1.05] font-bold tracking-tight md:text-6xl">
               Your city,
               <br />
-              <span className="bg-gradient-to-r from-emerald-300 to-sky-300 bg-clip-text text-transparent">on the move.</span>
+              <span className="bg-gradient-to-r from-violet-300 to-sky-300 bg-clip-text text-transparent">on the move.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg text-white/70">
               Ride Pulse is a complete ride-hailing platform: a rider app, a driver app and an operations console, running on
@@ -111,7 +111,7 @@ export default function Landing() {
           </div>
 
           <div className="relative hidden md:block">
-            <div className="absolute -inset-6 rounded-[40px] bg-emerald-400/10 blur-2xl" />
+            <div className="absolute -inset-6 rounded-[40px] bg-violet-400/10 blur-2xl" />
             <div className="relative rounded-[32px] border border-white/10 bg-white/5 p-5 backdrop-blur">
               <div className="rounded-2xl bg-white p-4 text-[#0b0f19] shadow-2xl">
                 <div className="flex items-center justify-between">
@@ -125,7 +125,7 @@ export default function Landing() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 font-semibold text-white">KR</div>
+                  <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 font-semibold text-white">KR</div>
                   <div className="flex-1">
                     <div className="font-semibold">Karthik R · 4.92 ★</div>
                     <div className="text-xs text-slate-500">White Maruti Suzuki Swift · TN 09 AB 1234</div>
@@ -137,7 +137,7 @@ export default function Landing() {
                     ["Sedan", "₹221"],
                     ["Auto", "₹128"],
                   ].map(([name, price], i) => (
-                    <div key={name} className={`rounded-xl border p-2 ${i === 0 ? "border-emerald-500 bg-emerald-50" : "border-slate-200"}`}>
+                    <div key={name} className={`rounded-xl border p-2 ${i === 0 ? "border-indigo-500 bg-indigo-50" : "border-slate-200"}`}>
                       <div className="font-semibold">{name}</div>
                       <div className="text-slate-500">{price}</div>
                     </div>

@@ -246,7 +246,7 @@ function TourSheet({ slug, onClose, onBooked }: { slug: string; onClose: () => v
               {tr.stops.map((s) => (
                 <PinMarker key={s.order} lat={s.lat} lng={s.lng} kind="stop" label={`${s.order}. ${s.name}`} />
               ))}
-              <MapPolyline positions={[...points, points[0]]} color="#10b981" weight={3} dashed />
+              <MapPolyline positions={[...points, points[0]]} color="#6366f1" weight={3} dashed />
             </BaseMap>
           </div>
 

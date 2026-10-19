@@ -97,12 +97,12 @@ export function LiveMap({
         const driver = t.driver_id ? drivers.get(t.driver_id) : undefined;
         return (
           <span key={t.id}>
-            {driver && t.status !== "IN_PROGRESS" && <MapPolyline positions={[[driver.lat, driver.lng], t.pickup]} color="#10b981" weight={2} dashed />}
+            {driver && t.status !== "IN_PROGRESS" && <MapPolyline positions={[[driver.lat, driver.lng], t.pickup]} color="#6366f1" weight={2} dashed />}
             {t.status === "IN_PROGRESS" && driver && <MapPolyline positions={[[driver.lat, driver.lng], t.dropoff]} color="#0ea5e9" weight={2} opacity={0.6} />}
             <MapDot
               center={t.pickup}
               radius={t.status === "REQUESTED" ? 7 : 5}
-              color={t.status === "REQUESTED" ? "#ef4444" : "#10b981"}
+              color={t.status === "REQUESTED" ? "#ef4444" : "#6366f1"}
               label={`${t.trip_number} · ${t.status.replace(/_/g, " ").toLowerCase()} · ${t.ride_type}`}
               onClick={interactive ? () => navigate(`/ops/trips/${t.id}`) : undefined}
             />

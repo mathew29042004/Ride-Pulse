@@ -100,7 +100,7 @@ export default function OpsInsights() {
                 <Tooltip contentStyle={tooltipStyle} />
                 <Legend />
                 <Area type="monotone" dataKey="requests" name="Requests" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
-                <Area type="monotone" dataKey="completed" name="Completed" stroke="#10b981" fill="#10b981" fillOpacity={0.25} />
+                <Area type="monotone" dataKey="completed" name="Completed" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -114,7 +114,7 @@ export default function OpsInsights() {
                 <XAxis dataKey="hour" tick={axis} tickFormatter={(v) => `${v}h`} />
                 <YAxis tick={axis} width={40} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => (name === "No driver" ? pct(v) : num(v))} labelFormatter={(v) => `${v}:00`} />
-                <Bar dataKey="requests" name="Requests" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="requests" name="Requests" fill="#6366f1" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="no_driver_rate" name="No driver" fill="transparent" />
               </BarChart>
             </ResponsiveContainer>
@@ -130,7 +130,7 @@ export default function OpsInsights() {
                 <YAxis type="category" dataKey="state" tick={axis} width={100} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Legend />
-                <Bar dataKey="RIDE" name="Rides" stackId="s" fill="#10b981" />
+                <Bar dataKey="RIDE" name="Rides" stackId="s" fill="#6366f1" />
                 <Bar dataKey="PARCEL" name="Parcels" stackId="s" fill="#f59e0b" />
                 <Bar dataKey="RENTAL" name="Rentals" stackId="s" fill="#6366f1" />
                 <Bar dataKey="INTERCITY" name="Intercity" stackId="s" fill="#0ea5e9" />

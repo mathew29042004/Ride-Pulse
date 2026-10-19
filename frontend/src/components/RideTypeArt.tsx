@@ -88,7 +88,7 @@ const ART: Record<string, (props: { color: string }) => React.JSX.Element> = {
 const COLORS: Record<string, string> = {
   BIKE: "#8b5cf6",
   AUTO: "#eab308",
-  MINI: "#10b981",
+  MINI: "#6366f1",
   SEDAN: "#334155",
   SUV: "#2563eb",
 };
@@ -97,7 +97,7 @@ export function RideTypeArt({ code, className = "h-9 w-16" }: { code: string; cl
   const Art = ART[code] ?? Hatchback;
   return (
     <div className={className}>
-      <Art color={COLORS[code] ?? "#10b981"} />
+      <Art color={COLORS[code] ?? "#6366f1"} />
     </div>
   );
 }

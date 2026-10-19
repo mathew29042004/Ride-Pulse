@@ -15,16 +15,16 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary: "bg-ink text-ink-fg shadow-[0_6px_16px_-8px_rgb(15_23_42/0.55)] hover:opacity-90",
-  brand: "bg-[image:var(--gradient-brand)] text-on-brand shadow-[0_8px_20px_-8px_rgb(16_185_129/0.75)] hover:brightness-105 hover:shadow-[0_10px_24px_-8px_rgb(16_185_129/0.85)]",
-  secondary: "bg-surface-3 text-fg hover:bg-line",
+  brand: "bg-[image:var(--gradient-brand)] text-on-brand shadow-[0_8px_20px_-8px_rgb(99_102_241/0.75)] hover:brightness-105 hover:shadow-[0_10px_24px_-8px_rgb(99_102_241/0.85)]",
+  secondary: "bg-brand-soft text-brand-fg hover:brightness-95",
   ghost: "text-fg hover:bg-surface-3",
   danger: "bg-danger text-white hover:opacity-90",
-  outline: "border border-line bg-surface text-fg hover:bg-surface-2",
+  outline: "border border-line bg-surface text-fg hover:border-brand/40 hover:bg-brand-soft/50",
 };
 const sizes: Record<Size, string> = {
-  sm: "h-8 px-3 text-xs gap-1.5 rounded-lg",
-  md: "h-10 px-4 text-sm gap-2 rounded-xl",
-  lg: "min-h-13 py-2.5 px-6 text-base gap-2 rounded-2xl whitespace-normal text-center leading-snug",
+  sm: "h-8 px-3.5 text-xs gap-1.5 rounded-full",
+  md: "h-10 px-5 text-sm gap-2 rounded-full",
+  lg: "min-h-13 py-2.5 px-7 text-base gap-2 rounded-full whitespace-normal text-center leading-snug",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -172,7 +172,7 @@ export function Segmented<T extends string>({
   className?: string;
 }) {
   return (
-    <div className={clsx("inline-flex rounded-xl border border-line bg-surface-2 p-1", className)}>
+    <div className={clsx("inline-flex rounded-full bg-surface-3 p-1", className)}>
       {options.map((option) => (
         <button
           key={option.value}
@@ -335,7 +335,7 @@ export function Stat({
 }) {
   const iconTone = {
     neutral: "bg-surface-3 text-fg",
-    brand: "bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-[0_6px_14px_-6px_rgb(16_185_129/0.7)]",
+    brand: "bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-[0_6px_14px_-6px_rgb(99_102_241/0.7)]",
     warning: "bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-[0_6px_14px_-6px_rgb(245_158_11/0.7)]",
     danger: "bg-gradient-to-br from-rose-400 to-pink-600 text-white shadow-[0_6px_14px_-6px_rgb(225_29_72/0.6)]",
     info: "bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-[0_6px_14px_-6px_rgb(14_165_233/0.6)]",
@@ -424,7 +424,7 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className={clsx("relative w-full overflow-hidden rounded-3xl border border-line bg-surface shadow-2xl", width)}
+            className={clsx("relative w-full overflow-hidden rounded-[28px] bg-surface shadow-[0_40px_80px_-30px_rgb(49_46_129/0.5)]", width)}
             initial={{ y: 20, scale: 0.98 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: 10, scale: 0.98 }}
@@ -545,13 +545,14 @@ export function Sheet({
 
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="dark relative mb-8 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] bg-[#0b1220] px-6 py-6 text-fg shadow-[0_18px_40px_-20px_rgb(15_23_42/0.6)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(600px_200px_at_0%_0%,rgb(16_185_129/0.35),transparent_60%),radial-gradient(500px_220px_at_100%_120%,rgb(14_165_233/0.28),transparent_60%)]" />
+    <div className="relative mb-8 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] bg-[image:var(--gradient-hero)] px-7 py-7 text-white shadow-[0_24px_50px_-24px_rgb(91_33_182/0.65)]">
+      <div className="pointer-events-none absolute -top-24 -right-10 size-72 rounded-full bg-white/10 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-28 left-1/3 size-72 rounded-full bg-fuchsia-400/20 blur-3xl" />
       <div className="relative">
-        <h1 className="text-[28px] leading-tight font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+        <h1 className="text-[30px] leading-tight font-bold tracking-tight">{title}</h1>
+        {subtitle && <p className="mt-1.5 text-sm text-white/80">{subtitle}</p>}
       </div>
-      {actions && <div className="relative flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="dark relative flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
@@ -565,7 +566,7 @@ export function Table({ children }: { children: ReactNode }) {
 }
 
 export function Th({ children, className }: { children?: ReactNode; className?: string }) {
-  return <th className={clsx("sticky top-0 border-b border-line bg-surface-2/95 px-4 py-2.5 text-xs font-medium text-muted backdrop-blur", className)}>{children}</th>;
+  return <th className={clsx("sticky top-0 border-b border-line bg-surface/95 px-4 py-3 text-[11px] font-semibold tracking-wider text-muted uppercase backdrop-blur", className)}>{children}</th>;
 }
 
 export function Td({ children, className }: { children?: ReactNode; className?: string }) {

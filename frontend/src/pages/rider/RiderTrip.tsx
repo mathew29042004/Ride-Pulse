@@ -228,7 +228,7 @@ export default function RiderTrip() {
           )}
           {driverPos && carAt && active && trip.status !== "REQUESTED" && (
             <>
-              {trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[driverPos.lat, driverPos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#10b981" />}
+              {trip.status === "DRIVER_ASSIGNED" && <RouteLine from={[driverPos.lat, driverPos.lng]} to={[trip.pickup_lat, trip.pickup_lng]} dashed color="#6366f1" />}
               <CarMarker lat={carAt[0]} lng={carAt[1]} heading={driverPos.heading} rideType={trip.ride_type} />
             </>
           )}
