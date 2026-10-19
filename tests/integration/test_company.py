@@ -95,3 +95,36 @@ def test_search_respects_the_role(api, make_driver):
     assert not any(
         r["kind"] == "Driver" for r in api(hr).get(f"/api/v1/search/?q={q}").json()["results"]
     )
+
+
+def test_hiring_sets_up_the_new_employee(api, chennai):
+    from apps.accounts.models import User
+    from apps.chat.models import Message
+    from apps.chat.services import sync_channels
+    from apps.workspace.models import WorkTask
+
+    hr = make_staff(Role.HR_MANAGER)
+    boss = make_staff(Role.OPS_MANAGER)
+    _profile(hr, 90)
+    bp = _profile(boss, 91)
+    bp.city, bp.state = chennai, chennai.state
+    bp.save()
+    sync_channels()
+    job = company.JobOpening.objects.create(
+        title="Dispatch Controller",
+        department="OPERATIONS",
+        city=chennai,
+        role="DISPATCH_CONTROLLER",
+        summary="x",
+        description="y",
+        posted_at=timezone.now(),
+    )
+    a = company.apply(job, name="Kavin Raj", email="kavin@example.com", phone="9840012345")
+    api(hr).post(f"/api/v1/company/applications/{a.pk}/status/", {"status": "HIRED"})
+    new = User.objects.get(email="kavin@example.com")
+    assert new.role == "DISPATCH_CONTROLLER" and not new.has_usable_password()
+    assert new.staff_profile.reports_to == bp and new.salary.monthly_gross > 0
+    assert WorkTask.objects.filter(assignee=new).count() == 4
+    assert Message.objects.filter(body__contains="Please welcome Kavin Raj").exists()
+    job.refresh_from_db()
+    assert not job.is_open

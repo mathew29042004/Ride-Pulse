@@ -13,7 +13,7 @@ to, and quick links. HR reviews applications from here; the commander posts comp
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -27,6 +27,7 @@ class JobOpening(models.Model):
         "geo.City", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     kind = models.CharField(max_length=12, default="Full-time")
+    role = models.CharField(max_length=24, default="SUPPORT_AGENT")  # the role a hire gets
     summary = models.CharField(max_length=300)
     description = models.TextField()
     is_open = models.BooleanField(default=True)
@@ -437,11 +438,104 @@ def applications() -> list[dict]:
     ]
 
 
+def _manager_for(job: JobOpening):
+    """Who a new hire reports to: the city's operations manager, else the state's regional
+    manager, else the HR manager making the hire."""
+    from apps.accounts.models import Role, StaffProfile
+
+    if job.city_id:
+        boss = (
+            StaffProfile.objects.filter(city_id=job.city_id, user__role=Role.OPS_MANAGER).first()
+            or StaffProfile.objects.filter(
+                state=job.city.state, user__role=Role.REGIONAL_MANAGER
+            ).first()
+        )
+        if boss:
+            return boss
+    return None
+
+
+@transaction.atomic
+def onboard(a: JobApplication, *, hr, now=None):
+    """Hired: their account, staff profile, salary and first-week tasks are set up, they join
+    their team channels, and #general welcomes them. They set a password from the sign-in page
+    ("forgot password") with the email they applied with."""
+    from apps.accounts.models import Role, StaffProfile, User
+    from apps.chat.services import sync_channels
+    from apps.workspace.payroll import SALARY_BANDS, SalaryStructure
+    from apps.workspace.services import create_tasks
+
+    now = now or timezone.now()
+    if User.objects.filter(email__iexact=a.email).exists():
+        raise BusinessRuleViolation(
+            "Someone already has an account with this email; hire them by moving their role."
+        )
+    job = a.job
+    role = job.role if job.role in Role.values else Role.SUPPORT_AGENT
+    first, _, last = a.name.partition(" ")
+    user = User.objects.create_user(a.email, None, first_name=first, last_name=last, role=role)
+    manager = _manager_for(job) or getattr(hr, "staff_profile", None)
+    n = StaffProfile.objects.count() + 1
+    while StaffProfile.objects.filter(employee_id=f"RP{n:05d}").exists():
+        n += 1
+    profile = StaffProfile.objects.create(
+        user=user,
+        employee_id=f"RP{n:05d}",
+        title=job.title,
+        department=job.department,
+        city=job.city,
+        state=job.city.state if job.city else "",
+        reports_to=manager,
+        joined_on=timezone.localdate(now),
+    )
+    low, _high = SALARY_BANDS.get(role, (25_000, 35_000))
+    SalaryStructure.objects.create(
+        user=user, monthly_gross=low, bank_account_last4="0000", effective_from=profile.joined_on
+    )
+    if manager:
+        for i, title in enumerate(
+            [
+                "Set your password and turn on two-step sign-in",
+                "Read the staff handbook",
+                f"Meet your manager, {manager.user.first_name}",
+                "Shadow a colleague for a full shift",
+            ]
+        ):
+            create_tasks(
+                manager=manager.user,
+                title=title,
+                due_at=now + timedelta(days=2 + i * 2),
+                assignee_ids=[user.pk],
+                description="Your first week at Ride Pulse.",
+                now=now,
+            )
+    sync_channels()
+    from apps.chat.models import Conversation, Message
+    from apps.chat.services import _deliver
+
+    general = Conversation.objects.filter(kind="CHANNEL", slug="general").first()
+    if general:
+        m = Message.objects.create(
+            conversation=general,
+            body=f"👋 Please welcome {user.get_full_name()}, our new {job.title}"
+            + (f" in {job.city.name}" if job.city else "")
+            + "!",
+            created_at=now,
+        )
+        Conversation.objects.filter(pk=general.pk).update(last_message_at=now)
+        _deliver(general, m)
+    job.is_open = False
+    job.save(update_fields=["is_open"])
+    return profile
+
+
 def set_status(a: JobApplication, *, user, status: str) -> JobApplication:
     from apps.notifications.services import notify
 
     if status not in dict(JobApplication.STATUSES):
         raise BusinessRuleViolation("Unknown status.", field="status")
+    if status == "HIRED" and a.status != "HIRED":
+        onboard(a, hr=user)
     a.status, a.reviewed_by = status, user
     a.save(update_fields=["status", "reviewed_by"])
     if a.referred_by and status in ("INTERVIEW", "HIRED"):
@@ -451,6 +545,18 @@ def set_status(a: JobApplication, *, user, status: str) -> JobApplication:
             f"For {a.job.title}. Thank you for referring them!",
         )
     return a
+
+
+# The role a hire gets, by department (a manager title gets the manager role below).
+HIRE_ROLE = {
+    "OPERATIONS": "DISPATCH_CONTROLLER",
+    "SUPPORT": "SUPPORT_AGENT",
+    "MAINTENANCE": "FLEET_EXECUTIVE",
+    "FINANCE": "FINANCE_MANAGER",
+    "PEOPLE": "HR_MANAGER",
+    "SAFETY": "SAFETY_OFFICER",
+    "TECH": "SUPPORT_AGENT",
+}
 
 
 def seed_demo(*, log=print) -> dict:
@@ -524,6 +630,9 @@ def seed_demo(*, log=print) -> dict:
             department=dept,
             city=city.get(slug) if slug else None,
             kind="Internship" if "Intern" in title else "Full-time",
+            role="OPS_MANAGER"
+            if "Operations Manager" in title
+            else HIRE_ROLE.get(dept, "SUPPORT_AGENT"),
             summary=summary,
             description=f"{summary}\n\nWhat you'll do\n• Own outcomes, not tasks\n• Work closely "
             "with drivers, riders and the city teams\n• Use data every day\n\nWhat we look for\n• "
