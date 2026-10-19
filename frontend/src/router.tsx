@@ -87,6 +87,7 @@ const OpsAttendance = lazy(() => import("./pages/ops/OpsAttendance"));
 const OpsPayroll = lazy(() => import("./pages/ops/OpsPayroll"));
 const OpsPayslips = lazy(() => import("./pages/ops/OpsPayslips"));
 const OpsExpenses = lazy(() => import("./pages/ops/OpsExpenses"));
+const OpsAccess = lazy(() => import("./pages/ops/OpsAccess"));
 const OpsTrust = lazy(() => import("./pages/ops/OpsTrust"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
@@ -256,6 +257,7 @@ export const router = createBrowserRouter([
       { path: "payroll", element: lazyPage(<OpsPayroll />) },
       { path: "payslips", element: lazyPage(<OpsPayslips />) },
       { path: "expenses", element: lazyPage(<OpsExpenses />) },
+      { path: "access", element: lazyPage(<OpsAccess />) },
       { path: "grievances", element: lazyPage(<OpsGrievances />) },
       { path: "announcements", element: lazyPage(<OpsAnnouncements />) },
       { path: "incidents", element: lazyPage(<OpsIncidents />) },

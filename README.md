@@ -715,6 +715,15 @@ if any phrase the apps use is missing from a language or a `{placeholder}` doesn
 rider–driver chat phrasebook and announcements cover the same six languages. The ops console is
 in English.
 
+### Joiners, leavers and access reviews (`workspace.access`)
+
+Offboarding a leaver switches the account off, revokes every sign-in session, hands open tasks to
+their manager, returns open support tickets to the queue, removes future shifts and two-step
+sign-in, and logs each step. Each quarter an admin starts an access review: every manager confirms
+each direct report's role (keep, change or remove, applied at once and audited); accounts with no
+sign-in for 45 days are flagged, and overdue reviews are chased daily. New joiners get a
+checklist (manager, salary, first sign-in, two-step sign-in). Ops → Access reviews.
+
 ### Expense claims (`workspace.expenses`)
 
 Staff claim work spending in Ops → Expenses (fuel, travel, meals, hotel, phone, supplies), with a
