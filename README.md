@@ -715,6 +715,14 @@ if any phrase the apps use is missing from a language or a `{placeholder}` doesn
 rider–driver chat phrasebook and announcements cover the same six languages. The ops console is
 in English.
 
+### Appraisals (`workspace.appraisals`)
+
+Each half-year an admin starts a cycle. Employees write a self-review and rate themselves; their
+manager sees six months of evidence (tasks on time, tickets, SLA, CSAT, meetings, attendance) and
+rates 1–5 with a comment. A high rating that the evidence doesn't support (three or more absences,
+overdue work, under 60% on time) needs an explanation. Closing the cycle applies the raise for
+each rating (0/3/6/9/12%) to next month's salary. Ops → Appraisals.
+
 ### Joiners, leavers and access reviews (`workspace.access`)
 
 Offboarding a leaver switches the account off, revokes every sign-in session, hands open tasks to

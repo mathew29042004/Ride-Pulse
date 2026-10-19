@@ -264,6 +264,25 @@
     ],
     "type": "string"
    },
+   "AppraisalRatingRequest": {
+    "properties": {
+     "comment": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "rating": {
+      "maximum": 5,
+      "minimum": 1,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "comment",
+     "rating"
+    ],
+    "type": "object"
+   },
    "AssignRequest": {
     "properties": {
      "agent": {
@@ -8404,6 +8423,25 @@
      "FAILED"
     ],
     "type": "string"
+   },
+   "SelfReviewRequest": {
+    "properties": {
+     "rating": {
+      "maximum": 5,
+      "minimum": 1,
+      "type": "integer"
+     },
+     "text": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "rating",
+     "text"
+    ],
+    "type": "object"
    },
    "SendRequest": {
     "properties": {
@@ -30521,6 +30559,218 @@
       "multipart/form-data": {
        "schema": {
         "$ref": "#/components/schemas/AccessDecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/appraisals/": {
+   "get": {
+    "description": "Half-yearly appraisals: my own, my team's, and (admins) the cycle.",
+    "operationId": "appraisals_overview",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/appraisals/close/": {
+   "post": {
+    "description": "Half-yearly appraisals: my own, my team's, and (admins) the cycle.",
+    "operationId": "work_appraisals_close_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/appraisals/start/": {
+   "post": {
+    "description": "Half-yearly appraisals: my own, my team's, and (admins) the cycle.",
+    "operationId": "work_appraisals_start_create",
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/appraisals/{id}/rate/": {
+   "post": {
+    "description": "Half-yearly appraisals: my own, my team's, and (admins) the cycle.",
+    "operationId": "work_appraisals_rate_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AppraisalRatingRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/AppraisalRatingRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/AppraisalRatingRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/appraisals/{id}/self/": {
+   "post": {
+    "description": "Half-yearly appraisals: my own, my team's, and (admins) the cycle.",
+    "operationId": "work_appraisals_self_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SelfReviewRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/SelfReviewRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/SelfReviewRequest"
        }
       }
      },

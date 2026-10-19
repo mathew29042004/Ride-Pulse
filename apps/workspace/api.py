@@ -890,3 +890,83 @@ class AccessViewSet(BaseViewSet):
             user, by=request.user, reason=v["reason"], last_day=v.get("last_day")
         )
         return Response({"name": user.get_full_name(), "steps": record.steps})
+
+
+class SelfReviewSerializer(serializers.Serializer):
+    text = serializers.CharField(max_length=4000)
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+
+
+class AppraisalRatingSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    comment = serializers.CharField(max_length=4000)
+
+
+class AppraisalViewSet(BaseViewSet):
+    """Half-yearly appraisals: my own, my team's, and (admins) the cycle."""
+
+    capabilities = {"start": Cap.USERS_MANAGE, "close": Cap.USERS_MANAGE, "*": Cap.WORK_USE}
+    queryset = StaffProfile.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="appraisals_overview")
+    def list(self, request):
+        from . import appraisals
+
+        cycle = appraisals.AppraisalCycle.objects.first()
+        rows = appraisals.Appraisal.objects.filter(cycle=cycle).select_related(
+            "employee", "manager", "cycle"
+        )
+        body = {
+            "cycle": {"id": cycle.pk, "name": cycle.name, "closed": bool(cycle.closed_at)}
+            if cycle
+            else None,
+            "mine": [appraisals.row(a) for a in rows.filter(employee=request.user)],
+            "team": [appraisals.row(a) for a in rows.filter(manager=request.user)],
+            "raises": appraisals.RAISE,
+            "admin": request.user.has_capability(Cap.USERS_MANAGE),
+        }
+        if body["admin"] and cycle:
+            from django.db.models import Count
+
+            body["progress"] = dict(rows.values_list("status").annotate(n=Count("id")))
+        return Response(body)
+
+    @extend_schema(request=None, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def start(self, request):
+        from . import appraisals
+
+        cycle = appraisals.start(by=request.user)
+        return Response({"name": cycle.name}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def close(self, request):
+        from . import appraisals
+
+        cycle = get_object_or_404(appraisals.AppraisalCycle, closed_at__isnull=True)
+        return Response(appraisals.close(cycle, by=request.user))
+
+    @extend_schema(request=SelfReviewSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="self")
+    def self_review(self, request, pk=None):
+        from . import appraisals
+
+        data = SelfReviewSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        a = get_object_or_404(appraisals.Appraisal, pk=pk)
+        return Response(
+            appraisals.row(appraisals.self_review(a, user=request.user, **data.validated_data))
+        )
+
+    @extend_schema(request=AppraisalRatingSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def rate(self, request, pk=None):
+        from . import appraisals
+
+        data = AppraisalRatingSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        a = get_object_or_404(appraisals.Appraisal, pk=pk)
+        return Response(
+            appraisals.row(appraisals.rate(a, manager=request.user, **data.validated_data))
+        )

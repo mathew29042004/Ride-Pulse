@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -97,6 +97,7 @@ const NAV = [
       { to: "/ops/payslips", label: "My payslips", icon: FileText, cap: "work.use" },
       { to: "/ops/expenses", label: "Expenses", icon: Receipt, cap: "work.use" },
       { to: "/ops/access", label: "Access reviews", icon: KeyRound, cap: "work.use" },
+      { to: "/ops/appraisals", label: "Appraisals", icon: Star, cap: "work.use" },
       { to: "/ops/payroll", label: "Payroll", icon: Wallet, cap: "payroll.manage" },
       { to: "/ops/announcements", label: "Announcements", icon: Megaphone, cap: "announce" },
       { to: "/ops/help", label: "Handbook", icon: BookOpen, cap: "work.use" },
