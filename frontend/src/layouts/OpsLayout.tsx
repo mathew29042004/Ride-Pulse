@@ -94,6 +94,7 @@ const NAV = [
       { to: "/ops/roster", label: "Roster & leave", icon: CalendarDays, cap: "work.use" },
       { to: "/ops/attendance", label: "Attendance", icon: Clock, cap: "work.use" },
       { to: "/ops/payslips", label: "My payslips", icon: FileText, cap: "work.use" },
+      { to: "/ops/expenses", label: "Expenses", icon: Receipt, cap: "work.use" },
       { to: "/ops/payroll", label: "Payroll", icon: Wallet, cap: "payroll.manage" },
       { to: "/ops/announcements", label: "Announcements", icon: Megaphone, cap: "announce" },
       { to: "/ops/help", label: "Handbook", icon: BookOpen, cap: "work.use" },

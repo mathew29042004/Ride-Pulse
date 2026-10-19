@@ -215,4 +215,5 @@ class LeaveRequest(models.Model):
 
 
 from .attendance import Attendance  # noqa: E402,F401  (registers the model)
+from .expenses import ExpenseClaim  # noqa: E402,F401  (registers the model)
 from .payroll import Payslip, SalaryStructure  # noqa: E402,F401  (registers the models)

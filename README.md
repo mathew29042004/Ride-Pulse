@@ -705,6 +705,15 @@ if any phrase the apps use is missing from a language or a `{placeholder}` doesn
 rider–driver chat phrasebook and announcements cover the same six languages. The ops console is
 in English.
 
+### Expense claims (`workspace.expenses`)
+
+Staff claim work spending in Ops → Expenses (fuel, travel, meals, hotel, phone, supplies), with a
+receipt above ₹200, within 60 days. Each category has a per-claim policy limit; claims over it are
+flagged and the manager must give a reason to approve. Duplicates (same amount, day and category)
+are refused. Someone above the person in the org chart decides (never themselves; declines need
+a reason). Approved claims are added to the next payroll as a tax-free "Expense reimbursement"
+line (no PF, ESI or TDS on it) and marked paid with that payroll.
+
 ### Payroll and payslips (`workspace.payroll`)
 
 HR (Ops → Payroll, `payroll.manage`) runs each month from attendance and leave: absent days are

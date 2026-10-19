@@ -5,6 +5,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, serializers, status
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from apps.accounts.models import StaffProfile
@@ -716,3 +717,87 @@ class PayslipViewSet(BaseViewSet):
         response = HttpResponse(payroll.render_pdf(slip), content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="payslip-{slip.month:%Y-%m}.pdf"'
         return response
+
+
+class ExpenseSubmitSerializer(serializers.Serializer):
+    category = serializers.CharField(max_length=8)
+    spent_on = serializers.DateField()
+    amount = serializers.DecimalField(max_digits=9, decimal_places=2)
+    description = serializers.CharField(max_length=200)
+    receipt = serializers.FileField(required=False)
+
+
+class ExpenseDecisionSerializer(serializers.Serializer):
+    approve = serializers.BooleanField()
+    note = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
+class ExpenseViewSet(BaseViewSet):
+    """My expense claims, and my team's to approve."""
+
+    capabilities = {"*": Cap.WORK_USE}
+    queryset = StaffProfile.objects.none()
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="expenses_overview")
+    def list(self, request):
+        from . import expenses
+        from .services import team_of
+
+        mine = expenses.ExpenseClaim.objects.filter(user=request.user).select_related(
+            "user", "decided_by"
+        )[:50]
+        team = expenses.ExpenseClaim.objects.filter(
+            user_id__in=team_of(request.user), status=expenses.ClaimStatus.SUBMITTED
+        ).select_related("user")[:100]
+        return Response(
+            {
+                "mine": [expenses.row(c) for c in mine],
+                "to_approve": [expenses.row(c) for c in team],
+                "categories": [
+                    {"value": v, "label": label, "limit": expenses.POLICY[v]}
+                    for v, label in expenses.ExpenseCategory.choices
+                ],
+            }
+        )
+
+    @extend_schema(request=ExpenseSubmitSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from . import expenses
+
+        data = ExpenseSubmitSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        claim = expenses.submit(request.user, **data.validated_data)
+        return Response(expenses.row(claim), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=ExpenseDecisionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def decide(self, request, pk=None):
+        from . import expenses
+
+        data = ExpenseDecisionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        claim = get_object_or_404(expenses.ExpenseClaim, pk=pk)
+        return Response(
+            expenses.row(expenses.decide(claim, manager=request.user, **data.validated_data))
+        )
+
+    @extend_schema(responses={(200, "application/octet-stream"): OpenApiTypes.BINARY})
+    @action(detail=True, methods=["get"])
+    def receipt(self, request, pk=None):
+        from django.http import FileResponse
+
+        from apps.core.exceptions import ActionNotPermitted
+
+        from . import expenses
+        from .services import team_of
+
+        claim = get_object_or_404(expenses.ExpenseClaim, pk=pk)
+        allowed = claim.user_id == request.user.pk or claim.user_id in team_of(request.user)
+        if not allowed and not request.user.has_capability(Cap.PAYROLL_MANAGE):
+            raise ActionNotPermitted("You can't see this receipt.")
+        if not claim.receipt:
+            raise ActionNotPermitted("No receipt was attached.")
+        return FileResponse(
+            claim.receipt.open("rb"), filename=claim.receipt.name.rsplit("/", 1)[-1]
+        )

@@ -2356,6 +2356,56 @@
     ],
     "type": "string"
    },
+   "ExpenseDecisionRequest": {
+    "properties": {
+     "approve": {
+      "type": "boolean"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 200,
+      "type": "string"
+     }
+    },
+    "required": [
+     "approve"
+    ],
+    "type": "object"
+   },
+   "ExpenseSubmitRequest": {
+    "properties": {
+     "amount": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,7}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "category": {
+      "maxLength": 8,
+      "minLength": 1,
+      "type": "string"
+     },
+     "description": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+     },
+     "receipt": {
+      "format": "binary",
+      "type": "string"
+     },
+     "spent_on": {
+      "format": "date",
+      "type": "string"
+     }
+    },
+    "required": [
+     "amount",
+     "category",
+     "description",
+     "spent_on"
+    ],
+    "type": "object"
+   },
    "Experiment": {
     "properties": {
      "decision": {
@@ -30175,6 +30225,186 @@
         "schema": {
          "additionalProperties": {},
          "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/expenses/": {
+   "get": {
+    "description": "My expense claims, and my team's to approve.",
+    "operationId": "expenses_overview",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   },
+   "post": {
+    "description": "My expense claims, and my team's to approve.",
+    "operationId": "work_expenses_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseSubmitRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseSubmitRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseSubmitRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/expenses/{id}/decide/": {
+   "post": {
+    "description": "My expense claims, and my team's to approve.",
+    "operationId": "work_expenses_decide_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseDecisionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseDecisionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseDecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/expenses/{id}/receipt/": {
+   "get": {
+    "description": "My expense claims, and my team's to approve.",
+    "operationId": "work_expenses_receipt_retrieve",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/octet-stream": {
+        "schema": {
+         "format": "binary",
+         "type": "string"
         }
        }
       },

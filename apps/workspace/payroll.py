@@ -187,6 +187,9 @@ def compute(user, month: date) -> dict:
     if night:
         earnings.append([f"Night shift allowance ({seen['nights']})", night])
     gross = sum((a for _, a in earnings), ZERO)
+    from .expenses import due_for
+
+    reimbursement, _claims = due_for(user)
     pf = _q(min(basic, PF_WAGE_CAP) * PF_RATE) if salary.pf else ZERO
     esi = _q(gross * ESI_EMPLOYEE) if salary.monthly_gross <= ESI_LIMIT else ZERO
     pt = professional_tax(state, gross)
@@ -210,6 +213,10 @@ def compute(user, month: date) -> dict:
         if amount
     ]
     total = sum((a for _, a in deductions), ZERO)
+    if reimbursement:
+        # Not salary: no PF, ESI or tax on it, so it's added after the deductions are worked out.
+        earnings.append(["Expense reimbursement", reimbursement])
+        gross += reimbursement
     return {
         "days": days,
         "paid_days": Decimal(days) - lop,
@@ -254,10 +261,15 @@ def run(month: date, *, user=None) -> dict:
             for key, value in fields.items():
                 setattr(existing, key, value)
             existing.save()
-            refreshed += 1
+            slip, refreshed = existing, refreshed + 1
         else:
-            Payslip.objects.create(user=salary.user, month=month, **fields)
+            slip = Payslip.objects.create(user=salary.user, month=month, **fields)
             made += 1
+        from .expenses import due_for
+
+        for claim in due_for(salary.user)[1]:
+            claim.payslip = slip
+            claim.save(update_fields=["payslip"])
     return {"created": made, "refreshed": refreshed, "kept": skipped}
 
 
@@ -282,6 +294,11 @@ def mark_paid(month: date, *, user, bank_reference: str, now=None) -> int:
     now = now or timezone.now()
     Payslip.objects.filter(pk__in=[s.pk for s in slips]).update(
         status=PayslipStatus.PAID, paid_at=now, bank_reference=bank_reference.strip()[:40]
+    )
+    from .expenses import ClaimStatus, ExpenseClaim
+
+    ExpenseClaim.objects.filter(payslip__in=slips, status=ClaimStatus.APPROVED).update(
+        status=ClaimStatus.PAID
     )
     for slip in slips:
         notify(

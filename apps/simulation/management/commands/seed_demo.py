@@ -59,6 +59,9 @@ class Command(BaseCommand):
         from apps.workspace import attendance
 
         stats.update(attendance.seed_demo(log=self.stdout.write))
+        from apps.workspace import expenses as expense_claims
+
+        stats.update(expense_claims.seed_demo(log=self.stdout.write))
         from apps.workspace import payroll
 
         stats.update(payroll.seed_demo(log=self.stdout.write))
