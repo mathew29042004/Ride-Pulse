@@ -1007,5 +1007,7 @@
  "Per km": "ಪ್ರತಿ ಕಿ.ಮೀ",
  "Estimates by vehicle type; electric cars count the grid's share.": "ವಾಹನ ಪ್ರಕಾರದ ಅಂದಾಜು; ವಿದ್ಯುತ್ ಕಾರುಗಳಿಗೆ ಗ್ರಿಡ್ ಪಾಲು ಎಣಿಸಲಾಗುತ್ತದೆ.",
  "Download CSV": "CSV ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
- "Online payments are down right now. Pay in cash or from your wallet.": "ಆನ್‌ಲೈನ್ ಪಾವತಿ ಈಗ ಸ್ಥಗಿತಗೊಂಡಿದೆ. ನಗದು ಅಥವಾ ವಾಲೆಟ್ ಮೂಲಕ ಪಾವತಿಸಿ."
+ "Online payments are down right now. Pay in cash or from your wallet.": "ಆನ್‌ಲೈನ್ ಪಾವತಿ ಈಗ ಸ್ಥಗಿತಗೊಂಡಿದೆ. ನಗದು ಅಥವಾ ವಾಲೆಟ್ ಮೂಲಕ ಪಾವತಿಸಿ.",
+ "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "ಸುರಕ್ಷಿತ ಚಾಲಕರಿಗೆ ಕಡಿಮೆ ಬಡ್ಡಿ: ಸುರಕ್ಷತಾ ಸ್ಕೋರ್ {s} ಅಥವಾ ಹೆಚ್ಚಿದ್ದರೆ ವರ್ಷಕ್ಕೆ {rate}%.",
+ "Your score: {n}": "ನಿಮ್ಮ ಸ್ಕೋರ್: {n}"
 }

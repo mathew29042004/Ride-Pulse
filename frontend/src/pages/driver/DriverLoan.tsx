@@ -38,6 +38,9 @@ interface Data {
   tenures: number[];
   partner: string;
   keep_at_least: string;
+  safety_score: number | null;
+  safe_driver_rate: string;
+  safe_driver_score: number;
   purposes: { value: string; label: string }[];
   loans: Loan[];
 }
@@ -82,6 +85,12 @@ export default function DriverLoan() {
       {d && (
         <p className="mt-2 text-sm text-muted">
           {t("From {partner} at {rate}% a year. The EMI comes out of your weekly earnings before payout; you always keep at least {keep}. No fee to pay off early.", { partner: d.partner, rate: d.annual_rate, keep: inr(d.keep_at_least, { whole: true }) })}
+        </p>
+      )}
+      {d && (
+        <p className="mt-1 text-xs text-muted">
+          {t("Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.", { s: d.safe_driver_score, rate: d.safe_driver_rate })}
+          {d.safety_score != null && ` ${t("Your score: {n}", { n: d.safety_score })}`}
         </p>
       )}
       {current && (

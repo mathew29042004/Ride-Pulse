@@ -134,3 +134,22 @@ def test_purpose_required_and_declines_need_a_reason(driver, ops, now):
         loans.decide(loan, approve=False, user=ops)
     loans.decide(loan, approve=False, user=ops, note="Vehicle is older than 8 years")
     assert loans.row(loan)["purpose_label"] == "Buy a used vehicle"
+
+
+def test_safety_score_sets_rate_and_eligibility(driver, now):
+    from apps.drivers.models import DriverProfile
+
+    DriverProfile.objects.filter(pk=driver.pk).update(safety_score=90)
+    driver.refresh_from_db()
+    assert loans.eligibility(driver, now=now)["annual_rate"] == loans.SAFE_DRIVER_RATE
+    loan = loans.apply(
+        driver, vehicle="Swift", amount=Decimal(50_000), weeks=52, purpose="USED_VEHICLE", now=now
+    )
+    assert loan.annual_rate == loans.SAFE_DRIVER_RATE and loan.weekly_emi < loans.emi(
+        Decimal(50_000), weeks=52
+    )
+    loan.delete()
+    DriverProfile.objects.filter(pk=driver.pk).update(safety_score=40)
+    driver.refresh_from_db()
+    info = loans.eligibility(driver, now=now)
+    assert not info["eligible"] and any("safety score" in r for r in info["reasons"])

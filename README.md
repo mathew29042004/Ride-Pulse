@@ -838,7 +838,7 @@ plus their own words) for ₹20,000 up to an amount whose 3-year EMI fits in 30%
 ₹6 lakh), through a partner NBFC at 14% a year. Ops approve in Ops → Vehicle loans, or decline with a reason the driver sees; the partner pays
 the dealer. The weekly EMI (reducing balance) comes out of earnings just before the weekly payout:
 at most half the week's balance, and the driver always keeps ₹1,500. Any shortfall carries over
-as arrears with no penalty. Early pay-off has no fee. EMIs are posted to the ledger as
+as arrears with no penalty. Early pay-off has no fee. Safety counts: a safety score under 60 can't borrow, and 85 or more gets 12.5% a year instead of 14%. EMIs are posted to the ledger as
 `LOAN_EMI` → `external:loan_partner`.
 
 ### Monsoon / flood mode (`reliability.weather`)

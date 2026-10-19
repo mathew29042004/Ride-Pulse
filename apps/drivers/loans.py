@@ -22,6 +22,16 @@ from apps.payments.accounts import LOAN_PARTNER as PARTNER
 
 PARTNER_NAME = "Shakti Finance (partner NBFC)"
 ANNUAL_RATE = Decimal("14.0")  # % a year, reducing balance
+MIN_SAFETY_SCORE = 60  # risky drivers can't borrow against future earnings
+SAFE_DRIVER_SCORE, SAFE_DRIVER_RATE = 85, Decimal("12.5")  # safer drivers pay less interest
+
+
+def rate_for(driver) -> Decimal:
+    """Safe drivers are a lower risk: 12.5% a year instead of 14% from a safety score of 85."""
+    score = driver.safety_score
+    return SAFE_DRIVER_RATE if score is not None and score >= SAFE_DRIVER_SCORE else ANNUAL_RATE
+
+
 TENURES = (52, 104, 156)  # weeks
 MAX_PRINCIPAL = Decimal(600_000)
 EMI_SHARE_MAX = Decimal("0.5")  # at most half the week's balance
@@ -129,11 +139,16 @@ def eligibility(driver, *, now=None) -> dict:
         reasons.append(f"Drive with us for {MIN_DAYS} days.")
     if driver.rating < MIN_RATING:
         reasons.append(f"Keep a rating of {MIN_RATING} or more.")
+    if driver.safety_score is not None and driver.safety_score < MIN_SAFETY_SCORE:
+        reasons.append(
+            f"Raise your safety score to {MIN_SAFETY_SCORE} (it's {driver.safety_score})."
+        )
     if driver.loans.filter(status__in=[LoanStatus.REQUESTED, LoanStatus.ACTIVE]).exists():
         reasons.append("You already have a loan or an application.")
     weekly = average_weekly_earnings(driver, now=now)
     # The longest tenure's EMI must fit in 30% of a normal week's earnings.
-    r = ANNUAL_RATE / 100 / 52
+    rate = rate_for(driver)
+    r = rate / 100 / 52
     weeks = TENURES[-1]
     factor = (1 + r) ** weeks
     affordable = weekly * Decimal("0.3") * (factor - 1) / (r * factor) if weekly > 0 else ZERO
@@ -145,7 +160,10 @@ def eligibility(driver, *, now=None) -> dict:
         "reasons": reasons,
         "max_amount": limit,
         "weekly_earnings": weekly,
-        "annual_rate": ANNUAL_RATE,
+        "annual_rate": rate,
+        "safety_score": driver.safety_score,
+        "safe_driver_rate": SAFE_DRIVER_RATE,
+        "safe_driver_score": SAFE_DRIVER_SCORE,
         "tenures": list(TENURES),
         "partner": PARTNER_NAME,
         "keep_at_least": KEEP_AT_LEAST,
@@ -179,7 +197,8 @@ def apply(
         details=details.strip()[:300],
         principal=amount,
         tenure_weeks=weeks,
-        weekly_emi=emi(amount, weeks=weeks),
+        annual_rate=info["annual_rate"],
+        weekly_emi=emi(amount, weeks=weeks, annual_rate=info["annual_rate"]),
         outstanding=amount,
         requested_at=now,
     )
