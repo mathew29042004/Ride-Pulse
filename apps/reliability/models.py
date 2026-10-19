@@ -421,3 +421,24 @@ class DecisionRequest(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class CityTarget(models.Model):
+    """The commander's goals for a city this month: the share of trips completed and the longest
+    a rider should wait for a driver. Dashboards, alerts and the weekly stars measure against it."""
+
+    city = models.ForeignKey("geo.City", on_delete=models.CASCADE, related_name="+")
+    month = models.DateField()  # the 1st
+    completion_pct = models.PositiveSmallIntegerField(default=80)
+    max_wait_min = models.PositiveSmallIntegerField(default=6)
+    set_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["city", "month"], name="one_target_per_city_month")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.city} {self.month:%Y-%m}"

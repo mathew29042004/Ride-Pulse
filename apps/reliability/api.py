@@ -458,6 +458,22 @@ class CommandViewSet(BaseViewSet):
         )
         return Response(command.row(order), status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def target(self, request):
+        """Set this month's completion target for a city."""
+        from apps.geo.models import City
+
+        from . import command
+
+        t = command.set_target(
+            user=request.user,
+            city=get_object_or_404(City, pk=int(request.data.get("city", 0))),
+            completion_pct=int(request.data.get("completion_pct", 80)),
+            max_wait_min=int(request.data.get("max_wait_min", 6)),
+        )
+        return Response({"city": t.city_id, "completion_pct": t.completion_pct})
+
     @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])
     def lift(self, request, pk=None):

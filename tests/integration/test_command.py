@@ -172,3 +172,15 @@ def test_find_and_act_on_people(api, make_driver):
     )
     rider.refresh_from_db()
     assert rider.is_blocked
+
+
+def test_city_targets_drive_alerts_and_on_track(api, chennai):
+    boss = make_staff(Role.COMMANDER)
+    r = api(boss).post(
+        "/api/v1/ops/command/target/", {"city": chennai.pk, "completion_pct": 90}, format="json"
+    )
+    assert r.json()["completion_pct"] == 90
+    row = next(c for c in command.overview()["cities"] if c["id"] == chennai.pk)
+    assert row["target_pct"] == 90
+    with pytest.raises(BusinessRuleViolation):
+        command.set_target(user=boss, city=chennai, completion_pct=10)

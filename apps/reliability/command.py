@@ -230,6 +230,7 @@ def overview(*, now=None) -> dict:
         )
     }
     orders = list(active(now=now).select_related("city", "created_by", "lifted_by"))
+    targets = targets_for(now=now)
     open_incidents = Incident.objects.exclude(status=IncidentStatus.RESOLVED)
     cities = []
     for c in City.objects.filter(is_active=True).order_by("state", "name"):
@@ -248,6 +249,10 @@ def overview(*, now=None) -> dict:
                 "trips_today": t["n"],
                 "completion_pct": round(100 * t["done"] / t["n"]) if t["n"] else None,
                 "searching": t["searching"],
+                "target_pct": targets.get(c.pk),
+                "on_track": None
+                if targets.get(c.pk) is None or not t["n"]
+                else round(100 * t["done"] / t["n"]) >= targets[c.pk],
                 "flags": flags,
                 "health": "red"
                 if any(o.kind == OrderKind.PAUSE_BOOKINGS for o in city_orders)
@@ -463,6 +468,7 @@ def watch(*, now=None) -> dict:
         .values("city_id")
         .annotate(n=Count("id"), done=Count("id", filter=Q(status=TripStatus.COMPLETED)))
     }
+    goals = targets_for(now=now)
     for city in City.objects.filter(is_active=True):
         n = waiting.get(city.pk, 0)
         if n >= STRANDED:
@@ -478,14 +484,16 @@ def watch(*, now=None) -> dict:
                 )
             )
         s = stats.get(city.pk)
-        if s and s["n"] >= MIN_TRIPS and 100 * s["done"] / s["n"] < COMPLETION_FLOOR:
+        floor = goals.get(city.pk, COMPLETION_FLOOR)
+        if s and s["n"] >= MIN_TRIPS and 100 * s["done"] / s["n"] < floor:
             pct = round(100 * s["done"] / s["n"])
             raised += bool(
                 _raise(
                     f"completion:{city.pk}:{today:%Y%m%d}",
                     level="WARNING",
                     title=f"Only {pct}% of trips completed in {city.name} today",
-                    detail=f"{s['done']} of {s['n']} trips. Check cancellations and driver supply.",
+                    detail=f"{s['done']} of {s['n']} trips (target {floor}%). Check "
+                    "cancellations and driver supply.",
                     city=city,
                     link="/ops/analytics",
                     now=now,
@@ -639,7 +647,12 @@ def leaderboard(*, now=None) -> dict:
         .annotate(n=Count("id"), done=Count("id", filter=Q(status=TripStatus.COMPLETED)))
         .filter(n__gte=20)
     )
-    best_city = max(cities, key=lambda c: c["done"] / c["n"], default=None)
+    goals = targets_for(now=now)
+    best_city = max(
+        cities,
+        key=lambda c: 100 * c["done"] / c["n"] - goals.get(c["city_id"], 0),
+        default=None,
+    )
     agent = (
         SupportTicket.objects.filter(resolved_at__gte=since, assigned_to__isnull=False)
         .values("assigned_to_id", "assigned_to__first_name", "assigned_to__last_name")
@@ -713,3 +726,37 @@ def thank(*, user, kind: str, note: str = "", now=None) -> str:
         Conversation.objects.filter(pk=general.pk).update(last_message_at=now)
         _deliver(general, message)
     return line
+
+
+# --- Targets -----------------------------------------------------------------------------------
+
+
+def _month(now):
+    return timezone.localdate(now).replace(day=1)
+
+
+def targets_for(*, now=None) -> dict[int, int]:
+    from .models import CityTarget
+
+    return dict(
+        CityTarget.objects.filter(month=_month(now or timezone.now())).values_list(
+            "city_id", "completion_pct"
+        )
+    )
+
+
+def set_target(*, user, city, completion_pct: int, max_wait_min: int = 6, now=None):
+    from .models import CityTarget
+
+    if not 30 <= int(completion_pct) <= 100 or not 1 <= int(max_wait_min) <= 30:
+        raise BusinessRuleViolation("Completion 30–100%, wait 1–30 minutes.")
+    target, _ = CityTarget.objects.update_or_create(
+        city=city,
+        month=_month(now or timezone.now()),
+        defaults={
+            "completion_pct": int(completion_pct),
+            "max_wait_min": int(max_wait_min),
+            "set_by": user,
+        },
+    )
+    return target

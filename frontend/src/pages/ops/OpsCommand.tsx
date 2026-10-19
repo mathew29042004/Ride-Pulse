@@ -38,6 +38,8 @@ interface CityRow {
   trips_today: number;
   completion_pct: number | null;
   searching: number;
+  target_pct: number | null;
+  on_track: boolean | null;
   flags: string[];
   health: "green" | "amber" | "red";
 }
@@ -276,7 +278,7 @@ export default function OpsCommand() {
             <CardHeader title="Every city" subtitle="Today, refreshed every 15 seconds." />
             <Table>
               <thead>
-                <tr><Th>City</Th><Th className="text-right">Drivers live</Th><Th className="text-right">Trips today</Th><Th className="text-right">Completed</Th><Th className="text-right">Waiting</Th><Th>Notes</Th></tr>
+                <tr><Th>City</Th><Th className="text-right">Drivers live</Th><Th className="text-right">Trips today</Th><Th className="text-right">Completed</Th><Th className="text-right">Target</Th><Th className="text-right">Waiting</Th><Th>Notes</Th></tr>
               </thead>
               <tbody>
                 {d?.cities.map((c) => (
@@ -287,7 +289,13 @@ export default function OpsCommand() {
                     </Td>
                     <Td className="text-right tabular-nums">{c.drivers_live}</Td>
                     <Td className="text-right tabular-nums">{c.trips_today}</Td>
-                    <Td className="text-right tabular-nums">{c.completion_pct === null ? "—" : `${c.completion_pct}%`}</Td>
+                    <Td className="text-right tabular-nums">
+                      {c.completion_pct === null ? "—" : `${c.completion_pct}%`}
+                      {c.on_track !== null && <span className={`ml-1 text-[10px] font-bold ${c.on_track ? "text-emerald-600" : "text-rose-600"}`}>{c.on_track ? "▲ on track" : "▼ behind"}</span>}
+                    </Td>
+                    <Td className="text-right">
+                      <TargetInput city={c.id} value={c.target_pct} onSaved={refresh} />
+                    </Td>
                     <Td className="text-right tabular-nums">{c.searching}</Td>
                     <Td>
                       <div className="flex flex-wrap gap-1">{c.flags.map((f) => <Badge key={f} tone="warning">{f}</Badge>)}</div>
@@ -641,5 +649,31 @@ function Leaders({ leaders }: { leaders: Data["leaders"] }) {
         })}
       </div>
     </Card>
+  );
+}
+
+function TargetInput({ city, value, onSaved }: { city: number; value: number | null; onSaved: () => void }) {
+  const [v, setV] = useState(value?.toString() ?? "");
+  const save = useMutation({
+    mutationFn: () => api.post("ops/command/target/", { city, completion_pct: Number(v) }),
+    onSuccess: () => {
+      toast.success("Target set for this month.");
+      onSaved();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Something went wrong."),
+  });
+  return (
+    <form className="inline-flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); if (v && Number(v) !== value) save.mutate(); }}>
+      <input
+        value={v}
+        onChange={(e) => setV(e.target.value.replace(/\D/g, "").slice(0, 3))}
+        onBlur={() => v && Number(v) !== value && save.mutate()}
+        placeholder="—"
+        className="w-12 rounded-lg bg-surface-2 px-1.5 py-0.5 text-right text-xs tabular-nums ring-1 ring-line outline-none focus:ring-brand"
+        aria-label="Completion target %"
+        inputMode="numeric"
+      />
+      <span className="text-xs text-muted">%</span>
+    </form>
   );
 }
