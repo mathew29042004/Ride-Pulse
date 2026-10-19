@@ -44,10 +44,25 @@ def test_apply_approve_collect_and_pay_off(driver, ops, now):
     info = loans.eligibility(driver, now=now)
     assert info["eligible"] and info["max_amount"] > 100_000
     with pytest.raises(BusinessRuleViolation, match="borrow between"):
-        loans.apply(driver, vehicle="Tata Tiago EV", amount=info["max_amount"] + 1000, weeks=156)
-    loan = loans.apply(driver, vehicle="Tata Tiago EV", amount=Decimal(100_000), weeks=104, now=now)
+        loans.apply(
+            driver,
+            vehicle="Tata Tiago EV",
+            amount=info["max_amount"] + 1000,
+            weeks=156,
+            purpose="SWITCH_TO_EV",
+        )
+    loan = loans.apply(
+        driver,
+        vehicle="Tata Tiago EV",
+        amount=Decimal(100_000),
+        weeks=104,
+        purpose="SWITCH_TO_EV",
+        now=now,
+    )
     with pytest.raises(BusinessRuleViolation, match="already"):
-        loans.apply(driver, vehicle="Another", amount=Decimal(30_000), weeks=52, now=now)
+        loans.apply(
+            driver, vehicle="Another", amount=Decimal(30_000), weeks=52, purpose="CNG_KIT", now=now
+        )
     loans.decide(loan, approve=True, user=ops, now=now)
 
     credit(driver, 10_000)  # a good week: the full EMI comes out
@@ -90,7 +105,13 @@ def test_api(api, driver, ops):
     assert client.get("/api/v1/driver/loan/").json()["eligible"]
     made = client.post(
         "/api/v1/driver/loan/apply/",
-        {"vehicle": "Bajaj RE auto", "amount": "50000", "weeks": 52},
+        {
+            "vehicle": "Bajaj RE auto",
+            "amount": "50000",
+            "weeks": 52,
+            "purpose": "NEW_VEHICLE",
+            "details": "My old auto is 9 years old",
+        },
         format="json",
     )
     assert made.status_code == 201
@@ -101,3 +122,15 @@ def test_api(api, driver, ops):
     )
     assert decided.json()["status"] == "ACTIVE"
     assert client.get("/api/v1/ops/loans/").status_code == 403
+
+
+def test_purpose_required_and_declines_need_a_reason(driver, ops, now):
+    with pytest.raises(BusinessRuleViolation, match="what the loan is for"):
+        loans.apply(driver, vehicle="Swift", amount=Decimal(50_000), weeks=52, purpose="HOLIDAY")
+    loan = loans.apply(
+        driver, vehicle="Swift", amount=Decimal(50_000), weeks=52, purpose="USED_VEHICLE", now=now
+    )
+    with pytest.raises(BusinessRuleViolation, match="reason"):
+        loans.decide(loan, approve=False, user=ops)
+    loans.decide(loan, approve=False, user=ops, note="Vehicle is older than 8 years")
+    assert loans.row(loan)["purpose_label"] == "Buy a used vehicle"

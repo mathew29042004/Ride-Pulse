@@ -224,6 +224,8 @@ class LoanApplySerializer(serializers.Serializer):
     vehicle = serializers.CharField(max_length=80)
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     weeks = serializers.IntegerField()
+    purpose = serializers.CharField(max_length=14)
+    details = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
 
 
 class LoanDecisionSerializer(serializers.Serializer):

@@ -38,11 +38,24 @@ class LoanStatus(models.TextChoices):
     CLOSED = "CLOSED", "Paid off"
 
 
+class LoanPurpose(models.TextChoices):
+    NEW_VEHICLE = "NEW_VEHICLE", "Buy a new vehicle"
+    USED_VEHICLE = "USED_VEHICLE", "Buy a used vehicle"
+    SWITCH_TO_EV = "SWITCH_TO_EV", "Switch to an electric vehicle"
+    UPGRADE = "UPGRADE", "Upgrade to a bigger vehicle (e.g. sedan or SUV)"
+    MAJOR_REPAIR = "MAJOR_REPAIR", "Major repair or engine replacement"
+    CNG_KIT = "CNG_KIT", "Fit a CNG kit"
+
+
 class VehicleLoan(models.Model):
     driver = models.ForeignKey(
         "drivers.DriverProfile", on_delete=models.CASCADE, related_name="loans"
     )
     vehicle = models.CharField(max_length=80)  # what they're buying, e.g. "Tata Tiago EV 2026"
+    purpose = models.CharField(
+        max_length=14, choices=LoanPurpose.choices, default=LoanPurpose.NEW_VEHICLE
+    )
+    details = models.CharField(max_length=300, blank=True)  # the driver's own words
     principal = models.DecimalField(max_digits=10, decimal_places=2)
     annual_rate = models.DecimalField(max_digits=4, decimal_places=2, default=ANNUAL_RATE)
     tenure_weeks = models.PositiveSmallIntegerField()
@@ -136,10 +149,13 @@ def eligibility(driver, *, now=None) -> dict:
         "tenures": list(TENURES),
         "partner": PARTNER_NAME,
         "keep_at_least": KEEP_AT_LEAST,
+        "purposes": [{"value": v, "label": label} for v, label in LoanPurpose.choices],
     }
 
 
-def apply(driver, *, vehicle: str, amount: Decimal, weeks: int, now=None) -> VehicleLoan:
+def apply(
+    driver, *, vehicle: str, amount: Decimal, weeks: int, purpose: str, details: str = "", now=None
+) -> VehicleLoan:
     now = now or timezone.now()
     info = eligibility(driver, now=now)
     if not info["eligible"]:
@@ -151,12 +167,16 @@ def apply(driver, *, vehicle: str, amount: Decimal, weeks: int, now=None) -> Veh
         raise BusinessRuleViolation(
             f"You can borrow between ₹20,000 and ₹{info['max_amount']:,.0f}.", field="amount"
         )
+    if purpose not in LoanPurpose.values:
+        raise BusinessRuleViolation("Tell us what the loan is for.", field="purpose")
     vehicle = vehicle.strip()[:80]
     if len(vehicle) < 3:
         raise BusinessRuleViolation("Tell us which vehicle you're buying.", field="vehicle")
     return VehicleLoan.objects.create(
         driver=driver,
         vehicle=vehicle,
+        purpose=purpose,
+        details=details.strip()[:300],
         principal=amount,
         tenure_weeks=weeks,
         weekly_emi=emi(amount, weeks=weeks),
@@ -171,6 +191,8 @@ def decide(loan: VehicleLoan, *, approve: bool, user, note: str = "", now=None) 
 
     if loan.status != LoanStatus.REQUESTED:
         raise BusinessRuleViolation("This application has already been decided.")
+    if not approve and len(note.strip()) < 5:
+        raise BusinessRuleViolation("Give the driver a reason for declining.", field="note")
     loan.status = LoanStatus.ACTIVE if approve else LoanStatus.REJECTED
     loan.decided_at, loan.decided_by, loan.note = now or timezone.now(), user, note[:200]
     loan.save(update_fields=["status", "decided_at", "decided_by", "note"])
@@ -187,8 +209,8 @@ def decide(loan: VehicleLoan, *, approve: bool, user, note: str = "", now=None) 
     else:
         notify(
             loan.driver.user,
-            "Your loan application",
-            note or "We couldn't approve it this time.",
+            "Your loan application wasn't approved",
+            f"Reason: {note.strip()}",
             link="/drive/loan",
         )
     return loan
@@ -274,6 +296,9 @@ def row(loan: VehicleLoan) -> dict:
         "driver_id": loan.driver_id,
         "city": loan.driver.city.name if loan.driver.city_id else "",
         "vehicle": loan.vehicle,
+        "purpose": loan.purpose,
+        "purpose_label": loan.get_purpose_display(),
+        "details": loan.details,
         "principal": loan.principal,
         "annual_rate": loan.annual_rate,
         "tenure_weeks": loan.tenure_weeks,
@@ -311,9 +336,7 @@ def seed_demo(*, seed: int = 31, log=print) -> dict:
     rng = random.Random(seed)
     now = timezone.now()
     drivers = list(
-        DriverProfile.objects.filter(completed_trips__gt=0).order_by("-completed_trips")[
-            :30
-        ]
+        DriverProfile.objects.filter(completed_trips__gt=0).order_by("-completed_trips")[:30]
     )
     vehicles = [
         "Tata Tiago EV",
@@ -335,6 +358,7 @@ def seed_demo(*, seed: int = 31, log=print) -> dict:
             tenure_weeks=weeks,
             weekly_emi=emi(principal, weeks=weeks),
             outstanding=principal,
+            purpose=rng.choice(LoanPurpose.values),
         )
         if i < 6:
             loan.requested_at = now - timedelta(hours=rng.randint(2, 70))

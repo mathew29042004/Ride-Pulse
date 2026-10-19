@@ -3425,6 +3425,16 @@
       "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
       "type": "string"
      },
+     "details": {
+      "default": "",
+      "maxLength": 300,
+      "type": "string"
+     },
+     "purpose": {
+      "maxLength": 14,
+      "minLength": 1,
+      "type": "string"
+     },
      "vehicle": {
       "maxLength": 80,
       "minLength": 1,
@@ -3436,6 +3446,7 @@
     },
     "required": [
      "amount",
+     "purpose",
      "vehicle",
      "weeks"
     ],

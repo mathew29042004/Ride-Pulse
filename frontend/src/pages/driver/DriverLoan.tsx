@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-import { Button, Field, Input, Segmented } from "@/components/ui";
+import { Button, Field, Input, Segmented, Select } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { dateTime, inr } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -15,6 +15,8 @@ import { t } from "@/lib/i18n";
 interface Loan {
   id: number;
   vehicle: string;
+  purpose_label: string;
+  details: string;
   principal: string;
   annual_rate: string;
   tenure_weeks: number;
@@ -36,6 +38,7 @@ interface Data {
   tenures: number[];
   partner: string;
   keep_at_least: string;
+  purposes: { value: string; label: string }[];
   loans: Loan[];
 }
 
@@ -50,12 +53,14 @@ export default function DriverLoan() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["driver", "loan"], queryFn: () => api.get<Data>("driver/loan/") });
   const [vehicle, setVehicle] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [details, setDetails] = useState("");
   const [amount, setAmount] = useState(100000);
   const [weeks, setWeeks] = useState("104");
   const fail = (e: unknown) => toast.error(e instanceof ApiError ? e.message : t("Something went wrong."));
   const refresh = () => qc.invalidateQueries({ queryKey: ["driver", "loan"] });
   const apply = useMutation({
-    mutationFn: () => api.post("driver/loan/apply/", { vehicle, amount, weeks: Number(weeks) }),
+    mutationFn: () => api.post("driver/loan/apply/", { vehicle, amount, weeks: Number(weeks), purpose, details }),
     onSuccess: () => {
       toast.success(t("Applied. We'll tell you when it's decided."));
       refresh();
@@ -84,6 +89,7 @@ export default function DriverLoan() {
           <div className="flex items-center gap-2 font-semibold">
             <Car className="size-5" /> {current.vehicle} · {t(current.status_label)}
           </div>
+          <div className="mt-1 text-xs text-muted">{t(current.purpose_label)}{current.details ? ` · ${current.details}` : ""}</div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             <div><div className="text-xs text-muted">{t("Weekly EMI")}</div><div className="font-bold">{inr(current.weekly_emi)}</div></div>
             <div><div className="text-xs text-muted">{t("Left to pay")}</div><div className="font-bold">{inr(current.outstanding, { whole: true })}</div></div>
@@ -109,6 +115,14 @@ export default function DriverLoan() {
           )}
         </div>
       )}
+      {d?.loans
+        .filter((l) => l.status === "REJECTED")
+        .slice(0, 1)
+        .map((l) => (
+          <p key={l.id} className="mt-4 rounded-2xl bg-surface-2 p-3 text-sm">
+            {t("Your application for {v} wasn't approved. Reason: {r}", { v: l.vehicle, r: l.note })}
+          </p>
+        ))}
       {d && !current && !d.eligible && (
         <div className="mt-4 rounded-3xl border border-line p-4 text-sm">
           <div className="font-semibold">{t("Not yet eligible")}</div>
@@ -119,6 +133,17 @@ export default function DriverLoan() {
       )}
       {d && !current && d.eligible && (
         <div className="mt-4 space-y-3 rounded-3xl border border-line p-4">
+          <Field label={t("What is the loan for?")}>
+            <Select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+              <option value="">{t("Choose…")}</option>
+              {d.purposes.map((p) => (
+                <option key={p.value} value={p.value}>{t(p.label)}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t("Tell us more (optional)")}>
+            <Input value={details} onChange={(e) => setDetails(e.target.value)} maxLength={300} placeholder={t("e.g. my current car is 9 years old")} />
+          </Field>
           <Field label={t("Which vehicle?")}>
             <Input value={vehicle} onChange={(e) => setVehicle(e.target.value)} placeholder="Tata Tiago EV 2026" />
           </Field>
@@ -129,7 +154,7 @@ export default function DriverLoan() {
           <p className="text-sm">
             {t("Weekly EMI about {emi}", { emi: inr(emi(amount, Number(weeks), Number(d.annual_rate)), { whole: true }) })}
           </p>
-          <Button block disabled={vehicle.length < 3 || amount < 20000 || amount > max} loading={apply.isPending} onClick={() => apply.mutate()}>
+          <Button block disabled={!purpose || vehicle.length < 3 || amount < 20000 || amount > max} loading={apply.isPending} onClick={() => apply.mutate()}>
             {t("Apply")}
           </Button>
         </div>
