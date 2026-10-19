@@ -269,6 +269,7 @@ CELERY_BEAT_SCHEDULE = {
     "outbox-relay": {"task": "reliability.relay_outbox", "schedule": timedelta(seconds=10)},
     "trust-privacy": {"task": "trust.privacy_daily", "schedule": crontab(hour=3, minute=15)},
     "fleet-upkeep": {"task": "fleet.upkeep_sweep", "schedule": crontab(hour=7, minute=30)},
+    "commute-booking": {"task": "riders.book_commutes", "schedule": crontab(hour=20, minute=0)},
     "fleet-quests": {"task": "fleet.end_quests", "schedule": timedelta(minutes=15)},
     "intel-weather": {"task": "intelligence.refresh_weather", "schedule": timedelta(minutes=30)},
     "intel-alerts": {"task": "intelligence.check_alerts", "schedule": timedelta(minutes=5)},

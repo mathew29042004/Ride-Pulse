@@ -669,6 +669,120 @@ class CorporateWebhookSerializer(serializers.Serializer):
     url = serializers.URLField(max_length=300)
 
 
+class CommutePlanSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=60)
+    office_name = serializers.CharField(max_length=80)
+    office_lat = serializers.FloatField()
+    office_lng = serializers.FloatField()
+    ride_type = serializers.CharField(max_length=10)
+    weekdays = serializers.ListField(child=serializers.IntegerField(min_value=0, max_value=6))
+    arrive_by = serializers.TimeField()
+    leave_at = serializers.TimeField()
+
+
+class CommuteEnrolSerializer(serializers.Serializer):
+    plan = serializers.IntegerField()
+    home_lat = serializers.FloatField()
+    home_lng = serializers.FloatField()
+    home_address = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, default=""
+    )
+    morning = serializers.BooleanField(default=True)
+    evening = serializers.BooleanField(default=True)
+
+
+class CommuteSkipSerializer(serializers.Serializer):
+    enrolment = serializers.IntegerField()
+    date = serializers.DateField()
+    skip = serializers.BooleanField(default=True)
+
+
+class CommuteViewSet(ContextBindingMixin, GenericViewSet):
+    """Employees: office commute plans from their companies, enrolment and skipping days."""
+
+    permission_classes = [IsRider]
+    queryset = PaymentProfile.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="rider_commute_list")
+    def list(self, request):
+        from . import commute
+        from .models import MemberStatus
+
+        rider = request.user.rider_profile
+        mine = commute.CommuteEnrolment.objects.filter(rider=rider, is_active=True).select_related(
+            "plan__profile", "plan__ride_type"
+        )
+        enrolled = {e.plan_id for e in mine}
+        offered = (
+            commute.CommutePlan.objects.filter(
+                is_active=True,
+                profile__members__rider=rider,
+                profile__members__status=MemberStatus.ACTIVE,
+            )
+            .select_related("profile", "ride_type")
+            .exclude(pk__in=enrolled)
+        )
+        return Response(
+            {
+                "enrolments": [commute.enrolment_row(e) for e in mine],
+                "plans": [
+                    {**commute.plan_row(p), "company": p.profile.name} for p in offered.distinct()
+                ],
+            }
+        )
+
+    @extend_schema(request=CommuteEnrolSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def enrol(self, request):
+        from . import commute
+
+        data = CommuteEnrolSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        plan = get_object_or_404(commute.CommutePlan, pk=v["plan"])
+        e = commute.enrol(
+            plan,
+            rider=request.user.rider_profile,
+            home=(v["home_lat"], v["home_lng"]),
+            home_address=v["home_address"],
+            morning=v["morning"],
+            evening=v["evening"],
+        )
+        return Response(commute.enrolment_row(e))
+
+    @extend_schema(request=CommuteSkipSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def skip(self, request):
+        from . import commute
+
+        data = CommuteSkipSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        e = get_object_or_404(
+            commute.CommuteEnrolment, pk=v["enrolment"], rider=request.user.rider_profile
+        )
+        return Response(commute.enrolment_row(commute.skip(e, v["date"], skip=v["skip"])))
+
+    @extend_schema(request=CommuteSkipSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def leave(self, request):
+        from . import commute
+
+        e = get_object_or_404(
+            commute.CommuteEnrolment,
+            pk=request.data.get("enrolment"),
+            rider=request.user.rider_profile,
+        )
+        e.is_active = False
+        e.save(update_fields=["is_active"])
+        from apps.rides.models import ScheduledRide, ScheduledRideStatus
+
+        ScheduledRide.objects.filter(commute=e, status=ScheduledRideStatus.SCHEDULED).update(
+            status=ScheduledRideStatus.CANCELLED
+        )
+        return Response({"left": True})
+
+
 class CorporateViewSet(ContextBindingMixin, GenericViewSet):
     """The corporate portal: dashboard, travel policy, employees, invoice and webhooks."""
 
@@ -687,6 +801,76 @@ class CorporateViewSet(ContextBindingMixin, GenericViewSet):
         from . import corporate
 
         return Response(corporate.dashboard(self._profile(pk)))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="business_commute")
+    @action(detail=True, methods=["get"])
+    def commute(self, request, pk=None):
+        """The company's commute plans with this month's rides and cost, and who's enrolled."""
+        from . import commute
+
+        profile = self._profile(pk)
+        plans = profile.commute_plans.select_related("ride_type")
+        return Response(
+            {
+                "plans": [
+                    {
+                        **commute.plan_row(p),
+                        "employees": [
+                            {
+                                "name": e.rider.user.get_full_name(),
+                                "home_address": e.home_address,
+                                "morning": e.morning,
+                                "evening": e.evening,
+                                "skipping": [str(d) for d in e.skip_dates[:5]],
+                            }
+                            for e in p.enrolments.filter(is_active=True).select_related(
+                                "rider__user"
+                            )
+                        ],
+                    }
+                    for p in plans
+                ]
+            }
+        )
+
+    @extend_schema(request=CommutePlanSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="commute/plan")
+    def commute_plan(self, request, pk=None):
+        from apps.pricing.models import RideType
+
+        from . import commute
+
+        data = CommutePlanSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        ride_type = get_object_or_404(RideType, code=v["ride_type"], is_active=True)
+        plan = commute.create_plan(
+            self._profile(pk),
+            rider=request.user.rider_profile,
+            name=v["name"],
+            office_name=v["office_name"],
+            office=(v["office_lat"], v["office_lng"]),
+            ride_type=ride_type,
+            weekdays=v["weekdays"],
+            arrive_by=v["arrive_by"],
+            leave_at=v["leave_at"],
+        )
+        return Response(commute.plan_row(plan), status=201)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path=r"commute/(?P<plan_id>\d+)/stop")
+    def commute_stop(self, request, pk=None, plan_id=None):
+        from apps.rides.models import ScheduledRide, ScheduledRideStatus
+
+        from . import commute
+
+        plan = get_object_or_404(commute.CommutePlan, pk=plan_id, profile=self._profile(pk))
+        plan.is_active = False
+        plan.save(update_fields=["is_active"])
+        ScheduledRide.objects.filter(
+            commute__plan=plan, status=ScheduledRideStatus.SCHEDULED
+        ).update(status=ScheduledRideStatus.CANCELLED)
+        return Response(commute.plan_row(plan))
 
     @extend_schema(request=CorporatePolicySerializer, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])

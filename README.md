@@ -696,6 +696,18 @@ NPS (% promoters 9–10 − % detractors 0–6) for the last 90 days by month an
 answers), and what detractors and promoters talk about, using keyword themes (not AI).
 API: `GET nps/prompt/`, `POST nps/answer/`, `POST nps/snooze/`, `GET nps/report/` (reports.view).
 
+### Office commute plans (`riders.commute`)
+
+A company's travel admin sets up a commute plan in the business portal: office, work days, shift
+start and end, and ride type. Employees who are members of the business profile join it in the
+app (Account → Office commute) with their home pick-up, morning and/or evening. Every evening at
+8 pm tomorrow's rides are booked as scheduled rides: the morning pick-up is timed to arrive by the
+shift start (drive time + 15 minutes), and the evening one leaves at shift end. They're paid by the
+company profile with the purpose "Office commute", so the policy, limits, statements and GST
+e-invoices apply. Employees skip any day (leave, work from home) and booked rides are cancelled;
+night rides get Night Safe like any other. The portal shows each plan's employees and this
+month's rides and cost.
+
 ### Vehicle loans (`drivers.loans`)
 
 Drivers with 200+ trips, 90+ days and a 4.5+ rating can apply in the app (Account → Vehicle loan)

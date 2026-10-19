@@ -213,3 +213,6 @@ class TeenLink(models.Model):
 
     def __str__(self) -> str:
         return f"{self.guardian_id} → {self.teen_id} ({self.status})"
+
+
+from .commute import CommuteEnrolment, CommutePlan  # noqa: E402,F401  (registers the models)

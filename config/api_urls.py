@@ -43,6 +43,7 @@ router.register("rider/contacts", riders.TrustedContactViewSet, basename="truste
 router.register("rider/profiles", riders.PaymentProfileViewSet, basename="payment-profile")
 router.register("rider/teens", riders.TeenViewSet, basename="rider-teen")
 router.register("rider/business", riders.CorporateViewSet, basename="rider-business")
+router.register("rider/commute", riders.CommuteViewSet, basename="rider-commute")
 router.register("team", accounts.TeamViewSet, basename="team")
 router.register("work/tasks", workspace.TaskViewSet, basename="work-task")
 router.register("work/meetings", workspace.MeetingViewSet, basename="work-meeting")

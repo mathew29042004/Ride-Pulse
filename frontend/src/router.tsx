@@ -57,6 +57,7 @@ const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
 const OpsWork = lazy(() => import("./pages/ops/work/OpsWork"));
 const FleetPortal = lazy(() => import("./pages/fleet/FleetPortal"));
 const RiderBusiness = lazy(() => import("./pages/rider/RiderBusiness"));
+const RiderCommute = lazy(() => import("./pages/rider/RiderCommute"));
 const trust = () => import("./pages/shared/Trust");
 const PrivacyCentre = lazy(() => trust().then((m) => ({ default: m.PrivacyCentre })));
 const HelpCentre = lazy(() => trust().then((m) => ({ default: m.HelpCentre })));
@@ -159,6 +160,7 @@ export const router = createBrowserRouter([
       { path: "wallet", element: lazyPage(<RiderWallet />) },
       { path: "account", element: lazyPage(<RiderAccount />) },
       { path: "business/:id", element: lazyPage(<RiderBusiness />) },
+      { path: "commute", element: lazyPage(<RiderCommute />) },
       { path: "support", element: lazyPage(<SupportList base="/ride" />) },
       { path: "privacy", element: lazyPage(<PrivacyCentre base="/ride" />) },
       { path: "help", element: lazyPage(<HelpCentre base="/ride" />) },

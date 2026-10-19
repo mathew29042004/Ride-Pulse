@@ -1643,6 +1643,8 @@ def dispatch_scheduled_rides(*, now: datetime | None = None) -> dict:
                         stop=(ride.stop_lat, ride.stop_lng) if ride.stop_lat is not None else None,
                         stop_address=ride.stop_address,
                         extra_stops=ride.extra_stops,
+                        payment_profile=ride.payment_profile,
+                        trip_purpose="Office commute" if ride.commute_id else "",
                     )
             except DomainError as exc:
                 _fail_scheduled(ride, exc.message)

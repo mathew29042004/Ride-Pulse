@@ -918,6 +918,114 @@
     ],
     "type": "object"
    },
+   "CommuteEnrolRequest": {
+    "properties": {
+     "evening": {
+      "default": true,
+      "type": "boolean"
+     },
+     "home_address": {
+      "default": "",
+      "maxLength": 255,
+      "type": "string"
+     },
+     "home_lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "home_lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "morning": {
+      "default": true,
+      "type": "boolean"
+     },
+     "plan": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "home_lat",
+     "home_lng",
+     "plan"
+    ],
+    "type": "object"
+   },
+   "CommutePlanRequest": {
+    "properties": {
+     "arrive_by": {
+      "format": "time",
+      "type": "string"
+     },
+     "leave_at": {
+      "format": "time",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 60,
+      "minLength": 1,
+      "type": "string"
+     },
+     "office_lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "office_lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "office_name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     },
+     "ride_type": {
+      "maxLength": 10,
+      "minLength": 1,
+      "type": "string"
+     },
+     "weekdays": {
+      "items": {
+       "maximum": 6,
+       "minimum": 0,
+       "type": "integer"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "arrive_by",
+     "leave_at",
+     "name",
+     "office_lat",
+     "office_lng",
+     "office_name",
+     "ride_type",
+     "weekdays"
+    ],
+    "type": "object"
+   },
+   "CommuteSkipRequest": {
+    "properties": {
+     "date": {
+      "format": "date",
+      "type": "string"
+     },
+     "enrolment": {
+      "type": "integer"
+     },
+     "skip": {
+      "default": true,
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "date",
+     "enrolment"
+    ],
+    "type": "object"
+   },
    "CompleteRequest": {
     "properties": {
      "actual_distance_km": {
@@ -21439,6 +21547,158 @@
     ]
    }
   },
+  "/api/v1/rider/business/{id}/commute/": {
+   "get": {
+    "description": "The company's commute plans with this month's rides and cost, and who's enrolled.",
+    "operationId": "business_commute",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/business/{id}/commute/plan/": {
+   "post": {
+    "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
+    "operationId": "rider_business_commute_plan_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CommutePlanRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CommutePlanRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CommutePlanRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/business/{id}/commute/{plan_id}/stop/": {
+   "post": {
+    "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
+    "operationId": "rider_business_commute_stop_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "in": "path",
+      "name": "plan_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
   "/api/v1/rider/business/{id}/employee/": {
    "post": {
     "description": "The corporate portal: dashboard, travel policy, employees, invoice and webhooks.",
@@ -21645,6 +21905,186 @@
     },
     "responses": {
      "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/commute/": {
+   "get": {
+    "description": "Employees: office commute plans from their companies, enrolment and skipping days.",
+    "operationId": "rider_commute_list",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/commute/enrol/": {
+   "post": {
+    "description": "Employees: office commute plans from their companies, enrolment and skipping days.",
+    "operationId": "rider_commute_enrol_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteEnrolRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteEnrolRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteEnrolRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/commute/leave/": {
+   "post": {
+    "description": "Employees: office commute plans from their companies, enrolment and skipping days.",
+    "operationId": "rider_commute_leave_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteSkipRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteSkipRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteSkipRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
+  "/api/v1/rider/commute/skip/": {
+   "post": {
+    "description": "Employees: office commute plans from their companies, enrolment and skipping days.",
+    "operationId": "rider_commute_skip_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteSkipRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteSkipRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CommuteSkipRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
       "content": {
        "application/json": {
         "schema": {

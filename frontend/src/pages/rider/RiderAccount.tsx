@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, ChevronRight, Copy, Gift, Heart, House, Languages, LifeBuoy, LogOut, Mail, MapPin, Moon, Share2, Sun, Trash2 } from "lucide-react";
+import { Briefcase, ChevronRight, Copy, Gift, Heart, House, Languages, LifeBuoy, Building2, LogOut, Mail, MapPin, Moon, Share2, Sun, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -161,6 +161,11 @@ export default function RiderAccount() {
         <SafetySettings rider={rider} />
         <GuardianSettings />
         <TrustLinks base="/ride" />
+        <Link to="/ride/commute" className="flex items-center gap-3 py-3.5">
+          <Building2 className="size-5" />
+          <span className="flex-1 font-medium">Office commute</span>
+          <ChevronRight className="size-4 text-muted" />
+        </Link>
         <Link to="/ride/support" className="flex items-center gap-3 py-3.5">
           <LifeBuoy className="size-5" />
           <span className="flex-1 font-medium">Help & support tickets</span>

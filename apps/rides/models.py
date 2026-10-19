@@ -528,6 +528,17 @@ class ScheduledRide(TimeStampedModel):
         Trip, null=True, blank=True, on_delete=models.SET_NULL, related_name="schedule"
     )
     failure_reason = models.CharField(max_length=255, blank=True)
+    # Office commute rides: paid by the company profile (see riders.commute).
+    payment_profile = models.ForeignKey(
+        "riders.PaymentProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    commute = models.ForeignKey(
+        "riders.CommuteEnrolment",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="rides",
+    )
 
     class Meta:
         ordering = ["scheduled_for"]

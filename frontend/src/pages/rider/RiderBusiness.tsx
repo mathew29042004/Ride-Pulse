@@ -7,6 +7,7 @@ import { Link, useParams } from "react-router";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { toast } from "sonner";
 
+import { PlacePick, type Picked } from "@/components/PlacePick";
 import { Button, Input } from "@/components/ui";
 import { api, ApiError, openFile } from "@/lib/api";
 import { inr } from "@/lib/format";
@@ -174,6 +175,7 @@ export default function RiderBusiness() {
         ))}
       </Section>
 
+      <CommuteSection id={b.id} />
       <Section title={t("Webhooks")}>
         <p className="text-xs text-muted">{t("Get your employees' trips in your own systems (expense tools, HR). Signed, retried, at least once.")}</p>
         {b.webhooks.map((w) => (
@@ -209,5 +211,87 @@ function Row({ left, right }: { left: string; right: string }) {
       <span className="truncate">{left}</span>
       <span className="shrink-0 font-semibold">{right}</span>
     </div>
+  );
+}
+
+interface CommutePlanRow {
+  id: number;
+  name: string;
+  office_name: string;
+  ride_type_name: string;
+  weekdays_label: string;
+  arrive_by: string;
+  leave_at: string;
+  is_active: boolean;
+  enrolled: number;
+  this_month: { booked: number; completed: number; failed: number; cost: string | number };
+  employees: { name: string; home_address: string; morning: boolean; evening: boolean; skipping: string[] }[];
+}
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** Office commute plans: set up a shift; employees join from their app; rides are booked nightly. */
+function CommuteSection({ id }: { id: number }) {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["business", id, "commute"], queryFn: () => api.get<{ plans: CommutePlanRow[] }>(`rider/business/${id}/commute/`) });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["business", id, "commute"] });
+  const fail = (e: unknown) => toast.error(e instanceof ApiError ? e.message : t("Something went wrong."));
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("General shift");
+  const [office, setOffice] = useState<Picked | null>(null);
+  const [rideType, setRideType] = useState("MINI");
+  const [days, setDays] = useState([0, 1, 2, 3, 4]);
+  const [arrive, setArrive] = useState("09:30");
+  const [leave, setLeave] = useState("18:30");
+  const create = useMutation({
+    mutationFn: () =>
+      api.post(`rider/business/${id}/commute/plan/`, { name, office_name: office!.name, office_lat: office!.lat, office_lng: office!.lng, ride_type: rideType, weekdays: days, arrive_by: arrive, leave_at: leave }),
+    onSuccess: () => { toast.success(t("Plan created. Employees can join it from their app.")); setOpen(false); refresh(); },
+    onError: fail,
+  });
+  const stop = useMutation({ mutationFn: (plan: number) => api.post(`rider/business/${id}/commute/${plan}/stop/`), onSuccess: refresh, onError: fail });
+  return (
+    <Section title={t("Office commute")}>
+      {q.data?.plans.map((p) => (
+        <div key={p.id} className="mb-2 rounded-2xl border border-line p-3 text-sm">
+          <div className="flex justify-between font-semibold">
+            <span>{p.name} · {p.office_name}</span>
+            {p.is_active ? <button className="text-xs text-danger" onClick={() => stop.mutate(p.id)}>{t("Stop")}</button> : <span className="text-xs text-muted">{t("Stopped")}</span>}
+          </div>
+          <div className="text-xs text-muted">{p.weekdays_label} · {p.arrive_by}–{p.leave_at} · {p.ride_type_name} · {t("{n} employees", { n: p.enrolled })}</div>
+          <div className="mt-1 text-xs">
+            {t("This month: {b} rides booked, {c} completed, {f} couldn't be booked · {cost}", { b: p.this_month.booked, c: p.this_month.completed, f: p.this_month.failed, cost: inr(p.this_month.cost) })}
+          </div>
+          {p.employees.map((e) => (
+            <div key={e.name} className="mt-1 text-xs text-muted">
+              {e.name}: {e.home_address || "—"} {e.skipping.length > 0 && `· ${t("skipping")} ${e.skipping.join(", ")}`}
+            </div>
+          ))}
+        </div>
+      ))}
+      {open ? (
+        <div className="space-y-2 rounded-2xl border border-line p-3 text-sm">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Plan name")} />
+          <PlacePick value={office} onChange={setOffice} placeholder={t("Search for the office")} />
+          <div className="flex flex-wrap gap-1">
+            {DAYS.map((d, i) => (
+              <button key={d} onClick={() => setDays(days.includes(i) ? days.filter((x) => x !== i) : [...days, i])} className={`rounded-lg px-2 py-1 text-xs ${days.includes(i) ? "bg-ink text-ink-fg" : "bg-surface-2"}`}>{t(d)}</button>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-xs">{t("Arrive by")}<Input type="time" value={arrive} onChange={(e) => setArrive(e.target.value)} /></label>
+            <label className="text-xs">{t("Leave at")}<Input type="time" value={leave} onChange={(e) => setLeave(e.target.value)} /></label>
+            <label className="text-xs">{t("Ride type")}
+              <select className="mt-1 w-full rounded-xl border border-line bg-transparent p-2" value={rideType} onChange={(e) => setRideType(e.target.value)}>
+                {["MINI", "SEDAN", "SUV", "AUTO"].map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </label>
+          </div>
+          <Button block disabled={!office || !days.length} loading={create.isPending} onClick={() => create.mutate()}>{t("Create plan")}</Button>
+        </div>
+      ) : (
+        <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>{t("New commute plan")}</Button>
+      )}
+    </Section>
   );
 }
