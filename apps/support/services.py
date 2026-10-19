@@ -182,9 +182,23 @@ def resolve(
             raise ActionNotPermitted("Your role can't issue refunds.")
         if ticket.trip is None:
             raise BusinessRuleViolation("Refunds need a trip on the ticket.", field="refund_amount")
-        refund_to_wallet(
-            ticket.trip, refund, reason=f"{ticket.ticket_number}: {resolution}", actor=actor
-        )
+        from apps.workspace import powers
+
+        if powers.needs_approval(refund, actor):
+            # Above the support limit: finance approves it before the money moves.
+            powers.request_refund(
+                trip=ticket.trip,
+                amount=refund,
+                reason=f"{ticket.ticket_number}: {resolution}",
+                actor=actor,
+                ticket=ticket,
+            )
+            resolution = f"{resolution} (refund of ₹{refund:,.0f} sent to finance for approval)"
+            refund = Decimal(0)
+        else:
+            refund_to_wallet(
+                ticket.trip, refund, reason=f"{ticket.ticket_number}: {resolution}", actor=actor
+            )
     previous = ticket.status
     ticket.status = TicketStatus.RESOLVED
     ticket.resolution = resolution

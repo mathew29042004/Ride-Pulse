@@ -1777,7 +1777,7 @@
     "type": "object"
    },
    "DepartmentEnum": {
-    "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels",
+    "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels\n* `FINANCE` - Finance\n* `PEOPLE` - People (HR)\n* `SAFETY` - Trust & safety\n* `LEGAL` - Legal & compliance",
     "enum": [
      "LEADERSHIP",
      "OPERATIONS",
@@ -1785,7 +1785,11 @@
      "SUPPORT",
      "MAINTENANCE",
      "INTERCITY",
-     "PARCELS"
+     "PARCELS",
+     "FINANCE",
+     "PEOPLE",
+     "SAFETY",
+     "LEGAL"
     ],
     "type": "string"
    },
@@ -3930,6 +3934,29 @@
     ],
     "type": "object"
    },
+   "LegalHoldRequest": {
+    "properties": {
+     "case_reference": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     },
+     "reason": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+     },
+     "user": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "case_reference",
+     "reason",
+     "user"
+    ],
+    "type": "object"
+   },
    "LoanApplyRequest": {
     "properties": {
      "amount": {
@@ -4268,6 +4295,21 @@
     "required": [
      "body",
      "title"
+    ],
+    "type": "object"
+   },
+   "ManualAssignRequest": {
+    "properties": {
+     "driver": {
+      "type": "integer"
+     },
+     "trip": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "driver",
+     "trip"
     ],
     "type": "object"
    },
@@ -6978,6 +7020,23 @@
     ],
     "type": "string"
    },
+   "PersonReasonRequest": {
+    "properties": {
+     "reason": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+     },
+     "user": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "reason",
+     "user"
+    ],
+    "type": "object"
+   },
    "Place": {
     "properties": {
      "address": {
@@ -7760,6 +7819,22 @@
     ],
     "type": "object"
    },
+   "RefundDecisionRequest": {
+    "properties": {
+     "approve": {
+      "type": "boolean"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 300,
+      "type": "string"
+     }
+    },
+    "required": [
+     "approve"
+    ],
+    "type": "object"
+   },
    "RegistrationResponse": {
     "properties": {
      "access": {
@@ -8337,7 +8412,7 @@
     "type": "object"
    },
    "RoleEnum": {
-    "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+    "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `FINANCE_MANAGER` - Finance manager\n* `HR_MANAGER` - HR manager\n* `SAFETY_OFFICER` - Safety officer\n* `DISPATCH_CONTROLLER` - Dispatch controller\n* `COMPLIANCE_OFFICER` - Compliance officer\n* `PRICING_ANALYST` - Pricing analyst\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
     "enum": [
      "COMMANDER",
      "CHIEF_OF_STAFF",
@@ -8352,6 +8427,12 @@
      "SUPPORT_LEAD",
      "SUPPORT_AGENT",
      "FLEET_EXECUTIVE",
+     "FINANCE_MANAGER",
+     "HR_MANAGER",
+     "SAFETY_OFFICER",
+     "DISPATCH_CONTROLLER",
+     "COMPLIANCE_OFFICER",
+     "PRICING_ANALYST",
      "DRIVER",
      "RIDER",
      "FLEET_OWNER"
@@ -8996,6 +9077,35 @@
      "role",
      "role_label",
      "title"
+    ],
+    "type": "object"
+   },
+   "StaffTransferRequest": {
+    "properties": {
+     "city": {
+      "nullable": true,
+      "type": "integer"
+     },
+     "employee": {
+      "type": "integer"
+     },
+     "manager": {
+      "nullable": true,
+      "type": "integer"
+     },
+     "reason": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+     },
+     "role": {
+      "default": "",
+      "type": "string"
+     }
+    },
+    "required": [
+     "employee",
+     "reason"
     ],
     "type": "object"
    },
@@ -21286,6 +21396,459 @@
     ]
    }
   },
+  "/api/v1/ops/powers/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "powers_overview",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/assign/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_assign_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ManualAssignRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ManualAssignRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ManualAssignRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/ban/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_ban_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonReasonRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonReasonRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonReasonRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/hold/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_hold_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalHoldRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalHoldRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalHoldRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/holds/{hold_id}/release/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_holds_release_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "hold_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/lift-ban/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_lift_ban_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonReasonRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonReasonRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonReasonRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/people/": {
+   "get": {
+    "description": "Find a person (any role) by email, phone or name, for the forms on this page.",
+    "operationId": "ops_powers_people_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/refunds/{refund_id}/decide/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_refunds_decide_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "refund_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RefundDecisionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/RefundDecisionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/RefundDecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/transfer/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_transfer_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/StaffTransferRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/StaffTransferRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/StaffTransferRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/powers/trips/{trip_id}/drivers/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "ops_powers_trips_drivers_retrieve",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "trip_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/speed/": {
    "get": {
     "description": "Speed alerts (last 7 days) and slow zones.",
@@ -27398,7 +27961,7 @@
       }
      },
      {
-      "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+      "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `FINANCE_MANAGER` - Finance manager\n* `HR_MANAGER` - HR manager\n* `SAFETY_OFFICER` - Safety officer\n* `DISPATCH_CONTROLLER` - Dispatch controller\n* `COMPLIANCE_OFFICER` - Compliance officer\n* `PRICING_ANALYST` - Pricing analyst\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
       "in": "query",
       "name": "role",
       "schema": {
@@ -27411,12 +27974,18 @@
         "ASSOC_SUPPORT",
         "CHIEF_OF_STAFF",
         "COMMANDER",
+        "COMPLIANCE_OFFICER",
+        "DISPATCH_CONTROLLER",
         "DRIVER",
+        "FINANCE_MANAGER",
         "FLEET_EXECUTIVE",
         "FLEET_OWNER",
+        "HR_MANAGER",
         "OPS_MANAGER",
+        "PRICING_ANALYST",
         "REGIONAL_MANAGER",
         "RIDER",
+        "SAFETY_OFFICER",
         "SUPPORT_AGENT",
         "SUPPORT_LEAD"
        ],
@@ -28284,17 +28853,21 @@
     "operationId": "team_list",
     "parameters": [
      {
-      "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels",
+      "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels\n* `FINANCE` - Finance\n* `PEOPLE` - People (HR)\n* `SAFETY` - Trust & safety\n* `LEGAL` - Legal & compliance",
       "in": "query",
       "name": "department",
       "schema": {
        "enum": [
+        "FINANCE",
         "INTERCITY",
         "LEADERSHIP",
+        "LEGAL",
         "MAINTENANCE",
         "OPERATIONS",
         "PARCELS",
+        "PEOPLE",
         "RIDES",
+        "SAFETY",
         "SUPPORT"
        ],
        "type": "string"
@@ -28344,7 +28917,7 @@
       }
      },
      {
-      "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+      "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `FINANCE_MANAGER` - Finance manager\n* `HR_MANAGER` - HR manager\n* `SAFETY_OFFICER` - Safety officer\n* `DISPATCH_CONTROLLER` - Dispatch controller\n* `COMPLIANCE_OFFICER` - Compliance officer\n* `PRICING_ANALYST` - Pricing analyst\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
       "in": "query",
       "name": "user__role",
       "schema": {
@@ -28357,12 +28930,18 @@
         "ASSOC_SUPPORT",
         "CHIEF_OF_STAFF",
         "COMMANDER",
+        "COMPLIANCE_OFFICER",
+        "DISPATCH_CONTROLLER",
         "DRIVER",
+        "FINANCE_MANAGER",
         "FLEET_EXECUTIVE",
         "FLEET_OWNER",
+        "HR_MANAGER",
         "OPS_MANAGER",
+        "PRICING_ANALYST",
         "REGIONAL_MANAGER",
         "RIDER",
+        "SAFETY_OFFICER",
         "SUPPORT_AGENT",
         "SUPPORT_LEAD"
        ],

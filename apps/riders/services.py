@@ -42,6 +42,12 @@ def register_rider(
         if referrer is None:
             raise BusinessRuleViolation("That referral code is not valid.", field="referral_code")
     phone = _clean_phone(phone)
+    from apps.workspace.powers import banned
+
+    if banned(phone=phone):
+        raise BusinessRuleViolation(
+            "We can't accept this sign-up. Contact support if you think this is a mistake."
+        )
     if phone and User.objects.filter(phone=phone).exists():
         raise BusinessRuleViolation(
             "An account with this phone number already exists.", field="phone"

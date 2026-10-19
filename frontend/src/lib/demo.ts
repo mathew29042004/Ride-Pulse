@@ -11,4 +11,10 @@ export const DEMO_ACCOUNTS = [
   { label: "Admin", email: "admin@ridepulse.dev", description: "Everything, including the audit trail and staff accounts." },
   { label: "Commander", email: "commander@ridepulse.dev", description: "Top of the organisation: the command centre, orders across every city, broadcasts, every team channel." },
   { label: "Chief of staff", email: "chiefofstaff@ridepulse.dev", description: "Keeps the commander updated: briefings, escalations and decisions for the chief, live." },
+  { label: "Finance", email: "finance@ridepulse.dev", description: "Approve refunds above ₹2,000, payouts, P&L and GST." },
+  { label: "HR", email: "hr@ridepulse.dev", description: "Payroll, transfers and promotions across the organisation." },
+  { label: "Safety officer", email: "safety@ridepulse.dev", description: "SOS desk and permanent bans (phone and licence)." },
+  { label: "Dispatch", email: "dispatch@ridepulse.dev", description: "Live trips: hand a waiting trip to the driver you choose." },
+  { label: "Compliance", email: "compliance@ridepulse.dev", description: "Data requests, audit trail and legal holds." },
+  { label: "Pricing", email: "pricing@ridepulse.dev", description: "Fares, surge, promotions and pricing experiments." },
 ] as const;

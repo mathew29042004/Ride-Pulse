@@ -37,6 +37,11 @@ class Cap:
     TOURS_MANAGE = "tours.manage"  # tour packages, their prices and tour bookings
     ANNOUNCE = "announce"  # announcements to drivers, riders or staff
     PAYROLL_MANAGE = "payroll.manage"  # salaries, the monthly payroll run and payslips (HR)
+    REFUND_APPROVE = "refund.approve"  # approve refunds above the support limit (finance)
+    PEOPLE_MANAGE = "people.manage"  # transfer employees, change their manager or role (HR)
+    SAFETY_BAN = "safety.ban"  # ban a person for good: their phone and licence can't sign up again
+    DISPATCH_ASSIGN = "dispatch.assign"  # hand a waiting trip to a chosen driver (dispatch desk)
+    LEGAL_HOLD = "legal.hold"  # freeze a person's data against erasure during a case (compliance)
     BRIEF = "brief"  # send the chief updates and ask for decisions (chief of staff, admins)
     COMMAND = "command"  # the commander: standing orders across every city, the command centre
     COUNTER_OPERATE = "counter.operate"  # book rides for walk-up passengers at a station counter
@@ -155,6 +160,69 @@ ROLE_CAPABILITIES: dict[str, frozenset[str]] = {
     "SUPPORT_LEAD": frozenset(_SUPPORT_LEAD),
     "SUPPORT_AGENT": frozenset(_SUPPORT_AGENT),
     "FLEET_EXECUTIVE": frozenset(_FLEET_EXECUTIVE),
+    "FINANCE_MANAGER": frozenset(
+        {
+            Cap.PAYMENTS_VIEW,
+            Cap.PAYMENTS_REFUND,
+            Cap.PAYOUTS_MANAGE,
+            Cap.REFUND_APPROVE,
+            Cap.REPORTS_VIEW,
+            Cap.AUDIT_VIEW,
+            Cap.TRIPS_VIEW,
+            Cap.TEAM_VIEW,
+        }
+    ),
+    "HR_MANAGER": frozenset(
+        {Cap.PAYROLL_MANAGE, Cap.PEOPLE_MANAGE, Cap.TEAM_VIEW, Cap.REPORTS_VIEW, Cap.ANNOUNCE}
+    ),
+    "SAFETY_OFFICER": frozenset(
+        {
+            Cap.SAFETY_MANAGE,
+            Cap.SAFETY_BAN,
+            Cap.SUPPORT_VIEW,
+            Cap.TRIPS_VIEW,
+            Cap.DRIVERS_VIEW,
+            Cap.DRIVERS_MANAGE,
+            Cap.RIDERS_VIEW,
+            Cap.RIDERS_MANAGE,
+            Cap.FRAUD_REVIEW,
+            Cap.TEAM_VIEW,
+        }
+    ),
+    "DISPATCH_CONTROLLER": frozenset(
+        {
+            Cap.TRIPS_VIEW,
+            Cap.TRIPS_MANAGE,
+            Cap.DISPATCH_RUN,
+            Cap.DISPATCH_ASSIGN,
+            Cap.DRIVERS_VIEW,
+            Cap.PRICING_VIEW,
+            Cap.TEAM_VIEW,
+        }
+    ),
+    "COMPLIANCE_OFFICER": frozenset(
+        {
+            Cap.PRIVACY_MANAGE,
+            Cap.LEGAL_HOLD,
+            Cap.AUDIT_VIEW,
+            Cap.DRIVERS_VIEW,
+            Cap.RIDERS_VIEW,
+            Cap.SUPPORT_VIEW,
+            Cap.REPORTS_VIEW,
+            Cap.TEAM_VIEW,
+        }
+    ),
+    "PRICING_ANALYST": frozenset(
+        {
+            Cap.PRICING_VIEW,
+            Cap.PRICING_MANAGE,
+            Cap.PROMOS_MANAGE,
+            Cap.EXPERIMENTS_MANAGE,
+            Cap.REPORTS_VIEW,
+            Cap.TRIPS_VIEW,
+            Cap.TEAM_VIEW,
+        }
+    ),
     "DRIVER": frozenset(),
     "RIDER": frozenset(),
     "FLEET_OWNER": frozenset({Cap.FLEET_OWN}),

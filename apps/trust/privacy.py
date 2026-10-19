@@ -347,6 +347,12 @@ def erasure_blockers(user) -> list[str]:
         problems.append(f"Clear the ₹{-balance:,.2f} you owe first.")
     if user.is_staff_member and not user.is_end_user:
         problems.append("Staff accounts are closed by HR, not here.")
+    from apps.workspace.powers import on_hold
+
+    if on_hold(user):
+        problems.append(
+            "Your data is under a legal hold for an ongoing case, so it can't be erased yet."
+        )
     return problems
 
 

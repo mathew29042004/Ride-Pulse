@@ -891,6 +891,30 @@ console: a pop-up with a link (red for escalations, amber for decisions) and a c
 counting unread updates and decisions waiting. The command centre opens with their inbox:
 approve or decline with a note, reply to an update in one line.
 
+### Specialist roles and their powers (`workspace.powers`, `simulation.hiring`)
+
+A hiring round brings the organisation to about 280 staff. Every state gets a finance manager,
+an HR manager, a compliance officer, a pricing analyst and a second associate manager for each
+line of business; the eight busiest cities get a safety officer, two dispatch controllers, a
+deputy city operations manager, three more support agents and two more fleet executives; and a
+second administrator reports to the commander. New departments (Finance, People, Trust & safety,
+Legal & compliance) get their own team channels. Tamil Nadu's specialists have demo logins
+(`finance@`, `hr@`, `safety@`, `dispatch@`, `compliance@`, `pricing@ridepulse.dev`).
+
+Ops → Powers shows each role only its own tools, every action audited:
+
+* **Finance** (`refund.approve`): refunds above ₹2,000 from support wait for approval before any
+  money moves; declining needs a reason the rider is told.
+* **Safety officer** (`safety.ban`): ban someone for good. They're suspended or blocked, and
+  their phone and driving licence can't sign up again. Bans can be lifted after review.
+* **Dispatch controller** (`dispatch.assign`): hand a waiting trip to a chosen online driver
+  within 15 km, bypassing the automatic ranking.
+* **Compliance officer** (`legal.hold`): a legal hold blocks a person's data erasure until it's
+  released.
+* **HR manager** (`people.manage`): change someone's manager or role (never into or out of the
+  top roles), with no loops in the org chart; their team channels update.
+* **Pricing analyst**: fares, surge, promotions and experiments.
+
 ### EV subsidy finder (`drivers.ev_subsidy`)
 
 Drivers thinking of switching to electric (Driver → Vehicle loan → subsidies) choose an electric

@@ -19,6 +19,12 @@ const ROLE_NAMES: Record<Role, string> = {
   SUPPORT_AGENT: "a support agent",
   COMMANDER: "the commander",
   CHIEF_OF_STAFF: "the chief of staff",
+  FINANCE_MANAGER: "a finance manager",
+  HR_MANAGER: "an HR manager",
+  SAFETY_OFFICER: "a safety officer",
+  DISPATCH_CONTROLLER: "a dispatch controller",
+  COMPLIANCE_OFFICER: "a compliance officer",
+  PRICING_ANALYST: "a pricing analyst",
   ADMIN: "an admin",
   REGIONAL_MANAGER: "a regional manager",
   ASSOC_RIDES: "an associate manager (rides)",
@@ -39,7 +45,7 @@ export default function SwitchAccount({ app, roles }: { app: string; roles: Role
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const demo = DEMO_ACCOUNTS.filter((a) =>
-    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", Business: "RIDER", "Fleet owner": "FLEET_OWNER", Admin: "ADMIN", Commander: "COMMANDER", "Chief of staff": "CHIEF_OF_STAFF" } as const)[a.label]),
+    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", Business: "RIDER", "Fleet owner": "FLEET_OWNER", Admin: "ADMIN", Commander: "COMMANDER", "Chief of staff": "CHIEF_OF_STAFF", Finance: "FINANCE_MANAGER", HR: "HR_MANAGER", "Safety officer": "SAFETY_OFFICER", Dispatch: "DISPATCH_CONTROLLER", Compliance: "COMPLIANCE_OFFICER", Pricing: "PRICING_ANALYST" } as const)[a.label]),
   );
 
   async function signIn(email: string) {

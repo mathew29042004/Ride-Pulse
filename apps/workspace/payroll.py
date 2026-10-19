@@ -444,6 +444,12 @@ def render_pdf(slip: Payslip) -> bytes:
 # Monthly gross by role (₹), a realistic band for each; the demo picks within it.
 SALARY_BANDS = {
     "COMMANDER": (300_000, 350_000),
+    "FINANCE_MANAGER": (110_000, 135_000),
+    "HR_MANAGER": (90_000, 115_000),
+    "SAFETY_OFFICER": (65_000, 80_000),
+    "DISPATCH_CONTROLLER": (45_000, 58_000),
+    "COMPLIANCE_OFFICER": (85_000, 105_000),
+    "PRICING_ANALYST": (70_000, 90_000),
     "CHIEF_OF_STAFF": (190_000, 230_000),
     "ADMIN": (180_000, 220_000),
     "REGIONAL_MANAGER": (140_000, 170_000),
@@ -457,6 +463,30 @@ SALARY_BANDS = {
     "SUPPORT_AGENT": (18_000, 26_000),
     "FLEET_EXECUTIVE": (22_000, 30_000),
 }
+
+
+def salaries_for_new_staff(*, seed: int = 62) -> int:
+    """A salary for every employee who doesn't have one yet (after a hiring round)."""
+    import random
+
+    from apps.accounts.models import StaffProfile
+
+    if not SalaryStructure.objects.exists():
+        return 0  # the first payroll seed sets everyone up
+    rng = random.Random(seed)
+    rows = []
+    for profile in StaffProfile.objects.filter(user__salary__isnull=True).select_related("user"):
+        low, high = SALARY_BANDS.get(profile.user.role, (25_000, 35_000))
+        rows.append(
+            SalaryStructure(
+                user=profile.user,
+                monthly_gross=Decimal(rng.randrange(low, high + 1, 500)),
+                bank_account_last4=f"{rng.randint(0, 9999):04d}",
+                effective_from=profile.joined_on,
+            )
+        )
+    SalaryStructure.objects.bulk_create(rows)
+    return len(rows)
 
 
 def seed_demo(*, seed: int = 61, log=print) -> dict:

@@ -49,6 +49,9 @@ class Command(BaseCommand):
         from apps.reliability import briefing
 
         stats.update(briefing.seed_chief_of_staff(log=self.stdout.write))
+        from apps.simulation import hiring
+
+        stats.update(hiring.hire(log=self.stdout.write))
         from apps.workspace import demo as workspace_demo
 
         stats.update(workspace_demo.seed(seed=options["seed"], log=self.stdout.write))
@@ -79,6 +82,9 @@ class Command(BaseCommand):
         from apps.workspace import expenses as expense_claims
 
         stats.update(expense_claims.seed_demo(log=self.stdout.write))
+        from apps.workspace import powers
+
+        stats.update(powers.seed_demo(log=self.stdout.write))
         from apps.workspace import payroll
 
         stats.update(payroll.seed_demo(log=self.stdout.write))

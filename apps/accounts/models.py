@@ -18,6 +18,12 @@ class Role(models.TextChoices):
     SUPPORT_LEAD = "SUPPORT_LEAD", "Support team lead"
     SUPPORT_AGENT = "SUPPORT_AGENT", "Support agent"
     FLEET_EXECUTIVE = "FLEET_EXECUTIVE", "Fleet executive"
+    FINANCE_MANAGER = "FINANCE_MANAGER", "Finance manager"
+    HR_MANAGER = "HR_MANAGER", "HR manager"
+    SAFETY_OFFICER = "SAFETY_OFFICER", "Safety officer"
+    DISPATCH_CONTROLLER = "DISPATCH_CONTROLLER", "Dispatch controller"
+    COMPLIANCE_OFFICER = "COMPLIANCE_OFFICER", "Compliance officer"
+    PRICING_ANALYST = "PRICING_ANALYST", "Pricing analyst"
     DRIVER = "DRIVER", "Driver"
     RIDER = "RIDER", "Rider"
     FLEET_OWNER = "FLEET_OWNER", "Fleet owner (partner)"
@@ -159,6 +165,10 @@ class Department(models.TextChoices):
     MAINTENANCE = "MAINTENANCE", "Fleet & maintenance"
     INTERCITY = "INTERCITY", "Intercity & rentals"
     PARCELS = "PARCELS", "Parcels"
+    FINANCE = "FINANCE", "Finance"
+    PEOPLE = "PEOPLE", "People (HR)"
+    SAFETY = "SAFETY", "Trust & safety"
+    LEGAL = "LEGAL", "Legal & compliance"
 
 
 class StaffProfile(models.Model):

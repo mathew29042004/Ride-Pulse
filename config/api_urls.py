@@ -72,6 +72,9 @@ router.register("chat", chat.ChatViewSet, basename="chat")
 router.register("ops/incidents", reliability.IncidentViewSet, basename="ops-incident")
 router.register("ops/weather", reliability.WeatherViewSet, basename="ops-weather")
 router.register("ops/command", reliability.CommandViewSet, basename="ops-command")
+from apps.workspace.powers_api import PowersViewSet  # noqa: E402
+
+router.register("ops/powers", PowersViewSet, basename="ops-powers")
 router.register("ops/brief", reliability.BriefViewSet, basename="ops-brief")
 router.register("ops/chief", reliability.ChiefInboxViewSet, basename="ops-chief")
 router.register("counters", rides.CounterViewSet, basename="counter")
