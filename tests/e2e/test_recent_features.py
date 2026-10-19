@@ -79,7 +79,7 @@ def test_ops_turns_on_flood_mode_and_bikes_pause(page, live_server, chennai):
     manager = staff(Role.OPS_MANAGER, "Meera", department="OPERATIONS")
     sign_in(page, live_server, manager.email)
     page.goto(f"{live_server.url}/ops/weather")
-    page.get_by_label("City").select_option(label="Chennai")
+    page.locator("main").get_by_label("City").select_option(label="Chennai")
     page.get_by_role("button", name="Flooding").click()
     page.get_by_role("button", name="Turn on").click()
     expect(page.get_by_text("Turned on.")).to_be_visible()
