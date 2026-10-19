@@ -349,6 +349,7 @@ def update_location(
     from apps.rides.models import ACTIVE_DRIVER_STATUSES, Trip
 
     now = now or timezone.now()
+    prev = (driver.current_lat, driver.current_lng, driver.location_updated_at)
     DriverProfile.objects.filter(pk=driver.pk).update(
         current_lat=lat, current_lng=lng, heading=heading, location_updated_at=now
     )
@@ -368,6 +369,12 @@ def update_location(
             speed_kmh=speed_kmh,
             heading=heading,
             recorded_at=now,
+        )
+    if record:
+        from . import speed
+
+        speed.check(
+            driver, lat=lat, lng=lng, speed_kmh=speed_kmh, prev=prev, now=now, trip_id=trip_id
         )
     if not trip_id:
         from apps.fleet import airport

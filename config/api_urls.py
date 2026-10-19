@@ -83,6 +83,7 @@ router.register("driver/biz", fleet.DriverBusinessViewSet, basename="driver-biz"
 router.register("driver", drivers.DriverAppViewSet, basename="driver-self")
 router.register("drivers", drivers.DriverViewSet, basename="driver")
 router.register("ops/loans", drivers.LoanViewSet, basename="ops-loan")
+router.register("ops/speed", drivers.SpeedViewSet, basename="ops-speed")
 router.register("wallet", payments.WalletViewSet, basename="wallet")
 router.register("payments", payments.PaymentViewSet, basename="payment")
 router.register("payouts", payments.PayoutViewSet, basename="payout")

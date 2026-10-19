@@ -773,6 +773,14 @@ ledger still balances, times the restore, then drops the scratch database. A fai
 alerts the admins. Ops → Backups shows every run and can run either now. In production the file
 would also be copied to storage in another region.
 
+### Speed warnings and slow zones (`drivers.speed`)
+
+Every location update checks the driver's speed (the phone's, or worked out from the last
+position) against the limit: 60 km/h in town (autos 45, bikes 50), or a slow zone's limit while
+inside it: schools 25 km/h on weekdays 7 am – 6 pm, hospitals and markets 30 km/h. More than 10%
+over warns the driver at once (at most every 2 minutes) and records an alert on the trip. Ops →
+Speeding shows repeat offenders and where it happens; ops can add slow zones.
+
 ### Fuel prices and fare revisions (`pricing.fuel`)
 
 Ops record petrol, diesel and CNG prices per state (Ops → Fuel prices). For each ride type, its

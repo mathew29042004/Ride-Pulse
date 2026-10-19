@@ -713,3 +713,58 @@ class LoanViewSet(BaseViewSet):
         data.is_valid(raise_exception=True)
         loan = get_object_or_404(loans.VehicleLoan, pk=pk)
         return Response(loans.row(loans.decide(loan, user=request.user, **data.validated_data)))
+
+
+class SlowZoneSerializer(serializers.Serializer):
+    city = serializers.IntegerField()
+    name = serializers.CharField(max_length=120)
+    kind = serializers.ChoiceField(choices=["SCHOOL", "HOSPITAL", "MARKET"])
+    lat = serializers.FloatField()
+    lng = serializers.FloatField()
+    radius_m = serializers.IntegerField(min_value=50, max_value=1000, default=250)
+    limit_kmh = serializers.IntegerField(min_value=10, max_value=50, default=25)
+
+
+class SpeedViewSet(BaseViewSet):
+    """Speed alerts (last 7 days) and slow zones."""
+
+    capabilities = {"list": Cap.DRIVERS_VIEW, "*": Cap.SAFETY_MANAGE}
+    queryset = DriverProfile.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="speed_overview")
+    def list(self, request):
+        from . import speed
+
+        zones = speed.SlowZone.objects.filter(is_active=True).select_related("city")[:300]
+        return Response(
+            {
+                **speed.report(),
+                "zone_list": [
+                    {
+                        "id": z.pk,
+                        "name": z.name,
+                        "kind": z.kind,
+                        "city": z.city.name,
+                        "limit_kmh": z.limit_kmh,
+                        "radius_m": z.radius_m,
+                    }
+                    for z in zones
+                ],
+            }
+        )
+
+    @extend_schema(request=SlowZoneSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from django.core.cache import cache
+
+        from apps.geo.models import City
+
+        from . import speed
+
+        data = SlowZoneSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = dict(data.validated_data)
+        city = get_object_or_404(City, pk=v.pop("city"))
+        zone = speed.SlowZone.objects.create(city=city, **v)
+        cache.delete(f"slow-zones:{city.pk}")
+        return Response({"id": zone.pk}, status=201)

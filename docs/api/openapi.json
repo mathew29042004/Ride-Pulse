@@ -8607,6 +8607,58 @@
     ],
     "type": "string"
    },
+   "SlowZoneKindEnum": {
+    "description": "* `SCHOOL` - SCHOOL\n* `HOSPITAL` - HOSPITAL\n* `MARKET` - MARKET",
+    "enum": [
+     "SCHOOL",
+     "HOSPITAL",
+     "MARKET"
+    ],
+    "type": "string"
+   },
+   "SlowZoneRequest": {
+    "properties": {
+     "city": {
+      "type": "integer"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/SlowZoneKindEnum"
+     },
+     "lat": {
+      "format": "double",
+      "type": "number"
+     },
+     "limit_kmh": {
+      "default": 25,
+      "maximum": 50,
+      "minimum": 10,
+      "type": "integer"
+     },
+     "lng": {
+      "format": "double",
+      "type": "number"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+     },
+     "radius_m": {
+      "default": 250,
+      "maximum": 1000,
+      "minimum": 50,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "city",
+     "kind",
+     "lat",
+     "lng",
+     "name"
+    ],
+    "type": "object"
+   },
    "SosRequest": {
     "properties": {
      "ambulance": {
@@ -20091,6 +20143,84 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/LostItem"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/speed/": {
+   "get": {
+    "description": "Speed alerts (last 7 days) and slow zones.",
+    "operationId": "speed_overview",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   },
+   "post": {
+    "description": "Speed alerts (last 7 days) and slow zones.",
+    "operationId": "ops_speed_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SlowZoneRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/SlowZoneRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/SlowZoneRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
         }
        }
       },

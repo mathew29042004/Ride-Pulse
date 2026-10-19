@@ -90,6 +90,7 @@ const NAV = [
       { to: "/ops/loans", label: "Vehicle loans", icon: Landmark, cap: "payouts.manage" },
       { to: "/ops/weather", label: "Monsoon mode", icon: CloudRain, cap: "pricing.view" },
       { to: "/ops/fuel", label: "Fuel prices", icon: Fuel, cap: "pricing.view" },
+      { to: "/ops/speed", label: "Speeding", icon: Gauge, cap: "drivers.view" },
       { to: "/ops/counter", label: "Booking counter", icon: Store, cap: "counter.operate" },
       { to: "/ops/backups", label: "Backups", icon: DatabaseBackup, cap: "audit.view" },
       { to: "/ops/work", label: "Work", icon: ClipboardList, cap: "work.use" },
