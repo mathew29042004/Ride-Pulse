@@ -349,8 +349,15 @@ def seed_demo(*, seed: int = 31, log=print) -> dict:
     ]
     made = 0
     for i, driver in enumerate(drivers):
-        principal = Decimal(rng.choice([60_000, 120_000, 250_000, 400_000, 550_000]))
-        weeks = rng.choice(TENURES)
+        principal = Decimal(rng.choice([60_000, 90_000, 120_000, 180_000, 250_000]))
+        # Bigger loans over longer terms, so the EMI is a sensible share of a week's earnings.
+        weeks = (
+            TENURES[0]
+            if principal <= 90_000
+            else TENURES[1]
+            if principal <= 150_000
+            else TENURES[2]
+        )
         loan = VehicleLoan(
             driver=driver,
             vehicle=rng.choice(vehicles),

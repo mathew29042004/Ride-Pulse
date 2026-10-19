@@ -169,6 +169,10 @@ def _book(enrolment, *, pickup, dropoff, when, pickup_address, dropoff_address, 
     from apps.geo.services import require_city
 
     city = require_city(*pickup)
+    # The same checks as any booking: service area, trip length, flooded zones.
+    from apps.rides.services import _validate_points
+
+    _validate_points(city, pickup, dropoff)
     estimate = pricing.estimate_fare(
         city=city, ride_type=plan.ride_type, pickup=pickup, dropoff=dropoff, at=when
     )
@@ -331,16 +335,27 @@ def seed_demo(*, seed: int = 41, log=print) -> dict:
         members = list(
             profile.members.filter(status=MemberStatus.ACTIVE).select_related("rider")[:20]
         )
-        # The office: a zone in the city where the company's owner rides most (or any zone).
+        # The office and homes: neighbourhoods (not the airport) in one city, the one the
+        # company's owner rides in most, or any city with enough zones.
         trip = profile.owner.trips.select_related("city").first()
-        zones = list(Zone.objects.filter(city=trip.city) if trip else Zone.objects.all()[:20])
-        if not zones or not members:
+        city_zones = Zone.objects.filter(is_airport=False)
+        zones = list(city_zones.filter(city=trip.city)) if trip else []
+        if len(zones) < 3:
+            from django.db.models import Count
+
+            from apps.geo.models import City
+
+            city = City.objects.annotate(n=Count("zones")).filter(n__gte=4).order_by("?").first()
+            zones = list(city_zones.filter(city=city)) if city else []
+        if len(zones) < 2 or not members:
             continue
         office = rng.choice(zones)
         shifts = [("General shift", time(9, 30), time(18, 30))]
         if plans == 0:
-            shifts.append(("Night shift", time(21, 0), time(6, 0)))
-        for name, start, end in shifts:
+            shifts.append(("Late shift", time(14, 0), time(23, 0)))
+        rng.shuffle(members)
+        per_shift = len(members) // len(shifts)
+        for n, (name, start, end) in enumerate(shifts):
             plan = CommutePlan.objects.create(
                 profile=profile,
                 name=name,
@@ -350,20 +365,20 @@ def seed_demo(*, seed: int = 41, log=print) -> dict:
                 ride_type=mini,
                 weekdays=[0, 1, 2, 3, 4],
                 arrive_by=start,
-                leave_at=end if end > start else time(23, 45),
+                leave_at=end,
                 created_by=profile.owner.user,
             )
             plans += 1
-            for member in members[: len(members) // len(shifts)]:
+            for member in members[n * per_shift : (n + 1) * per_shift]:
                 if rng.random() < 0.2:
                     continue
-                home = rng.choice([z for z in zones if z.pk != office.pk] or zones)
+                home = rng.choice([z for z in zones if z.pk != office.pk])
                 CommuteEnrolment.objects.get_or_create(
                     plan=plan,
                     rider=member.rider,
                     defaults={
-                        "home_lat": home.center_lat + rng.uniform(-0.01, 0.01),
-                        "home_lng": home.center_lng + rng.uniform(-0.01, 0.01),
+                        "home_lat": home.center_lat + rng.uniform(-0.005, 0.005),
+                        "home_lng": home.center_lng + rng.uniform(-0.005, 0.005),
                         "home_address": f"Home, {home.name}",
                         "evening": rng.random() < 0.85,
                     },

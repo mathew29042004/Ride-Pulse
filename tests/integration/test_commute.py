@@ -125,3 +125,14 @@ def test_api(api, company):
     assert board["plans"][0]["enrolled"] == 1
     stopped = admin.post(f"/api/v1/rider/business/{profile.pk}/commute/{made.json()['id']}/stop/")
     assert not stopped.json()["is_active"]
+
+
+def test_a_home_too_far_from_the_office_is_not_booked(company, now):
+    profile, owner, employee = company
+    plan = make_plan(profile, owner)
+    # Saved directly (the enrol screen refuses this): home 600 km away in another city.
+    commute.CommuteEnrolment.objects.create(
+        plan=plan, rider=employee, home_lat=15.8497, home_lng=74.4977, home_address="Belagavi"
+    )
+    stats = commute.book_tomorrow(now=now)
+    assert stats["booked"] == 0 and stats["failed"] == 1
