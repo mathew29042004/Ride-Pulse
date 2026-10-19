@@ -8,11 +8,11 @@
 @theme {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  --color-canvas: #f3f4f6;
+  --color-canvas: #f7f8fa;
   --color-surface: #ffffff;
-  --color-surface-2: #f6f7f9;
-  --color-surface-3: #eceef2;
-  --color-line: #e4e7ec;
+  --color-surface-2: #f9fafb;
+  --color-surface-3: #f0f2f5;
+  --color-line: #e8ebf0;
   --color-fg: #0b0f19;
   --color-muted: #596275; /* 5:1 on every light surface (WCAG AA) */
   --color-ink: #0b0f19;
@@ -20,7 +20,7 @@
 
   --color-brand: #10b981;
   --color-brand-strong: #059669;
-  --color-brand-soft: #d1fae5;
+  --color-brand-soft: #e7f8f0;
   --color-brand-fg: #04281c;
   --color-on-brand: #04281c; /* text on a solid brand fill, both themes (6:1) */
 
@@ -28,8 +28,9 @@
   --color-danger: #e11d48;
   --color-info: #0ea5e9;
 
-  --shadow-float: 0 12px 32px -12px rgb(15 23 42 / 0.28), 0 2px 6px rgb(15 23 42 / 0.06);
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 1px rgb(15 23 42 / 0.03);
+  --shadow-float: 0 16px 40px -16px rgb(15 23 42 / 0.22), 0 2px 6px rgb(15 23 42 / 0.04);
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px -6px rgb(15 23 42 / 0.06);
+  --radius-card: 1.25rem;
 
   --animate-pulse-ring: pulse-ring 1.8s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
   --animate-slide-up: slide-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -45,11 +46,11 @@
 }
 
 .dark {
-  --color-canvas: #07090d;
+  --color-canvas: #0a0c11;
   --color-surface: #11141b;
   --color-surface-2: #171b24;
   --color-surface-3: #1f2430;
-  --color-line: #262c38;
+  --color-line: #232937;
   --color-fg: #f2f4f7;
   --color-muted: #98a2b3;
   --color-ink: #f2f4f7;
@@ -84,13 +85,26 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-surface shadow-[var(--shadow-card)];
+    @apply rounded-[var(--radius-card)] border border-line/80 bg-surface shadow-[var(--shadow-card)];
+  }
+  /* Clickable cards and table rows lift a little on hover. */
+  a.card,
+  button.card {
+    @apply transition hover:-translate-y-px hover:border-line hover:shadow-[var(--shadow-float)];
+  }
+  tbody tr {
+    @apply transition-colors hover:bg-surface-2;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
   }
   .label {
-    @apply mb-1.5 block text-xs font-medium tracking-wide text-muted uppercase;
+    @apply mb-1.5 block text-xs font-medium text-muted;
   }
   .input {
-    @apply w-full rounded-xl border border-line bg-surface-2 px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-brand focus:bg-surface focus:ring-4 focus:ring-brand/15;
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 shadow-[0_1px_1px_rgb(15_23_42/0.03)] text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-brand focus:bg-surface focus:ring-4 focus:ring-brand/15;
   }
   .scrollbar-none {
     scrollbar-width: none;

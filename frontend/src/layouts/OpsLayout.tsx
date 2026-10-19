@@ -149,8 +149,8 @@ export default function OpsLayout() {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center justify-between px-5">
-        <Logo light />
-        <button className="text-white/60 lg:hidden" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+        <Logo />
+        <button className="text-muted lg:hidden" onClick={() => setMenuOpen(false)} aria-label="Close menu">
           <X className="size-5" />
         </button>
       </div>
@@ -160,7 +160,7 @@ export default function OpsLayout() {
           if (!items.length) return null;
           return (
             <div key={section.group}>
-              <div className="px-3 pb-2 text-[11px] font-semibold tracking-widest text-white/35 uppercase">{section.group}</div>
+              <div className="px-3 pb-2 text-[11px] font-semibold tracking-widest text-muted/70 uppercase">{section.group}</div>
               <div className="space-y-0.5">
                 {items.map(({ to, label, icon: Icon, ...rest }) => (
                   <NavLink
@@ -169,14 +169,14 @@ export default function OpsLayout() {
                     end={"end" in rest && rest.end}
                     className={({ isActive }) =>
                       clsx(
-                        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
-                        isActive ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
+                        "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                        isActive ? "bg-brand-soft text-brand-fg" : "text-muted hover:bg-surface-3 hover:text-fg",
                       )
                     }
                   >
                     <Icon className="size-[18px]" />
                     <span className="flex-1">{label}</span>
-                    {"badge" in rest && openSos > 0 && <span className="rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">{openSos}</span>}
+                    {"badge" in rest && openSos > 0 && <span className="rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-fg">{openSos}</span>}
                   </NavLink>
                 ))}
               </div>
@@ -184,21 +184,21 @@ export default function OpsLayout() {
           );
         })}
       </nav>
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-line p-4">
         <div className="flex items-center gap-3">
           <Avatar name={`${user?.first_name} ${user?.last_name}`} size={36} />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-white">
+            <div className="truncate text-sm font-semibold text-fg">
               {user?.first_name} {user?.last_name}
             </div>
-            <div className="truncate text-xs text-white/50">{user?.role_label ?? user?.role.replaceAll("_", " ").toLowerCase()}</div>
+            <div className="truncate text-xs text-muted">{user?.role_label ?? user?.role.replaceAll("_", " ").toLowerCase()}</div>
           </div>
           <button
             onClick={async () => {
               await logout();
               navigate("/login");
             }}
-            className="rounded-lg p-2 text-white/50 hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-2 text-muted hover:bg-surface-3 hover:text-fg"
             aria-label="Log out"
             title="Log out"
           >
@@ -212,15 +212,15 @@ export default function OpsLayout() {
   return (
     <OpsContext.Provider value={{ city, setCity, cities: cities.data ?? [], cityInfo: cities.data?.find((c) => c.slug === city) }}>
       <div className="flex h-full">
-        <aside className="hidden w-64 shrink-0 bg-[#080b12] lg:block">{sidebar}</aside>
+        <aside className="hidden w-64 shrink-0 border-r border-line bg-surface lg:block">{sidebar}</aside>
         {menuOpen && (
           <div className="fixed inset-0 z-[1100] lg:hidden">
             <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
-            <aside className="absolute inset-y-0 left-0 w-72 bg-[#080b12]">{sidebar}</aside>
+            <aside className="absolute inset-y-0 left-0 w-72 bg-surface">{sidebar}</aside>
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 lg:px-8">
+          <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface/85 px-4 backdrop-blur lg:px-8">
             <button className="rounded-lg p-2 hover:bg-surface-3 lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
               <Menu className="size-5" />
             </button>

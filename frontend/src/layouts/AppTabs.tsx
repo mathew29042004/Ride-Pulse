@@ -15,12 +15,14 @@ export function AppTabs({ tabs }: { tabs: AppTab[] }) {
           to={to}
           end={end}
           className={({ isActive }) =>
-            clsx("flex flex-col items-center gap-0.5 pt-2.5 pb-1 text-[11px] font-medium transition", isActive ? "text-fg" : "text-muted hover:text-fg")
+            clsx("flex flex-col items-center gap-0.5 pt-2.5 pb-1 text-[11px] font-medium transition", isActive ? "text-brand-strong" : "text-muted hover:text-fg")
           }
         >
           {({ isActive }) => (
             <>
-              <Icon className={clsx("size-[22px]", isActive && "stroke-[2.4]")} />
+              <span className={clsx("flex h-7 w-12 items-center justify-center rounded-full transition", isActive && "bg-brand-soft")}>
+                <Icon className={clsx("size-[20px]", isActive && "stroke-[2.4]")} />
+              </span>
               {t(label)}
             </>
           )}

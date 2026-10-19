@@ -15,7 +15,7 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary: "bg-ink text-ink-fg hover:opacity-90",
-  brand: "bg-brand text-on-brand hover:bg-brand-strong",
+  brand: "bg-brand text-on-brand shadow-[0_6px_16px_-8px_rgb(16_185_129/0.7)] hover:bg-brand-strong",
   secondary: "bg-surface-3 text-fg hover:bg-line",
   ghost: "text-fg hover:bg-surface-3",
   danger: "bg-danger text-white hover:opacity-90",
@@ -24,7 +24,7 @@ const variants: Record<Variant, string> = {
 const sizes: Record<Size, string> = {
   sm: "h-8 px-3 text-xs gap-1.5 rounded-lg",
   md: "h-10 px-4 text-sm gap-2 rounded-xl",
-  lg: "h-13 px-5 text-base gap-2 rounded-2xl",
+  lg: "min-h-13 py-2.5 px-6 text-base gap-2 rounded-2xl whitespace-normal text-center leading-snug",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -172,7 +172,7 @@ export function Segmented<T extends string>({
   className?: string;
 }) {
   return (
-    <div className={clsx("inline-flex rounded-xl bg-surface-3 p-1", className)}>
+    <div className={clsx("inline-flex rounded-xl border border-line bg-surface-2 p-1", className)}>
       {options.map((option) => (
         <button
           key={option.value}
@@ -202,9 +202,9 @@ export function Card({ className, children, ...rest }: { className?: string; chi
 
 export function CardHeader({ title, subtitle, action }: { title: ReactNode; subtitle?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
+    <div className="flex items-start justify-between gap-3 border-b border-line/70 px-5 py-4">
       <div>
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-[15px] font-semibold">{title}</h3>
         {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
       </div>
       {action}
@@ -346,7 +346,7 @@ export function Stat({
         <span className="text-xs font-medium text-muted">{label}</span>
         {icon && <span className={clsx("flex size-8 items-center justify-center rounded-xl", iconTone)}>{icon}</span>}
       </div>
-      <div className="mt-2 text-2xl font-bold tracking-tight">{value}</div>
+      <div className="mt-3 text-[26px] leading-none font-semibold tracking-tight tabular-nums">{value}</div>
       {sub && <div className="mt-1 text-xs text-muted">{sub}</div>}
     </Card>
   );
@@ -423,7 +423,7 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className={clsx("relative w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl", width)}
+            className={clsx("relative w-full overflow-hidden rounded-3xl border border-line bg-surface shadow-2xl", width)}
             initial={{ y: 20, scale: 0.98 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: 10, scale: 0.98 }}
@@ -544,9 +544,9 @@ export function Sheet({
 
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-[28px] leading-tight font-semibold tracking-tight">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -563,11 +563,11 @@ export function Table({ children }: { children: ReactNode }) {
 }
 
 export function Th({ children, className }: { children?: ReactNode; className?: string }) {
-  return <th className={clsx("border-b border-line bg-surface-2 px-4 py-2.5 text-[11px] font-semibold tracking-wide text-muted uppercase", className)}>{children}</th>;
+  return <th className={clsx("sticky top-0 border-b border-line bg-surface-2/95 px-4 py-2.5 text-xs font-medium text-muted backdrop-blur", className)}>{children}</th>;
 }
 
 export function Td({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={clsx("border-b border-line px-4 py-3 align-middle", className)}>{children}</td>;
+  return <td className={clsx("border-b border-line/70 px-4 py-2.5 align-middle", className)}>{children}</td>;
 }
 
 export function Pagination({ page, count, pageSize = 20, onChange }: { page: number; count: number; pageSize?: number; onChange: (p: number) => void }) {
