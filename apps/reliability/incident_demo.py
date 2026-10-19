@@ -64,3 +64,50 @@ def seed(*, log=print) -> dict:
     )
     log("Incidents: 2 resolved in the last fortnight")
     return {"incidents": 2}
+
+
+def seed_weather(*, log=print) -> dict:
+    """A past Chennai flood (ended) and heavy rain on now in Kochi (rain only caps surge)."""
+    from apps.accounts.models import User
+    from apps.geo.models import City
+
+    from . import weather
+    from .models import WeatherAlert
+
+    if WeatherAlert.objects.exists():
+        return {"weather_alerts": 0}
+    ops = User.objects.filter(email="admin@ridepulse.dev").first()
+    now = timezone.now()
+    made = 0
+    with notifications_muted():
+        chennai = City.objects.filter(slug="chennai").first()
+        if chennai:
+            flooded = list(chennai.zones.all()[:2])
+            past = weather.start(
+                city=chennai,
+                level="FLOOD",
+                user=ops,
+                hours=18,
+                zones=flooded,
+                now=now - timedelta(days=9),
+            )
+            made += bool(past)
+        kochi = City.objects.filter(slug="kochi").first()
+        if kochi:
+            weather.start(
+                city=kochi,
+                level="RAIN",
+                user=ops,
+                hours=12,
+                message="IMD orange alert: heavy rain. Rides may take longer; surge capped at 1.5x.",
+                now=now - timedelta(hours=1),
+            )
+            made += 1
+    log(f"  weather alerts: {made}")
+    return {"weather_alerts": made}
+
+
+def notifications_muted():
+    from apps.notifications import services as notifications
+
+    return notifications.muted()

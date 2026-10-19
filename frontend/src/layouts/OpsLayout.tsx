@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -86,6 +86,7 @@ const NAV = [
       { to: "/ops/audit", label: "Audit trail", icon: ScrollText, cap: "audit.view" },
       { to: "/ops/platform", label: "Platform health", icon: Activity, cap: "audit.view" },
       { to: "/ops/incidents", label: "Incidents", icon: Siren, cap: "trips.view" },
+      { to: "/ops/weather", label: "Monsoon mode", icon: CloudRain, cap: "pricing.view" },
       { to: "/ops/work", label: "Work", icon: ClipboardList, cap: "work.use" },
       { to: "/ops/chat", label: "Team chat", icon: MessagesSquare, cap: "work.use" },
       { to: "/ops/roster", label: "Roster & leave", icon: CalendarDays, cap: "work.use" },

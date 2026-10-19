@@ -3418,16 +3418,6 @@
     ],
     "type": "object"
    },
-   "LevelEnum": {
-    "description": "* `INFO` - Info\n* `SUCCESS` - Success\n* `WARNING` - Warning\n* `DANGER` - Urgent",
-    "enum": [
-     "INFO",
-     "SUCCESS",
-     "WARNING",
-     "DANGER"
-    ],
-    "type": "string"
-   },
    "LocationBatchRequest": {
     "properties": {
      "fixes": {
@@ -3931,7 +3921,7 @@
      "level": {
       "allOf": [
        {
-        "$ref": "#/components/schemas/LevelEnum"
+        "$ref": "#/components/schemas/NotificationLevelEnum"
        }
       ],
       "readOnly": true
@@ -3954,6 +3944,16 @@
      "title"
     ],
     "type": "object"
+   },
+   "NotificationLevelEnum": {
+    "description": "* `INFO` - Info\n* `SUCCESS` - Success\n* `WARNING` - Warning\n* `DANGER` - Urgent",
+    "enum": [
+     "INFO",
+     "SUCCESS",
+     "WARNING",
+     "DANGER"
+    ],
+    "type": "string"
    },
    "NpsAnswerRequest": {
     "properties": {
@@ -8362,6 +8362,46 @@
       "type": "string"
      }
     },
+    "type": "object"
+   },
+   "StartWeatherLevelEnum": {
+    "description": "* `RAIN` - Heavy rain\n* `FLOOD` - Flooding",
+    "enum": [
+     "RAIN",
+     "FLOOD"
+    ],
+    "type": "string"
+   },
+   "StartWeatherRequest": {
+    "properties": {
+     "city": {
+      "type": "integer"
+     },
+     "hours": {
+      "default": 6,
+      "maximum": 72,
+      "minimum": 1,
+      "type": "integer"
+     },
+     "level": {
+      "$ref": "#/components/schemas/StartWeatherLevelEnum"
+     },
+     "message": {
+      "default": "",
+      "maxLength": 240,
+      "type": "string"
+     },
+     "zones": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "city",
+     "level"
+    ],
     "type": "object"
    },
    "Statement": {
@@ -19375,6 +19415,125 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/DataRequest"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/weather/": {
+   "get": {
+    "description": "Monsoon / flood mode per city (see ``reliability.weather``).",
+    "operationId": "weather_alerts_list",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   },
+   "post": {
+    "description": "Monsoon / flood mode per city (see ``reliability.weather``).",
+    "operationId": "ops_weather_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/StartWeatherRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/StartWeatherRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/StartWeatherRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/weather/{id}/end/": {
+   "post": {
+    "description": "Monsoon / flood mode per city (see ``reliability.weather``).",
+    "operationId": "ops_weather_end_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this weather alert.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
         }
        }
       },

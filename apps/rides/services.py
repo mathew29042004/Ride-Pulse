@@ -298,6 +298,9 @@ def _validate_points(city, pickup, dropoff, stop=None, extra_stops=()) -> None:
         raise BusinessRuleViolation("Pickup and drop are too close together.", field="dropoff")
     if distance > MAX_TRIP_KM:
         raise BusinessRuleViolation(f"Trips are limited to {MAX_TRIP_KM} km.", field="dropoff")
+    from apps.reliability import weather
+
+    weather.check_points(city, [pickup, *stops, dropoff])
 
 
 def estimate_options(
@@ -316,6 +319,8 @@ def estimate_options(
     city = require_city(*pickup)
     _validate_points(city, pickup, dropoff, stop, extra_stops)
     has_pass = bool(rider and passes.active_pass(rider, at))
+    from apps.reliability import weather
+
     needs_wheelchair = bool(rider and RidePreference.WHEELCHAIR in (rider.accessibility or []))
     from apps.experiments import services as experiments
 
@@ -360,7 +365,10 @@ def estimate_options(
         accessible_type = ride_type.served_by.code not in TWO_WHEELERS_AND_AUTOS
         if needs_wheelchair:
             nearest = [d for d in nearest if accessible_type and _wheelchair_ok(d)][:1]
-        open_now = ride_type.is_open(at) and (accessible_type or not needs_wheelchair)
+        flood_paused = weather.paused_vehicle(city, ride_type.served_by.code, now=at)
+        open_now = (
+            ride_type.is_open(at) and (accessible_type or not needs_wheelchair) and not flood_paused
+        )
         eta = (
             eta_minutes(nearest[0].current_lat, nearest[0].current_lng, *pickup, at)
             if nearest and open_now
@@ -393,6 +401,8 @@ def estimate_options(
                 "unavailable_reason": (
                     f"{ride_type.name} isn't wheelchair accessible"
                     if needs_wheelchair and not accessible_type
+                    else f"{ride_type.name} rides are paused during flooding"
+                    if flood_paused
                     else f"{ride_type.name} rides run {ride_type.service_hours_label}"
                     if not open_now
                     else ""
@@ -523,6 +533,14 @@ def request_trip(
         )
     city = require_city(*pickup)
     _validate_points(city, pickup, dropoff, stop, extra_stops)
+    from apps.reliability import weather
+
+    if weather.paused_vehicle(city, ride_type.served_by.code, now=now):
+        raise BusinessRuleViolation(
+            f"{ride_type.name} rides are paused while parts of {city.name} are flooded. "
+            "Choose a car or auto.",
+            field="ride_type",
+        )
     promo = (
         pricing.validate_promo(promo_code, rider=rider, city=city, ride_type=ride_type, now=now)
         if promo_code

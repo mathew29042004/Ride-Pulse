@@ -228,3 +228,28 @@ class IncidentUpdate(models.Model):
 
     def __str__(self) -> str:
         return f"{self.incident_id} {self.status}"
+
+
+class WeatherLevel(models.TextChoices):
+    RAIN = "RAIN", "Heavy rain"
+    FLOOD = "FLOOD", "Flooding"
+
+
+class WeatherAlert(models.Model):
+    """Monsoon mode for a city: surge held down, bikes paused in floods, flooded zones closed."""
+
+    city = models.ForeignKey("geo.City", on_delete=models.CASCADE, related_name="+")
+    level = models.CharField(max_length=5, choices=WeatherLevel.choices)
+    zones = models.ManyToManyField("geo.Zone", blank=True, related_name="+")
+    message = models.CharField(max_length=240, blank=True)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-starts_at"]
+
+    def __str__(self) -> str:
+        return f"{self.get_level_display()} in {self.city}"

@@ -696,6 +696,15 @@ NPS (% promoters 9–10 − % detractors 0–6) for the last 90 days by month an
 answers), and what detractors and promoters talk about, using keyword themes (not AI).
 API: `GET nps/prompt/`, `POST nps/answer/`, `POST nps/snooze/`, `GET nps/report/` (reports.view).
 
+### Monsoon / flood mode (`reliability.weather`)
+
+Ops → Monsoon mode turns on a weather alert for a city for 1–72 hours. Heavy rain caps surge at
+1.5x. Flooding removes surge, pauses bike taxis and refuses pick-ups, stops and drops inside the
+flooded zones ops tick (with a "choose higher ground" message). Riders and drivers in the city see
+it as a banner (an open incident still takes priority), and drivers get a safety notice. The demo
+has a past Chennai flood and heavy rain on now in Kochi.
+API: `GET/POST ops/weather/`, `POST ops/weather/<id>/end/`.
+
 ### Incidents and the status page (`reliability.incidents`)
 
 Ops → **Incidents**.

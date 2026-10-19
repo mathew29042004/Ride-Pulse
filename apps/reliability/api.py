@@ -19,7 +19,14 @@ from apps.accounts.two_factor import coverage as two_factor_coverage
 from apps.core.api import BaseViewSet
 
 from . import jobs, outbox, security
-from .models import DeliveryStatus, Incident, WebhookDelivery, WebhookEndpoint
+from .models import (
+    DeliveryStatus,
+    Incident,
+    WeatherAlert,
+    WeatherLevel,
+    WebhookDelivery,
+    WebhookEndpoint,
+)
 
 
 class EndpointSerializer(serializers.ModelSerializer):
@@ -277,3 +284,69 @@ class StatusBannerView(APIView):
         from . import incidents
 
         return Response({"banner": incidents.banner_for(request.user)})
+
+
+class StartWeatherSerializer(serializers.Serializer):
+    city = serializers.IntegerField()
+    level = serializers.ChoiceField(choices=WeatherLevel.choices)
+    hours = serializers.IntegerField(min_value=1, max_value=72, default=6)
+    zones = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
+    message = serializers.CharField(max_length=240, required=False, allow_blank=True, default="")
+
+
+class WeatherViewSet(BaseViewSet):
+    """Monsoon / flood mode per city (see ``reliability.weather``)."""
+
+    capabilities = {"list": Cap.PRICING_VIEW, "*": Cap.PRICING_MANAGE}
+    queryset = WeatherAlert.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="weather_alerts_list")
+    def list(self, request):
+        from apps.geo.models import City
+
+        from . import weather
+
+        alerts = WeatherAlert.objects.select_related("city", "created_by").prefetch_related(
+            "zones"
+        )[:50]
+        cities = City.objects.filter(is_active=True).prefetch_related("zones").order_by("name")
+        return Response(
+            {
+                "alerts": [weather.row(a) for a in alerts],
+                "cities": [
+                    {
+                        "id": c.pk,
+                        "name": c.name,
+                        "zones": [{"id": z.pk, "name": z.name} for z in c.zones.all()],
+                    }
+                    for c in cities
+                ],
+            }
+        )
+
+    @extend_schema(request=StartWeatherSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from apps.geo.models import City, Zone
+
+        from . import weather
+
+        data = StartWeatherSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        city = get_object_or_404(City, pk=v["city"])
+        alert = weather.start(
+            city=city,
+            level=v["level"],
+            user=request.user,
+            hours=v["hours"],
+            zones=Zone.objects.filter(pk__in=v["zones"], city=city),
+            message=v["message"],
+        )
+        return Response(weather.row(alert), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def end(self, request, pk=None):
+        from . import weather
+
+        return Response(weather.row(weather.end(get_object_or_404(WeatherAlert, pk=pk))))

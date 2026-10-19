@@ -49,6 +49,7 @@ class Command(BaseCommand):
         from apps.reliability import incident_demo
 
         stats.update(incident_demo.seed(log=self.stdout.write))
+        stats.update(incident_demo.seed_weather(log=self.stdout.write))
         from apps.announcements import demo as announcements_demo
 
         stats.update(announcements_demo.seed(log=self.stdout.write))

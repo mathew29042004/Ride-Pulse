@@ -74,6 +74,7 @@ const OpsIncidents = lazy(() => import("./pages/ops/OpsIncidents"));
 const OpsPnl = lazy(() => import("./pages/ops/OpsPnl"));
 const OpsGst = lazy(() => import("./pages/ops/OpsGst"));
 const OpsNps = lazy(() => import("./pages/ops/OpsNps"));
+const OpsWeather = lazy(() => import("./pages/ops/OpsWeather"));
 const OpsTrust = lazy(() => import("./pages/ops/OpsTrust"));
 const opsFleet = () => import("./pages/ops/fleet/OpsFleet");
 const OpsFleetOwners = lazy(() => opsFleet().then((m) => ({ default: m.OpsFleetOwners })));
@@ -236,6 +237,7 @@ export const router = createBrowserRouter([
       { path: "roster", element: lazyPage(<OpsRoster />) },
       { path: "announcements", element: lazyPage(<OpsAnnouncements />) },
       { path: "incidents", element: lazyPage(<OpsIncidents />) },
+      { path: "weather", element: lazyPage(<OpsWeather />) },
       { path: "pnl", element: lazyPage(<OpsPnl />) },
       { path: "gst", element: lazyPage(<OpsGst />) },
       { path: "nps", element: lazyPage(<OpsNps />) },

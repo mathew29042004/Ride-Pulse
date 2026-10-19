@@ -193,7 +193,9 @@ def banner_for(user) -> dict | None:
         key=lambda i: rank[i.severity],
     )
     if not best:
-        return None
+        from . import weather
+
+        return weather.banner(_city_of(user))
     i = best[0]
     return {
         "number": i.number,
@@ -201,3 +203,19 @@ def banner_for(user) -> dict | None:
         "message": i.public_message,
         "status": i.get_status_display(),
     }
+
+
+def _city_of(user):
+    """A driver's city, or for a rider the city of their latest trip (riders have no home city)."""
+    if getattr(user, "is_driver", False):
+        profile = getattr(user, "driver_profile", None)
+        return profile.city if profile else None
+    from apps.rides.models import Trip
+
+    trip = (
+        Trip.objects.filter(rider__user=user)
+        .select_related("city")
+        .order_by("-requested_at")
+        .first()
+    )
+    return trip.city if trip else None
