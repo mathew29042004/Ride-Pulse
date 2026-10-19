@@ -491,7 +491,7 @@ export function Sheet({
         initial={{ opacity: 0, x: -12 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: "spring", stiffness: 320, damping: 32 }}
-        className="rp-panel absolute top-4 left-4 z-[500] flex max-h-[calc(100%-32px)] w-[400px] flex-col overflow-hidden rounded-3xl bg-surface shadow-[0_24px_60px_-20px_rgb(15_23_42/0.45)]"
+        className="rp-panel absolute top-4 left-4 z-[500] flex max-h-[calc(100%-32px)] w-[400px] flex-col overflow-hidden rounded-3xl rp-glass shadow-[0_24px_60px_-20px_rgb(15_23_42/0.45)]"
       >
         <div className={clsx("min-h-0 flex-1 overflow-y-auto px-5 pt-5", !footer && "pb-5", className)}>{children}</div>
         {footer && <div className="shrink-0 border-t border-line px-5 pt-3 pb-5">{footer}</div>}
@@ -505,7 +505,7 @@ export function Sheet({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 320, damping: 32 }}
-      className="relative z-[500] flex flex-col rounded-t-[28px] bg-surface shadow-[0_-12px_32px_-12px_rgb(15_23_42/0.25)] transition-[max-height] duration-300 ease-out will-change-transform"
+      className="rp-glass relative z-[500] flex flex-col rounded-t-[28px] !border-x-0 !border-b-0 shadow-[0_-12px_32px_-12px_rgb(15_23_42/0.25)] transition-[max-height] duration-300 ease-out will-change-transform"
     >
       <motion.div
         onPan={onPan}
@@ -545,12 +545,13 @@ export function Sheet({
 
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-[28px] leading-tight font-semibold tracking-tight">{title}</h1>
+    <div className="dark relative mb-8 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] bg-[#0b1220] px-6 py-6 text-fg shadow-[0_18px_40px_-20px_rgb(15_23_42/0.6)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(600px_200px_at_0%_0%,rgb(16_185_129/0.35),transparent_60%),radial-gradient(500px_220px_at_100%_120%,rgb(14_165_233/0.28),transparent_60%)]" />
+      <div className="relative">
+        <h1 className="text-[28px] leading-tight font-bold tracking-tight">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="relative flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }

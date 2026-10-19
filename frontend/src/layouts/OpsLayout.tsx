@@ -256,7 +256,9 @@ export default function OpsLayout() {
             <div className={clsx(pathname === "/ops/live" ? "h-full" : "mx-auto max-w-7xl px-4 py-6 lg:px-8")}>
               <OfflineBanner />
               <TwoStepReminder />
-              <Outlet />
+              <div key={pathname} className={clsx(pathname !== "/ops/live" && "rp-page", pathname === "/ops/live" && "h-full")}>
+                <Outlet />
+              </div>
             </div>
           </main>
         </div>

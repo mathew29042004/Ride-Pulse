@@ -58,7 +58,9 @@ export default function RiderLayout() {
       <OfflineBanner />
       <GuardianBanner />
       <StatusBanner />
-      <Outlet />
+      <div key={pathname} className="rp-fade relative flex min-h-0 flex-1 flex-col">
+        <Outlet />
+      </div>
     </PhoneFrame>
   );
 }

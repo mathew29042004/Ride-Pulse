@@ -44,6 +44,10 @@
     0% { transform: scale(0.6); opacity: 0.7; }
     100% { transform: scale(2.4); opacity: 0; }
   }
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
   @keyframes slide-up {
     from { transform: translateY(16px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
@@ -105,6 +109,20 @@
   h3 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+  }
+  /* Page change: a short fade (and, in the console, a small rise). Opacity only on phone
+     screens, so fixed pop-ups inside never get a transformed ancestor. */
+  .rp-page {
+    animation: page-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .rp-fade {
+    animation: fade-in 0.22s ease-out;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  .rp-glass {
+    @apply border border-white/40 bg-surface/[0.94] backdrop-blur-xl backdrop-saturate-150 dark:border-white/5;
   }
   .rp-glow {
     background-image: var(--gradient-glow);

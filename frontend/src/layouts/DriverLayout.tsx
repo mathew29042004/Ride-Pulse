@@ -35,7 +35,9 @@ export default function DriverLayout() {
     >
       <OfflineBanner />
       <StatusBanner />
-      <Outlet />
+      <div key={pathname} className="rp-fade relative flex min-h-0 flex-1 flex-col">
+        <Outlet />
+      </div>
     </PhoneFrame>
   );
 }
