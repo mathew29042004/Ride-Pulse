@@ -650,6 +650,16 @@ Ops → **Compliance**: each state's checks, and the drivers and vehicles to fix
   its own rules, so **check them** and override per state in `AGGREGATOR_RULES`
   (e.g. `{"Karnataka": {"surge_cap": "1.5"}}`).
 
+### Grievance officer (`trust.grievances`)
+
+The Aggregator Guidelines require a named grievance officer with published contact details
+(`/grievance-officer`, linked from the home page). Riders and drivers raise formal grievances in
+the app (Account → Grievances): fares, conduct, safety, suspensions, earnings, discrimination. Each
+must be acknowledged within 48 hours and resolved in writing within 15 days (Ops → Grievances). An
+hourly job escalates late ones to the appellate officer (a regional manager); the person can also
+escalate once if unhappy with the answer, and is told they may approach the state transport
+authority or the consumer commission. The compliance dashboard shows the on-time rates.
+
 ### Two-step sign-in for staff (`accounts.two_factor`)
 
 Ops → **Security**.

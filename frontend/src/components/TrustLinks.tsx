@@ -1,6 +1,6 @@
 /** Account rows: help centre, privacy, insurance claims and appeals. */
 
-import { ChevronRight, FileWarning, Gavel, HelpCircle, ShieldCheck } from "lucide-react";
+import { ChevronRight, FileWarning, Gavel, HelpCircle, Scale, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
 
 import { t } from "@/lib/i18n";
@@ -11,6 +11,7 @@ export function TrustLinks({ base }: { base: "/ride" | "/drive" }) {
     { to: `${base}/privacy`, label: t("Privacy and your data"), icon: ShieldCheck },
     { to: `${base}/claims`, label: t("Insurance claims"), icon: FileWarning },
     { to: `${base}/appeals`, label: t("Appeals"), icon: Gavel },
+    { to: `${base}/grievances`, label: t("Grievances"), icon: Scale },
   ];
   return (
     <>

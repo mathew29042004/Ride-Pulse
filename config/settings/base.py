@@ -273,6 +273,7 @@ CELERY_BEAT_SCHEDULE = {
     "fleet-upkeep": {"task": "fleet.upkeep_sweep", "schedule": crontab(hour=7, minute=30)},
     "commute-booking": {"task": "riders.book_commutes", "schedule": crontab(hour=20, minute=0)},
     "attendance": {"task": "workspace.close_attendance", "schedule": timedelta(hours=1)},
+    "grievances": {"task": "trust.grievance_sweep", "schedule": timedelta(hours=1)},
     "nightly-backup": {
         "task": "reliability.nightly_backup",
         "schedule": crontab(hour=2, minute=30),

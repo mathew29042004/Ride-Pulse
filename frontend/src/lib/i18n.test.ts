@@ -25,7 +25,7 @@ describe("t", () => {
   });
 });
 
-// Every literal t("…") in the rider and driver apps must exist in every language, with the
+// Every literal t("…") in the rider and driver apps (and the screens they share) must exist in every language, with the
 // same {placeholders}; otherwise people see English in the middle of their language.
 const SKIP = new Set(["Maruti Suzuki", "Swift", "TN 09 AB 1234", "Ride Pulse"]);
 
@@ -39,7 +39,7 @@ function files(dir: string): string[] {
 
 const root = join(__dirname, "..");
 const used = new Set<string>();
-for (const file of [...files(join(root, "pages/rider")), ...files(join(root, "pages/driver")), ...files(join(root, "components"))]) {
+for (const file of [...files(join(root, "pages/rider")), ...files(join(root, "pages/driver")), ...files(join(root, "pages/shared")), ...files(join(root, "components"))]) {
   for (const match of readFileSync(file, "utf8").matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/g)) {
     const key = JSON.parse(`"${match[1]}"`) as string;
     if (!SKIP.has(key)) used.add(key);

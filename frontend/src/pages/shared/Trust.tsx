@@ -5,7 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, Download, FileWarning, Gavel, Search, ShieldCheck, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FileWarning, Gavel, Scale, Search, ShieldCheck, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
@@ -408,3 +408,114 @@ export const DRIVER_APPEALS = [
   { value: "DRIVER_SUSPENSION", label: "My driver account was suspended" },
   { value: "FRAUD_DECISION", label: "A fraud decision about me" },
 ];
+
+interface Grievance {
+  id: number;
+  number: string;
+  category_label: string;
+  subject: string;
+  status: string;
+  status_label: string;
+  created_at: string;
+  ack_due: string;
+  resolve_due: string;
+  acknowledged_at: string | null;
+  resolution: string;
+  escalated_at: string | null;
+  satisfied: boolean | null;
+}
+interface Officer {
+  name: string;
+  title: string;
+  email: string;
+  phone: string;
+  hours: string;
+  address: string;
+}
+
+const GRIEVANCE_CATEGORIES = [
+  ["FARE", "Fare or charges"],
+  ["CONDUCT", "Conduct of a driver or rider"],
+  ["SAFETY", "Safety"],
+  ["ACCOUNT", "Account suspended or blocked"],
+  ["EARNINGS", "Earnings, commission or payouts"],
+  ["DISCRIM", "Discrimination"],
+  ["SERVICE", "Service quality"],
+  ["OTHER", "Something else"],
+] as const;
+
+/** The formal grievance route (Aggregator Guidelines): acknowledged in 48 h, resolved in 15 days. */
+export function Grievances({ base }: { base: string }) {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["grievances"], queryFn: () => api.get<{ officer: Officer; grievances: Grievance[] }>("me/grievances/") });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["grievances"] });
+  const [category, setCategory] = useState("FARE");
+  const [subject, setSubject] = useState("");
+  const [description, setDescription] = useState("");
+  const [escalating, setEscalating] = useState<Grievance | null>(null);
+  const [reason, setReason] = useState("");
+  const send = useMutation({
+    mutationFn: () => api.post<Grievance>("me/grievances/", { category, subject, description }),
+    onSuccess: (g) => {
+      toast.success(t("Grievance {n} received", { n: g.number }));
+      setSubject("");
+      setDescription("");
+      refresh();
+    },
+    onError: (e) => toast.error(errorText(e)),
+  });
+  const escalate = useMutation({
+    mutationFn: () => api.post(`me/grievances/${escalating!.id}/escalate/`, { reason }),
+    onSuccess: () => { setEscalating(null); setReason(""); refresh(); },
+    onError: (e) => toast.error(errorText(e)),
+  });
+  const rate = useMutation({ mutationFn: (g: Grievance) => api.post(`me/grievances/${g.id}/rate/`, { satisfied: true }), onSuccess: refresh });
+  const o = q.data?.officer;
+  return (
+    <div className="h-full overflow-y-auto px-5 pt-5 pb-8">
+      <Back to={`${base}/account`} label={t("Account")} />
+      <h1 className="flex items-center gap-2 text-2xl font-bold">
+        <Scale className="size-6" /> {t("Grievances")}
+      </h1>
+      <p className="mt-1 text-sm text-muted">{t("Not happy with how something was handled? Our grievance officer acknowledges every grievance within 48 hours and answers in writing within 15 days.")}</p>
+      {o && (
+        <div className="mt-3 rounded-2xl bg-surface-2 p-3 text-xs">
+          <div className="font-semibold">{o.name} · {t("Grievance officer")}</div>
+          <div>{o.email} · {o.phone}</div>
+          <div className="text-muted">{o.hours}</div>
+        </div>
+      )}
+      <Select className="mt-3" value={category} onChange={(e) => setCategory(e.target.value)} aria-label={t("What is it about?")}>
+        {GRIEVANCE_CATEGORIES.map(([value, label]) => (
+          <option key={value} value={value}>{t(label)}</option>
+        ))}
+      </Select>
+      <Input className="mt-2" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={140} placeholder={t("Short title")} aria-label={t("Short title")} />
+      <Textarea className="mt-2" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("What happened, in your words")} aria-label={t("What happened, in your words")} />
+      <Button className="mt-2" block disabled={subject.trim().length < 5 || description.trim().length < 20} loading={send.isPending} onClick={() => send.mutate()}>
+        {t("Send to the grievance officer")}
+      </Button>
+      {(q.data?.grievances ?? []).map((g) => (
+        <div key={g.id} className="mt-3 rounded-2xl border border-line p-3 text-sm">
+          <div className="font-semibold">{g.subject} · {g.number}</div>
+          <div className="text-xs text-muted">{t(g.category_label)} · {dateTime(g.created_at)}</div>
+          <div className="mt-1 text-xs font-semibold">{t(g.status_label)}</div>
+          {!g.acknowledged_at && g.status === "RECEIVED" && <div className="text-xs text-muted">{t("Acknowledgement due by {when}", { when: dateTime(g.ack_due) })}</div>}
+          {["RECEIVED", "ACKNOWLEDGED", "ESCALATED"].includes(g.status) && <div className="text-xs text-muted">{t("Answer due by {when}", { when: dateTime(g.resolve_due) })}</div>}
+          {g.resolution && <div className="mt-1 rounded-xl bg-surface-2 p-2 text-xs">{g.resolution}</div>}
+          {g.status === "RESOLVED" && g.satisfied === null && (
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" variant="secondary" onClick={() => rate.mutate(g)}>{t("I'm satisfied")}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEscalating(g)}>{t("Escalate")}</Button>
+            </div>
+          )}
+          {g.escalated_at && <div className="mt-1 text-xs text-muted">{t("With the appellate officer. You may also approach your state transport authority or the consumer commission.")}</div>}
+        </div>
+      ))}
+      <Modal open={!!escalating} onClose={() => setEscalating(null)} title={t("Escalate to the appellate officer")}>
+        <Textarea rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("Why isn't the answer right?")} aria-label={t("Why isn't the answer right?")} />
+        <Button className="mt-3" block disabled={reason.trim().length < 10} loading={escalate.isPending} onClick={() => escalate.mutate()}>{t("Escalate")}</Button>
+      </Modal>
+    </div>
+  );
+}

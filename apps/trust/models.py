@@ -321,3 +321,6 @@ class NpsPrompt(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} after {self.next_ask_after:%Y-%m-%d}"
+
+
+from .grievances import Grievance  # noqa: E402,F401  (registers the model)

@@ -86,6 +86,9 @@ class Command(BaseCommand):
         from apps.trust import demo as trust_demo
 
         stats.update(trust_demo.seed(log=self.stdout.write))
+        from apps.trust import grievance_demo
+
+        stats.update(grievance_demo.seed(log=self.stdout.write))
         from apps.reliability import demo as reliability_demo
 
         stats.update(reliability_demo.seed(log=self.stdout.write))

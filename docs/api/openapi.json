@@ -3110,6 +3110,35 @@
     ],
     "type": "object"
    },
+   "GrievanceRequest": {
+    "properties": {
+     "category": {
+      "maxLength": 8,
+      "minLength": 1,
+      "type": "string"
+     },
+     "description": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "subject": {
+      "maxLength": 140,
+      "minLength": 1,
+      "type": "string"
+     },
+     "trip": {
+      "nullable": true,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "category",
+     "description",
+     "subject"
+    ],
+    "type": "object"
+   },
    "GroupRequest": {
     "properties": {
      "member_ids": {
@@ -15953,6 +15982,31 @@
     ]
    }
   },
+  "/api/v1/grievance-officer/": {
+   "get": {
+    "description": "Public: who the grievance officer is and how to reach them (required to be published).",
+    "operationId": "grievance_officer_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {}
+    ],
+    "tags": [
+     "trust"
+    ]
+   }
+  },
   "/api/v1/gst/e-invoice/{trip_id}/": {
    "get": {
     "description": "The INV-01 e-invoice JSON for a business trip: for finance staff, or the company's admin.",
@@ -17138,6 +17192,210 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/Claim"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/grievances/": {
+   "get": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_grievances_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   },
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_grievances_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrievanceRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/GrievanceRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/GrievanceRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/grievances/{id}/escalate/": {
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_grievances_escalate_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "me"
+    ]
+   }
+  },
+  "/api/v1/me/grievances/{id}/rate/": {
+   "post": {
+    "description": "A person's privacy centre, appeals and insurance claims.",
+    "operationId": "me_grievances_rate_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
         }
        }
       },
@@ -19880,6 +20138,117 @@
    "get": {
     "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
     "operationId": "ops_trust_csat_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/grievances/": {
+   "get": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_grievances",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/trust/grievances/{id}/{step}/": {
+   "post": {
+    "description": "Privacy queue, appeals, claims desk, CSAT, saved replies, help articles, offers.",
+    "operationId": "ops_trust_grievances_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "step",
+      "required": true,
+      "schema": {
+       "pattern": "^acknowledge|resolve$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "content": {

@@ -28,6 +28,7 @@ ignore = [
 "apps/announcements/demo.py" = ["E501"]  # announcement text is prose
 "apps/trust/handbook.py" = ["E501"]  # handbook procedures are prose
 "apps/reliability/incident_demo.py" = ["E501"]  # demo incident text is prose
+"apps/trust/grievance_demo.py" = ["E501"]  # demo grievances are prose
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]

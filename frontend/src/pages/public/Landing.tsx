@@ -207,7 +207,11 @@ export default function Landing() {
 
       <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8 text-sm text-muted">
         <Logo />
-        <span>A portfolio project · fares, drivers and trips are simulated.</span>
+        <span className="flex flex-wrap gap-4">
+          <Link to="/status" className="hover:text-fg">Service status</Link>
+          <Link to="/grievance-officer" className="hover:text-fg">Grievance officer</Link>
+          <span>A portfolio project · fares, drivers and trips are simulated.</span>
+        </span>
       </footer>
     </div>
   );

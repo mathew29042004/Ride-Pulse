@@ -116,6 +116,7 @@ def state_report(state: str, *, today: date | None = None) -> dict:
             "status": "OK",
             "detail": "Group policy for every active driver (see Trust → insurance claims).",
         },
+        _grievance_check(),
         {
             "key": "safety_features",
             "rule": "Panic button, live tracking and a 24×7 control room",
@@ -140,6 +141,24 @@ def state_report(state: str, *, today: date | None = None) -> dict:
             }
             for v in old_vehicles.select_related("driver__user")[:100]
         ],
+    }
+
+
+def _grievance_check() -> dict:
+    """Grievance officer: acknowledge in 48 hours, resolve in 15 days (country-wide desk)."""
+    from apps.trust.grievances import OFFICER, compliance
+
+    g = compliance()
+    worst = min(p for p in (g["ack_on_time_pct"], g["resolved_on_time_pct"], 100) if p is not None)
+    return {
+        "key": "grievance_officer",
+        "rule": "Grievance officer: acknowledge within 48 hours, resolve within 15 days",
+        "status": "OK" if worst >= 95 else "WARN" if worst >= 80 else "ACTION",
+        "detail": f"{OFFICER['name']} ({OFFICER['email']}). Last 90 days: "
+        f"{g['received']} received, "
+        f"{g['ack_on_time_pct'] if g['ack_on_time_pct'] is not None else '—'}% acknowledged and "
+        f"{g['resolved_on_time_pct'] if g['resolved_on_time_pct'] is not None else '—'}% resolved "
+        f"on time, {g['open']} open.",
     }
 
 

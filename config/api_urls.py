@@ -126,6 +126,7 @@ urlpatterns = [
     path("status/", reliability.StatusPageView.as_view(), name="status-page"),
     path("status/banner/", reliability.StatusBannerView.as_view(), name="status-banner"),
     path("places/", geo.PlaceSearchView.as_view(), name="places"),
+    path("grievance-officer/", trust.GrievanceOfficerView.as_view(), name="grievance-officer"),
     path("ops/live/", rides.LiveOpsView.as_view(), name="ops-live"),
     path("ops/dispatch/sweep/", rides.DispatchSweepView.as_view(), name="dispatch-sweep"),
     path("ledger/", payments.LedgerView.as_view(), name="ledger"),

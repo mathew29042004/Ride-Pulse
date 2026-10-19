@@ -16,6 +16,8 @@ const RiderLayout = lazy(() => import("./layouts/RiderLayout"));
 const TrackTrip = lazy(() => import("./pages/public/TrackTrip"));
 const SafeShare = lazy(() => import("./pages/public/SafeShare"));
 const StatusPage = lazy(() => import("./pages/public/StatusPage"));
+const GrievanceOfficer = lazy(() => import("./pages/public/GrievanceOfficer"));
+const OpsGrievances = lazy(() => import("./pages/ops/OpsGrievances"));
 const RiderHome = lazy(() => import("./pages/rider/RiderHome"));
 const RiderBook = lazy(() => import("./pages/rider/RiderBook"));
 const RiderPackages = lazy(() => import("./pages/rider/RiderPackages"));
@@ -64,6 +66,8 @@ const HelpCentre = lazy(() => trust().then((m) => ({ default: m.HelpCentre })));
 const ClaimsPage = lazy(() => trust().then((m) => ({ default: m.ClaimsPage })));
 const AppealsRider = lazy(() => trust().then((m) => ({ default: () => <m.Appeals base="/ride" subjects={m.RIDER_APPEALS} /> })));
 const AppealsDriver = lazy(() => trust().then((m) => ({ default: () => <m.Appeals base="/drive" subjects={m.DRIVER_APPEALS} /> })));
+const GrievancesRider = lazy(() => trust().then((m) => ({ default: () => <m.Grievances base="/ride" /> })));
+const GrievancesDriver = lazy(() => trust().then((m) => ({ default: () => <m.Grievances base="/drive" /> })));
 const OpsPlatform = lazy(() => import("./pages/ops/OpsPlatform"));
 const OpsModels = lazy(() => import("./pages/ops/OpsModels"));
 const OpsTours = lazy(() => import("./pages/ops/OpsTours"));
@@ -147,6 +151,7 @@ export const router = createBrowserRouter([
   { path: "/track/:token", element: lazyPage(<TrackTrip />), errorElement: <ErrorPage /> },
   { path: "/safe/:token", element: lazyPage(<SafeShare />), errorElement: <ErrorPage /> },
   { path: "/status", element: lazyPage(<StatusPage />), errorElement: <ErrorPage /> },
+  { path: "/grievance-officer", element: lazyPage(<GrievanceOfficer />), errorElement: <ErrorPage /> },
   {
     path: "/ride",
     errorElement: <ErrorPage />,
@@ -172,6 +177,7 @@ export const router = createBrowserRouter([
       { path: "help/:slug", element: lazyPage(<HelpCentre base="/ride" />) },
       { path: "claims", element: lazyPage(<ClaimsPage base="/ride" />) },
       { path: "appeals", element: lazyPage(<AppealsRider />) },
+      { path: "grievances", element: lazyPage(<GrievancesRider />) },
       { path: "support/:id", element: lazyPage(<TicketThread base="/ride" />) },
     ],
   },
@@ -196,6 +202,7 @@ export const router = createBrowserRouter([
       { path: "help/:slug", element: lazyPage(<HelpCentre base="/drive" />) },
       { path: "claims", element: lazyPage(<ClaimsPage base="/drive" />) },
       { path: "appeals", element: lazyPage(<AppealsDriver />) },
+      { path: "grievances", element: lazyPage(<GrievancesDriver />) },
       { path: "support/:id", element: lazyPage(<TicketThread base="/drive" />) },
     ],
   },
@@ -249,6 +256,7 @@ export const router = createBrowserRouter([
       { path: "payroll", element: lazyPage(<OpsPayroll />) },
       { path: "payslips", element: lazyPage(<OpsPayslips />) },
       { path: "expenses", element: lazyPage(<OpsExpenses />) },
+      { path: "grievances", element: lazyPage(<OpsGrievances />) },
       { path: "announcements", element: lazyPage(<OpsAnnouncements />) },
       { path: "incidents", element: lazyPage(<OpsIncidents />) },
       { path: "weather", element: lazyPage(<OpsWeather />) },

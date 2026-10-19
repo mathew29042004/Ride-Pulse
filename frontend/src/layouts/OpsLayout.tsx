@@ -82,6 +82,7 @@ const NAV = [
       { to: "/ops/safety", label: "Safety (SOS)", icon: ShieldAlert, cap: "safety.manage", badge: "sos" as const },
       { to: "/ops/lost-found", label: "Lost & found", icon: PackageSearch, cap: "support.view" },
       { to: "/ops/trust", label: "Trust & privacy", icon: ShieldCheck, cap: "privacy.manage" },
+      { to: "/ops/grievances", label: "Grievances", icon: Scale, cap: "privacy.manage" },
       { to: "/ops/compliance", label: "Compliance", icon: Scale, cap: "drivers.view" },
       { to: "/ops/audit", label: "Audit trail", icon: ScrollText, cap: "audit.view" },
       { to: "/ops/platform", label: "Platform health", icon: Activity, cap: "audit.view" },

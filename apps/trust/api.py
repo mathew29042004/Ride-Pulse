@@ -15,8 +15,9 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from apps.accounts.roles import Cap
@@ -170,6 +171,13 @@ class FileClaimSerializer(serializers.Serializer):
     files = serializers.ListField(child=serializers.FileField(), required=False)
 
 
+class GrievanceSerializer(serializers.Serializer):
+    category = serializers.CharField(max_length=8)
+    subject = serializers.CharField(max_length=140)
+    description = serializers.CharField(max_length=4000)
+    trip = serializers.IntegerField(required=False, allow_null=True)
+
+
 class MyTrustViewSet(ContextBindingMixin, GenericViewSet):
     """A person's privacy centre, appeals and insurance claims."""
 
@@ -261,6 +269,53 @@ class MyTrustViewSet(ContextBindingMixin, GenericViewSet):
             return Response(ClaimSerializer(made).data, status=status.HTTP_201_CREATED)
         rows = InsuranceClaim.objects.filter(claimant=request.user).prefetch_related("documents")
         return Response(ClaimSerializer(rows, many=True).data)
+
+    @extend_schema(methods=["GET"], responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        methods=["POST"], request=GrievanceSerializer, responses={201: OpenApiTypes.OBJECT}
+    )
+    @action(detail=False, methods=["get", "post"], url_path="grievances")
+    def my_grievances(self, request):
+        from . import grievances
+
+        if request.method == "POST":
+            data = GrievanceSerializer(data=request.data)
+            data.is_valid(raise_exception=True)
+            fields = dict(data.validated_data)
+            trip_id = fields.pop("trip", None)
+            trip = get_object_or_404(Trip, pk=trip_id) if trip_id else None
+            made = grievances.file(request.user, trip=trip, **fields)
+            return Response(grievances.row(made), status=status.HTTP_201_CREATED)
+        rows = grievances.Grievance.objects.filter(raised_by=request.user).select_related(
+            "trip", "raised_by", "handled_by", "appellate_officer"
+        )
+        return Response(
+            {"officer": grievances.OFFICER, "grievances": [grievances.row(g) for g in rows]}
+        )
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"grievances/(?P<pk>\d+)/escalate")
+    def escalate_grievance(self, request, pk=None):
+        from . import grievances
+
+        g = get_object_or_404(grievances.Grievance, pk=pk, raised_by=request.user)
+        return Response(
+            grievances.row(
+                grievances.escalate(g, reason=str(request.data.get("reason", "")), by=request.user)
+            )
+        )
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"grievances/(?P<pk>\d+)/rate")
+    def rate_grievance(self, request, pk=None):
+        from . import grievances
+
+        g = get_object_or_404(grievances.Grievance, pk=pk, raised_by=request.user)
+        return Response(
+            grievances.row(
+                grievances.rate(g, user=request.user, satisfied=bool(request.data.get("satisfied")))
+            )
+        )
 
     @extend_schema(request=None, responses={201: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["post"], url_path=r"tickets/(?P<pk>\d+)/rate")
@@ -384,6 +439,46 @@ class TrustOpsViewSet(BaseViewSet):
         "offer": Cap.PROMOS_MANAGE,
     }
     queryset = DataRequest.objects.none()
+
+    @extend_schema(
+        parameters=[OpenApiParameter("status", str, required=False)],
+        responses={200: OpenApiTypes.OBJECT},
+        operation_id="ops_grievances",
+    )
+    @action(detail=False, methods=["get"])
+    def grievances(self, request):
+        from . import grievances
+
+        rows = grievances.Grievance.objects.select_related(
+            "trip", "raised_by", "handled_by", "appellate_officer"
+        )
+        if wanted := request.query_params.get("status"):
+            rows = rows.filter(status=wanted)
+        return Response(
+            {
+                "officer": grievances.OFFICER,
+                "compliance": grievances.compliance(),
+                "grievances": [grievances.row(g) for g in rows[:200]],
+            }
+        )
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path=r"grievances/(?P<pk>\d+)/(?P<step>acknowledge|resolve)",
+    )
+    def grievance_step(self, request, pk=None, step=None):
+        from . import grievances
+
+        g = get_object_or_404(grievances.Grievance, pk=pk)
+        if step == "acknowledge":
+            g = grievances.acknowledge(g, user=request.user)
+        else:
+            g = grievances.resolve(
+                g, user=request.user, resolution=str(request.data.get("resolution", ""))
+            )
+        return Response(grievances.row(g))
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])
@@ -560,3 +655,22 @@ class NpsViewSet(BaseViewSet):
         from . import nps
 
         return Response(nps.report())
+
+
+class GrievanceOfficerView(APIView):
+    """Public: who the grievance officer is and how to reach them (required to be published)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=["trust"])
+    def get(self, request):
+        from . import grievances
+
+        return Response(
+            {
+                **grievances.OFFICER,
+                "acknowledge_within_hours": int(grievances.ACK_WITHIN.total_seconds() // 3600),
+                "resolve_within_days": grievances.RESOLVE_WITHIN.days,
+            }
+        )
