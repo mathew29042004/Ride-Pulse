@@ -696,6 +696,16 @@ NPS (% promoters 9–10 − % detractors 0–6) for the last 90 days by month an
 answers), and what detractors and promoters talk about, using keyword themes (not AI).
 API: `GET nps/prompt/`, `POST nps/answer/`, `POST nps/snooze/`, `GET nps/report/` (reports.view).
 
+### Staff attendance (`workspace.attendance`)
+
+Every employee clocks in and out in Ops → Attendance. Clock-ins match the roster shift (from 30
+minutes before it starts) or, for staff without shifts, office hours 9:30–6:30. More than 10
+minutes after the start is late; under 4 hours is a half day. An hourly job closes forgotten
+clock-outs at the shift end (marked "Didn't clock out") and marks rostered shifts with no clock-in
+as absent, unless the person is on approved leave, and tells their manager. Employees ask for
+corrections with a reason; their manager approves them. Managers see their team's day (who's in,
+late, absent) and the month's present, late, absent, leave and average hours.
+
 ### Backups and the restore drill (`reliability.backups`)
 
 Every night at 2:30 am `pg_dump` writes a compressed backup to `BACKUP_DIR` (default `backups/`,

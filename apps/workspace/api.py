@@ -493,3 +493,78 @@ class RosterViewSet(BaseViewSet):
         data.is_valid(raise_exception=True)
         leave = get_object_or_404(LeaveRequest.objects.select_related("user"), pk=leave_id)
         return Response(roster.decide(leave, manager=request.user, **data.validated_data))
+
+
+class CorrectionSerializer(serializers.Serializer):
+    clock_in = serializers.DateTimeField(required=False, allow_null=True, default=None)
+    clock_out = serializers.DateTimeField(required=False, allow_null=True, default=None)
+    reason = serializers.CharField(max_length=200)
+
+
+class AttendanceViewSet(BaseViewSet):
+    """Clock in and out, my month, the team board and corrections."""
+
+    capabilities = {"*": Cap.WORK_USE}
+    queryset = StaffProfile.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="attendance_mine")
+    def list(self, request):
+        from . import attendance
+
+        return Response(attendance.mine(request.user))
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="clock-in")
+    def clock_in(self, request):
+        from . import attendance
+
+        attendance.clock_in(request.user)
+        return Response(attendance.mine(request.user))
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="clock-out")
+    def clock_out(self, request):
+        from . import attendance
+
+        attendance.clock_out(request.user)
+        return Response(attendance.mine(request.user))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="attendance_team")
+    @action(detail=False, methods=["get"])
+    def team(self, request):
+        from . import attendance
+
+        return Response(attendance.team(request.user))
+
+    @extend_schema(request=CorrectionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def correct(self, request, pk=None):
+        from django.shortcuts import get_object_or_404
+
+        from . import attendance
+
+        data = CorrectionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        record = get_object_or_404(attendance.Attendance, pk=pk, user=request.user)
+        record = attendance.request_correction(
+            record,
+            user=request.user,
+            clock_in_at=v["clock_in"],
+            clock_out_at=v["clock_out"],
+            reason=v["reason"],
+        )
+        return Response(attendance.row(record))
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def decide(self, request, pk=None):
+        from django.shortcuts import get_object_or_404
+
+        from . import attendance
+
+        record = get_object_or_404(attendance.Attendance, pk=pk)
+        record = attendance.decide_correction(
+            record, manager=request.user, approve=bool(request.data.get("approve"))
+        )
+        return Response(attendance.row(record))

@@ -11,3 +11,10 @@ def flag_overdue() -> int:
 @shared_task(name="workspace.roll_daily_standups")
 def roll_daily_standups() -> int:
     return services.roll_daily_standups()
+
+
+@shared_task(name="workspace.close_attendance")
+def close_attendance() -> dict:
+    from .attendance import close_day
+
+    return close_day()

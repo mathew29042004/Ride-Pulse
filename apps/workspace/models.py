@@ -212,3 +212,6 @@ class LeaveRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} {self.kind} {self.starts_on}–{self.ends_on}"
+
+
+from .attendance import Attendance  # noqa: E402,F401  (registers the model)

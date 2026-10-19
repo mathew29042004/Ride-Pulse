@@ -1179,6 +1179,29 @@
     ],
     "type": "object"
    },
+   "CorrectionRequest": {
+    "properties": {
+     "clock_in": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "clock_out": {
+      "format": "date-time",
+      "nullable": true,
+      "type": "string"
+     },
+     "reason": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "reason"
+    ],
+    "type": "object"
+   },
    "CounterOffer": {
     "properties": {
      "counter_amount": {
@@ -29624,6 +29647,250 @@
     ],
     "tags": [
      "webhooks"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/": {
+   "get": {
+    "description": "Clock in and out, my month, the team board and corrections.",
+    "operationId": "attendance_mine",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/clock-in/": {
+   "post": {
+    "description": "Clock in and out, my month, the team board and corrections.",
+    "operationId": "work_attendance_clock_in_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/clock-out/": {
+   "post": {
+    "description": "Clock in and out, my month, the team board and corrections.",
+    "operationId": "work_attendance_clock_out_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/team/": {
+   "get": {
+    "description": "Clock in and out, my month, the team board and corrections.",
+    "operationId": "attendance_team",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/{id}/correct/": {
+   "post": {
+    "description": "Clock in and out, my month, the team board and corrections.",
+    "operationId": "work_attendance_correct_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CorrectionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/CorrectionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/CorrectionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/{id}/decide/": {
+   "post": {
+    "description": "Clock in and out, my month, the team board and corrections.",
+    "operationId": "work_attendance_decide_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
     ]
    }
   },
