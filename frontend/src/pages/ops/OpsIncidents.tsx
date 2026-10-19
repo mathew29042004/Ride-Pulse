@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Siren } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 
 import { Badge, Button, Card, Input, Modal, PageHeader, Textarea } from "@/components/ui";
@@ -13,6 +14,7 @@ import { dateTime } from "@/lib/format";
 interface Incident {
   id: number;
   number: string;
+  war_room: number | null;
   title: string;
   severity: string;
   severity_label: string;
@@ -95,6 +97,11 @@ export default function OpsIncidents() {
               <Badge tone="neutral">{i.severity_label}</Badge>
               <span className="ml-auto text-xs text-muted">
                 {i.number} · {dateTime(i.started_at)} · {i.minutes} min
+                {i.war_room && (
+                  <Link to={`/ops/chat/${i.war_room}`} className="ml-2 font-semibold text-brand hover:underline">
+                    War room →
+                  </Link>
+                )}
               </span>
             </div>
             <p className="mt-1 text-sm">{i.public_message}</p>

@@ -196,6 +196,7 @@ def _incident_row(i) -> dict:
     return {
         "id": i.pk,
         "number": i.number,
+        "war_room": getattr(getattr(i, "war_room", None), "pk", None),
         "title": i.title,
         "severity": i.severity,
         "severity_label": i.get_severity_display(),

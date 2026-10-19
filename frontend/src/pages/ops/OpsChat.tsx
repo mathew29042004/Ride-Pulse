@@ -19,7 +19,7 @@ import { useSocket } from "@/lib/ws";
 
 interface Row {
   id: number;
-  kind: "CHANNEL" | "DIRECT" | "GROUP" | "TASK" | "MEETING" | "TICKET";
+  kind: "CHANNEL" | "DIRECT" | "GROUP" | "TASK" | "MEETING" | "TICKET" | "INCIDENT";
   title: string;
   topic: string;
   last_message_at: string | null;
@@ -70,6 +70,7 @@ interface Person {
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
 const SECTIONS: [string, Row["kind"][]][] = [
+  ["War rooms", ["INCIDENT"]],
   ["Channels", ["CHANNEL"]],
   ["Direct messages & groups", ["DIRECT", "GROUP"]],
   ["Task, meeting & ticket threads", ["TASK", "MEETING", "TICKET"]],

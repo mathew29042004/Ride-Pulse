@@ -74,6 +74,7 @@ def open_incident(
     )
     fallbacks.forget()  # payments or maps may switch to (or out of) a fallback
     if severity != IncidentSeverity.MINOR:
+        open_war_room(incident, now=now)
         from .briefing import system_update
 
         system_update(
@@ -108,6 +109,12 @@ def update(
         incident=incident, status=status, message=message.strip()[:500], at=now, by=user
     )
     icon = "✅" if status == IncidentStatus.RESOLVED else "🟠"
+    post_to_war_room(
+        incident,
+        f"{icon} {incident.get_status_display()}: {message.strip()}",
+        closing=status == IncidentStatus.RESOLVED,
+        now=now,
+    )
     _post_to_ops_channel(
         f"{icon} {incident.number} {incident.get_status_display().lower()}: {message.strip()}"
     )
@@ -232,3 +239,70 @@ def _city_of(user):
         .first()
     )
     return trip.city if trip else None
+
+
+# --- War room ----------------------------------------------------------------------------------
+
+
+def _numbers() -> str:
+    from apps.analytics.services import live_status
+
+    live = live_status()
+    return (
+        f"{live['drivers_online'] + live['drivers_on_trip']} drivers live, "
+        f"{live['active_trips']} trips running, {live['searching']} riders waiting, "
+        f"{live['open_tickets']} tickets open"
+    )
+
+
+def open_war_room(incident: Incident, *, now=None):
+    """A chat room for a major or critical incident: whoever opened it, the commander and chief
+    of staff, administrators and the city operations managers. Every update is posted in it, with
+    the live numbers at the start and at the end."""
+    from apps.accounts.models import Role, User
+    from apps.chat.models import Conversation, ConversationKind
+    from apps.chat.services import _add, _deliver, _system
+
+    now = now or timezone.now()
+    room, created = Conversation.objects.get_or_create(
+        incident=incident,
+        defaults={
+            "kind": ConversationKind.INCIDENT,
+            "name": f"{incident.number}: {incident.title}"[:80],
+            "topic": "War room",
+            "created_at": now,
+        },
+    )
+    if created:
+        people = set(
+            User.objects.filter(
+                is_active=True,
+                staff_profile__isnull=False,
+                role__in=[Role.COMMANDER, Role.CHIEF_OF_STAFF, Role.ADMIN, Role.OPS_MANAGER],
+            ).values_list("pk", flat=True)
+        )
+        if incident.created_by_id:
+            people.add(incident.created_by_id)
+        _add(room, people, now)
+        _deliver(
+            room,
+            _system(
+                room,
+                f"🚨 War room for {incident.number}. Live numbers at the start: {_numbers()}.",
+                now,
+            ),
+        )
+    return room
+
+
+def post_to_war_room(incident: Incident, text: str, *, closing: bool = False, now=None) -> None:
+    from apps.chat.models import Conversation
+    from apps.chat.services import _deliver, _system
+
+    room = Conversation.objects.filter(incident=incident).first()
+    if room is None:
+        return
+    now = now or timezone.now()
+    _deliver(
+        room, _system(room, text + (f" Live numbers now: {_numbers()}." if closing else ""), now)
+    )

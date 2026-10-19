@@ -935,6 +935,28 @@ new joiners, departments with their heads and headcount, holidays for your state
 directory, and open roles to refer friends to (you're told when your referral reaches interview).
 HR reviews applications there.
 
+### Running the organisation
+
+* **Approvals inbox** (Ops → Approvals, a count in the menu): everything waiting on me in one list,
+  from team leave, expense claims and attendance fixes to large refunds, vehicle loans, job
+  applications and the chief's decisions, each linking to where it's decided.
+* **Search everything** (Ctrl+K / ⌘K): pages, trips, tickets, drivers, riders and colleagues,
+  limited to what the role may see.
+* **Quiet hours and a daily digest** (the bell's settings): routine notifications wait, urgent ones
+  always get through; the digest sums up held updates at 8 am.
+* **Hiring closes the loop**: marking an applicant hired creates their account (they set a
+  password from the sign-in page), staff profile under the city's operations manager, salary,
+  four first-week tasks and team channels, and #general welcomes them.
+* **Undo**: a ban, suspension or block can be undone for 10 minutes ("Undo" on the confirmation).
+* **City targets**: the commander sets each city's monthly completion target in the command
+  centre; cities show on track or behind, the watchtower alerts below target, and the weekly best
+  city is measured against it.
+* **Incident war rooms**: a major or critical incident opens a chat room for the commander, chief
+  of staff, administrators and city operations managers, with the live numbers at the start; every
+  update is posted there and the numbers again when it's resolved.
+* **Nightly clean-up** (`reliability.prune`): read notifications after 90 days, published outbox
+  events and delivered webhooks after 30, surge snapshots and weather readings after 90.
+
 ### Every role's desk (`frontend/src/lib/roleDesk.ts`)
 
 Each staff role signs in to its own desk: the commander lands on the command centre and sees

@@ -90,3 +90,40 @@ def test_incident_lifecycle_status_page_and_banners(api, make_driver, now):
     assert len(reviewed["tasks"]) == 1
     assert WorkTask.objects.get(assignee=engineer).title.startswith(incident["number"])
     assert api(make_staff(Role.SUPPORT_AGENT)).post("/api/v1/ops/incidents/", {}).status_code == 403
+
+
+def test_major_incident_gets_a_war_room(api):
+    from datetime import date
+
+    from apps.accounts.models import StaffProfile
+    from apps.chat.models import Conversation, Message
+    from apps.reliability import incidents
+
+    manager = make_staff(Role.OPS_MANAGER)
+    chief = make_staff(Role.COMMANDER)
+    for i, u in enumerate([manager, chief]):
+        StaffProfile.objects.create(
+            user=u,
+            employee_id=f"W{i}",
+            title="x",
+            department="OPERATIONS",
+            joined_on=date(2025, 1, 1),
+        )
+    inc = incidents.open_incident(
+        user=manager,
+        title="Maps down",
+        severity="MAJOR",
+        components=["MAPS"],
+        public_message="Maps are slow, pickups may take longer.",
+    )
+    room = Conversation.objects.get(incident=inc)
+    assert set(room.members.values_list("user_id", flat=True)) == {manager.pk, chief.pk}
+    incidents.update(inc, user=manager, status="RESOLVED", message="Provider fixed it")
+    bodies = list(Message.objects.filter(conversation=room).values_list("body", flat=True))
+    assert bodies[0].startswith("🚨 War room") and "Live numbers now" in bodies[-1]
+    row = api(manager).get("/api/v1/ops/incidents/").json()
+    rows = row["results"] if isinstance(row, dict) and "results" in row else row
+    assert any(
+        r.get("war_room") == room.pk
+        for r in (rows if isinstance(rows, list) else rows["incidents"])
+    )

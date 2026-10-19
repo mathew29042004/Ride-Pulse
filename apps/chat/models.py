@@ -16,10 +16,11 @@ class ConversationKind(models.TextChoices):
     TASK = "TASK", "Task thread"
     MEETING = "MEETING", "Meeting thread"
     TICKET = "TICKET", "Ticket thread"
+    INCIDENT = "INCIDENT", "Incident war room"
 
 
 class Conversation(models.Model):
-    kind = models.CharField(max_length=7, choices=ConversationKind.choices)
+    kind = models.CharField(max_length=8, choices=ConversationKind.choices)
     name = models.CharField(max_length=80, blank=True)
     slug = models.SlugField(max_length=60, blank=True)  # channels: "general", "support", …
     topic = models.CharField(max_length=200, blank=True)
@@ -30,6 +31,14 @@ class Conversation(models.Model):
     )
     meeting = models.OneToOneField(
         "workspace.Meeting", null=True, blank=True, on_delete=models.CASCADE, related_name="chat"
+    )
+    # The war room for a platform incident: the people who fix it, its updates and live numbers.
+    incident = models.OneToOneField(
+        "reliability.Incident",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="war_room",
     )
     # Staff discussing a support ticket (riders and drivers never see this thread).
     ticket = models.OneToOneField(
