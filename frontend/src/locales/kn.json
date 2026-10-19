@@ -999,5 +999,12 @@
  "Blind / low vision: please find the rider": "ದೃಷ್ಟಿಹೀನ: ಪ್ರಯಾಣಿಕರನ್ನು ಹುಡುಕಿ",
  "I have a child seat": "ನನ್ನ ಬಳಿ ಮಕ್ಕಳ ಆಸನವಿದೆ",
  "Pets welcome in my vehicle": "ನನ್ನ ವಾಹನದಲ್ಲಿ ಸಾಕುಪ್ರಾಣಿಗಳಿಗೆ ಸ್ವಾಗತ",
- "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "ಮಕ್ಕಳ ಆಸನ ಬೇಕಾದ ಅಥವಾ ಸಾಕುಪ್ರಾಣಿ ತರುವ ಪ್ರಯಾಣಿಕರಿಗೆ ಇದನ್ನು ಆನ್ ಮಾಡಿದ ವಾಹನಗಳನ್ನು ಮಾತ್ರ ಕಳುಹಿಸಲಾಗುತ್ತದೆ."
+ "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "ಮಕ್ಕಳ ಆಸನ ಬೇಕಾದ ಅಥವಾ ಸಾಕುಪ್ರಾಣಿ ತರುವ ಪ್ರಯಾಣಿಕರಿಗೆ ಇದನ್ನು ಆನ್ ಮಾಡಿದ ವಾಹನಗಳನ್ನು ಮಾತ್ರ ಕಳುಹಿಸಲಾಗುತ್ತದೆ.",
+ "CO₂ report": "CO₂ ವರದಿ",
+ "CO₂ emitted": "ಹೊರಸೂಸಿದ CO₂",
+ "Saved vs own cars": "ಸ್ವಂತ ಕಾರುಗಳಿಗೆ ಹೋಲಿಸಿ ಉಳಿತಾಯ",
+ "Electric share": "ವಿದ್ಯುತ್ ಪಾಲು",
+ "Per km": "ಪ್ರತಿ ಕಿ.ಮೀ",
+ "Estimates by vehicle type; electric cars count the grid's share.": "ವಾಹನ ಪ್ರಕಾರದ ಅಂದಾಜು; ವಿದ್ಯುತ್ ಕಾರುಗಳಿಗೆ ಗ್ರಿಡ್ ಪಾಲು ಎಣಿಸಲಾಗುತ್ತದೆ.",
+ "Download CSV": "CSV ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ"
 }

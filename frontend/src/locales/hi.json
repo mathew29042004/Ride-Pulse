@@ -999,5 +999,12 @@
  "Blind / low vision: please find the rider": "दृष्टिहीन / कम दिखता है: राइडर को ढूँढें",
  "I have a child seat": "मेरे पास चाइल्ड सीट है",
  "Pets welcome in my vehicle": "मेरे वाहन में पालतू जानवरों का स्वागत है",
- "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "जिन राइडर्स को चाइल्ड सीट चाहिए या जिनके साथ पालतू जानवर है, उन्हें सिर्फ़ वही वाहन भेजे जाते हैं जिनमें यह चालू हो।"
+ "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "जिन राइडर्स को चाइल्ड सीट चाहिए या जिनके साथ पालतू जानवर है, उन्हें सिर्फ़ वही वाहन भेजे जाते हैं जिनमें यह चालू हो।",
+ "CO₂ report": "CO₂ रिपोर्ट",
+ "CO₂ emitted": "उत्सर्जित CO₂",
+ "Saved vs own cars": "अपनी कारों की तुलना में बचत",
+ "Electric share": "इलेक्ट्रिक हिस्सा",
+ "Per km": "प्रति किमी",
+ "Estimates by vehicle type; electric cars count the grid's share.": "वाहन प्रकार के हिसाब से अनुमान; इलेक्ट्रिक कारों में ग्रिड का हिस्सा गिना जाता है।",
+ "Download CSV": "CSV डाउनलोड करें"
 }

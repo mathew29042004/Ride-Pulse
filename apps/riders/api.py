@@ -872,6 +872,30 @@ class CorporateViewSet(ContextBindingMixin, GenericViewSet):
         ).update(status=ScheduledRideStatus.CANCELLED)
         return Response(commute.plan_row(plan))
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("month", str, required=False),
+            OpenApiParameter("export", str, required=False),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+        operation_id="business_co2",
+    )
+    @action(detail=True, methods=["get"])
+    def co2(self, request, pk=None):
+        """Monthly CO₂ report for the company's sustainability reporting (CSV with ?export=csv)."""
+        from django.http import HttpResponse
+
+        from . import esg
+
+        profile = self._profile(pk)
+        month = request.query_params.get("month")
+        if request.query_params.get("export") == "csv":
+            body, name = esg.csv_export(profile, month=month)
+            response = HttpResponse(body, content_type="text/csv")
+            response["Content-Disposition"] = f'attachment; filename="{name}"'
+            return response
+        return Response(esg.report(profile, month=month))
+
     @extend_schema(request=CorporatePolicySerializer, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])
     def policy(self, request, pk=None):

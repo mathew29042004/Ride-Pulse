@@ -62,6 +62,7 @@ class Command(BaseCommand):
         from apps.drivers import speed
 
         stats.update(speed.seed_demo(log=self.stdout.write))
+        stats.update(speed.seed_vehicle_options(log=self.stdout.write))
         from apps.riders import commute
 
         stats.update(commute.seed_demo(log=self.stdout.write))

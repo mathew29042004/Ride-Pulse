@@ -176,6 +176,7 @@ export default function RiderBusiness() {
       </Section>
 
       <CommuteSection id={b.id} />
+      <Co2Section id={b.id} />
       <Section title={t("Webhooks")}>
         <p className="text-xs text-muted">{t("Get your employees' trips in your own systems (expense tools, HR). Signed, retried, at least once.")}</p>
         {b.webhooks.map((w) => (
@@ -292,6 +293,49 @@ function CommuteSection({ id }: { id: number }) {
       ) : (
         <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>{t("New commute plan")}</Button>
       )}
+    </Section>
+  );
+}
+
+interface Co2 {
+  month: string;
+  trips: number;
+  km: number;
+  co2_kg: number;
+  saved_kg: number;
+  electric_share_pct: number;
+  grams_per_km: number;
+  by_ride_type: { ride_type: string; trips: number; km: number; co2_kg: number }[];
+  trend: { month: string; co2_kg: number }[];
+  method: string;
+}
+
+/** Monthly CO₂ for the company's sustainability reporting, with a CSV for auditors. */
+function Co2Section({ id }: { id: number }) {
+  const q = useQuery({ queryKey: ["business", id, "co2"], queryFn: () => api.get<Co2>(`rider/business/${id}/co2/`) });
+  const c = q.data;
+  if (!c) return null;
+  const max = Math.max(1, ...c.trend.map((m) => m.co2_kg));
+  return (
+    <Section title={t("CO₂ report")}>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <Row left={t("CO₂ emitted")} right={`${c.co2_kg} kg`} />
+        <Row left={t("Saved vs own cars")} right={`${c.saved_kg} kg`} />
+        <Row left={t("Electric share")} right={`${c.electric_share_pct}%`} />
+        <Row left={t("Per km")} right={`${c.grams_per_km} g`} />
+      </div>
+      <div className="mt-3 flex h-16 items-end gap-1">
+        {c.trend.map((m) => (
+          <div key={m.month} className="flex flex-1 flex-col items-center gap-1" title={`${m.month}: ${m.co2_kg} kg`}>
+            <div className="w-full rounded-t bg-brand/60" style={{ height: `${Math.max(4, (56 * m.co2_kg) / max)}px` }} />
+            <span className="text-[9px] text-muted">{m.month.slice(5)}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-muted">{t("Estimates by vehicle type; electric cars count the grid's share.")}</p>
+      <Button className="mt-2" size="sm" variant="secondary" icon={<Download className="size-4" />} onClick={() => openFile(`rider/business/${id}/co2/?export=csv`)}>
+        {t("Download CSV")}
+      </Button>
     </Section>
   );
 }

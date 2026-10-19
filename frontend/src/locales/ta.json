@@ -999,5 +999,12 @@
  "Blind / low vision: please find the rider": "பார்வையற்றவர்: பயணியைத் தேடிச் செல்லுங்கள்",
  "I have a child seat": "என்னிடம் குழந்தை இருக்கை உள்ளது",
  "Pets welcome in my vehicle": "என் வாகனத்தில் செல்லப்பிராணிகளுக்கு அனுமதி",
- "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "குழந்தை இருக்கை தேவைப்படும் அல்லது செல்லப்பிராணியுடன் வரும் பயணிகளுக்கு இதை இயக்கிய வாகனங்கள் மட்டுமே அனுப்பப்படும்."
+ "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "குழந்தை இருக்கை தேவைப்படும் அல்லது செல்லப்பிராணியுடன் வரும் பயணிகளுக்கு இதை இயக்கிய வாகனங்கள் மட்டுமே அனுப்பப்படும்.",
+ "CO₂ report": "CO₂ அறிக்கை",
+ "CO₂ emitted": "வெளியிட்ட CO₂",
+ "Saved vs own cars": "சொந்தக் கார்களை விட சேமிப்பு",
+ "Electric share": "மின்வாகனப் பங்கு",
+ "Per km": "கி.மீக்கு",
+ "Estimates by vehicle type; electric cars count the grid's share.": "வாகன வகைப்படி மதிப்பீடுகள்; மின் கார்களுக்கு மின்கட்டமைப்புப் பங்கு கணக்கிடப்படும்.",
+ "Download CSV": "CSV பதிவிறக்கு"
 }

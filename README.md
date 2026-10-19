@@ -773,6 +773,13 @@ ledger still balances, times the restore, then drops the scratch database. A fai
 alerts the admins. Ops → Backups shows every run and can run either now. In production the file
 would also be copied to storage in another region.
 
+### CO₂ report for company clients (`riders.esg`)
+
+The business portal shows each month's CO₂ for the company's sustainability reporting: emissions
+per trip by vehicle type (electric vehicles at the grid's share), the saving against employees
+driving their own petrol cars, the electric share of km, a six-month trend, and a per-trip CSV
+for auditors. Estimates, labelled as such, using the rider eco-score factors.
+
 ### Child seats and pets
 
 Riders can ask for a child seat (cars) or say they're travelling with a pet (cars and autos).

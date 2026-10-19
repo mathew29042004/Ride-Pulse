@@ -232,3 +232,23 @@ def seed_demo(*, seed: int = 101, log=print) -> dict:
     SpeedAlert.objects.bulk_create(alerts)
     log(f"  slow zones: {len(zones)}, speed alerts: {len(alerts)}")
     return {"slow_zones": len(zones), "speed_alerts": len(alerts)}
+
+
+def seed_vehicle_options(*, seed: int = 7, log=print) -> dict:
+    """About a quarter of cars carry a child seat; about a third of cars and autos take pets."""
+    import random
+
+    from .models import Vehicle
+
+    rng = random.Random(seed)
+    rows = list(
+        Vehicle.objects.filter(is_active=True)
+        .exclude(ride_type__code="BIKE")
+        .select_related("ride_type")
+    )
+    for v in rows:
+        v.has_child_seat = v.ride_type.code != "AUTO" and rng.random() < 0.25
+        v.pet_friendly = rng.random() < 0.35
+    Vehicle.objects.bulk_update(rows, ["has_child_seat", "pet_friendly"])
+    log(f"  vehicle options: {len(rows)} vehicles")
+    return {"vehicle_options": len(rows)}

@@ -22983,6 +22983,61 @@
     ]
    }
   },
+  "/api/v1/rider/business/{id}/co2/": {
+   "get": {
+    "description": "Monthly CO\u2082 report for the company's sustainability reporting (CSV with ?export=csv).",
+    "operationId": "business_co2",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "export",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "description": "A unique integer value identifying this payment profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "month",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "rider"
+    ]
+   }
+  },
   "/api/v1/rider/business/{id}/commute/": {
    "get": {
     "description": "The company's commute plans with this month's rides and cost, and who's enrolled.",
