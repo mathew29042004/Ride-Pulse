@@ -162,6 +162,13 @@ def decide_refund(r: RefundApproval, *, actor, approve: bool, note: str = "", no
     r.save()
     notify(r.requested_by, f"Finance {r.get_status_display().lower()} the refund", r.note or "")
     _audit(r, f"Refund {r.get_status_display().lower()}", actor)
+    from apps.reliability.briefing import system_update
+
+    system_update(
+        f"Large refund {r.get_status_display().lower()}: ₹{r.amount:,.0f}",
+        f"{r.trip.trip_number}: {r.reason} (by {actor.get_full_name()})",
+        source="Finance",
+    )
     return r
 
 
@@ -205,6 +212,13 @@ def ban(user, *, actor, reason: str, now=None) -> list[Ban]:
         for k, v in made
     ]
     _audit(user, f"Banned for good: {reason}", actor)
+    from apps.reliability.briefing import system_update
+
+    system_update(
+        f"{user.get_full_name()} banned for good",
+        f"{reason.strip()} (by {actor.get_full_name()})",
+        source="Safety desk",
+    )
     return rows
 
 
@@ -271,6 +285,13 @@ def place_hold(user, *, actor, case_reference: str, reason: str, now=None) -> Le
         placed_at=now or timezone.now(),
     )
     _audit(user, f"Legal hold {hold.case_reference}: {hold.reason}", actor)
+    from apps.reliability.briefing import system_update
+
+    system_update(
+        f"Legal hold placed ({hold.case_reference})",
+        f"{user.get_full_name()}: {hold.reason} (by {actor.get_full_name()})",
+        source="Legal & compliance",
+    )
     return hold
 
 

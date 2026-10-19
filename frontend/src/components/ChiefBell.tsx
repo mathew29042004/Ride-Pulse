@@ -21,14 +21,14 @@ export function ChiefBell() {
   const q = useQuery({ queryKey: ["ops", "chief"], queryFn: () => api.get<Inbox>("ops/chief/"), refetchInterval: 60_000 });
   useSocket("/ws/chat/", (msg) => {
     if (msg.event !== "chief_update" && msg.event !== "decision_request") return;
-    const d = msg.data as { title: string; kind?: string; sent_by?: string; asked_by?: string; order?: string };
+    const d = msg.data as { title: string; kind?: string; sent_by?: string; source?: string; asked_by?: string; order?: string };
     const open = { label: "Open", onClick: () => navigate("/ops/command") };
     if (msg.event === "decision_request") {
       toast.warning(`Decision needed: ${d.title}`, { description: d.order ? `Proposes: ${d.order}` : `From ${d.asked_by}`, action: open, duration: 15_000 });
     } else if (d.kind === "ESCALATION") {
-      toast.error(`Escalation: ${d.title}`, { description: `From ${d.sent_by}`, action: open, duration: 15_000 });
+      toast.error(`Escalation: ${d.title}`, { description: `${d.source} · ${d.sent_by}`, action: open, duration: 15_000 });
     } else {
-      toast(`${d.kind === "BRIEFING" ? "Briefing" : "Update"}: ${d.title}`, { description: `From ${d.sent_by}`, action: open });
+      toast(`${d.kind === "BRIEFING" ? "Briefing" : "Update"}: ${d.title}`, { description: `${d.source} · ${d.sent_by}`, action: open });
     }
     qc.invalidateQueries({ queryKey: ["ops", "chief"] });
   });

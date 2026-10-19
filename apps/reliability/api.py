@@ -608,7 +608,7 @@ class ChiefInboxViewSet(BaseViewSet):
     def list(self, request):
         from . import briefing
 
-        return Response(briefing.chief_inbox())
+        return Response(briefing.chief_inbox(request.query_params.get("source", "")))
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["post"])

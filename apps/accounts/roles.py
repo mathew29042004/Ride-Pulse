@@ -229,6 +229,17 @@ ROLE_CAPABILITIES: dict[str, frozenset[str]] = {
 }
 
 
+# Department heads report to the chief directly (as well as through the chief of staff).
+for _role in (
+    "REGIONAL_MANAGER",
+    "OPS_MANAGER",
+    "FINANCE_MANAGER",
+    "HR_MANAGER",
+    "SAFETY_OFFICER",
+    "COMPLIANCE_OFFICER",
+):
+    ROLE_CAPABILITIES[_role] = frozenset(ROLE_CAPABILITIES[_role] | {Cap.BRIEF})
+
 # Every employee uses the workspace; who they can assign work to follows the org chart.
 ROLE_CAPABILITIES = {
     role: frozenset(caps | {Cap.WORK_USE})

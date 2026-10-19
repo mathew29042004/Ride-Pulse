@@ -169,6 +169,7 @@ class Department(models.TextChoices):
     PEOPLE = "PEOPLE", "People (HR)"
     SAFETY = "SAFETY", "Trust & safety"
     LEGAL = "LEGAL", "Legal & compliance"
+    TECH = "TECH", "Technology"
 
 
 class StaffProfile(models.Model):

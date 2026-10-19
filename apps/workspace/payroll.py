@@ -308,6 +308,14 @@ def mark_paid(month: date, *, user, bank_reference: str, now=None) -> int:
             level=Level.SUCCESS,
             link="/ops/payslips",
         )
+    from apps.reliability.briefing import system_update
+
+    system_update(
+        f"Salaries for {month:%B %Y} paid",
+        f"{len(slips)} payslips, ₹{sum(s.net for s in slips):,.0f} in total "
+        f"(ref {bank_reference}).",
+        source="HR & payroll",
+    )
     return len(slips)
 
 

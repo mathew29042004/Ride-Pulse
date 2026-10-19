@@ -332,6 +332,15 @@ def raise_sos(
             level=Level.DANGER,
             link=f"/ops/safety/{incident.pk}/",
         )
+    from apps.reliability.briefing import system_update
+
+    system_update(
+        f"SOS {incident.incident_number} in {trip.city.name}"
+        + (" · ambulance needed" if ambulance else ""),
+        (note or "A rider or driver pressed SOS.") + f" Trip {trip.trip_number}.",
+        source="Safety desk",
+        urgent=True,
+    )
     from apps.reliability.outbox import emit
 
     emit(

@@ -64,6 +64,12 @@ export default function Landing() {
               </Link>
             ) : (
               <>
+                <Link to="/company" className="hidden px-3 py-2 text-sm font-medium text-white/80 hover:text-white sm:block">
+                  Company
+                </Link>
+                <Link to="/careers" className="hidden px-3 py-2 text-sm font-medium text-white/80 hover:text-white sm:block">
+                  Careers
+                </Link>
                 <Link to="/login" className="px-3 py-2 text-sm font-medium text-white/80 hover:text-white">
                   Log in
                 </Link>
@@ -208,6 +214,9 @@ export default function Landing() {
       <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8 text-sm text-muted">
         <Logo />
         <span className="flex flex-wrap gap-4">
+          <Link to="/company" className="hover:text-fg">About us</Link>
+          <Link to="/careers" className="hover:text-fg">Careers</Link>
+          <Link to="/contact" className="hover:text-fg">Contact</Link>
           <Link to="/status" className="hover:text-fg">Service status</Link>
           <Link to="/grievance-officer" className="hover:text-fg">Grievance officer</Link>
           <span>A portfolio project · fares, drivers and trips are simulated.</span>

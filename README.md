@@ -915,6 +915,26 @@ Ops → Powers shows each role only its own tools, every action audited:
   top roles), with no loops in the org chart; their team channels update.
 * **Pricing analyst**: fares, surge, promotions and experiments.
 
+### The chief hears from every side (`reliability.briefing`)
+
+Updates reach the commander from the chief of staff, from department heads directly (regional and
+city operations managers, finance, HR, safety and compliance can all brief the chief), and from
+the platform itself: an SOS, a major or critical incident, monsoon mode, a fraud case scoring 75+,
+a permanent ban, a legal hold, a large refund decided, salaries paid. Each update shows where it
+came from; the inbox filters by source, and urgent ones pop up anywhere in the console.
+
+### Company portal (`workspace.company`)
+
+**Public website** (no sign-in): `/company` (about us with live numbers, values, leadership,
+cities), `/careers` (open roles by team, each with an application form), `/contact`. Forms are
+rate-limited; applications reach the HR managers and enquiries the administrators.
+
+**Employee intranet**, Ops → Company (everyone): messages from the commander to the whole company
+(only the commander can post), staff announcements, birthdays and work anniversaries this week,
+new joiners, departments with their heads and headcount, holidays for your state, the people
+directory, and open roles to refer friends to (you're told when your referral reaches interview).
+HR reviews applications there.
+
 ### Every role's desk (`frontend/src/lib/roleDesk.ts`)
 
 Each staff role signs in to its own desk: the commander lands on the command centre and sees

@@ -195,6 +195,13 @@ def scan(*, now: datetime | None = None) -> dict:
             at=now,
         )
         if case.score >= 75:
+            from apps.reliability.briefing import system_update
+
+            system_update(
+                f"Fraud case {case.number}: {case.get_kind_display()} (score {case.score})",
+                case.summary,
+                source="Fraud review",
+            )
             notify_role(
                 "ADMIN",
                 f"Fraud case {case.number}: {case.get_kind_display()}",

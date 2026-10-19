@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, Crown, NotebookPen, Zap, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Fuel, Store, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, Building, Crown, NotebookPen, Zap, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Fuel, Store, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -36,6 +36,7 @@ const NAV = [
     items: [
       { to: "/ops/command", label: "Command centre", icon: Crown, cap: "command" },
       { to: "/ops/brief", label: "Brief the chief", icon: NotebookPen, cap: "brief" },
+      { to: "/ops/company", label: "Company", icon: Building, cap: "work.use" },
       { to: "/ops/powers", label: "Powers", icon: Zap, cap: ["refund.approve", "safety.ban", "dispatch.assign", "legal.hold", "people.manage"] },
       { to: "/ops", label: "Dashboard", icon: LayoutDashboard, end: true, cap: "trips.view" },
       { to: "/ops/live", label: "Live map", icon: Map, cap: "trips.view" },

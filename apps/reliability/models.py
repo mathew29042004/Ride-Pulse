@@ -373,8 +373,9 @@ class ChiefUpdate(models.Model):
     title = models.CharField(max_length=160)
     body = models.TextField(blank=True)
     sent_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+"
-    )
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )  # empty: the platform reported it by itself
+    source = models.CharField(max_length=60, blank=True, db_index=True)  # "Finance", "System"...
     sent_at = models.DateTimeField(db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
     reply = models.CharField(max_length=500, blank=True)

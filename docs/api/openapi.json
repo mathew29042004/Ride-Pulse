@@ -309,6 +309,49 @@
     ],
     "type": "string"
    },
+   "ApplyRequest": {
+    "properties": {
+     "email": {
+      "format": "email",
+      "minLength": 1,
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 2000,
+      "type": "string"
+     },
+     "phone": {
+      "maxLength": 20,
+      "minLength": 1,
+      "type": "string"
+     },
+     "profile_url": {
+      "oneOf": [
+       {
+        "default": "",
+        "format": "uri",
+        "type": "string"
+       },
+       {
+        "maxLength": 0,
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "required": [
+     "email",
+     "name",
+     "phone"
+    ],
+    "type": "object"
+   },
    "AppraisalRatingRequest": {
     "properties": {
      "comment": {
@@ -1256,6 +1299,37 @@
     ],
     "type": "object"
    },
+   "ContactRequest": {
+    "properties": {
+     "email": {
+      "format": "email",
+      "minLength": 1,
+      "type": "string"
+     },
+     "message": {
+      "maxLength": 3000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+     },
+     "topic": {
+      "default": "GENERAL",
+      "maxLength": 12,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "email",
+     "message",
+     "name"
+    ],
+    "type": "object"
+   },
    "CorporateEmployeeRequest": {
     "properties": {
      "default_cost_center": {
@@ -1777,7 +1851,7 @@
     "type": "object"
    },
    "DepartmentEnum": {
-    "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels\n* `FINANCE` - Finance\n* `PEOPLE` - People (HR)\n* `SAFETY` - Trust & safety\n* `LEGAL` - Legal & compliance",
+    "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels\n* `FINANCE` - Finance\n* `PEOPLE` - People (HR)\n* `SAFETY` - Trust & safety\n* `LEGAL` - Legal & compliance\n* `TECH` - Technology",
     "enum": [
      "LEADERSHIP",
      "OPERATIONS",
@@ -1789,7 +1863,8 @@
      "FINANCE",
      "PEOPLE",
      "SAFETY",
-     "LEGAL"
+     "LEGAL",
+     "TECH"
     ],
     "type": "string"
    },
@@ -4519,6 +4594,25 @@
     },
     "required": [
      "member_id"
+    ],
+    "type": "object"
+   },
+   "MessageRequest": {
+    "properties": {
+     "body": {
+      "maxLength": 6000,
+      "minLength": 1,
+      "type": "string"
+     },
+     "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "body",
+     "title"
     ],
     "type": "object"
    },
@@ -7858,6 +7952,53 @@
     "required": [
      "file",
      "iv"
+    ],
+    "type": "object"
+   },
+   "ReferRequest": {
+    "properties": {
+     "email": {
+      "format": "email",
+      "minLength": 1,
+      "type": "string"
+     },
+     "job": {
+      "type": "integer"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 2000,
+      "type": "string"
+     },
+     "phone": {
+      "maxLength": 20,
+      "minLength": 1,
+      "type": "string"
+     },
+     "profile_url": {
+      "oneOf": [
+       {
+        "default": "",
+        "format": "uri",
+        "type": "string"
+       },
+       {
+        "maxLength": 0,
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "required": [
+     "email",
+     "job",
+     "name",
+     "phone"
     ],
     "type": "object"
    },
@@ -13945,6 +14086,259 @@
     ],
     "tags": [
      "cities"
+    ]
+   }
+  },
+  "/api/v1/company/": {
+   "get": {
+    "description": "The employee intranet.",
+    "operationId": "intranet_home",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
+  "/api/v1/company/applications/": {
+   "get": {
+    "description": "The employee intranet.",
+    "operationId": "company_applications_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
+  "/api/v1/company/applications/{application_id}/status/": {
+   "post": {
+    "description": "The employee intranet.",
+    "operationId": "company_applications_status_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "application_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
+  "/api/v1/company/directory/": {
+   "get": {
+    "description": "The employee intranet.",
+    "operationId": "company_directory_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
+  "/api/v1/company/message/": {
+   "post": {
+    "description": "The employee intranet.",
+    "operationId": "company_message_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MessageRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/MessageRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/MessageRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
+  "/api/v1/company/refer/": {
+   "post": {
+    "description": "The employee intranet.",
+    "operationId": "company_refer_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReferRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ReferRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ReferRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "company"
     ]
    }
   },
@@ -24697,6 +25091,161 @@
     ]
    }
   },
+  "/api/v1/public/company/": {
+   "get": {
+    "description": "Public: about Ride Pulse (live numbers, leaders, cities) and open roles.",
+    "operationId": "public_company_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {}
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
+  "/api/v1/public/company/contact/": {
+   "post": {
+    "operationId": "public_company_contact_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContactRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ContactRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ContactRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {}
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
+  "/api/v1/public/company/jobs/{job_id}/": {
+   "get": {
+    "operationId": "public_company_jobs_retrieve",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {}
+    ],
+    "tags": [
+     "company"
+    ]
+   },
+   "post": {
+    "operationId": "public_company_jobs_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApplyRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ApplyRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ApplyRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {}
+    ],
+    "tags": [
+     "company"
+    ]
+   }
+  },
   "/api/v1/push/subscription/": {
    "delete": {
     "description": "Register (POST) or remove (DELETE) this browser for push notifications.",
@@ -29357,7 +29906,7 @@
     "operationId": "team_list",
     "parameters": [
      {
-      "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels\n* `FINANCE` - Finance\n* `PEOPLE` - People (HR)\n* `SAFETY` - Trust & safety\n* `LEGAL` - Legal & compliance",
+      "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels\n* `FINANCE` - Finance\n* `PEOPLE` - People (HR)\n* `SAFETY` - Trust & safety\n* `LEGAL` - Legal & compliance\n* `TECH` - Technology",
       "in": "query",
       "name": "department",
       "schema": {
@@ -29372,7 +29921,8 @@
         "PEOPLE",
         "RIDES",
         "SAFETY",
-        "SUPPORT"
+        "SUPPORT",
+        "TECH"
        ],
        "type": "string"
       }

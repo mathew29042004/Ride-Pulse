@@ -49,6 +49,38 @@ def _notify(users, title: str, body: str, *, urgent: bool, link: str) -> None:
 # --- Updates ----------------------------------------------------------------------------------
 
 
+def source_of(user) -> str:
+    """Where an update comes from: the sender's role, and their state for regional roles."""
+    profile = getattr(user, "staff_profile", None)
+    label = user.get_role_display()
+    return f"{label} · {profile.state}" if profile and profile.state else label
+
+
+def system_update(title: str, body: str = "", *, source: str, urgent: bool = False, now=None):
+    """The platform reports something to the chief by itself (an incident, a ban, a big refund,
+    an SOS...). Never raises: a report must not break the action that triggered it."""
+    try:
+        now = now or timezone.now()
+        update = ChiefUpdate.objects.create(
+            kind=UpdateKind.ESCALATION if urgent else UpdateKind.UPDATE,
+            title=title[:160],
+            body=body[:4000],
+            sent_by=None,
+            source=source[:60],
+            sent_at=now,
+        )
+        to = list(chiefs(now=now))
+        transaction.on_commit(lambda: _push(to, "chief_update", update_row(update)))
+        if urgent:
+            _notify(to, f"🔴 {update.title}", update.body[:200], urgent=True, link="/ops/command")
+        return update
+    except Exception:  # pragma: no cover - reporting is best effort
+        import logging
+
+        logging.getLogger(__name__).warning("Couldn't report to the chief", exc_info=True)
+        return None
+
+
 def update_row(u: ChiefUpdate) -> dict:
     return {
         "id": u.pk,
@@ -56,7 +88,8 @@ def update_row(u: ChiefUpdate) -> dict:
         "kind_label": u.get_kind_display(),
         "title": u.title,
         "body": u.body,
-        "sent_by": u.sent_by.get_full_name(),
+        "sent_by": u.sent_by.get_full_name() if u.sent_by_id else "Ride Pulse (automatic)",
+        "source": u.source or "Chief of staff",
         "sent_at": u.sent_at.isoformat(),
         "read": u.read_at is not None,
         "reply": u.reply,
@@ -71,7 +104,12 @@ def send_update(*, user, title: str, body: str = "", kind: str = UpdateKind.UPDA
     if len(title.strip()) < 3:
         raise BusinessRuleViolation("Give it a title.", field="title")
     update = ChiefUpdate.objects.create(
-        kind=kind, title=title.strip()[:160], body=body.strip()[:4000], sent_by=user, sent_at=now
+        kind=kind,
+        title=title.strip()[:160],
+        body=body.strip()[:4000],
+        sent_by=user,
+        source=source_of(user),
+        sent_at=now,
     )
     to = list(chiefs(now=now))
     _push(to, "chief_update", update_row(update))
@@ -94,6 +132,8 @@ def reply(update: ChiefUpdate, *, user, text: str, now=None) -> ChiefUpdate:
     update.reply = text.strip()[:500]
     update.read_at = update.read_at or now or timezone.now()
     update.save(update_fields=["reply", "read_at"])
+    if update.sent_by_id is None:
+        return update  # the platform reported it; nobody to answer
     notify(
         update.sent_by,
         f"The chief replied: {update.title}",
@@ -293,9 +333,23 @@ def decide(d: DecisionRequest, *, user, approve: bool, note: str = "", now=None)
 # --- Inboxes ----------------------------------------------------------------------------------
 
 
-def chief_inbox() -> dict:
+def chief_inbox(source: str = "") -> dict:
+    rows = ChiefUpdate.objects.select_related("sent_by")
+    if source:
+        rows = (
+            rows.filter(source__startswith=source)
+            if source != "Chief of staff"
+            else rows.filter(source="")
+        )
+    sources = sorted(
+        {
+            s.split(" · ")[0] or "Chief of staff"
+            for s in ChiefUpdate.objects.values_list("source", flat=True)
+        }
+    )
     return {
-        "updates": [update_row(u) for u in ChiefUpdate.objects.select_related("sent_by")[:40]],
+        "sources": sources,
+        "updates": [update_row(u) for u in rows[:40]],
         "unread": ChiefUpdate.objects.filter(read_at__isnull=True).count(),
         "decisions": [
             decision_row(d)

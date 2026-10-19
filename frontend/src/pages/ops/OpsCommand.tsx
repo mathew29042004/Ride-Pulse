@@ -474,6 +474,7 @@ interface Update {
   title: string;
   body: string;
   sent_by: string;
+  source: string;
   sent_at: string;
   read: boolean;
   reply: string;
@@ -495,9 +496,10 @@ interface Decision {
  * from the chief of staff, with a one-line reply. Live via ChiefBell's socket. */
 function ChiefInbox() {
   const qc = useQueryClient();
+  const [source, setSource] = useState("");
   const q = useQuery({
-    queryKey: ["ops", "chief"],
-    queryFn: () => api.get<{ updates: Update[]; unread: number; decisions: Decision[]; pending: number }>("ops/chief/"),
+    queryKey: ["ops", "chief", source],
+    queryFn: () => api.get<{ updates: Update[]; unread: number; decisions: Decision[]; pending: number; sources: string[] }>(`ops/chief/?source=${encodeURIComponent(source)}`),
   });
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["ops", "chief"] });
@@ -570,6 +572,15 @@ function ChiefInbox() {
           <Input className="!py-1.5" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask your chief of staff, e.g. how's Kochi today?" aria-label="Ask your chief of staff" />
           <Button size="sm" type="submit" loading={ask.isPending} disabled={!question.trim()}>Ask</Button>
         </form>
+        {d.sources.length > 1 && (
+          <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-line px-5 py-2">
+            {["", ...d.sources].map((s) => (
+              <button key={s || "all"} onClick={() => setSource(s)} className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${source === s ? "bg-ink text-ink-fg" : "bg-surface-3 text-muted"}`}>
+                {s || "Everyone"}
+              </button>
+            ))}
+          </div>
+        )}
         {!d.updates.length && <EmptyState title="No updates yet" />}
         <div className="max-h-96 divide-y divide-line overflow-y-auto">
           {d.updates.slice(0, 10).map((u) => (
@@ -580,7 +591,7 @@ function ChiefInbox() {
                 {!u.read && <span className="size-2 rounded-full bg-sky-500" aria-label="New" />}
               </div>
               {u.body && <p className="mt-1 whitespace-pre-line text-muted">{u.body}</p>}
-              <p className="mt-0.5 text-xs text-muted">{u.sent_by} · {dateTime(u.sent_at)}</p>
+              <p className="mt-0.5 text-xs text-muted"><span className="font-semibold">{u.source}</span> · {u.sent_by} · {dateTime(u.sent_at)}</p>
               {u.reply ? (
                 <p className="mt-1 text-xs"><span className="font-semibold">You replied:</span> {u.reply}</p>
               ) : (

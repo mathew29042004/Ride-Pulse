@@ -89,3 +89,25 @@ def test_chief_of_staff_sees_but_cannot_command(api):
     assert cos.has_capability("trips.view") and cos.has_capability("brief")
     assert not cos.has_capability("command") and not cos.has_capability("trips.manage")
     assert api(cos).get("/api/v1/ops/command/").status_code == 403
+
+
+def test_the_chief_hears_from_every_side(api, make_driver):
+    from apps.workspace import powers
+
+    chief = make_staff(Role.COMMANDER)
+    finance = make_staff(Role.FINANCE_MANAGER)
+    safety = make_staff(Role.SAFETY_OFFICER)
+    agent = make_staff(Role.SUPPORT_AGENT)
+    # A department head briefs the chief directly…
+    r = api(finance).post("/api/v1/ops/brief/", {"title": "GST filed for September"})
+    assert r.status_code == 201 and r.json()["source"] == "Finance manager"
+    assert api(agent).post("/api/v1/ops/brief/", {"title": "hello"}).status_code == 403
+    # …and the platform reports by itself.
+    powers.ban(make_driver(online=False).user, actor=safety, reason="Assaulted a rider, FIR filed")
+    inbox = api(chief).get("/api/v1/ops/chief/").json()
+    sources = {u["source"] for u in inbox["updates"]}
+    assert {"Finance manager", "Safety desk"} <= sources
+    auto = next(u for u in inbox["updates"] if u["source"] == "Safety desk")
+    assert auto["sent_by"] == "Ride Pulse (automatic)"
+    only = api(chief).get("/api/v1/ops/chief/?source=Finance").json()["updates"]
+    assert [u["source"] for u in only] == ["Finance manager"]

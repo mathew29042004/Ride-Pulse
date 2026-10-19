@@ -85,6 +85,9 @@ class Command(BaseCommand):
         from apps.workspace import expenses as expense_claims
 
         stats.update(expense_claims.seed_demo(log=self.stdout.write))
+        from apps.workspace import company
+
+        stats.update(company.seed_demo(log=self.stdout.write))
         from apps.workspace import powers
 
         stats.update(powers.seed_demo(log=self.stdout.write))

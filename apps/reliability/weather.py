@@ -70,6 +70,11 @@ def start(*, city, level: str, user, hours: int = 6, zones=(), message: str = ""
     )
     alert.zones.set([z for z in zones if z.city_id == city.pk])
     _tell_drivers(alert)
+    from .briefing import system_update
+
+    system_update(
+        f"{alert.get_level_display()} mode on in {city.name}", alert.message, source="Operations"
+    )
     return alert
 
 

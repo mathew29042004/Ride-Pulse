@@ -73,6 +73,16 @@ def open_incident(
         f"Affects: {labels}."
     )
     fallbacks.forget()  # payments or maps may switch to (or out of) a fallback
+    if severity != IncidentSeverity.MINOR:
+        from .briefing import system_update
+
+        system_update(
+            f"{incident.number} {incident.get_severity_display().lower()} incident: "
+            f"{incident.title}",
+            f"Affects {labels}. {incident.public_message}",
+            source="Platform & incidents",
+            urgent=severity == IncidentSeverity.CRITICAL,
+        )
     return incident
 
 

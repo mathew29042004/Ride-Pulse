@@ -17,6 +17,11 @@ const TrackTrip = lazy(() => import("./pages/public/TrackTrip"));
 const SafeShare = lazy(() => import("./pages/public/SafeShare"));
 const StatusPage = lazy(() => import("./pages/public/StatusPage"));
 const GrievanceOfficer = lazy(() => import("./pages/public/GrievanceOfficer"));
+const CompanyAbout = lazy(() => import("./pages/public/CompanySite").then((m) => ({ default: m.CompanyAbout })));
+const Careers = lazy(() => import("./pages/public/CompanySite").then((m) => ({ default: m.Careers })));
+const CareerDetail = lazy(() => import("./pages/public/CompanySite").then((m) => ({ default: m.CareerDetail })));
+const Contact = lazy(() => import("./pages/public/CompanySite").then((m) => ({ default: m.Contact })));
+const OpsCompany = lazy(() => import("./pages/ops/OpsCompany"));
 const OpsGrievances = lazy(() => import("./pages/ops/OpsGrievances"));
 const RiderHome = lazy(() => import("./pages/rider/RiderHome"));
 const RiderBook = lazy(() => import("./pages/rider/RiderBook"));
@@ -169,6 +174,10 @@ export const router = createBrowserRouter([
   { path: "/safe/:token", element: lazyPage(<SafeShare />), errorElement: <ErrorPage /> },
   { path: "/status", element: lazyPage(<StatusPage />), errorElement: <ErrorPage /> },
   { path: "/grievance-officer", element: lazyPage(<GrievanceOfficer />), errorElement: <ErrorPage /> },
+  { path: "/company", element: lazyPage(<CompanyAbout />), errorElement: <ErrorPage /> },
+  { path: "/careers", element: lazyPage(<Careers />), errorElement: <ErrorPage /> },
+  { path: "/careers/:id", element: lazyPage(<CareerDetail />), errorElement: <ErrorPage /> },
+  { path: "/contact", element: lazyPage(<Contact />), errorElement: <ErrorPage /> },
   {
     path: "/ride",
     errorElement: <ErrorPage />,
@@ -286,6 +295,7 @@ export const router = createBrowserRouter([
       { path: "command", element: lazyPage(<OpsCommand />) },
       { path: "brief", element: lazyPage(<OpsBrief />) },
       { path: "powers", element: lazyPage(<OpsPowers />) },
+      { path: "company", element: lazyPage(<OpsCompany />) },
       { path: "backups", element: lazyPage(<OpsBackups />) },
       { path: "loans", element: lazyPage(<OpsLoans />) },
       { path: "pnl", element: lazyPage(<OpsPnl />) },
