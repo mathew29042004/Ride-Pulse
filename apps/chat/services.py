@@ -237,10 +237,35 @@ def _system(conversation: Conversation, text: str, now) -> Message:
     return message
 
 
+EVERYONE = {"all", "here", "channel", "everyone"}
+
+
+def _named(body: str, members: set[int], *, exclude: int) -> list[int]:
+    """Members called by name without an @ ("Ananya, can you…" or "thanks Ananya Iyer").
+    A full name always counts; a first name only when one member in the chat has it."""
+    text = " " + re.sub(r"[^a-z0-9 ]+", " ", body.lower()) + " "
+    people = list(
+        _staff().filter(pk__in=members).exclude(pk=exclude).only("pk", "first_name", "last_name")
+    )
+    first_count: dict[str, int] = {}
+    for u in people:
+        first_count[u.first_name.lower()] = first_count.get(u.first_name.lower(), 0) + 1
+    found = []
+    for u in people:
+        first, full = u.first_name.lower(), f"{u.first_name} {u.last_name}".lower().strip()
+        if len(first) < 3:
+            continue
+        if f" {full} " in text or (first_count[first] == 1 and f" {first} " in text):
+            found.append(u.pk)
+    return found
+
+
 def _mentioned(body: str, members: set[int]) -> list[int]:
     handles = {h.lower().rstrip(".") for h in MENTION.findall(body)}
     if not handles:
         return []
+    if handles & EVERYONE:
+        return sorted(members)
     found = []
     for user in _staff().filter(pk__in=members).only("pk", "email", "first_name", "last_name"):
         names = {
@@ -270,7 +295,10 @@ def send(conversation: Conversation, user, body: str, *, now=None, upload=None) 
         conversation=conversation,
         author=user,
         body=body,
-        mentions=[u for u in _mentioned(body, members) if u != user.pk],
+        mentions=sorted(
+            {u for u in _mentioned(body, members) if u != user.pk}
+            | set(_named(body, members, exclude=user.pk))
+        ),
         created_at=now,
         attachment=upload or "",
         attachment_name=(getattr(upload, "name", "") or "")[:120],
@@ -418,8 +446,9 @@ def _is_demo_offline(user, now) -> bool:
 
 
 def demo_replies(conversation_id: int, message_id: int, *, now=None) -> int:
-    """Pre-set replies from demo employees who aren't signed in: in a direct message the other
-    person answers; elsewhere, only people @mentioned answer."""
+    """Pre-set replies from demo employees who aren't signed in. In a direct message the other
+    person answers. Elsewhere: the people @mentioned or named answer (two at most for @all);
+    when nobody is named, one member of the conversation answers."""
     from apps.accounts.models import User
 
     now = now or timezone.now()
@@ -430,16 +459,31 @@ def demo_replies(conversation_id: int, message_id: int, *, now=None) -> int:
     if conversation.kind == ConversationKind.DIRECT:
         responders = [u for u in _member_ids(conversation) if u != message.author_id]
     else:
-        responders = message.mentions
+        rng_pick = random.Random(message.pk * 7)
+        everyone = bool({h.lower() for h in MENTION.findall(message.body)} & EVERYONE)
+        others = sorted(
+            u.pk
+            for u in User.objects.filter(pk__in=_member_ids(conversation), is_active=True).exclude(
+                pk=message.author_id
+            )
+            if _is_demo_offline(u, now)
+        )
+        if message.mentions and not everyone:
+            responders = message.mentions
+        else:  # nobody in particular (or everyone): someone answers
+            responders = rng_pick.sample(others, min(2 if everyone else 1, len(others)))
     rng = random.Random(message.pk)
     sent = 0
+    addressed = (
+        f"@{message.author.first_name} " if conversation.kind != ConversationKind.DIRECT else ""
+    )
     for user in User.objects.filter(pk__in=responders, is_active=True):
         if not _is_demo_offline(user, now):
             continue  # a real person is signed in: they'll reply themselves
         reply = Message.objects.create(
             conversation=conversation,
             author=user,
-            body=rng.choice(REPLIES[_kind_of(message.body)]),
+            body=addressed + rng.choice(REPLIES[_kind_of(message.body)]),
             automated=True,
             created_at=now + timedelta(seconds=1),
         )

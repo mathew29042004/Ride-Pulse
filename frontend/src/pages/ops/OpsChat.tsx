@@ -218,6 +218,7 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
   });
   const mention = body.match(/@([\w.-]*)$/)?.[1];
   const suggestions = mention != null ? thread.members.filter((p) => p.id !== me && p.name.toLowerCase().replace(/\s+/g, ".").includes(mention.toLowerCase())).slice(0, 5) : [];
+  const offerAll = mention != null && thread.members.length > 2 && "all".startsWith(mention.toLowerCase());
   return (
     <section className="flex min-w-0 flex-1 flex-col">
       <header className="flex items-center gap-2 border-b border-line px-4 py-2.5">
@@ -271,8 +272,13 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
           if (body.trim()) send.mutate();
         }}
       >
-        {suggestions.length > 0 && (
+        {(suggestions.length > 0 || offerAll) && (
           <div className="absolute bottom-full left-3 mb-1 rounded-xl border border-line bg-surface p-1 shadow-lg">
+            {offerAll && (
+              <button type="button" onClick={() => setBody(body.replace(/@[\w.-]*$/, "@all "))} className="block w-full rounded-lg px-3 py-1 text-left text-sm hover:bg-surface-2">
+                <span className="font-semibold">@all</span> <span className="text-xs text-muted">notify everyone here</span>
+              </button>
+            )}
             {suggestions.map((p) => (
               <button
                 type="button"
@@ -297,7 +303,7 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
           }}
         />
         <Button type="button" variant="ghost" icon={<Paperclip className="size-4" />} loading={upload.isPending} onClick={() => fileInput.current?.click()} aria-label="Share a file" />
-        <Input value={body} onChange={(e) => onType(e.target.value)} placeholder={`Message ${thread.title}  ·  @name to mention`} className="flex-1" aria-label="Message" />
+        <Input value={body} onChange={(e) => onType(e.target.value)} placeholder={`Message ${thread.title}  ·  @name, a name, or @all`} className="flex-1" aria-label="Message" />
         <Button type="submit" icon={<Send className="size-4" />} loading={send.isPending} disabled={!body.trim()} aria-label="Send" />
       </form>
     </section>

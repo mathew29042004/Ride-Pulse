@@ -915,6 +915,20 @@ Ops → Powers shows each role only its own tools, every action audited:
   top roles), with no loops in the org chart; their team channels update.
 * **Pricing analyst**: fares, surge, promotions and experiments.
 
+### Fresh start (`python manage.py fresh_start --yes`)
+
+Erases everything that has happened (trips, money, chats, tasks, HR records, notifications, the
+audit trail, alerts) and keeps the set-up: people and the org chart, cities, vehicles, prices,
+tour packages, help articles, team channels and settings. Wallets go back to ₹0, ratings and
+trip counts reset, drivers go offline and everyone signs in again. Demo mode only.
+
+### Team chat: who answers
+
+In a channel or group, `@name` (or `@all` to notify everyone) mentions people, and so does
+writing someone's name without the @ ("Ananya, can you…"; a first name counts when only one
+person in the chat has it). Demo colleagues who aren't signed in answer when they're mentioned or
+named; when nobody is named, one of them answers. Replies start with `@YourName`.
+
 ### EV subsidy finder (`drivers.ev_subsidy`)
 
 Drivers thinking of switching to electric (Driver → Vehicle loan → subsidies) choose an electric

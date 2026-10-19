@@ -118,3 +118,42 @@ def test_groups_and_task_threads(api, team):
     inbox = api(boss).get("/api/v1/chat/").json()
     assert inbox["unread"] >= 1
     assert any(c["kind"] == "TASK" and c["unread"] == 1 for c in inbox["conversations"])
+
+
+def _general():
+    return Conversation.objects.get(kind="CHANNEL", slug="general")
+
+
+def test_named_without_at_gets_the_reply(team, django_capture_on_commit_callbacks):
+    boss, _agent, mechanic = team
+    with django_capture_on_commit_callbacks(execute=True):
+        services.send(_general(), boss, "Divya, can you check the Hosur workshop queue?")
+    msg = Message.objects.filter(author=boss).latest("pk")
+    assert msg.mentions == [mechanic.pk]  # named, no @, still counts
+    reply = Message.objects.filter(automated=True).get()
+    assert reply.author == mechanic and reply.body.startswith("@Meena ")
+
+
+def test_at_mention_gets_only_that_person(team, django_capture_on_commit_callbacks):
+    boss, agent, _mechanic = team
+    with django_capture_on_commit_callbacks(execute=True):
+        services.send(_general(), boss, "@ravi please close the refund tickets by today")
+    assert list(Message.objects.filter(automated=True).values_list("author", flat=True)) == [
+        agent.pk
+    ]
+
+
+def test_no_name_means_anyone_answers(team, django_capture_on_commit_callbacks):
+    boss, agent, mechanic = team
+    with django_capture_on_commit_callbacks(execute=True):
+        services.send(_general(), boss, "Who is covering the night shift?")
+    replies = Message.objects.filter(automated=True)
+    assert replies.count() == 1 and replies.get().author_id in {agent.pk, mechanic.pk}
+
+
+def test_at_all_notifies_everyone(team):
+    boss, agent, mechanic = team
+    services.send(_general(), boss, "@all town hall at 4 pm")
+    msg = Message.objects.filter(author=boss).latest("pk")
+    assert set(msg.mentions) == {agent.pk, mechanic.pk}
+    assert Notification.objects.filter(user=agent, title__contains="mentioned you").exists()
