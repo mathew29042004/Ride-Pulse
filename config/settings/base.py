@@ -1,5 +1,6 @@
 """Settings shared by every environment. Environment-specific modules import * from here."""
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import environ
 from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", BASE_DIR / "backups"))
 
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / ".env")
@@ -270,6 +272,14 @@ CELERY_BEAT_SCHEDULE = {
     "trust-privacy": {"task": "trust.privacy_daily", "schedule": crontab(hour=3, minute=15)},
     "fleet-upkeep": {"task": "fleet.upkeep_sweep", "schedule": crontab(hour=7, minute=30)},
     "commute-booking": {"task": "riders.book_commutes", "schedule": crontab(hour=20, minute=0)},
+    "nightly-backup": {
+        "task": "reliability.nightly_backup",
+        "schedule": crontab(hour=2, minute=30),
+    },
+    "restore-drill": {
+        "task": "reliability.restore_drill",
+        "schedule": crontab(hour=4, minute=0, day_of_week="sun"),
+    },
     "fleet-quests": {"task": "fleet.end_quests", "schedule": timedelta(minutes=15)},
     "intel-weather": {"task": "intelligence.refresh_weather", "schedule": timedelta(minutes=30)},
     "intel-alerts": {"task": "intelligence.check_alerts", "schedule": timedelta(minutes=5)},

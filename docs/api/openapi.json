@@ -17455,6 +17455,96 @@
     ]
    }
   },
+  "/api/v1/ops/backups/": {
+   "get": {
+    "description": "Ops \u2192 Backups: nightly backups and restore drills; run either now.",
+    "operationId": "backups_overview",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/backups/drill/": {
+   "post": {
+    "description": "Ops \u2192 Backups: nightly backups and restore drills; run either now.",
+    "operationId": "ops_backups_drill_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/backups/run/": {
+   "post": {
+    "description": "Ops \u2192 Backups: nightly backups and restore drills; run either now.",
+    "operationId": "ops_backups_run_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/compliance/": {
    "get": {
     "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",

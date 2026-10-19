@@ -16,3 +16,17 @@ def trip_watchdog() -> dict:
 @shared_task(name="reliability.check_slow")
 def check_slow() -> dict:
     return jobs.check_slow()
+
+
+@shared_task(name="reliability.nightly_backup")
+def nightly_backup() -> dict:
+    from .backups import backup
+
+    return backup()
+
+
+@shared_task(name="reliability.restore_drill")
+def weekly_restore_drill() -> dict:
+    from .backups import restore_drill
+
+    return restore_drill()

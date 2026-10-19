@@ -1,5 +1,6 @@
 """Platform health API: the event outbox, webhooks (and a demo receiver) and security events."""
 
+import contextlib
 import hmac
 import json
 
@@ -350,3 +351,34 @@ class WeatherViewSet(BaseViewSet):
         from . import weather
 
         return Response(weather.row(weather.end(get_object_or_404(WeatherAlert, pk=pk))))
+
+
+class BackupViewSet(BaseViewSet):
+    """Ops → Backups: nightly backups and restore drills; run either now."""
+
+    capabilities = {"list": Cap.AUDIT_VIEW, "*": Cap.USERS_MANAGE}
+    queryset = Incident.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="backups_overview")
+    def list(self, request):
+        from . import backups
+
+        return Response(backups.overview())
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="run")
+    def run_backup(self, request):
+        from . import backups
+
+        with contextlib.suppress(RuntimeError):  # a failed run is recorded and shown
+            backups.backup(user=request.user)
+        return Response(backups.overview())
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def drill(self, request):
+        from . import backups
+
+        with contextlib.suppress(RuntimeError):
+            backups.restore_drill(user=request.user)
+        return Response(backups.overview())

@@ -696,6 +696,16 @@ NPS (% promoters 9–10 − % detractors 0–6) for the last 90 days by month an
 answers), and what detractors and promoters talk about, using keyword themes (not AI).
 API: `GET nps/prompt/`, `POST nps/answer/`, `POST nps/snooze/`, `GET nps/report/` (reports.view).
 
+### Backups and the restore drill (`reliability.backups`)
+
+Every night at 2:30 am `pg_dump` writes a compressed backup to `BACKUP_DIR` (default `backups/`,
+git-ignored; the newest 14 are kept) with a SHA-256 checksum and the row counts of key tables,
+taken from the same database snapshot as the dump. Every Sunday the restore drill restores the
+latest backup into a scratch database, checks the checksum, compares the row counts, checks the
+ledger still balances, times the restore, then drops the scratch database. A failed drill
+alerts the admins. Ops → Backups shows every run and can run either now. In production the file
+would also be copied to storage in another region.
+
 ### Office commute plans (`riders.commute`)
 
 A company's travel admin sets up a commute plan in the business portal: office, work days, shift

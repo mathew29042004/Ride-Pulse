@@ -253,3 +253,33 @@ class WeatherAlert(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_level_display()} in {self.city}"
+
+
+class BackupKind(models.TextChoices):
+    BACKUP = "BACKUP", "Backup"
+    DRILL = "DRILL", "Restore drill"
+
+
+class BackupRun(models.Model):
+    """A nightly database backup, or a restore drill that proves a backup actually restores."""
+
+    kind = models.CharField(max_length=6, choices=BackupKind.choices)
+    started_at = models.DateTimeField()
+    finished_at = models.DateTimeField(null=True, blank=True)
+    ok = models.BooleanField(default=False)
+    file_name = models.CharField(max_length=120, blank=True)
+    size_bytes = models.BigIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True)
+    seconds = models.FloatField(default=0)
+    # Backup: row counts of key tables when it was taken. Drill: the checks and their results.
+    details = models.JSONField(default=dict, blank=True)
+    error = models.TextField(blank=True)
+    started_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} {self.started_at:%Y-%m-%d %H:%M}"
