@@ -532,6 +532,10 @@ class ScheduledRide(TimeStampedModel):
     payment_profile = models.ForeignKey(
         "riders.PaymentProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
+    # Airport pickups that follow a flight (see rides.flights).
+    flight_number = models.CharField(max_length=8, blank=True)
+    flight_arrival = models.DateTimeField(null=True, blank=True)  # the timetable's arrival
+    flight_status = models.CharField(max_length=10, blank=True)
     commute = models.ForeignKey(
         "riders.CommuteEnrolment",
         null=True,

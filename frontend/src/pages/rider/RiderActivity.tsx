@@ -43,8 +43,11 @@ function Upcoming() {
           <div className="min-w-0 flex-1">
             <div className="font-semibold">{formatWhen(new Date(ride.scheduled_for))}</div>
             <div className="truncate text-xs text-muted">
-              {ride.ride_type_name} to {ride.dropoff.address || "your destination"} · about {inr(ride.quoted_fare)}
+              {t("{ride} to {place} · about {fare}", { ride: ride.ride_type_name, place: ride.dropoff.address || t("your destination"), fare: inr(ride.quoted_fare) })}
             </div>
+            {ride.flight_number && (
+              <div className="text-xs text-brand">{t("Following flight {flight}", { flight: ride.flight_number })}{ride.flight_status ? ` · ${t(ride.flight_status)}` : ""}</div>
+            )}
           </div>
           <Button size="sm" variant="outline" loading={cancel.isPending && cancel.variables === ride.id} onClick={() => cancel.mutate(ride.id)}>
             {t("Cancel")}

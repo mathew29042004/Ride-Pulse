@@ -974,5 +974,14 @@
  "Acknowledged · being looked into": "ஏற்கப்பட்டது · கவனிக்கப்படுகிறது",
  "Resolved": "தீர்க்கப்பட்டது",
  "With the appellate officer": "மேல்முறையீட்டு அலுவலரிடம்",
- "Closed": "மூடப்பட்டது"
+ "Closed": "மூடப்பட்டது",
+ "Flight number (e.g. 6E 2134)": "விமான எண் (எ.கா. 6E 2134)",
+ "Set the time to when your flight lands. We'll follow it and pick you up 30 minutes after you land, even if it's late.": "உங்கள் விமானம் தரையிறங்கும் நேரத்தை அமையுங்கள். நாங்கள் அதைக் கண்காணித்து, தாமதமானாலும், தரையிறங்கிய 30 நிமிடத்தில் உங்களை அழைத்துச் செல்வோம்.",
+ "{ride} to {place} · about {fare}": "{place}க்கு {ride} · சுமார் {fare}",
+ "your destination": "உங்கள் இலக்கு",
+ "Following flight {flight}": "விமானம் {flight} கண்காணிக்கப்படுகிறது",
+ "SCHEDULED": "அட்டவணைப்படி",
+ "DELAYED": "தாமதம்",
+ "EARLY": "முன்கூட்டியே",
+ "LANDED": "தரையிறங்கியது"
 }

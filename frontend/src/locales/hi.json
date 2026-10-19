@@ -974,5 +974,14 @@
  "Acknowledged · being looked into": "स्वीकार · जाँच जारी",
  "Resolved": "निपटाई गई",
  "With the appellate officer": "अपीलीय अधिकारी के पास",
- "Closed": "बंद"
+ "Closed": "बंद",
+ "Flight number (e.g. 6E 2134)": "फ़्लाइट नंबर (जैसे 6E 2134)",
+ "Set the time to when your flight lands. We'll follow it and pick you up 30 minutes after you land, even if it's late.": "समय वही रखें जब आपकी फ़्लाइट उतरेगी। हम उस पर नज़र रखेंगे और उतरने के 30 मिनट बाद आपको लेंगे, देर होने पर भी।",
+ "{ride} to {place} · about {fare}": "{place} तक {ride} · लगभग {fare}",
+ "your destination": "आपकी मंज़िल",
+ "Following flight {flight}": "फ़्लाइट {flight} पर नज़र",
+ "SCHEDULED": "समय पर",
+ "DELAYED": "देरी",
+ "EARLY": "जल्दी",
+ "LANDED": "उतर गई"
 }

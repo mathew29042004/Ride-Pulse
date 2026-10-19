@@ -659,6 +659,8 @@ export interface ScheduledRide {
   status_label: string;
   trip_id: number | null;
   failure_reason: string;
+  flight_number?: string;
+  flight_status?: string;
   created_at: string;
 }
 

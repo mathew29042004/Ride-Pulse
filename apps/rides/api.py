@@ -1402,6 +1402,9 @@ class ScheduledRideSerializer(serializers.ModelSerializer):
             "status_label",
             "trip_id",
             "failure_reason",
+            "flight_number",
+            "flight_arrival",
+            "flight_status",
             "created_at",
         ]
 
@@ -1420,6 +1423,9 @@ class ScheduledRideSerializer(serializers.ModelSerializer):
 
 class ScheduleRequestSerializer(TripRequestSerializer):
     scheduled_for = serializers.DateTimeField()
+    flight_number = serializers.CharField(
+        max_length=10, required=False, allow_blank=True, default=""
+    )
 
 
 class ScheduledRideViewSet(
@@ -1451,6 +1457,7 @@ class ScheduledRideViewSet(
             promo_code=data.get("promo_code", ""),
             **split_stops(data),
             scheduled_for=data["scheduled_for"],
+            flight_number=data.get("flight_number", ""),
         )
         return Response(ScheduledRideSerializer(ride).data, status=status.HTTP_201_CREATED)
 

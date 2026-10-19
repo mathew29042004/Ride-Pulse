@@ -974,5 +974,14 @@
  "Acknowledged · being looked into": "స్వీకరించారు · పరిశీలనలో ఉంది",
  "Resolved": "పరిష్కరించారు",
  "With the appellate officer": "అప్పీలేట్ అధికారి వద్ద",
- "Closed": "మూసివేయబడింది"
+ "Closed": "మూసివేయబడింది",
+ "Flight number (e.g. 6E 2134)": "ఫ్లైట్ నంబర్ (ఉదా. 6E 2134)",
+ "Set the time to when your flight lands. We'll follow it and pick you up 30 minutes after you land, even if it's late.": "మీ ఫ్లైట్ దిగే సమయం సెట్ చేయండి. మేము దాన్ని అనుసరించి, ఆలస్యమైనా, దిగిన 30 నిమిషాల తర్వాత మిమ్మల్ని తీసుకెళ్తాం.",
+ "{ride} to {place} · about {fare}": "{place}కి {ride} · సుమారు {fare}",
+ "your destination": "మీ గమ్యం",
+ "Following flight {flight}": "ఫ్లైట్ {flight}ను అనుసరిస్తోంది",
+ "SCHEDULED": "షెడ్యూల్ ప్రకారం",
+ "DELAYED": "ఆలస్యం",
+ "EARLY": "ముందుగా",
+ "LANDED": "దిగింది"
 }

@@ -1516,8 +1516,21 @@ def schedule_ride(
     stop: tuple[float, float] | None = None,
     stop_address: str = "",
     extra_stops: list[dict] | tuple = (),
+    flight_number: str = "",
 ) -> ScheduledRide:
     now = now or timezone.now()
+    flight_arrival = None
+    if flight_number:
+        from . import flights
+
+        flight_number = flights.normalise(flight_number)
+        if not flights.at_airport(*pickup):
+            raise BusinessRuleViolation(
+                "Flight tracking is for pickups at an airport.", field="flight_number"
+            )
+        # The time given is the flight's arrival; the pickup follows the actual landing.
+        flight_arrival = scheduled_for
+        scheduled_for, _ = flights.pickup_for(flight_number, flight_arrival)
     extra_stops = [
         {"lat": s["lat"], "lng": s["lng"], "address": (s.get("address") or "")[:255]}
         for s in extra_stops
@@ -1580,6 +1593,8 @@ def schedule_ride(
         promo_code=promo_code,
         scheduled_for=scheduled_for,
         quoted_fare=estimate.fare.total,
+        flight_number=flight_number,
+        flight_arrival=flight_arrival,
     )
     local = timezone.localtime(scheduled_for)
     notify(

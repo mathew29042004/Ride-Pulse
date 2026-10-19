@@ -974,5 +974,14 @@
  "Acknowledged · being looked into": "സ്വീകരിച്ചു · പരിശോധിക്കുന്നു",
  "Resolved": "പരിഹരിച്ചു",
  "With the appellate officer": "അപ്പീൽ ഓഫീസറുടെ പക്കൽ",
- "Closed": "അടച്ചു"
+ "Closed": "അടച്ചു",
+ "Flight number (e.g. 6E 2134)": "ഫ്ലൈറ്റ് നമ്പർ (ഉദാ. 6E 2134)",
+ "Set the time to when your flight lands. We'll follow it and pick you up 30 minutes after you land, even if it's late.": "ഫ്ലൈറ്റ് ഇറങ്ങുന്ന സമയം നൽകുക. ഞങ്ങൾ അത് പിന്തുടർന്ന്, വൈകിയാലും, ഇറങ്ങി 30 മിനിറ്റിന് ശേഷം നിങ്ങളെ കൂട്ടും.",
+ "{ride} to {place} · about {fare}": "{place}ലേക്ക് {ride} · ഏകദേശം {fare}",
+ "your destination": "നിങ്ങളുടെ ലക്ഷ്യസ്ഥാനം",
+ "Following flight {flight}": "ഫ്ലൈറ്റ് {flight} പിന്തുടരുന്നു",
+ "SCHEDULED": "സമയത്ത്",
+ "DELAYED": "വൈകി",
+ "EARLY": "നേരത്തെ",
+ "LANDED": "ഇറങ്ങി"
 }

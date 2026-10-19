@@ -115,6 +115,9 @@ export default function RiderBook() {
   const [showFare, setShowFare] = useState(false);
   // Book now, or schedule for later (opened straight from Home's "Later" button).
   const [scheduleAt, setScheduleAt] = useState<Date | null>(() => (params.get("later") ? earliestSlot() : null));
+  const [flight, setFlight] = useState("");
+  // Airport pickups can follow a flight (the server checks the pickup really is at an airport).
+  const atAirport = /airport/i.test(pickup.name);
   const [pickingTime, setPickingTime] = useState(() => !!params.get("later"));
   const wallet = useWallet();
   const { provider: mapProvider } = useMapProvider();
@@ -172,6 +175,7 @@ export default function RiderBook() {
         payment_method: payment,
         promo_code: promo,
         scheduled_for: scheduleAt!.toISOString(),
+        flight_number: atAirport ? flight : "",
       }),
     onSuccess: () => {
       toast.success(t("Ride scheduled for {when}. We'll find your driver a few minutes before.", { when: formatWhen(scheduleAt!) }));
@@ -437,6 +441,12 @@ export default function RiderBook() {
           }
         >
           {desktop && locationInputs}
+          {scheduleAt && atAirport && (
+            <div className="mb-3 rounded-2xl bg-surface-2 p-3">
+              <Input value={flight} onChange={(e) => setFlight(e.target.value.toUpperCase())} maxLength={8} placeholder={t("Flight number (e.g. 6E 2134)")} aria-label={t("Flight number (e.g. 6E 2134)")} className="!py-2" />
+              <p className="mt-1 text-xs text-muted">{t("Set the time to when your flight lands. We'll follow it and pick you up 30 minutes after you land, even if it's late.")}</p>
+            </div>
+          )}
           {estimate.isLoading && (
             <div className="space-y-3 py-2">
               {[0, 1, 2].map((i) => (

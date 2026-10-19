@@ -773,6 +773,14 @@ ledger still balances, times the restore, then drops the scratch database. A fai
 alerts the admins. Ops → Backups shows every run and can run either now. In production the file
 would also be copied to storage in another region.
 
+### Flight-aware airport pickups (`rides.flights`)
+
+Scheduling a pickup at an airport, the rider can add a flight number and set the time to when the
+flight lands. The pickup is booked for landing + 30 minutes (bags), and every 5 minutes the flight
+is re-checked: if it lands 5+ minutes earlier or later the pickup moves and the rider is told; a
+cancelled flight cancels the pickup at no charge. Flight status is simulated (deterministic per
+flight and day); a real flight-status feed plugs into `flights.status()`.
+
 ### Office commute plans (`riders.commute`)
 
 A company's travel admin sets up a commute plan in the business portal: office, work days, shift

@@ -974,5 +974,14 @@
  "Acknowledged · being looked into": "ಸ್ವೀಕರಿಸಲಾಗಿದೆ · ಪರಿಶೀಲನೆಯಲ್ಲಿದೆ",
  "Resolved": "ಪರಿಹರಿಸಲಾಗಿದೆ",
  "With the appellate officer": "ಮೇಲ್ಮನವಿ ಅಧಿಕಾರಿಯ ಬಳಿ",
- "Closed": "ಮುಚ್ಚಲಾಗಿದೆ"
+ "Closed": "ಮುಚ್ಚಲಾಗಿದೆ",
+ "Flight number (e.g. 6E 2134)": "ವಿಮಾನ ಸಂಖ್ಯೆ (ಉದಾ. 6E 2134)",
+ "Set the time to when your flight lands. We'll follow it and pick you up 30 minutes after you land, even if it's late.": "ನಿಮ್ಮ ವಿಮಾನ ಇಳಿಯುವ ಸಮಯ ಹೊಂದಿಸಿ. ನಾವು ಅದನ್ನು ಗಮನಿಸಿ, ತಡವಾದರೂ, ಇಳಿದ 30 ನಿಮಿಷದ ನಂತರ ನಿಮ್ಮನ್ನು ಕರೆದೊಯ್ಯುತ್ತೇವೆ.",
+ "{ride} to {place} · about {fare}": "{place}ಗೆ {ride} · ಸುಮಾರು {fare}",
+ "your destination": "ನಿಮ್ಮ ಗಮ್ಯ",
+ "Following flight {flight}": "ವಿಮಾನ {flight} ಗಮನಿಸಲಾಗುತ್ತಿದೆ",
+ "SCHEDULED": "ನಿಗದಿಯಂತೆ",
+ "DELAYED": "ತಡ",
+ "EARLY": "ಬೇಗ",
+ "LANDED": "ಇಳಿದಿದೆ"
 }
