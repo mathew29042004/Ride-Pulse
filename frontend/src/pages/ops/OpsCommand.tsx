@@ -372,8 +372,17 @@ function PeoplePanel({ onDone }: { onDone: () => void }) {
   });
   const act = useMutation({
     mutationFn: (v: { kind: string; id: number; action: string }) => api.post("ops/command/act/", { ...v, reason }),
-    onSuccess: () => {
-      toast.success("Done. It's in the audit trail.");
+    onSuccess: (_, v) => {
+      const undo: Record<string, string> = { suspend: "reinstate", block: "unblock", reinstate: "suspend", unblock: "block" };
+      const back = undo[v.action];
+      const why = reason;
+      toast.success("Done. It's in the audit trail.", back ? {
+        duration: 10 * 60_000,
+        action: {
+          label: "Undo",
+          onClick: () => api.post("ops/command/act/", { ...v, action: back, reason: `Undo: ${why}` }).then(() => { toast.success("Undone."); search.refetch(); onDone(); }),
+        },
+      } : undefined);
       setReason("");
       search.refetch();
       onDone();

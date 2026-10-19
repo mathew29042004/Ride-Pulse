@@ -132,3 +132,23 @@ def test_hr_moves_people_but_not_into_top_roles(api):
         powers.transfer(agent, actor=hr, role="ADMIN", reason="Nope, not allowed")
     with pytest.raises(BusinessRuleViolation, match="loop"):
         powers.transfer(boss, actor=hr, manager=agent.staff_profile, reason="Would be a loop")
+
+
+def test_a_ban_can_be_undone_within_ten_minutes(api, make_driver):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    safety = make_staff(Role.SAFETY_OFFICER)
+    driver = make_driver(online=False)
+    powers.ban(driver.user, actor=safety, reason="Wrong person, reported by mistake")
+    r = api(safety).post("/api/v1/ops/powers/undo-ban/", {"user": driver.user.pk}, format="json")
+    assert r.json()["undone"] == 2
+    driver.refresh_from_db()
+    assert driver.onboarding_status != "SUSPENDED" and not powers.banned(
+        licence=driver.license_number
+    )
+    other = make_driver(online=False)
+    powers.ban(other.user, actor=safety, reason="Repeated harassment complaints")
+    with pytest.raises(BusinessRuleViolation, match="10 minutes"):
+        powers.undo_ban(other.user, actor=safety, now=timezone.now() + timedelta(minutes=11))

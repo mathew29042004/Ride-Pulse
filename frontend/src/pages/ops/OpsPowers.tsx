@@ -183,7 +183,11 @@ function Bans({ rows, onDone }: { rows: NonNullable<Data["bans"]>; onDone: () =>
   const ban = useMutation({
     mutationFn: () => api.post("ops/powers/ban/", { user: who?.id, reason }),
     onSuccess: () => {
-      toast.success("Banned. They can't sign up again with that phone or licence.");
+      const id = who?.id;
+      toast.success("Banned. They can't sign up again with that phone or licence.", {
+        duration: 10 * 60_000,
+        action: { label: "Undo", onClick: () => api.post("ops/powers/undo-ban/", { user: id }).then(() => { toast.success("Ban undone."); onDone(); }, fail) },
+      });
       setWho(null);
       setReason("");
       onDone();

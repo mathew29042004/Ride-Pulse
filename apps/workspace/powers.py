@@ -460,3 +460,28 @@ def seed_demo(*, log=print) -> dict:
         made += 1
     log(f"  refunds waiting for finance: {made}")
     return {"refund_approvals": made}
+
+
+UNDO_WINDOW = timedelta(minutes=10)
+
+
+@transaction.atomic
+def undo_ban(user, *, actor, now=None) -> int:
+    """Take back a ban made in the last 10 minutes: the bans are lifted and the driver
+    reinstated or the rider unblocked, as if it never happened (it stays in the audit trail)."""
+    from apps.drivers import services as drivers
+    from apps.riders import services as riders
+
+    now = now or timezone.now()
+    recent = Ban.objects.filter(user=user, lifted_at__isnull=True, banned_at__gte=now - UNDO_WINDOW)
+    if not recent.exists():
+        raise BusinessRuleViolation("A ban can only be undone in the first 10 minutes.")
+    n = recent.update(lifted_at=now, lift_reason=f"Undone by {actor.get_full_name()}")
+    driver = getattr(user, "driver_profile", None)
+    rider = getattr(user, "rider_profile", None)
+    if driver and driver.onboarding_status == "SUSPENDED":
+        drivers.reinstate_driver(driver, actor=actor)
+    if rider and rider.is_blocked:
+        riders.set_blocked(rider, False, actor=actor)
+    _audit(user, "Ban undone within 10 minutes", actor)
+    return n

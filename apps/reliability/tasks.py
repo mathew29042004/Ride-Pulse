@@ -44,3 +44,10 @@ def auto_briefing() -> dict:
     from .briefing import auto_briefing
 
     return auto_briefing()
+
+
+@shared_task(name="reliability.prune")
+def prune() -> dict:
+    from .retention import prune
+
+    return prune()

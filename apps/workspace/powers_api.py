@@ -58,6 +58,7 @@ class PowersViewSet(BaseViewSet):
         "decide_refund": Cap.REFUND_APPROVE,
         "ban": Cap.SAFETY_BAN,
         "lift_ban": Cap.SAFETY_BAN,
+        "undo_ban": Cap.SAFETY_BAN,
         "hold": Cap.LEGAL_HOLD,
         "release_hold": Cap.LEGAL_HOLD,
         "drivers_for": Cap.DISPATCH_ASSIGN,
@@ -146,6 +147,12 @@ class PowersViewSet(BaseViewSet):
             reason=data.validated_data["reason"],
         )
         return Response({"lifted": n})
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="undo-ban")
+    def undo_ban(self, request):
+        n = powers.undo_ban(self._user(int(request.data.get("user", 0))), actor=request.user)
+        return Response({"undone": n})
 
     @extend_schema(request=LegalHoldSerializer, responses={201: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["post"])
