@@ -1021,5 +1021,10 @@
  "Drivers are asked to come and find you.": "ನಿಮ್ಮನ್ನು ಹುಡುಕಿ ಬರಲು ಚಾಲಕರಿಗೆ ಹೇಳಲಾಗುತ್ತದೆ.",
  "Senior citizen mode": "ಹಿರಿಯ ನಾಗರಿಕರ ಮೋಡ್",
  "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "ದೊಡ್ಡ ಅಕ್ಷರ, ಸರಳ ಬುಕಿಂಗ್ ಪರದೆ, ಹತ್ತಲು ಸಹಾಯ, ಉನ್ನತ ರೇಟಿಂಗ್ ಚಾಲಕರಿಗೆ ಆದ್ಯತೆ, ಮತ್ತು ನಿಮ್ಮ ವಿಶ್ವಾಸಾರ್ಹ ಸಂಪರ್ಕಗಳು ಪ್ರತಿ ಸವಾರಿಯನ್ನು ಹಿಂಬಾಲಿಸುತ್ತಾರೆ.",
- "Senior citizen: help boarding, drive gently": "ಹಿರಿಯ ನಾಗರಿಕ: ಹತ್ತಲು ಸಹಾಯ ಮಾಡಿ, ನಿಧಾನವಾಗಿ ಚಲಾಯಿಸಿ"
+ "Senior citizen: help boarding, drive gently": "ಹಿರಿಯ ನಾಗರಿಕ: ಹತ್ತಲು ಸಹಾಯ ಮಾಡಿ, ನಿಧಾನವಾಗಿ ಚಲಾಯಿಸಿ",
+ "Ride + metro + ride: {total} · about {m} min": "ಸವಾರಿ + ಮೆಟ್ರೋ + ಸವಾರಿ: {total} · ಸುಮಾರು {m} ನಿಮಿಷ",
+ "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} ಮೆಟ್ರೋದಲ್ಲಿ. ಪೂರ್ತಿ ಸವಾರಿ: {fare}, ಸುಮಾರು {m} ನಿಮಿಷ.",
+ "Save {amount}: book the ride to {station}": "{amount} ಉಳಿಸಿ: {station}ಗೆ ಸವಾರಿ ಬುಕ್ ಮಾಡಿ",
+ "I'm at the station: send my ride": "ನಾನು ನಿಲ್ದಾಣದಲ್ಲಿದ್ದೇನೆ: ನನ್ನ ಸವಾರಿ ಕಳುಹಿಸಿ",
+ "Finding your driver": "ನಿಮ್ಮ ಚಾಲಕರನ್ನು ಹುಡುಕುತ್ತಿದೆ"
 }

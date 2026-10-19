@@ -1021,5 +1021,10 @@
  "Drivers are asked to come and find you.": "നിങ്ങളെ കണ്ടെത്തി വരാൻ ഡ്രൈവർമാരോട് ആവശ്യപ്പെടും.",
  "Senior citizen mode": "മുതിർന്ന പൗരന്മാർക്കുള്ള മോഡ്",
  "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "വലിയ അക്ഷരങ്ങളും ലളിതമായ ബുക്കിംഗും, കയറാൻ സഹായം, ഉയർന്ന റേറ്റിംഗുള്ള ഡ്രൈവർമാർ ആദ്യം, വിശ്വസ്ത കോൺടാക്റ്റുകൾ എല്ലാ യാത്രയും പിന്തുടരും.",
- "Senior citizen: help boarding, drive gently": "മുതിർന്ന പൗരൻ: കയറാൻ സഹായിക്കുക, പതുക്കെ ഓടിക്കുക"
+ "Senior citizen: help boarding, drive gently": "മുതിർന്ന പൗരൻ: കയറാൻ സഹായിക്കുക, പതുക്കെ ഓടിക്കുക",
+ "Ride + metro + ride: {total} · about {m} min": "യാത്ര + മെട്രോ + യാത്ര: {total} · ഏകദേശം {m} മിനിറ്റ്",
+ "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} മെട്രോയിൽ. മുഴുവൻ ദൂരം യാത്ര: {fare}, ഏകദേശം {m} മിനിറ്റ്.",
+ "Save {amount}: book the ride to {station}": "{amount} ലാഭിക്കൂ: {station}ലേക്ക് യാത്ര ബുക്ക് ചെയ്യുക",
+ "I'm at the station: send my ride": "ഞാൻ സ്റ്റേഷനിലുണ്ട്: എന്റെ യാത്ര അയയ്ക്കൂ",
+ "Finding your driver": "ഡ്രൈവറെ തിരയുന്നു"
 }

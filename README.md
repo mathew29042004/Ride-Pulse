@@ -818,6 +818,15 @@ cash goes into the counter's account on the ledger and the trip is paid from it,
 paid as usual. The passenger gets a printed slip with the Ride PIN (and an SMS if they gave a
 number). Ops → Booking counter shows today's bookings and the cash per staff member for the drawer.
 
+### Metro first and last mile (`rides.metro`)
+
+In Chennai, Bengaluru and Kochi, for trips of 8 km or more, the booking screen offers ride + metro
++ ride when it's cheaper than riding all the way: stations within 4 km of the pickup and the drop,
+on one line or joined at an interchange, with both rides and the metro ticket priced and the time
+estimated. Booking it requests the ride to the station now and schedules the ride from the exit
+station for when the metro should arrive; "I'm at the station" sends it at once. Metro times and
+fares are estimates (34 km/h, waits and changes, each city's fare slabs).
+
 ### Flight-aware airport pickups (`rides.flights`)
 
 Scheduling a pickup at an airport, the rider can add a flight number and set the time to when the

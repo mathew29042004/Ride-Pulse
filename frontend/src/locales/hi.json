@@ -1021,5 +1021,10 @@
  "Drivers are asked to come and find you.": "ड्राइवरों से आपको ढूँढकर आने को कहा जाता है।",
  "Senior citizen mode": "वरिष्ठ नागरिक मोड",
  "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "बड़े अक्षर और आसान बुकिंग, बैठने में मदद, टॉप-रेटेड ड्राइवर पहले, और आपके भरोसेमंद संपर्क हर राइड देखते हैं।",
- "Senior citizen: help boarding, drive gently": "वरिष्ठ नागरिक: बैठने में मदद करें, धीरे चलाएँ"
+ "Senior citizen: help boarding, drive gently": "वरिष्ठ नागरिक: बैठने में मदद करें, धीरे चलाएँ",
+ "Ride + metro + ride: {total} · about {m} min": "राइड + मेट्रो + राइड: {total} · लगभग {m} मिनट",
+ "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} मेट्रो से। पूरे रास्ते राइड: {fare}, लगभग {m} मिनट।",
+ "Save {amount}: book the ride to {station}": "{amount} बचाएँ: {station} तक राइड बुक करें",
+ "I'm at the station: send my ride": "मैं स्टेशन पर हूँ: मेरी राइड भेजें",
+ "Finding your driver": "आपका ड्राइवर ढूँढ रहे हैं"
 }

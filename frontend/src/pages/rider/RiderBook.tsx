@@ -43,6 +43,16 @@ import type { Estimate, EstimateOption, PaymentMethod, Rider, SavedPlace, Trip }
 
 import { useRiderLocation } from "./RiderHome";
 
+interface MetroPlan {
+  entry: { name: string };
+  exit: { name: string };
+  total: string;
+  minutes: number;
+  direct_fare: string;
+  direct_minutes: number;
+  saves: string;
+}
+
 interface Spot {
   lat: number;
   lng: number;
@@ -114,6 +124,24 @@ export default function RiderBook() {
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
   // Ride preferences: pre-selected from the rider's saved defaults, changeable per ride.
   const me = useQuery({ queryKey: ["rider", "me"], queryFn: () => api.get<Rider>("rider/me/") });
+  // Metro first & last mile: offered when it's cheaper than riding all the way.
+  const metroPlan = useQuery({
+    queryKey: ["metro-plan", pickup.lat, pickup.lng, dropoff?.lat, dropoff?.lng, selected],
+    queryFn: () => api.get<{ plan: MetroPlan | null }>(`scheduled-rides/metro-plan/?pickup=${pickup.lat},${pickup.lng}&dropoff=${dropoff!.lat},${dropoff!.lng}&ride_type=${selected}`),
+    enabled: !!dropoff && !!selected && service === "RIDE",
+    staleTime: 60_000,
+  });
+  const metroBook = useMutation({
+    mutationFn: () =>
+      api.post<{ trip_id: number }>("scheduled-rides/metro-book/", {
+        ride_type: selected,
+        pickup: { lat: pickup.lat, lng: pickup.lng },
+        dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, address: dropoff!.name },
+        payment_method: payment,
+      }),
+    onSuccess: (r) => navigate(`/ride/trips/${r.trip_id}`),
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't book.")),
+  });
   // Senior citizen mode: a simpler screen (no fare offers, boosts or extra stops).
   const senior = !!(me.data?.accessibility as string[] | undefined)?.includes("SENIOR");
   const [prefs, setPrefs] = useState<string[] | null>(null);
@@ -563,6 +591,20 @@ export default function RiderBook() {
 
               {option && option.availability !== "CLOSED" && !scheduleAt && !senior && (
                 <PriceOptions option={option} bidding={bidding} bid={bid} sureRide={sureRide} onBidding={(on) => { setBidding(on); setBid(Math.round(Number(option.fare.total))); }} onBid={setBid} onSureRide={setSureRide} />
+              )}
+
+              {metroPlan.data?.plan && !scheduleAt && !senior && (
+                <div className="mt-3 rounded-2xl border border-brand/40 bg-brand/5 p-3 text-sm">
+                  <div className="font-semibold">
+                    {t("Ride + metro + ride: {total} · about {m} min", { total: inr(metroPlan.data.plan.total), m: metroPlan.data.plan.minutes })}
+                  </div>
+                  <div className="text-xs text-muted">
+                    {t("{a} → {b} by metro. Riding all the way: {fare}, about {m} min.", { a: metroPlan.data.plan.entry.name, b: metroPlan.data.plan.exit.name, fare: inr(metroPlan.data.plan.direct_fare), m: metroPlan.data.plan.direct_minutes })}
+                  </div>
+                  <Button className="mt-2" size="sm" loading={metroBook.isPending} onClick={() => metroBook.mutate()}>
+                    {t("Save {amount}: book the ride to {station}", { amount: inr(metroPlan.data.plan.saves), station: metroPlan.data.plan.entry.name })}
+                  </Button>
+                </div>
               )}
 
               {service === "PARCEL" && <ParcelForm value={parcel} onChange={setParcel} />}

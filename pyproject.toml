@@ -29,6 +29,7 @@ ignore = [
 "apps/trust/handbook.py" = ["E501"]  # handbook procedures are prose
 "apps/reliability/incident_demo.py" = ["E501"]  # demo incident text is prose
 "apps/trust/grievance_demo.py" = ["E501"]  # demo grievances are prose
+"apps/rides/metro.py" = ["E501"]  # station tables read better one line per line
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]

@@ -1405,6 +1405,7 @@ class ScheduledRideSerializer(serializers.ModelSerializer):
             "flight_number",
             "flight_arrival",
             "flight_status",
+            "metro_trip",
             "created_at",
         ]
 
@@ -1438,7 +1439,15 @@ class ScheduledRideViewSet(
     filterset_fields = ["status"]
     ordering_fields = ["scheduled_for", "created_at"]
     rider_lookup = "rider"
-    rider_actions = ("list", "retrieve", "create", "cancel")
+    rider_actions = (
+        "list",
+        "retrieve",
+        "create",
+        "cancel",
+        "metro_plan",
+        "metro_book",
+        "at_station",
+    )
     capabilities = {"list": Cap.TRIPS_VIEW, "retrieve": Cap.TRIPS_VIEW}
 
     @extend_schema(request=ScheduleRequestSerializer, responses={201: ScheduledRideSerializer})
@@ -1460,6 +1469,59 @@ class ScheduledRideViewSet(
             flight_number=data.get("flight_number", ""),
         )
         return Response(ScheduledRideSerializer(ride).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        parameters=[OpenApiParameter(n, str) for n in ("pickup", "dropoff", "ride_type")],
+        responses={200: OpenApiTypes.OBJECT},
+        operation_id="metro_plan",
+    )
+    @action(detail=False, methods=["get"], url_path="metro-plan")
+    def metro_plan(self, request):
+        """Ride + metro + ride for this trip, if it's cheaper than riding all the way."""
+        from apps.geo.services import require_city
+        from apps.pricing.models import RideType
+
+        from . import metro
+
+        q = request.query_params
+        pickup = tuple(float(x) for x in q["pickup"].split(","))
+        dropoff = tuple(float(x) for x in q["dropoff"].split(","))
+        ride_type = get_object_or_404(RideType, code=q.get("ride_type", "MINI"))
+        return Response(
+            {
+                "plan": metro.plan(
+                    city=require_city(*pickup), pickup=pickup, dropoff=dropoff, ride_type=ride_type
+                )
+            }
+        )
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="metro-book")
+    def metro_book(self, request):
+        from apps.pricing.models import RideType
+
+        from . import metro
+
+        d = request.data
+        first, last, plan = metro.book(
+            rider=request.user.rider_profile,
+            ride_type=get_object_or_404(RideType, code=d.get("ride_type", "MINI")),
+            pickup=(float(d["pickup"]["lat"]), float(d["pickup"]["lng"])),
+            dropoff=(float(d["dropoff"]["lat"]), float(d["dropoff"]["lng"])),
+            dropoff_address=str(d["dropoff"].get("address", "")),
+            payment_method=str(d.get("payment_method", "UPI")),
+        )
+        return Response(
+            {"trip_id": first.pk, "last_mile": ScheduledRideSerializer(last).data, "plan": plan},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(request=None, responses=ScheduledRideSerializer)
+    @action(detail=True, methods=["post"], url_path="at-station")
+    def at_station(self, request, pk=None):
+        from . import metro
+
+        return Response(ScheduledRideSerializer(metro.at_station(self.get_object())).data)
 
     @extend_schema(request=None, responses=ScheduledRideSerializer)
     @action(detail=True, methods=["post"])

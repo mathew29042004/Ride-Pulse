@@ -1021,5 +1021,10 @@
  "Drivers are asked to come and find you.": "మిమ్మల్ని వెతికి రమ్మని డ్రైవర్లకు చెబుతాం.",
  "Senior citizen mode": "సీనియర్ సిటిజన్ మోడ్",
  "Bigger text and a simpler booking screen, help boarding, top-rated drivers first, and your trusted contacts follow every ride.": "పెద్ద అక్షరాలు, సులభమైన బుకింగ్ తెర, ఎక్కడానికి సహాయం, టాప్-రేటెడ్ డ్రైవర్లకు ప్రాధాన్యత, మీ విశ్వసనీయ కాంటాక్ట్‌లు ప్రతి రైడ్‌ను అనుసరిస్తారు.",
- "Senior citizen: help boarding, drive gently": "సీనియర్ సిటిజన్: ఎక్కడానికి సహాయం చేయండి, నెమ్మదిగా నడపండి"
+ "Senior citizen: help boarding, drive gently": "సీనియర్ సిటిజన్: ఎక్కడానికి సహాయం చేయండి, నెమ్మదిగా నడపండి",
+ "Ride + metro + ride: {total} · about {m} min": "రైడ్ + మెట్రో + రైడ్: {total} · సుమారు {m} నిమి",
+ "{a} → {b} by metro. Riding all the way: {fare}, about {m} min.": "{a} → {b} మెట్రోలో. మొత్తం రైడ్: {fare}, సుమారు {m} నిమి.",
+ "Save {amount}: book the ride to {station}": "{amount} ఆదా: {station}కి రైడ్ బుక్ చేయండి",
+ "I'm at the station: send my ride": "నేను స్టేషన్‌లో ఉన్నాను: నా రైడ్ పంపండి",
+ "Finding your driver": "మీ డ్రైవర్‌ను వెతుకుతోంది"
 }

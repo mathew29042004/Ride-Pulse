@@ -45,6 +45,19 @@ function Upcoming() {
             <div className="truncate text-xs text-muted">
               {t("{ride} to {place} · about {fare}", { ride: ride.ride_type_name, place: ride.dropoff.address || t("your destination"), fare: inr(ride.quoted_fare) })}
             </div>
+            {ride.metro_trip && (
+              <button className="mt-1 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-on-brand" onClick={() =>
+                  api.post(`scheduled-rides/${ride.id}/at-station/`).then(
+                    () => {
+                      toast.success(t("Finding your driver"));
+                      void qc.invalidateQueries({ queryKey: ["scheduled-rides"] });
+                    },
+                    (e) => toast.error(e instanceof ApiError ? e.message : t("Something went wrong.")),
+                  )
+                }>
+                {t("I'm at the station: send my ride")}
+              </button>
+            )}
             {ride.flight_number && (
               <div className="text-xs text-brand">{t("Following flight {flight}", { flight: ride.flight_number })}{ride.flight_status ? ` · ${t(ride.flight_status)}` : ""}</div>
             )}

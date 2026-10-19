@@ -8424,6 +8424,10 @@
       "readOnly": true,
       "type": "integer"
      },
+     "metro_trip": {
+      "nullable": true,
+      "type": "integer"
+     },
      "payment_method": {
       "maxLength": 10,
       "type": "string"
@@ -26096,10 +26100,155 @@
     ]
    }
   },
+  "/api/v1/scheduled-rides/metro-book/": {
+   "post": {
+    "description": "Rides booked for later. A few minutes before pickup each becomes a normal trip.",
+    "operationId": "scheduled_rides_metro_book_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "scheduled-rides"
+    ]
+   }
+  },
+  "/api/v1/scheduled-rides/metro-plan/": {
+   "get": {
+    "description": "Ride + metro + ride for this trip, if it's cheaper than riding all the way.",
+    "operationId": "metro_plan",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "dropoff",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "pickup",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "ride_type",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "scheduled-rides"
+    ]
+   }
+  },
   "/api/v1/scheduled-rides/{id}/": {
    "get": {
     "description": "Rides booked for later. A few minutes before pickup each becomes a normal trip.",
     "operationId": "scheduled_rides_retrieve",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this scheduled ride.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScheduledRide"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "scheduled-rides"
+    ]
+   }
+  },
+  "/api/v1/scheduled-rides/{id}/at-station/": {
+   "post": {
+    "description": "Rides booked for later. A few minutes before pickup each becomes a normal trip.",
+    "operationId": "scheduled_rides_at_station_create",
     "parameters": [
      {
       "description": "A unique integer value identifying this scheduled ride.",
