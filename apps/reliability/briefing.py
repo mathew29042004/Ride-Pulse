@@ -378,3 +378,79 @@ def _city_id(slug: str):
     from apps.geo.models import City
 
     return City.objects.filter(slug=slug).values_list("pk", flat=True).first()
+
+
+def answer(question: str, *, user, now=None) -> ChiefUpdate:
+    """The chief asks in plain words ("how's Kochi today?", "any SOS?", "drivers in Chennai")
+    and the chief of staff's desk answers from live numbers, as an update in the inbox."""
+    from apps.accounts.models import Role, User
+    from apps.geo.models import City
+
+    from . import command
+
+    now = now or timezone.now()
+    q = question.lower().strip()
+    if len(q) < 3:
+        raise BusinessRuleViolation("Ask a question.", field="question")
+    o = command.overview(now=now)
+    city = next(
+        (c for c in City.objects.filter(is_active=True) if c.name.lower() in q),
+        None,
+    )
+    lines = []
+    if city:
+        c = next(x for x in o["cities"] if x["id"] == city.pk)
+        done = (
+            f"{c['completion_pct']}% completed"
+            if c["completion_pct"] is not None
+            else "no trips yet"
+        )
+        lines.append(
+            f"{city.name} today: {c['trips_today']} trips ({done}), {c['drivers_live']} drivers "
+            f"live, {c['searching']} riders waiting."
+        )
+        if c["flags"]:
+            lines.append("In force there: " + ", ".join(c["flags"]) + ".")
+        alerts = [a for a in o["alerts"] if a["city"] == city.name]
+        if alerts:
+            lines.append("Open alerts: " + "; ".join(a["title"] for a in alerts[:3]) + ".")
+    live = o["live"]
+    if any(w in q for w in ("sos", "safety", "emergency")):
+        lines.append(f"{live['open_sos']} SOS open right now.")
+    if any(w in q for w in ("alert", "problem", "issue", "wrong")):
+        lines.append(
+            f"{len(o['alerts'])} open alerts"
+            + (": " + "; ".join(a["title"] for a in o["alerts"][:3]) if o["alerts"] else "")
+            + "."
+        )
+    if any(w in q for w in ("incident", "outage", "down")):
+        lines.append(
+            f"{len(o['open_incidents'])} open incidents"
+            + (
+                ": " + "; ".join(i["title"] for i in o["open_incidents"][:3])
+                if o["open_incidents"]
+                else ""
+            )
+            + "."
+        )
+    if any(w in q for w in ("support", "ticket")):
+        lines.append(f"{live['open_tickets']} support tickets open.")
+    if any(w in q for w in ("best", "top", "leader", "star")):
+        b = o["leaders"]
+        lines += [f"Best {k} this week: {v['name']} ({v['detail']})." for k, v in b.items() if v]
+    if not lines or any(w in q for w in ("overall", "everything", "status", "how are", "how is")):
+        lines.insert(
+            0,
+            f"Right now: {live['drivers_online'] + live['drivers_on_trip']} drivers live, "
+            f"{live['active_trips']} trips running, {live['searching']} riders waiting.",
+        )
+    sender = User.objects.filter(role=Role.CHIEF_OF_STAFF, is_active=True).first() or user
+    update = ChiefUpdate.objects.create(
+        kind=UpdateKind.UPDATE,
+        title=question.strip()[:160],
+        body="\n".join(lines),
+        sent_by=sender,
+        sent_at=now,
+        read_at=now,
+    )
+    return update

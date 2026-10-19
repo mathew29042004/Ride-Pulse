@@ -456,7 +456,13 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])
     def goals(self, request):
-        """Today's goals: trips completed and the bonus tiers reached."""
+        """Today's goals: trips completed, the bonus tiers reached and the earnings goal."""
+        return Response(goals.progress(self.driver))
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="earnings-goal")
+    def earnings_goal(self, request):
+        goals.set_earnings_goal(self.driver, request.data.get("amount", 0))
         return Response(goals.progress(self.driver))
 
     @extend_schema(request=HomeSerializer, responses=DriverStatusSerializer)

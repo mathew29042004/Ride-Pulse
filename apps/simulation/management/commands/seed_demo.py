@@ -52,6 +52,9 @@ class Command(BaseCommand):
         from apps.simulation import hiring
 
         stats.update(hiring.hire(log=self.stdout.write))
+        from apps.workspace import culture
+
+        stats.update(culture.seed_birthdays(log=self.stdout.write))
         from apps.workspace import demo as workspace_demo
 
         stats.update(workspace_demo.seed(seed=options["seed"], log=self.stdout.write))

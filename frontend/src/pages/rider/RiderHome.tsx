@@ -152,6 +152,21 @@ export default function RiderHome() {
           </span>
         </button>
 
+        {(places.data?.length ?? 0) > 0 && (
+          <div className="scrollbar-none mt-2 flex gap-2 overflow-x-auto" aria-label={t("Saved places")}>
+            {[...(places.data ?? [])]
+              .sort((a, b) => ["HOME", "WORK", "OTHER"].indexOf(a.label) - ["HOME", "WORK", "OTHER"].indexOf(b.label))
+              .map((p) => {
+                const Icon = p.label === "HOME" ? House : p.label === "WORK" ? Briefcase : MapPin;
+                return (
+                  <button key={p.id} onClick={() => goTo(p.lat, p.lng, p.name)} className="flex shrink-0 items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-fg">
+                    <Icon className="size-3.5" /> {p.label === "OTHER" ? p.name : t(p.label === "HOME" ? "Home" : "Work")}
+                  </button>
+                );
+              })}
+          </div>
+        )}
+
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             { to: "/ride/book?service=PARCEL", icon: Package, label: "Parcel", hint: t("Send by bike") },

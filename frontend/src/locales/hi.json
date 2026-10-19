@@ -1037,5 +1037,11 @@
  "Price after subsidies": "सब्सिडी के बाद कीमत",
  "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% पर {yr} साल के लोन से: लगभग {emi} प्रति हफ़्ता।",
  "Apply for a vehicle loan": "वाहन लोन के लिए आवेदन करें",
- "Switching to electric? See the subsidies →": "इलेक्ट्रिक पर जा रहे हैं? सब्सिडी देखें →"
+ "Switching to electric? See the subsidies →": "इलेक्ट्रिक पर जा रहे हैं? सब्सिडी देखें →",
+ "Today's earnings goal": "आज की कमाई का लक्ष्य",
+ "Goal reached! 🎉": "लक्ष्य पूरा! 🎉",
+ "{earned} of {goal}": "{goal} में से {earned}",
+ "Set a daily earnings goal to track your progress.": "अपनी प्रगति देखने के लिए रोज़ की कमाई का लक्ष्य रखें।",
+ "Set a goal": "लक्ष्य रखें",
+ "Couldn't save the goal.": "लक्ष्य सेव नहीं हो सका।"
 }

@@ -188,6 +188,7 @@ class StaffProfile(models.Model):
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reports"
     )
     joined_on = models.DateField()
+    date_of_birth = models.DateField(null=True, blank=True)
     # Where they work (an office or support desk). If set, clock-ins must be made within the
     # radius; field staff with no fixed site leave it empty.
     work_lat = models.FloatField(null=True, blank=True)

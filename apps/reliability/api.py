@@ -400,6 +400,7 @@ class IssueOrderSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=240)
     hours = serializers.IntegerField(min_value=1, max_value=72, default=2)
     confirm = serializers.BooleanField(default=False)
+    starts_at = serializers.DateTimeField(required=False, allow_null=True, default=None)
 
 
 class ActSerializer(serializers.Serializer):
@@ -453,6 +454,7 @@ class CommandViewSet(BaseViewSet):
             vehicle_code=v["vehicle_code"],
             hours=v["hours"],
             confirm=v["confirm"],
+            starts_at=v["starts_at"],
         )
         return Response(command.row(order), status=status.HTTP_201_CREATED)
 
@@ -607,6 +609,28 @@ class ChiefInboxViewSet(BaseViewSet):
         from . import briefing
 
         return Response(briefing.chief_inbox())
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def question(self, request):
+        """Ask the chief of staff's desk a question; the answer comes from live numbers."""
+        from . import briefing
+
+        u = briefing.answer(str(request.data.get("question", "")), user=request.user)
+        return Response(briefing.update_row(u))
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def thank(self, request):
+        """Thank this week's best city, support agent or driver."""
+        from . import command
+
+        line = command.thank(
+            user=request.user,
+            kind=str(request.data.get("kind", "")),
+            note=str(request.data.get("note", "")),
+        )
+        return Response({"posted": line})
 
     @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["post"])

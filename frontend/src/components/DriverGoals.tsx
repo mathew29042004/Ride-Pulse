@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
 import { Home, Target } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { api, ApiError } from "@/lib/api";
@@ -16,6 +17,8 @@ export interface GoalProgress {
   completed_today: number;
   tiers: { trips: number; bonus: string; reached: boolean }[];
   earned_today: string;
+  earnings_today: string;
+  earnings_goal: number;
 }
 
 export function useGoals() {
@@ -35,11 +38,59 @@ export function GoalChip() {
   );
 }
 
+/** Today's earnings against the driver's own goal, as a ring; tap to change the goal. */
+export function EarningsGoal() {
+  const qc = useQueryClient();
+  const goals = useGoals().data;
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState("");
+  const save = useMutation({
+    mutationFn: () => api.post<GoalProgress>("driver/earnings-goal/", { amount: Number(amount) || 0 }),
+    onSuccess: (g) => {
+      qc.setQueryData(["driver", "goals"], g);
+      setEditing(false);
+    },
+    onError: (err) => toast.error(err instanceof ApiError ? err.message : t("Couldn't save the goal.")),
+  });
+  if (!goals) return null;
+  const earned = Number(goals.earnings_today);
+  const goal = goals.earnings_goal;
+  const pct = goal ? Math.min(1, earned / goal) : 0;
+  const r = 30;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="mt-4 flex items-center gap-4 rounded-2xl border border-line p-4">
+      <svg viewBox="0 0 72 72" className="size-20 shrink-0 -rotate-90" aria-hidden>
+        <circle cx="36" cy="36" r={r} fill="none" stroke="var(--color-surface-3)" strokeWidth="8" />
+        <circle cx="36" cy="36" r={r} fill="none" stroke="var(--color-brand)" strokeWidth="8" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct)} className="transition-all duration-700" />
+      </svg>
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold">{t("Today's earnings goal")}</div>
+        {goal ? (
+          <div className="text-sm text-muted">{pct >= 1 ? t("Goal reached! 🎉") : t("{earned} of {goal}", { earned: inr(earned, { whole: true }), goal: inr(goal, { whole: true }) })}</div>
+        ) : (
+          <div className="text-sm text-muted">{t("Set a daily earnings goal to track your progress.")}</div>
+        )}
+        {editing ? (
+          <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+            <input type="number" min={0} max={20000} step={100} value={amount} onChange={(e) => setAmount(e.target.value)} className="input !w-28 !py-1.5" aria-label={t("Today's earnings goal")} autoFocus />
+            <button type="submit" className="rounded-full bg-brand px-3 text-xs font-semibold text-on-brand">{t("Save")}</button>
+          </form>
+        ) : (
+          <button className="mt-1 text-xs font-semibold text-brand" onClick={() => { setAmount(String(goal || 1500)); setEditing(true); }}>{t("Set a goal")}</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** The Earnings page card: each tier with a progress bar. */
 export function GoalsCard() {
   const goals = useGoals().data;
   if (!goals) return null;
   return (
+    <>
+    <EarningsGoal />
     <div className="mt-4 rounded-2xl border border-line p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 font-semibold">
@@ -67,6 +118,7 @@ export function GoalsCard() {
       </div>
       <p className="mt-3 text-xs text-muted">{t("Bonuses are paid straight into your wallet when you reach each goal. They reset at midnight.")}</p>
     </div>
+    </>
   );
 }
 

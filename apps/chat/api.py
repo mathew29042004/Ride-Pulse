@@ -19,6 +19,24 @@ from .models import Conversation, Member, Message
 
 class SendSerializer(serializers.Serializer):
     body = serializers.CharField(max_length=services.MAX_BODY)
+    reply_to = serializers.IntegerField(required=False, allow_null=True, default=None)
+
+
+class ReactSerializer(serializers.Serializer):
+    emoji = serializers.CharField(max_length=8)
+
+
+class PinSerializer(serializers.Serializer):
+    pinned = serializers.BooleanField()
+
+
+class EditSerializer(serializers.Serializer):
+    body = serializers.CharField(max_length=services.MAX_BODY)
+
+
+class ToTaskSerializer(serializers.Serializer):
+    assignee_id = serializers.IntegerField()
+    days = serializers.IntegerField(min_value=1, max_value=30, default=2)
 
 
 class DirectSerializer(serializers.Serializer):
@@ -53,7 +71,25 @@ class ChatViewSet(BaseViewSet):
         return conversation
 
     def _summary(self, request, conversation) -> dict:
+        members = list(
+            conversation.members.select_related("user").order_by("user__first_name")[:200]
+        )
+        status_of = services.presence([m.user_id for m in members])
+        others = [m for m in members if m.user_id != request.user.pk]
+        seen = (
+            others[0].last_read_at.isoformat()
+            if conversation.kind == "DIRECT" and others and others[0].last_read_at
+            else None
+        )
+        pinned = (
+            Message.objects.filter(conversation=conversation, pinned_at__isnull=False)
+            .select_related("author", "reply_to__author")
+            .order_by("-pinned_at")[:5]
+        )
         return {
+            "seen_at": seen,
+            "pinned": [services.message_row(m) for m in pinned],
+            "reactions": services.REACTIONS,
             "id": conversation.pk,
             "kind": conversation.kind,
             "title": services.title_for(conversation, request.user),
@@ -62,10 +98,8 @@ class ChatViewSet(BaseViewSet):
             "meeting_id": conversation.meeting_id,
             "ticket_id": conversation.ticket_id,
             "members": [
-                {"id": m.user_id, "name": m.user.get_full_name()}
-                for m in conversation.members.select_related("user").order_by("user__first_name")[
-                    :200
-                ]
+                {"id": m.user_id, "name": m.user.get_full_name(), "status": status_of[m.user_id]}
+                for m in members
             ],
         }
 
@@ -85,7 +119,9 @@ class ChatViewSet(BaseViewSet):
     @action(detail=True, methods=["get"])
     def messages(self, request, pk=None):
         conversation = self._conversation(request, pk)
-        rows = Message.objects.filter(conversation=conversation).select_related("author")
+        rows = Message.objects.filter(conversation=conversation).select_related(
+            "author", "reply_to__author"
+        )
         if before := request.query_params.get("before"):
             rows = rows.filter(pk__lt=int(before))
         page = list(rows.order_by("-created_at", "-pk")[:50])[::-1]
@@ -104,7 +140,14 @@ class ChatViewSet(BaseViewSet):
         conversation = self._conversation(request, pk)
         data = SendSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        message = services.send(conversation, request.user, data.validated_data["body"])
+        reply_to = (
+            get_object_or_404(Message, pk=data.validated_data["reply_to"])
+            if data.validated_data["reply_to"]
+            else None
+        )
+        message = services.send(
+            conversation, request.user, data.validated_data["body"], reply_to=reply_to
+        )
         return Response(services.message_row(message), status=status.HTTP_201_CREATED)
 
     @extend_schema(request=UploadSerializer, responses={201: OpenApiTypes.OBJECT})
@@ -213,3 +256,50 @@ class ChatViewSet(BaseViewSet):
 
 def message_row_is_image(message) -> bool:
     return services._ext(message.attachment_name) in services.IMAGES
+
+
+class MessageActionsViewSet(BaseViewSet):
+    """React to, pin, edit, delete, or turn into a task: ``/api/v1/chat-messages/<id>/…``."""
+
+    capabilities = {"*": Cap.WORK_USE}
+    queryset = Message.objects.none()
+
+    def _message(self, pk) -> Message:
+        return get_object_or_404(Message.objects.select_related("conversation", "author"), pk=pk)
+
+    @extend_schema(request=ReactSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def react(self, request, pk=None):
+        data = ReactSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        m = services.react(self._message(pk), request.user, data.validated_data["emoji"])
+        return Response(services.message_row(m))
+
+    @extend_schema(request=PinSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def pin(self, request, pk=None):
+        data = PinSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        m = services.pin(self._message(pk), request.user, pinned=data.validated_data["pinned"])
+        return Response(services.message_row(m))
+
+    @extend_schema(request=EditSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def edit(self, request, pk=None):
+        data = EditSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        m = services.edit(self._message(pk), request.user, data.validated_data["body"])
+        return Response(services.message_row(m))
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def remove(self, request, pk=None):
+        return Response(services.message_row(services.delete(self._message(pk), request.user)))
+
+    @extend_schema(request=ToTaskSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"], url_path="task")
+    def to_task(self, request, pk=None):
+        data = ToTaskSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        task = services.to_task(self._message(pk), request.user, **data.validated_data)
+        return Response({"task_id": task.pk}, status=status.HTTP_201_CREATED)

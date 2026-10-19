@@ -2356,6 +2356,19 @@
     ],
     "type": "object"
    },
+   "EditRequest": {
+    "properties": {
+     "body": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "body"
+    ],
+    "type": "object"
+   },
    "Endpoint": {
     "properties": {
      "consecutive_failures": {
@@ -3839,6 +3852,11 @@
      "reason": {
       "maxLength": 240,
       "minLength": 1,
+      "type": "string"
+     },
+     "starts_at": {
+      "format": "date-time",
+      "nullable": true,
       "type": "string"
      },
      "vehicle_code": {
@@ -7037,6 +7055,17 @@
     ],
     "type": "object"
    },
+   "PinRequest": {
+    "properties": {
+     "pinned": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "pinned"
+    ],
+    "type": "object"
+   },
    "Place": {
     "properties": {
      "address": {
@@ -7721,6 +7750,19 @@
     },
     "required": [
      "amount"
+    ],
+    "type": "object"
+   },
+   "ReactRequest": {
+    "properties": {
+     "emoji": {
+      "maxLength": 8,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "emoji"
     ],
     "type": "object"
    },
@@ -8807,6 +8849,10 @@
       "maxLength": 4000,
       "minLength": 1,
       "type": "string"
+     },
+     "reply_to": {
+      "nullable": true,
+      "type": "integer"
      }
     },
     "required": [
@@ -10298,6 +10344,23 @@
     "required": [
      "amount",
      "method"
+    ],
+    "type": "object"
+   },
+   "ToTaskRequest": {
+    "properties": {
+     "assignee_id": {
+      "type": "integer"
+     },
+     "days": {
+      "default": 2,
+      "maximum": 30,
+      "minimum": 1,
+      "type": "integer"
+     }
+    },
+    "required": [
+     "assignee_id"
     ],
     "type": "object"
    },
@@ -12956,6 +13019,291 @@
     ]
    }
   },
+  "/api/v1/chat-messages/{id}/edit/": {
+   "post": {
+    "description": "React to, pin, edit, delete, or turn into a task: ``/api/v1/chat-messages/<id>/\u2026``.",
+    "operationId": "chat_messages_edit_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this message.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EditRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/EditRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/EditRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat-messages"
+    ]
+   }
+  },
+  "/api/v1/chat-messages/{id}/pin/": {
+   "post": {
+    "description": "React to, pin, edit, delete, or turn into a task: ``/api/v1/chat-messages/<id>/\u2026``.",
+    "operationId": "chat_messages_pin_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this message.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PinRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/PinRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/PinRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat-messages"
+    ]
+   }
+  },
+  "/api/v1/chat-messages/{id}/react/": {
+   "post": {
+    "description": "React to, pin, edit, delete, or turn into a task: ``/api/v1/chat-messages/<id>/\u2026``.",
+    "operationId": "chat_messages_react_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this message.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReactRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ReactRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ReactRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat-messages"
+    ]
+   }
+  },
+  "/api/v1/chat-messages/{id}/remove/": {
+   "post": {
+    "description": "React to, pin, edit, delete, or turn into a task: ``/api/v1/chat-messages/<id>/\u2026``.",
+    "operationId": "chat_messages_remove_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this message.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat-messages"
+    ]
+   }
+  },
+  "/api/v1/chat-messages/{id}/task/": {
+   "post": {
+    "description": "React to, pin, edit, delete, or turn into a task: ``/api/v1/chat-messages/<id>/\u2026``.",
+    "operationId": "chat_messages_task_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this message.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ToTaskRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ToTaskRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ToTaskRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat-messages"
+    ]
+   }
+  },
   "/api/v1/chat/": {
    "get": {
     "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
@@ -14519,6 +14867,58 @@
     ]
    }
   },
+  "/api/v1/driver/earnings-goal/": {
+   "post": {
+    "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
+    "operationId": "driver_earnings_goal_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
   "/api/v1/driver/earnings/": {
    "get": {
     "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
@@ -14656,7 +15056,7 @@
   },
   "/api/v1/driver/goals/": {
    "get": {
-    "description": "Today's goals: trips completed and the bonus tiers reached.",
+    "description": "Today's goals: trips completed, the bonus tiers reached and the earnings goal.",
     "operationId": "driver_goals_retrieve",
     "responses": {
      "200": {
@@ -19244,10 +19644,114 @@
     ]
    }
   },
+  "/api/v1/ops/chief/question/": {
+   "post": {
+    "description": "Ask the chief of staff's desk a question; the answer comes from live numbers.",
+    "operationId": "ops_chief_question_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/chief/read/": {
    "post": {
     "description": "The chief's inbox: updates from the chief of staff, and decisions to make.",
     "operationId": "ops_chief_read_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/chief/thank/": {
+   "post": {
+    "description": "Thank this week's best city, support agent or driver.",
+    "operationId": "ops_chief_thank_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "content": {
@@ -33267,6 +33771,110 @@
    "post": {
     "description": "Clock in and out, my month, the team board and corrections.",
     "operationId": "work_attendance_clock_out_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/handover/": {
+   "post": {
+    "description": "Clock in and out, my month, the team board and corrections.",
+    "operationId": "work_attendance_handover_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/attendance/handovers/": {
+   "get": {
+    "description": "Notes the previous shift left for my role and city (last 24 hours).",
+    "operationId": "work_attendance_handovers_retrieve",
     "responses": {
      "200": {
       "content": {

@@ -1037,5 +1037,11 @@
  "Price after subsidies": "ಸಬ್ಸಿಡಿ ನಂತರದ ಬೆಲೆ",
  "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% ದರದ {yr} ವರ್ಷದ ಸಾಲದೊಂದಿಗೆ: ವಾರಕ್ಕೆ ಸುಮಾರು {emi}.",
  "Apply for a vehicle loan": "ವಾಹನ ಸಾಲಕ್ಕೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ",
- "Switching to electric? See the subsidies →": "ವಿದ್ಯುತ್ ವಾಹನಕ್ಕೆ ಬದಲಾಗುತ್ತಿದ್ದೀರಾ? ಸಬ್ಸಿಡಿಗಳನ್ನು ನೋಡಿ →"
+ "Switching to electric? See the subsidies →": "ವಿದ್ಯುತ್ ವಾಹನಕ್ಕೆ ಬದಲಾಗುತ್ತಿದ್ದೀರಾ? ಸಬ್ಸಿಡಿಗಳನ್ನು ನೋಡಿ →",
+ "Today's earnings goal": "ಇಂದಿನ ಗಳಿಕೆಯ ಗುರಿ",
+ "Goal reached! 🎉": "ಗುರಿ ತಲುಪಿದಿರಿ! 🎉",
+ "{earned} of {goal}": "{goal} ರಲ್ಲಿ {earned}",
+ "Set a daily earnings goal to track your progress.": "ನಿಮ್ಮ ಪ್ರಗತಿ ನೋಡಲು ದಿನದ ಗಳಿಕೆ ಗುರಿ ಇಡಿ.",
+ "Set a goal": "ಗುರಿ ಇಡಿ",
+ "Couldn't save the goal.": "ಗುರಿ ಉಳಿಸಲಾಗಲಿಲ್ಲ."
 }

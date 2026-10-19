@@ -915,6 +915,32 @@ Ops → Powers shows each role only its own tools, every action audited:
   top roles), with no loops in the org chart; their team channels update.
 * **Pricing analyst**: fares, surge, promotions and experiments.
 
+### Every role's desk (`frontend/src/lib/roleDesk.ts`)
+
+Each staff role signs in to its own desk: the commander lands on the command centre and sees
+only the commander's pages (command centre, live map, incidents, powers, team, team chat); finance
+sees refunds, payments, P&L, GST and TDS; HR sees powers, payroll, team, appraisals; and so on for
+every role. A "Me" section holds attendance, roster, payslips and expenses; everything else the
+role may use sits under a collapsed "More tools".
+
+### Small things
+
+* **Team chat**: reply to a message (quoted on top), emoji reactions, pin messages (shown at the
+  top of the chat), edit or delete your own message for 5 minutes, turn a message into a task,
+  each person's status (online, away, in a meeting, on leave), and "Seen" in direct messages.
+* **Ask your chief of staff**: the chief types "how's Kochi today?" or "any SOS?" and gets the live
+  numbers back as an update from the chief of staff.
+* **This week's stars**: best city, support agent and driver, with "Say thanks" (they're told and
+  it's posted in #general).
+* **Scheduled orders**: an order can start later (up to 30 days ahead), e.g. no surge on Diwali
+  evening.
+* **Celebrations**: birthdays and work anniversaries go up in #general every morning.
+* **Shift handovers**: leave a note when you clock out; the next person in your role and city sees
+  it on their attendance page for 24 hours.
+* **Drivers**: a daily earnings goal with a progress ring. **Riders**: saved places as one-tap
+  chips under "Where to?". (Riders already rate support after a ticket closes, and that feeds
+  the agent's appraisal.)
+
 ### Fresh start (`python manage.py fresh_start --yes`)
 
 Erases everything that has happened (trips, money, chats, tasks, HR records, notifications, the

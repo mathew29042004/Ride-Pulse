@@ -64,7 +64,20 @@ export default function OpsAttendance() {
         : resolve({}),
     );
   const clockIn = useMutation({ mutationFn: async () => api.post<Mine>("work/attendance/clock-in/", await where()), onSuccess: refresh, onError: fail });
-  const clockOut = useMutation({ mutationFn: () => api.post<Mine>("work/attendance/clock-out/"), onSuccess: refresh, onError: fail });
+  const [handover, setHandover] = useState("");
+  const clockOut = useMutation({
+    mutationFn: () => api.post<Mine>("work/attendance/clock-out/", { handover }),
+    onSuccess: () => {
+      if (handover.trim()) toast.success("Clocked out. Your handover note is waiting for the next shift.");
+      setHandover("");
+      refresh();
+    },
+    onError: fail,
+  });
+  const notes = useQuery({
+    queryKey: ["work", "handovers"],
+    queryFn: () => api.get<{ notes: { id: number; author: string; body: string; created_at: string }[] }>("work/attendance/handovers/"),
+  });
   const decide = useMutation({ mutationFn: ({ id, approve }: { id: number; approve: boolean }) => api.post(`work/attendance/${id}/decide/`, { approve }), onSuccess: refresh, onError: fail });
   const [fixing, setFixing] = useState<Row | null>(null);
   const [fixIn, setFixIn] = useState("");
@@ -87,10 +100,22 @@ export default function OpsAttendance() {
             <>
               <div className="mt-2 text-lg font-bold">Clocked in at {hm(m.working.clock_in)}</div>
               {m.working.late_minutes > 0 && <div className="text-sm text-amber-600">{m.working.late_minutes} min late</div>}
-              <Button className="mt-3" block variant="secondary" loading={clockOut.isPending} onClick={() => clockOut.mutate()}>Clock out</Button>
+              <Input className="mt-3" value={handover} onChange={(e) => setHandover(e.target.value)} placeholder="Handover note for the next shift (optional)" aria-label="Handover note" maxLength={2000} />
+              <Button className="mt-2" block variant="secondary" loading={clockOut.isPending} onClick={() => clockOut.mutate()}>Clock out</Button>
             </>
           ) : (
             <Button className="mt-3" block loading={clockIn.isPending} onClick={() => clockIn.mutate()}>Clock in</Button>
+          )}
+          {(notes.data?.notes.length ?? 0) > 0 && (
+            <div className="mt-4 space-y-2 rounded-2xl bg-amber-500/10 p-3 text-sm">
+              <div className="text-xs font-semibold text-amber-700 dark:text-amber-300">Handover from the last shift</div>
+              {notes.data!.notes.map((n) => (
+                <div key={n.id}>
+                  <div className="whitespace-pre-wrap">{n.body}</div>
+                  <div className="text-xs text-muted">{n.author} · {new Date(n.created_at).toLocaleString("en-IN", { hour: "numeric", minute: "2-digit", day: "numeric", month: "short" })}</div>
+                </div>
+              ))}
+            </div>
           )}
           {m && (
             <div className="mt-4 grid grid-cols-3 gap-2">

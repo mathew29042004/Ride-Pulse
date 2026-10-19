@@ -1037,5 +1037,11 @@
  "Price after subsidies": "സബ്സിഡിക്ക് ശേഷമുള്ള വില",
  "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% നിരക്കിൽ {yr} വർഷ വായ്പയോടെ: ആഴ്ചയിൽ ഏകദേശം {emi}.",
  "Apply for a vehicle loan": "വാഹന വായ്പയ്ക്ക് അപേക്ഷിക്കുക",
- "Switching to electric? See the subsidies →": "ഇലക്ട്രിക്കിലേക്ക് മാറുന്നോ? സബ്സിഡികൾ കാണൂ →"
+ "Switching to electric? See the subsidies →": "ഇലക്ട്രിക്കിലേക്ക് മാറുന്നോ? സബ്സിഡികൾ കാണൂ →",
+ "Today's earnings goal": "ഇന്നത്തെ വരുമാന ലക്ഷ്യം",
+ "Goal reached! 🎉": "ലക്ഷ്യം നേടി! 🎉",
+ "{earned} of {goal}": "{goal} ൽ {earned}",
+ "Set a daily earnings goal to track your progress.": "പുരോഗതി അറിയാൻ ദിവസ വരുമാന ലക്ഷ്യം വെക്കൂ.",
+ "Set a goal": "ലക്ഷ്യം വെക്കൂ",
+ "Couldn't save the goal.": "ലക്ഷ്യം സേവ് ചെയ്യാനായില്ല."
 }

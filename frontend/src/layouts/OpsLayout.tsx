@@ -11,6 +11,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar, Badge, Select } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { PERSONAL, ROLE_DESK } from "@/lib/roleDesk";
 import { useTheme } from "@/lib/theme";
 import type { City, Overview } from "@/lib/types";
 
@@ -113,6 +114,7 @@ const NAV = [
     ],
   },
 ];
+type NavItem = (typeof NAV)[number]["items"][number] & { cap: string | readonly string[] };
 
 /** Admins and managers without two-step sign-in get a reminder on every ops page. */
 function TwoStepReminder() {
@@ -127,6 +129,13 @@ function TwoStepReminder() {
 
 export default function OpsLayout() {
   const { user, can, logout } = useAuth();
+  const [moreOpen, setMoreOpen] = useState(() => {
+    try {
+      return localStorage.getItem("rp.nav.more") === "1";
+    } catch {
+      return false;
+    }
+  });
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [theme, setTheme] = useTheme();
@@ -159,34 +168,81 @@ export default function OpsLayout() {
         </button>
       </div>
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-        {NAV.map((section) => {
-          const items = section.items.filter((item) => (Array.isArray(item.cap) ? item.cap.some(can) : can(item.cap)));
-          if (!items.length) return null;
-          return (
-            <div key={section.group}>
-              <div className="px-3 pb-2 text-[11px] font-semibold tracking-widest text-muted/70 uppercase">{section.group}</div>
-              <div className="space-y-0.5">
-                {items.map(({ to, label, icon: Icon, ...rest }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    end={"end" in rest && rest.end}
-                    className={({ isActive }) =>
-                      clsx(
-                        "flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-medium transition",
-                        isActive ? "bg-[image:var(--gradient-brand)] text-white shadow-[0_8px_18px_-8px_rgb(124_58_237/0.8)]" : "text-muted hover:bg-white/5 hover:text-fg",
-                      )
-                    }
-                  >
-                    <Icon className="size-[18px]" />
-                    <span className="flex-1">{label}</span>
-                    {"badge" in rest && openSos > 0 && <span className="rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-fg">{openSos}</span>}
-                  </NavLink>
-                ))}
-              </div>
-            </div>
+        {(() => {
+          const allowed = (item: NavItem) => (Array.isArray(item.cap) ? item.cap.some(can) : can(item.cap));
+          const all = NAV.flatMap((section) => section.items).filter(allowed);
+          const byPath = new globalThis.Map(all.map((item) => [item.to, item]));
+          const desk = user ? ROLE_DESK[user.role] : undefined;
+          const mine = (desk?.pages ?? []).map((p) => byPath.get(p)).filter((x): x is NavItem => !!x);
+          const personal = PERSONAL.map((p) => byPath.get(p)).filter((x): x is NavItem => !!x);
+          const shown = new Set([...mine, ...personal].map((x) => x.to));
+          const link = ({ to, label, icon: Icon, ...rest }: NavItem) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={"end" in rest && rest.end}
+              className={({ isActive }) =>
+                clsx(
+                  "flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-medium transition",
+                  isActive ? "bg-[image:var(--gradient-brand)] text-white shadow-[0_8px_18px_-8px_rgb(124_58_237/0.8)]" : "text-muted hover:bg-white/5 hover:text-fg",
+                )
+              }
+            >
+              <Icon className="size-[18px]" />
+              <span className="flex-1">{label}</span>
+              {"badge" in rest && openSos > 0 && <span className="rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">{openSos}</span>}
+            </NavLink>
           );
-        })}
+          const groups = NAV.map((section) => ({ group: section.group, items: section.items.filter((item) => allowed(item) && (!desk || !shown.has(item.to))) })).filter((g) => g.items.length);
+          if (!desk) {
+            return groups.map((g) => (
+              <div key={g.group}>
+                <div className="px-3 pb-2 text-[11px] font-semibold tracking-widest text-muted/70 uppercase">{g.group}</div>
+                <div className="space-y-0.5">{g.items.map(link)}</div>
+              </div>
+            ));
+          }
+          return (
+            <>
+              <div>
+                <div className="px-3 pb-2 text-[11px] font-semibold tracking-widest text-muted/70 uppercase">{desk.title}</div>
+                <div className="space-y-0.5">{mine.map(link)}</div>
+              </div>
+              {personal.length > 0 && (
+                <div>
+                  <div className="px-3 pb-2 text-[11px] font-semibold tracking-widest text-muted/70 uppercase">Me</div>
+                  <div className="space-y-0.5">{personal.map(link)}</div>
+                </div>
+              )}
+              {groups.length > 0 && (
+                <details
+                  open={moreOpen}
+                  onToggle={(e) => {
+                    const open = (e.currentTarget as HTMLDetailsElement).open;
+                    setMoreOpen(open);
+                    try {
+                      localStorage.setItem("rp.nav.more", open ? "1" : "0");
+                    } catch {
+                      /* private mode */
+                    }
+                  }}
+                >
+                  <summary className="cursor-pointer list-none px-3 pb-2 text-[11px] font-semibold tracking-widest text-muted/70 uppercase hover:text-fg">
+                    {moreOpen ? "▾" : "▸"} More tools ({groups.reduce((n, g) => n + g.items.length, 0)})
+                  </summary>
+                  <div className="space-y-4">
+                    {groups.map((g) => (
+                      <div key={g.group}>
+                        <div className="px-3 pb-1 text-[10px] font-semibold tracking-widest text-muted/50 uppercase">{g.group}</div>
+                        <div className="space-y-0.5">{g.items.map(link)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </>
+          );
+        })()}
       </nav>
       <div className="border-t border-line p-4">
         <div className="flex items-center gap-3">

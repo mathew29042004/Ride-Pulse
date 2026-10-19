@@ -69,6 +69,7 @@ router.register("ops/experiments", experiments.ExperimentsOpsViewSet, basename="
 router.register("ops/tours", tours.TourOpsViewSet, basename="ops-tours")
 router.register("tours", tours.TourViewSet, basename="tour")
 router.register("chat", chat.ChatViewSet, basename="chat")
+router.register("chat-messages", chat.MessageActionsViewSet, basename="chat-messages")
 router.register("ops/incidents", reliability.IncidentViewSet, basename="ops-incident")
 router.register("ops/weather", reliability.WeatherViewSet, basename="ops-weather")
 router.register("ops/command", reliability.CommandViewSet, basename="ops-command")

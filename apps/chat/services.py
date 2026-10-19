@@ -278,7 +278,9 @@ def _mentioned(body: str, members: set[int]) -> list[int]:
     return found
 
 
-def send(conversation: Conversation, user, body: str, *, now=None, upload=None) -> Message:
+def send(
+    conversation: Conversation, user, body: str, *, now=None, upload=None, reply_to=None
+) -> Message:
     _require_staff(user)
     now = now or timezone.now()
     body = body.strip()
@@ -291,10 +293,13 @@ def send(conversation: Conversation, user, body: str, *, now=None, upload=None) 
     members = set(_member_ids(conversation))
     if user.pk not in members:
         raise ActionNotPermitted("Join this conversation to post in it.")
+    if reply_to is not None and reply_to.conversation_id != conversation.pk:
+        raise BusinessRuleViolation("You can only reply to a message in this chat.")
     message = Message.objects.create(
         conversation=conversation,
         author=user,
         body=body,
+        reply_to=reply_to,
         mentions=sorted(
             {u for u in _mentioned(body, members) if u != user.pk}
             | set(_named(body, members, exclude=user.pk))
@@ -506,11 +511,23 @@ def title_for(conversation: Conversation, user) -> str:
 
 
 def message_row(m: Message) -> dict:
+    quoted = m.reply_to if m.reply_to_id else None
     return {
         "id": m.pk,
         "author_id": m.author_id,
         "author": m.author.get_full_name() if m.author_id else None,
-        "body": m.body,
+        "body": "" if m.deleted_at else m.body,
+        "deleted": m.deleted_at is not None,
+        "edited": m.edited_at is not None,
+        "pinned": m.pinned_at is not None,
+        "reactions": {e: ids for e, ids in (m.reactions or {}).items() if ids},
+        "reply_to": {
+            "id": quoted.pk,
+            "author": quoted.author.get_full_name() if quoted.author_id else "Ride Pulse",
+            "body": "Message deleted" if quoted.deleted_at else quoted.body[:120],
+        }
+        if quoted
+        else None,
         "mentions": m.mentions,
         "automated": m.automated,
         "system": m.author_id is None,
@@ -582,3 +599,144 @@ def _unread_counts(user) -> dict[int, int]:
 
 def total_unread(user) -> int:
     return sum(_unread_counts(user).values())
+
+
+# --- Reactions, pins, edits, tasks, presence -----------------------------------------------------
+
+REACTIONS = ["👍", "❤️", "😂", "🎉", "🙏", "👀", "✅"]
+EDIT_WINDOW = timedelta(minutes=5)
+
+
+def _update(message: Message) -> None:
+    payload = message_row(message)
+    payload["conversation_id"] = message.conversation_id
+    for user_id in _member_ids(message.conversation):
+        broadcast.user_event(user_id, "chat.update", payload)
+
+
+def _own_message(message: Message, user) -> None:
+    if not Member.objects.filter(conversation_id=message.conversation_id, user=user).exists():
+        raise ActionNotPermitted("You're not in this conversation.")
+
+
+@transaction.atomic
+def react(message: Message, user, emoji: str) -> Message:
+    """Toggle a reaction."""
+    _own_message(message, user)
+    if emoji not in REACTIONS:
+        raise BusinessRuleViolation("Pick one of the reactions.", field="emoji")
+    message = Message.objects.select_for_update().get(pk=message.pk)
+    ids = set(message.reactions.get(emoji, []))
+    ids ^= {user.pk}
+    message.reactions = {**message.reactions, emoji: sorted(ids)}
+    message.save(update_fields=["reactions"])
+    _update(message)
+    return message
+
+
+def pin(message: Message, user, *, pinned: bool, now=None) -> Message:
+    _own_message(message, user)
+    if message.deleted_at:
+        raise BusinessRuleViolation("A deleted message can't be pinned.")
+    message.pinned_at = (now or timezone.now()) if pinned else None
+    message.pinned_by = user if pinned else None
+    message.save(update_fields=["pinned_at", "pinned_by"])
+    if pinned:
+        _system(
+            message.conversation,
+            f"📌 {user.get_full_name()} pinned a message: {message.body[:80]}",
+            message.pinned_at,
+        )
+    _update(message)
+    return message
+
+
+def _editable(message: Message, user, now) -> None:
+    if message.author_id != user.pk or message.automated:
+        raise ActionNotPermitted("You can only change your own messages.")
+    if message.deleted_at:
+        raise BusinessRuleViolation("This message was deleted.")
+    if now - message.created_at > EDIT_WINDOW:
+        raise BusinessRuleViolation("Messages can be changed for 5 minutes after sending.")
+
+
+def edit(message: Message, user, body: str, *, now=None) -> Message:
+    now = now or timezone.now()
+    _editable(message, user, now)
+    body = body.strip()
+    if not body:
+        raise BusinessRuleViolation("Write something, or delete the message.", field="body")
+    message.body, message.edited_at = body[:MAX_BODY], now
+    message.save(update_fields=["body", "edited_at"])
+    _update(message)
+    return message
+
+
+def delete(message: Message, user, *, now=None) -> Message:
+    now = now or timezone.now()
+    _editable(message, user, now)
+    message.deleted_at, message.pinned_at = now, None
+    message.save(update_fields=["deleted_at", "pinned_at"])
+    _update(message)
+    return message
+
+
+def to_task(message: Message, user, *, assignee_id: int, days: int = 2, now=None):
+    """Turn a message into a task for someone in your team (or yourself)."""
+    from apps.workspace.services import create_tasks
+
+    _own_message(message, user)
+    now = now or timezone.now()
+    title = (message.body.strip().splitlines() or ["Follow up"])[0][:150]
+    tasks = create_tasks(
+        manager=user,
+        title=title,
+        due_at=now + timedelta(days=max(1, min(int(days), 30))),
+        assignee_ids=[assignee_id],
+        description=f"From team chat ({title_for(message.conversation, user)}), "
+        f"{message.author.get_full_name() if message.author_id else 'Ride Pulse'} wrote: "
+        f"{message.body[:500]}",
+        now=now,
+    )
+    _system(
+        message.conversation,
+        f"✅ {user.get_full_name()} turned a message into a task: {title}",
+        now,
+    )
+    return tasks[0]
+
+
+def presence(user_ids, *, now=None) -> dict[int, str]:
+    """Each person's status right now: in a meeting, on leave, online or away."""
+    from apps.accounts.models import User
+    from apps.workspace.models import LeaveRequest, Meeting
+
+    now = now or timezone.now()
+    today = timezone.localdate(now)
+    ids = list(user_ids)
+    leave = set(
+        LeaveRequest.objects.filter(
+            user_id__in=ids, starts_on__lte=today, ends_on__gte=today, status="APPROVED"
+        ).values_list("user_id", flat=True)
+    )
+    meeting = set()
+    for m in Meeting.objects.filter(
+        starts_at__lte=now, starts_at__gte=now - timedelta(hours=3)
+    ).prefetch_related("attendees"):
+        if m.starts_at + timedelta(minutes=m.duration_minutes) > now:
+            meeting |= {a.user_id for a in m.attendees.all()} | {m.organizer_id}
+    online = set(
+        User.objects.filter(pk__in=ids, last_login__gte=now - ACTIVE_WINDOW).values_list(
+            "pk", flat=True
+        )
+    )
+    return {
+        u: "on leave"
+        if u in leave
+        else "in a meeting"
+        if u in meeting
+        else "online"
+        if u in online
+        else "away"
+        for u in ids
+    }

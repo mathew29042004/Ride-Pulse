@@ -49,7 +49,35 @@ def progress(driver: DriverProfile, at: datetime | None = None) -> dict:
         for trips, bonus in driver_goals()
     ]
     earned = sum((bonus for trips, bonus in driver_goals() if trips in paid), 0)
-    return {"date": day, "completed_today": done, "tiers": tiers, "earned_today": str(earned)}
+    from django.db.models import Sum
+
+    from apps.rides.models import Trip, TripStatus
+
+    start = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+    takings = (
+        Trip.objects.filter(
+            driver=driver, status=TripStatus.COMPLETED, completed_at__gte=start
+        ).aggregate(s=Sum("driver_earning"))["s"]
+        or 0
+    )
+    return {
+        "date": day,
+        "completed_today": done,
+        "tiers": tiers,
+        "earned_today": str(earned),
+        "earnings_today": str(takings + earned),
+        "earnings_goal": driver.daily_earnings_goal,
+    }
+
+
+def set_earnings_goal(driver: DriverProfile, amount: int) -> DriverProfile:
+    from apps.core.exceptions import BusinessRuleViolation
+
+    if not 0 <= int(amount) <= 20000:
+        raise BusinessRuleViolation("Set a goal between ₹0 and ₹20,000.", field="amount")
+    driver.daily_earnings_goal = int(amount)
+    driver.save(update_fields=["daily_earnings_goal", "updated_at"])
+    return driver
 
 
 def reward_goals(driver: DriverProfile, *, now: datetime | None = None) -> list[DriverGoalReward]:

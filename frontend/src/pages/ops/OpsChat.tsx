@@ -1,11 +1,13 @@
 /**
  * Team chat for staff: channels (#general, departments, states), direct messages, groups, and a
  * thread on every task and meeting. Live over /ws/chat/; @name mentions notify people.
+ * Reply to a message (quoted), react, pin, edit or delete your own for 5 minutes, turn a message
+ * into a task; each person's status (online, away, in a meeting, on leave); "Seen" in DMs.
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Bot, FileText, Hash, MessagesSquare, Paperclip, Plus, Search, Send, Users } from "lucide-react";
+import { Bot, ClipboardPlus, FileText, Hash, MessagesSquare, Paperclip, Pencil, Pin, Plus, Reply, Search, Send, SmilePlus, Trash2, Users, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -37,6 +39,11 @@ interface Msg {
   conversation_id?: number;
   conversation?: string;
   file: { name: string; size: number; image: boolean; url: string } | null;
+  deleted?: boolean;
+  edited?: boolean;
+  pinned?: boolean;
+  reactions?: Record<string, number[]>;
+  reply_to?: { id: number; author: string; body: string } | null;
 }
 interface Thread {
   id: number;
@@ -46,9 +53,14 @@ interface Thread {
   task_id: number | null;
   meeting_id: number | null;
   ticket_id: number | null;
-  members: { id: number; name: string }[];
+  members: { id: number; name: string; status?: string }[];
   messages: Msg[];
+  pinned?: Msg[];
+  reactions?: string[];
+  seen_at?: string | null;
 }
+
+const STATUS_DOT: Record<string, string> = { online: "bg-emerald-500", away: "bg-slate-400", "in a meeting": "bg-amber-500", "on leave": "bg-rose-400" };
 interface Person {
   id: number;
   name: string;
@@ -81,6 +93,12 @@ export default function OpsChat() {
     if (msg.event === "chat.typing") {
       const d = msg.data as { conversation_id: number; name: string };
       setTyping((old) => ({ ...old, [d.conversation_id]: { name: d.name, until: Date.now() + 4000 } }));
+      return;
+    }
+    if (msg.event === "chat.update") {
+      const u = msg.data as Msg;
+      qc.setQueryData<Thread>(["chat", u.conversation_id], (old) => (old ? { ...old, messages: old.messages.map((x) => (x.id === u.id ? { ...x, ...u } : x)) } : old));
+      if (u.conversation_id === current) qc.invalidateQueries({ queryKey: ["chat", u.conversation_id] });
       return;
     }
     if (msg.event !== "chat.message") return;
@@ -168,6 +186,10 @@ export default function OpsChat() {
 function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: number; typing: string; onBack: () => void }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
+  const [replyTo, setReplyTo] = useState<Msg | null>(null);
+  const [editing, setEditing] = useState<Msg | null>(null);
+  const [tasking, setTasking] = useState<Msg | null>(null);
+  const [picking, setPicking] = useState<number | null>(null);
   const lastTyping = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const [, tick] = useState(0);
@@ -209,13 +231,39 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
     qc.invalidateQueries({ queryKey: ["chat"], exact: true }); // opening marked it read
   }, [thread.id, qc]);
   const send = useMutation({
-    mutationFn: () => api.post<Msg>(`chat/${thread.id}/send/`, { body }),
+    mutationFn: () =>
+      editing ? api.post<Msg>(`chat-messages/${editing.id}/edit/`, { body }) : api.post<Msg>(`chat/${thread.id}/send/`, { body, reply_to: replyTo?.id ?? null }),
     onSuccess: (m) => {
       setBody("");
+      setReplyTo(null);
+      if (editing) {
+        setEditing(null);
+        qc.invalidateQueries({ queryKey: ["chat", thread.id] });
+        return;
+      }
       qc.setQueryData<Thread>(["chat", thread.id], (old) => (old && !old.messages.some((x) => x.id === m.id) ? { ...old, messages: [...old.messages, m] } : old));
     },
     onError: (err) => toast.error(errorText(err)),
   });
+  const act = useMutation({
+    mutationFn: ({ id, path, data }: { id: number; path: string; data?: object }) => api.post<Msg>(`chat-messages/${id}/${path}/`, data ?? {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chat", thread.id] }),
+    onError: (err) => toast.error(errorText(err)),
+  });
+  const makeTask = useMutation({
+    mutationFn: ({ id, assignee }: { id: number; assignee: number }) => api.post(`chat-messages/${id}/task/`, { assignee_id: assignee }),
+    onSuccess: () => {
+      toast.success("Task created.");
+      setTasking(null);
+      qc.invalidateQueries({ queryKey: ["chat", thread.id] });
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+  const editable = (m: Msg) => m.author_id === me && !m.deleted && Date.now() - new Date(m.created_at).getTime() < 5 * 60_000;
+  const statusOf = useMemo(() => Object.fromEntries(thread.members.map((p) => [p.id, p.status ?? ""])), [thread.members]);
+  const other = thread.kind === "DIRECT" ? thread.members.find((p) => p.id !== me) : undefined;
+  const lastMine = [...thread.messages].reverse().find((m) => m.author_id === me);
+  const seen = !!(thread.seen_at && lastMine && new Date(thread.seen_at) >= new Date(lastMine.created_at));
   const mention = body.match(/@([\w.-]*)$/)?.[1];
   const suggestions = mention != null ? thread.members.filter((p) => p.id !== me && p.name.toLowerCase().replace(/\s+/g, ".").includes(mention.toLowerCase())).slice(0, 5) : [];
   const offerAll = mention != null && thread.members.length > 2 && "all".startsWith(mention.toLowerCase());
@@ -228,6 +276,11 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
         <div className="min-w-0">
           <div className="truncate font-semibold">{thread.title}</div>
           <div className="truncate text-xs text-muted">
+            {other?.status && (
+              <span className="mr-1 inline-flex items-center gap-1">
+                <span className={clsx("size-1.5 rounded-full", STATUS_DOT[other.status])} /> {other.status} ·
+              </span>
+            )}
             {thread.topic || `${thread.members.length} people`}
             {thread.task_id && " · task thread"}
             {thread.meeting_id && " · meeting thread"}
@@ -235,6 +288,20 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
           </div>
         </div>
       </header>
+      {(thread.pinned?.length ?? 0) > 0 && (
+        <div className="border-b border-line bg-amber-500/5 px-4 py-1.5 text-xs">
+          {thread.pinned!.slice(0, 2).map((p) => (
+            <div key={p.id} className="flex items-center gap-1.5 truncate">
+              <Pin className="size-3 shrink-0 text-amber-600" />
+              <span className="font-semibold">{p.author}:</span>
+              <span className="truncate">{p.body}</span>
+              <button className="ml-auto shrink-0 text-muted hover:text-fg" onClick={() => act.mutate({ id: p.id, path: "pin", data: { pinned: false } })} aria-label="Unpin">
+                <X className="size-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
         {thread.messages.length === 0 && <p className="py-10 text-center text-sm text-muted">No messages yet. Say hello 👋</p>}
         {thread.messages.map((m) =>
@@ -243,10 +310,16 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
               {m.body}
             </div>
           ) : (
-            <div key={m.id} className={clsx("flex", m.author_id === me && "justify-end")}>
-              <div className={clsx("max-w-[75%] rounded-2xl px-3 py-2 text-sm", m.author_id === me ? "bg-brand text-on-brand" : "bg-surface-2", m.mentions.includes(me) && "ring-2 ring-amber-400")}>
+            <div key={m.id} className={clsx("group flex items-center gap-1", m.author_id === me && "flex-row-reverse")}>
+              <div className={clsx("relative max-w-[75%] rounded-2xl px-3 py-2 text-sm", m.author_id === me ? "bg-brand text-on-brand" : "bg-surface-2", m.mentions.includes(me) && "ring-2 ring-amber-400", m.deleted && "opacity-60")}>
+                {m.reply_to && (
+                  <div className={clsx("mb-1 rounded-lg border-l-2 px-2 py-1 text-xs", m.author_id === me ? "border-white/60 bg-white/10" : "border-brand bg-surface")}>
+                    <span className="font-semibold">{m.reply_to.author}</span> {m.reply_to.body}
+                  </div>
+                )}
                 {m.author_id !== me && (
                   <div className="mb-0.5 flex items-center gap-1 text-xs font-semibold">
+                    {m.author_id && statusOf[m.author_id] && <span className={clsx("size-1.5 rounded-full", STATUS_DOT[statusOf[m.author_id]])} title={statusOf[m.author_id]} />}
                     {m.author}
                     {m.automated && (
                       <span className="flex items-center gap-0.5 font-normal text-muted" title="A pre-set reply from a demo employee nobody is signed in as">
@@ -256,15 +329,74 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
                   </div>
                 )}
                 {m.file && <Attachment file={m.file} mine={m.author_id === me} />}
-                {m.body && <div className="whitespace-pre-wrap break-words">{m.body}</div>}
-                <div className={clsx("mt-0.5 text-right text-[10px]", m.author_id === me ? "text-on-brand/70" : "text-muted")}>{time(m.created_at)}</div>
+                {m.deleted ? <div className="italic">Message deleted</div> : m.body && <div className="whitespace-pre-wrap break-words">{m.body}</div>}
+                <div className={clsx("mt-0.5 flex items-center justify-end gap-1 text-[10px]", m.author_id === me ? "text-on-brand/70" : "text-muted")}>
+                  {m.pinned && <Pin className="size-2.5" />}
+                  {m.edited && !m.deleted && "edited ·"} {time(m.created_at)}
+                  {m.id === lastMine?.id && thread.kind === "DIRECT" && (seen ? " · Seen" : " · Sent")}
+                </div>
+                {Object.entries(m.reactions ?? {}).filter(([, ids]) => ids.length).length > 0 && (
+                  <div className="absolute -bottom-3 left-2 flex gap-0.5">
+                    {Object.entries(m.reactions ?? {})
+                      .filter(([, ids]) => ids.length)
+                      .map(([e, ids]) => (
+                        <button key={e} onClick={() => act.mutate({ id: m.id, path: "react", data: { emoji: e } })} className={clsx("rounded-full border px-1.5 text-[11px] text-fg shadow-sm", ids.includes(me) ? "border-brand bg-brand-soft" : "border-line bg-surface")}>
+                          {e} {ids.length}
+                        </button>
+                      ))}
+                  </div>
+                )}
               </div>
+              {!m.deleted && (
+                <div className="relative flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                  <button className="rounded-full p-1 text-muted hover:bg-surface-3" onClick={() => setPicking(picking === m.id ? null : m.id)} aria-label="React"><SmilePlus className="size-3.5" /></button>
+                  <button className="rounded-full p-1 text-muted hover:bg-surface-3" onClick={() => { setReplyTo(m); setEditing(null); }} aria-label="Reply"><Reply className="size-3.5" /></button>
+                  <button className="rounded-full p-1 text-muted hover:bg-surface-3" onClick={() => act.mutate({ id: m.id, path: "pin", data: { pinned: !m.pinned } })} aria-label={m.pinned ? "Unpin" : "Pin"}><Pin className="size-3.5" /></button>
+                  <button className="rounded-full p-1 text-muted hover:bg-surface-3" onClick={() => setTasking(m)} aria-label="Turn into a task"><ClipboardPlus className="size-3.5" /></button>
+                  {editable(m) && (
+                    <>
+                      <button className="rounded-full p-1 text-muted hover:bg-surface-3" onClick={() => { setEditing(m); setReplyTo(null); setBody(m.body); }} aria-label="Edit"><Pencil className="size-3.5" /></button>
+                      <button className="rounded-full p-1 text-muted hover:bg-surface-3" onClick={() => act.mutate({ id: m.id, path: "remove" })} aria-label="Delete"><Trash2 className="size-3.5" /></button>
+                    </>
+                  )}
+                  {picking === m.id && (
+                    <div className="absolute bottom-full z-10 mb-1 flex gap-0.5 rounded-full border border-line bg-surface p-1 shadow-lg">
+                      {(thread.reactions ?? ["👍", "❤️", "😂", "🎉", "🙏", "👀", "✅"]).map((e) => (
+                        <button key={e} className="rounded-full px-1 text-base hover:bg-surface-3" onClick={() => { act.mutate({ id: m.id, path: "react", data: { emoji: e } }); setPicking(null); }}>
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ),
         )}
         <div ref={end} />
       </div>
       {typing && <div className="px-4 pb-1 text-xs text-muted">{typing} is typing…</div>}
+      {(replyTo || editing) && (
+        <div className="flex items-center gap-2 border-t border-line bg-surface-2 px-4 py-1.5 text-xs">
+          {replyTo ? <Reply className="size-3.5 text-brand" /> : <Pencil className="size-3.5 text-brand" />}
+          <span className="truncate">
+            {replyTo ? <><span className="font-semibold">Replying to {replyTo.author ?? "Ride Pulse"}:</span> {replyTo.body}</> : "Editing your message"}
+          </span>
+          <button className="ml-auto text-muted hover:text-fg" onClick={() => { setReplyTo(null); if (editing) { setEditing(null); setBody(""); } }} aria-label="Cancel"><X className="size-3.5" /></button>
+        </div>
+      )}
+      {tasking && (
+        <Modal open onClose={() => setTasking(null)} title="Turn into a task">
+          <p className="mb-2 text-sm text-muted">“{tasking.body.slice(0, 120)}”. Who should do it? (Due in 2 days.)</p>
+          <div className="max-h-64 space-y-1 overflow-y-auto">
+            {thread.members.map((p) => (
+              <button key={p.id} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2" onClick={() => makeTask.mutate({ id: tasking.id, assignee: p.id })}>
+                <span className={clsx("size-1.5 rounded-full", STATUS_DOT[p.status ?? ""] ?? "bg-slate-300")} /> {p.name}{p.id === me && " (me)"}
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
       <form
         className="relative flex gap-2 border-t border-line p-3"
         onSubmit={(e) => {

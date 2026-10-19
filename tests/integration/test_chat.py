@@ -157,3 +157,37 @@ def test_at_all_notifies_everyone(team):
     msg = Message.objects.filter(author=boss).latest("pk")
     assert set(msg.mentions) == {agent.pk, mechanic.pk}
     assert Notification.objects.filter(user=agent, title__contains="mentioned you").exists()
+
+
+def test_reply_react_pin_edit_delete_and_task(team, api):
+    from datetime import timedelta
+
+    boss, agent, mechanic = team
+    general = _general()
+    first = services.send(general, agent, "Hosur workshop has 12 cars waiting")
+    answer = services.send(general, boss, "On it", reply_to=first)
+    assert services.message_row(answer)["reply_to"]["id"] == first.pk
+    r = api(mechanic).post(f"/api/v1/chat-messages/{first.pk}/react/", {"emoji": "👍"})
+    assert r.json()["reactions"] == {"👍": [mechanic.pk]}
+    api(mechanic).post(f"/api/v1/chat-messages/{first.pk}/react/", {"emoji": "👍"})
+    first.refresh_from_db()
+    assert first.reactions["👍"] == []  # toggled off
+    api(boss).post(f"/api/v1/chat-messages/{first.pk}/pin/", {"pinned": True}, format="json")
+    view = api(boss).get(f"/api/v1/chat/{general.pk}/messages/").json()
+    assert view["pinned"][0]["id"] == first.pk
+    assert {m["id"]: m["status"] for m in view["members"]}[boss.pk] in {"online", "away"}
+    assert (
+        api(boss).post(f"/api/v1/chat-messages/{first.pk}/edit/", {"body": "x"}).status_code == 403
+    )  # not their message
+    api(agent).post(f"/api/v1/chat-messages/{first.pk}/edit/", {"body": "Hosur: 14 cars"})
+    first.refresh_from_db()
+    assert first.body == "Hosur: 14 cars" and first.edited_at
+    with pytest.raises(Exception, match="5 minutes"):
+        services.edit(first, agent, "late", now=first.created_at + timedelta(minutes=6))
+    t = api(boss).post(
+        f"/api/v1/chat-messages/{first.pk}/task/", {"assignee_id": mechanic.pk}, format="json"
+    )
+    assert t.status_code == 201
+    api(agent).post(f"/api/v1/chat-messages/{first.pk}/remove/")
+    first.refresh_from_db()
+    assert services.message_row(first)["deleted"] and not services.message_row(first)["body"]

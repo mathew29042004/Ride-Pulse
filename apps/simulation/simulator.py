@@ -668,6 +668,9 @@ class Simulator:
             from apps.reliability import briefing
 
             briefing.auto_briefing()  # the chief of staff's briefing every 3 hours
+            from apps.workspace import culture
+
+            culture.celebrate()  # birthdays and work anniversaries in #general
             self.workshop()
             self.tours()
             self.last_surge = clock.monotonic()

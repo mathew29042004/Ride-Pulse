@@ -94,6 +94,7 @@ def issue(
     vehicle_code: str = "",
     hours: int = 2,
     confirm: bool = False,
+    starts_at=None,
     now=None,
 ) -> CommandOrder:
     from apps.audit.models import AuditAction
@@ -108,6 +109,9 @@ def issue(
         raise BusinessRuleViolation(
             "Give the reason: riders and drivers will see it.", field="reason"
         )
+    start = max(starts_at or now, now)
+    if start > now + timedelta(days=30):
+        raise BusinessRuleViolation("Schedule orders up to 30 days ahead.", field="starts_at")
     if kind == OrderKind.PAUSE_BOOKINGS and city is None and not confirm:
         raise BusinessRuleViolation(
             "Pausing bookings in every city stops the whole platform. Confirm to go ahead.",
@@ -118,8 +122,8 @@ def issue(
         city=city,
         vehicle_code=vehicle_code if kind == OrderKind.PAUSE_VEHICLE else "",
         reason=reason.strip()[:240],
-        starts_at=now,
-        ends_at=now + timedelta(hours=max(1, min(int(hours), 72))),
+        starts_at=start,
+        ends_at=start + timedelta(hours=max(1, min(int(hours), 72))),
         created_by=user,
     )
     log_event(AuditAction.ACTION, order, message=f"Order: {order} ({order.reason})", actor=user)
@@ -129,8 +133,13 @@ def issue(
         if kind == OrderKind.PAUSE_VEHICLE
         else order.get_kind_display().lower()
     )
+    when = (
+        f" from {timezone.localtime(start):%-d %b, %-I:%M %p}"
+        if start > now + timedelta(minutes=1)
+        else ""
+    )
     _announce(
-        f"🛑 Commander's order: {what} in {where} for {hours} h. Reason: {order.reason} "
+        f"🛑 Commander's order: {what} in {where}{when} for {hours} h. Reason: {order.reason} "
         f"(by {user.get_full_name()})"
     )
     if kind != OrderKind.SURGE_OFF:
@@ -185,6 +194,7 @@ def row(o: CommandOrder, now=None) -> dict:
         "starts_at": o.starts_at.isoformat(),
         "ends_at": o.ends_at.isoformat(),
         "active": o.starts_at <= now < o.ends_at,
+        "scheduled": o.starts_at > now,
         "by": o.created_by.get_full_name() if o.created_by else None,
         "lifted_by": o.lifted_by.get_full_name() if o.lifted_by else None,
     }
@@ -253,6 +263,13 @@ def overview(*, now=None) -> dict:
             for i in open_incidents[:10]
         ],
         "orders": [row(o, now) for o in orders],
+        "scheduled": [
+            row(o, now)
+            for o in CommandOrder.objects.filter(starts_at__gt=now).select_related(
+                "city", "created_by"
+            )
+        ],
+        "leaders": leaderboard(now=now),
         "history": [
             row(o, now)
             for o in CommandOrder.objects.select_related("city", "created_by", "lifted_by")[:20]
@@ -601,3 +618,98 @@ def act(*, user, kind: str, id: int, action: str, reason: str = "") -> dict:
         raise BusinessRuleViolation("Unknown action.")
     _live("command_action", {"kind": kind, "id": id, "action": action, "by": user.get_full_name()})
     return {"done": True}
+
+
+# --- Leaderboards and thanks ----------------------------------------------------------------------
+
+
+def leaderboard(*, now=None) -> dict:
+    """This week's best city (completion), support agent (tickets resolved) and driver."""
+    from django.db.models import Count, Q
+
+    from apps.drivers.models import DriverProfile
+    from apps.rides.models import Trip, TripStatus
+    from apps.support.models import SupportTicket
+
+    now = now or timezone.now()
+    since = now - timedelta(days=7)
+    cities = (
+        Trip.objects.filter(requested_at__gte=since)
+        .values("city_id", "city__name")
+        .annotate(n=Count("id"), done=Count("id", filter=Q(status=TripStatus.COMPLETED)))
+        .filter(n__gte=20)
+    )
+    best_city = max(cities, key=lambda c: c["done"] / c["n"], default=None)
+    agent = (
+        SupportTicket.objects.filter(resolved_at__gte=since, assigned_to__isnull=False)
+        .values("assigned_to_id", "assigned_to__first_name", "assigned_to__last_name")
+        .annotate(n=Count("id"))
+        .order_by("-n")
+        .first()
+    )
+    driver = (
+        Trip.objects.filter(status=TripStatus.COMPLETED, completed_at__gte=since)
+        .values("driver_id")
+        .annotate(n=Count("id"))
+        .order_by("-n")
+        .first()
+    )
+    d = (
+        DriverProfile.objects.select_related("user", "city")
+        .filter(pk=driver["driver_id"] if driver else None)
+        .first()
+    )
+    return {
+        "city": {
+            "id": best_city["city_id"],
+            "name": best_city["city__name"],
+            "detail": f"{round(100 * best_city['done'] / best_city['n'])}% of "
+            f"{best_city['n']} trips completed",
+        }
+        if best_city
+        else None,
+        "agent": {
+            "user_id": agent["assigned_to_id"],
+            "name": f"{agent['assigned_to__first_name']} {agent['assigned_to__last_name']}",
+            "detail": f"{agent['n']} tickets resolved",
+        }
+        if agent
+        else None,
+        "driver": {
+            "user_id": d.user_id,
+            "name": d.name,
+            "detail": f"{driver['n']} trips in {d.city.name} · ★ {d.rating}",
+        }
+        if d
+        else None,
+    }
+
+
+def thank(*, user, kind: str, note: str = "", now=None) -> str:
+    """The chief thanks this week's winner: they're told, and it's posted to #general."""
+    from apps.accounts.models import StaffProfile, User
+    from apps.chat.models import Conversation, Message
+    from apps.chat.services import _deliver
+    from apps.notifications.services import notify
+
+    now = now or timezone.now()
+    board = leaderboard(now=now)
+    winner = board.get(kind)
+    if not winner:
+        raise BusinessRuleViolation("Nobody to thank there yet this week.")
+    text = note.strip() or "Outstanding work this week. Thank you!"
+    line = f"🏆 {user.get_full_name()} thanks {winner['name']} ({winner['detail']}): {text}"
+    if kind == "city":
+        people = User.objects.filter(
+            pk__in=StaffProfile.objects.filter(city_id=winner["id"]).values("user_id")
+        )
+    else:
+        people = User.objects.filter(pk=winner["user_id"])
+    for p in people[:200]:
+        notify(p, "🏆 A thank-you from the chief", line)
+    general = Conversation.objects.filter(kind="CHANNEL", slug="general").first()
+    if general:
+        message = Message.objects.create(conversation=general, body=line, created_at=now)
+        Conversation.objects.filter(pk=general.pk).update(last_message_at=now)
+        _deliver(general, message)
+    return line

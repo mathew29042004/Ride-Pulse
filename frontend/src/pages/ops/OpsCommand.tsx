@@ -49,6 +49,8 @@ interface Data {
   cities: CityRow[];
   vehicles: { code: string; label: string }[];
   alerts: Alert[];
+  scheduled: Order[];
+  leaders: Record<"city" | "agent" | "driver", { name: string; detail: string } | null>;
   delegations: { id: number; to: string; to_role: string; reason: string; ends_at: string; active: boolean }[];
   candidates: { id: number; name: string; role: string }[];
 }
@@ -98,12 +100,15 @@ export default function OpsCommand() {
   const [vehicle, setVehicle] = useState("BIKE");
   const [hours, setHours] = useState(2);
   const [reason, setReason] = useState("");
+  const [startAt, setStartAt] = useState("");
   const issue = useMutation({
-    mutationFn: () => api.post("ops/command/", { kind, city, vehicle_code: vehicle, hours, reason, confirm: confirmText === "PAUSE" }),
+    mutationFn: () =>
+      api.post("ops/command/", { kind, city, vehicle_code: vehicle, hours, reason, confirm: confirmText === "PAUSE", starts_at: startAt ? new Date(startAt).toISOString() : null }),
     onSuccess: () => {
       toast.success("Order issued. Leadership and operations have been told.");
       setReason("");
       setConfirmText("");
+      setStartAt("");
       refresh();
     },
     onError: fail,
@@ -208,6 +213,9 @@ export default function OpsCommand() {
             <Field label="For how many hours">
               <Input type="number" min={1} max={72} value={hours} onChange={(e) => setHours(Number(e.target.value))} />
             </Field>
+            <Field label="Start (optional)" hint="Leave empty to start now, or schedule it up to 30 days ahead.">
+              <Input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
+            </Field>
             <Field label="Reason" hint="Riders see it when they try to book; drivers get it as a notice.">
               <Input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={240} placeholder="e.g. Citywide bandh called for today" />
             </Field>
@@ -289,6 +297,22 @@ export default function OpsCommand() {
               </tbody>
             </Table>
           </Card>
+
+          {d && d.scheduled.length > 0 && (
+            <Card>
+              <CardHeader title="Scheduled orders" subtitle="They start by themselves." />
+              <div className="divide-y divide-line">
+                {d.scheduled.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
+                    <span>{o.kind_label}{o.vehicle ? `: ${o.vehicle}` : ""} · {o.city} <span className="text-muted">from {dateTime(o.starts_at)}</span></span>
+                    <Button size="sm" variant="secondary" loading={lift.isPending} onClick={() => lift.mutate(o.id)}>Cancel</Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {d && <Leaders leaders={d.leaders} />}
 
           {d && d.open_incidents.length > 0 && (
             <Card>
@@ -498,6 +522,15 @@ function ChiefInbox() {
     onError: fail,
   });
   const read = useMutation({ mutationFn: () => api.post("ops/chief/read/"), onSuccess: refresh });
+  const [question, setQuestion] = useState("");
+  const ask = useMutation({
+    mutationFn: () => api.post<Update>("ops/chief/question/", { question }),
+    onSuccess: () => {
+      setQuestion("");
+      refresh();
+    },
+    onError: fail,
+  });
   const d = q.data;
   if (!d) return null;
   const pending = d.decisions.filter((x) => x.status === "PENDING");
@@ -533,6 +566,10 @@ function ChiefInbox() {
           subtitle="Briefings, updates and escalations from your chief of staff."
           action={d.unread > 0 ? <Button size="sm" variant="ghost" onClick={() => read.mutate()}>Mark all read</Button> : undefined}
         />
+        <form className="flex gap-2 border-b border-line px-5 py-3" onSubmit={(e) => { e.preventDefault(); if (question.trim()) ask.mutate(); }}>
+          <Input className="!py-1.5" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask your chief of staff, e.g. how's Kochi today?" aria-label="Ask your chief of staff" />
+          <Button size="sm" type="submit" loading={ask.isPending} disabled={!question.trim()}>Ask</Button>
+        </form>
         {!d.updates.length && <EmptyState title="No updates yet" />}
         <div className="max-h-96 divide-y divide-line overflow-y-auto">
           {d.updates.slice(0, 10).map((u) => (
@@ -557,5 +594,32 @@ function ChiefInbox() {
         </div>
       </Card>
     </div>
+  );
+}
+
+function Leaders({ leaders }: { leaders: Data["leaders"] }) {
+  const thank = useMutation({
+    mutationFn: (kind: string) => api.post("ops/chief/thank/", { kind }),
+    onSuccess: () => toast.success("Thanked. It's posted in #general."),
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Something went wrong."),
+  });
+  const rows: [keyof Data["leaders"], string][] = [["city", "Best city"], ["agent", "Best support agent"], ["driver", "Best driver"]];
+  return (
+    <Card>
+      <CardHeader title="This week's stars" subtitle="Say thanks: they're told, and it goes up in #general." />
+      <div className="grid gap-3 p-4 sm:grid-cols-3">
+        {rows.map(([k, label]) => {
+          const w = leaders[k];
+          return (
+            <div key={k} className="rounded-2xl bg-surface-2 p-3 text-sm">
+              <div className="text-xs font-medium text-muted">🏆 {label}</div>
+              <div className="mt-1 font-semibold">{w?.name ?? "Not enough data yet"}</div>
+              {w && <div className="text-xs text-muted">{w.detail}</div>}
+              {w && <Button size="sm" variant="secondary" className="mt-2" loading={thank.isPending} onClick={() => thank.mutate(k)}>Say thanks</Button>}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }

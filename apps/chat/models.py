@@ -94,6 +94,16 @@ class Message(models.Model):
     automated = models.BooleanField(default=False)
     created_at = models.DateTimeField()
     edited_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    reply_to = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    # {"👍": [user ids], ...}
+    reactions = models.JSONField(default=dict, blank=True)
+    pinned_at = models.DateTimeField(null=True, blank=True)
+    pinned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
     class Meta:
         ordering = ["created_at", "pk"]

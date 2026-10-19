@@ -1037,5 +1037,11 @@
  "Price after subsidies": "மானியத்திற்குப் பின் விலை",
  "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% இல் {yr} ஆண்டுக் கடனுடன்: வாரம் சுமார் {emi}.",
  "Apply for a vehicle loan": "வாகனக் கடனுக்கு விண்ணப்பி",
- "Switching to electric? See the subsidies →": "மின்வாகனத்திற்கு மாறுகிறீர்களா? மானியங்களைப் பாருங்கள் →"
+ "Switching to electric? See the subsidies →": "மின்வாகனத்திற்கு மாறுகிறீர்களா? மானியங்களைப் பாருங்கள் →",
+ "Today's earnings goal": "இன்றைய வருமான இலக்கு",
+ "Goal reached! 🎉": "இலக்கை அடைந்தீர்கள்! 🎉",
+ "{earned} of {goal}": "{goal} இல் {earned}",
+ "Set a daily earnings goal to track your progress.": "உங்கள் முன்னேற்றத்தைக் கண்காணிக்க தினசரி வருமான இலக்கை அமைக்கவும்.",
+ "Set a goal": "இலக்கை அமை",
+ "Couldn't save the goal.": "இலக்கைச் சேமிக்க முடியவில்லை."
 }

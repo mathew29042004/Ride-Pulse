@@ -60,6 +60,7 @@ class DriverProfile(AuditedModel, TimeStampedModel):
 
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=Decimal("5.00"))
     rating_count = models.PositiveIntegerField(default=0)
+    daily_earnings_goal = models.PositiveIntegerField(default=0)  # ₹ the driver aims for today
     acceptance_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal(100))
     completed_trips = models.PositiveIntegerField(default=0)
     cancelled_trips = models.PositiveIntegerField(default=0)

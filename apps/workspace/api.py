@@ -528,13 +528,34 @@ class AttendanceViewSet(BaseViewSet):
         )
         return Response(attendance.mine(request.user))
 
-    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["post"], url_path="clock-out")
     def clock_out(self, request):
         from . import attendance
 
         attendance.clock_out(request.user)
+        note = str(request.data.get("handover", "")).strip()
+        if note:
+            from .culture import leave_handover
+
+            leave_handover(request.user, note)
         return Response(attendance.mine(request.user))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def handovers(self, request):
+        """Notes the previous shift left for my role and city (last 24 hours)."""
+        from .culture import handovers_for
+
+        return Response({"notes": handovers_for(request.user)})
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def handover(self, request):
+        from .culture import leave_handover
+
+        n = leave_handover(request.user, str(request.data.get("body", "")))
+        return Response({"id": n.pk}, status=201)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="attendance_team")
     @action(detail=False, methods=["get"])

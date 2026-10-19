@@ -1037,5 +1037,11 @@
  "Price after subsidies": "సబ్సిడీల తర్వాత ధర",
  "With a {yr}-year loan at {rate}%: about {emi} a week.": "{rate}% వద్ద {yr} ఏళ్ల రుణంతో: వారానికి సుమారు {emi}.",
  "Apply for a vehicle loan": "వాహన రుణానికి దరఖాస్తు చేయండి",
- "Switching to electric? See the subsidies →": "ఎలక్ట్రిక్‌కు మారుతున్నారా? సబ్సిడీలు చూడండి →"
+ "Switching to electric? See the subsidies →": "ఎలక్ట్రిక్‌కు మారుతున్నారా? సబ్సిడీలు చూడండి →",
+ "Today's earnings goal": "ఈరోజు సంపాదన లక్ష్యం",
+ "Goal reached! 🎉": "లక్ష్యం చేరారు! 🎉",
+ "{earned} of {goal}": "{goal} లో {earned}",
+ "Set a daily earnings goal to track your progress.": "మీ పురోగతిని చూడటానికి రోజువారీ సంపాదన లక్ష్యం పెట్టండి.",
+ "Set a goal": "లక్ష్యం పెట్టండి",
+ "Couldn't save the goal.": "లక్ష్యం సేవ్ కాలేదు."
 }

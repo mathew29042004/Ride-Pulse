@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { api, tokens } from "./api";
+import { ROLE_DESK } from "./roleDesk";
 import type { Role, User } from "./types";
 
 interface AuthState {
@@ -110,7 +111,5 @@ export function homeFor(role: Role): string {
   if (role === "RIDER") return "/ride";
   if (role === "DRIVER") return "/drive";
   if (role === "FLEET_OWNER") return "/fleet";
-  if (role === "COMMANDER") return "/ops/command";
-  if (role === "CHIEF_OF_STAFF") return "/ops/brief";
-  return "/ops";
+  return ROLE_DESK[role]?.pages[0] ?? "/ops"; // each role lands on its own desk
 }

@@ -25,3 +25,10 @@ def chase_access_reviews() -> int:
     from .access import chase
 
     return chase()
+
+
+@shared_task(name="workspace.celebrate")
+def celebrate() -> dict:
+    from .culture import celebrate
+
+    return celebrate()
