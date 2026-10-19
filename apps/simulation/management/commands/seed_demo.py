@@ -56,6 +56,9 @@ class Command(BaseCommand):
         from apps.rides import counters
 
         stats.update(counters.seed_demo(log=self.stdout.write))
+        from apps.pricing import fuel
+
+        stats.update(fuel.seed_demo(log=self.stdout.write))
         from apps.riders import commute
 
         stats.update(commute.seed_demo(log=self.stdout.write))

@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
@@ -395,3 +396,56 @@ class PriceAlertViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, BaseView
             alert.status = PriceAlertStatus.CANCELLED
             alert.save(update_fields=["status"])
         return Response(PriceAlertSerializer(alert).data)
+
+
+class FuelPriceSerializer(serializers.Serializer):
+    state = serializers.CharField(max_length=60)
+    fuel = serializers.CharField(max_length=6)
+    price = serializers.DecimalField(max_digits=7, decimal_places=2)
+
+
+class FuelViewSet(BaseViewSet):
+    """Fuel prices by state and the suggested per-km fare changes they imply."""
+
+    capabilities = {"list": Cap.PRICING_VIEW, "*": Cap.PRICING_MANAGE}
+    queryset = FareRule.objects.none()
+
+    @extend_schema(
+        parameters=[OpenApiParameter("state", str, required=False)],
+        responses={200: OpenApiTypes.OBJECT},
+        operation_id="fuel_overview",
+    )
+    def list(self, request):
+        from . import fuel
+
+        states = sorted(set(City.objects.filter(is_active=True).values_list("state", flat=True)))
+        state = request.query_params.get("state") or (states[0] if states else "")
+        history = fuel.FuelPrice.objects.filter(state=state)[:30]
+        return Response(
+            {
+                "states": states,
+                **fuel.suggestions(state),
+                "history": [
+                    {"fuel": p.fuel, "price": p.price, "effective_on": p.effective_on}
+                    for p in history
+                ],
+            }
+        )
+
+    @extend_schema(request=FuelPriceSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from . import fuel
+
+        data = FuelPriceSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        p = fuel.record(user=request.user, **data.validated_data)
+        return Response({"id": p.pk}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def apply(self, request):
+        from . import fuel
+
+        ride_type = get_object_or_404(RideType, code=request.data.get("ride_type"))
+        updated = fuel.apply(str(request.data.get("state", "")), ride_type, user=request.user)
+        return Response({"updated": updated})

@@ -327,3 +327,6 @@ class FareLock(models.Model):
 
     def __str__(self) -> str:
         return f"{self.reference}: {self.pickup_address} → {self.dropoff_address}"
+
+
+from .fuel import FareFuelBasis, FuelPrice  # noqa: E402,F401  (registers the models)

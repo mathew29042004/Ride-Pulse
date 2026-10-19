@@ -773,6 +773,14 @@ ledger still balances, times the restore, then drops the scratch database. A fai
 alerts the admins. Ops → Backups shows every run and can run either now. In production the file
 would also be copied to storage in another region.
 
+### Fuel prices and fare revisions (`pricing.fuel`)
+
+Ops record petrol, diesel and CNG prices per state (Ops → Fuel prices). For each ride type, its
+main fuel and typical mileage give the fuel cost per km; the change since the price the fares were
+set at is the suggested per-km change (passed through in full, rounded to 25 paise). The page also
+shows what a typical driver loses per day if fares aren't revised. Applying updates every fare rule
+for that ride type in the state, records the new basis, and logs each change in the audit log.
+
 ### Station booking counters (`rides.counters`)
 
 A counter at every railway station and bus stand lets staff (`counter.operate`, support agents)
