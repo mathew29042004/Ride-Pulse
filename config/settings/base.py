@@ -275,6 +275,7 @@ CELERY_BEAT_SCHEDULE = {
     "attendance": {"task": "workspace.close_attendance", "schedule": timedelta(hours=1)},
     "grievances": {"task": "trust.grievance_sweep", "schedule": timedelta(hours=1)},
     "flights": {"task": "rides.follow_flights", "schedule": timedelta(minutes=5)},
+    "watchtower": {"task": "reliability.watchtower", "schedule": timedelta(minutes=1)},
     "access-reviews": {
         "task": "workspace.chase_access_reviews",
         "schedule": crontab(hour=10, minute=0),

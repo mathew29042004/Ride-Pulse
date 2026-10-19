@@ -22,6 +22,51 @@
     ],
     "type": "object"
    },
+   "ActActionEnum": {
+    "description": "* `suspend` - suspend\n* `reinstate` - reinstate\n* `offline` - offline\n* `block` - block\n* `unblock` - unblock\n* `cancel` - cancel",
+    "enum": [
+     "suspend",
+     "reinstate",
+     "offline",
+     "block",
+     "unblock",
+     "cancel"
+    ],
+    "type": "string"
+   },
+   "ActKindEnum": {
+    "description": "* `driver` - driver\n* `rider` - rider\n* `trip` - trip",
+    "enum": [
+     "driver",
+     "rider",
+     "trip"
+    ],
+    "type": "string"
+   },
+   "ActRequest": {
+    "properties": {
+     "action": {
+      "$ref": "#/components/schemas/ActActionEnum"
+     },
+     "id": {
+      "type": "integer"
+     },
+     "kind": {
+      "$ref": "#/components/schemas/ActKindEnum"
+     },
+     "reason": {
+      "default": "",
+      "maxLength": 240,
+      "type": "string"
+     }
+    },
+    "required": [
+     "action",
+     "id",
+     "kind"
+    ],
+    "type": "object"
+   },
    "ActionItemRequest": {
     "properties": {
      "assignee_id": {
@@ -1669,6 +1714,29 @@
      "ELECTRIC"
     ],
     "type": "string"
+   },
+   "DelegateRequest": {
+    "properties": {
+     "hours": {
+      "default": 8,
+      "maximum": 72,
+      "minimum": 1,
+      "type": "integer"
+     },
+     "reason": {
+      "maxLength": 240,
+      "minLength": 1,
+      "type": "string"
+     },
+     "to": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "reason",
+     "to"
+    ],
+    "type": "object"
    },
    "DepartmentEnum": {
     "description": "* `LEADERSHIP` - Leadership\n* `OPERATIONS` - City operations\n* `RIDES` - Rides\n* `SUPPORT` - Customer support\n* `MAINTENANCE` - Fleet & maintenance\n* `INTERCITY` - Intercity & rentals\n* `PARCELS` - Parcels",
@@ -3696,6 +3764,10 @@
      "city": {
       "nullable": true,
       "type": "integer"
+     },
+     "confirm": {
+      "default": false,
+      "type": "boolean"
      },
      "hours": {
       "default": 2,
@@ -18771,6 +18843,97 @@
     ]
    }
   },
+  "/api/v1/ops/command/act/": {
+   "post": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_act_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ActRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ActRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ActRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/command/alerts/{alert_id}/acknowledge/": {
+   "post": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_alerts_acknowledge_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "alert_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
   "/api/v1/ops/command/broadcast/": {
    "post": {
     "description": "The commander's command centre (see ``reliability.command``).",
@@ -18795,6 +18958,127 @@
      },
      "required": true
     },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/command/delegate/": {
+   "post": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_delegate_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DelegateRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/DelegateRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/DelegateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/command/delegations/{delegation_id}/revoke/": {
+   "post": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_delegations_revoke_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "delegation_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/command/people/": {
+   "get": {
+    "description": "The commander's command centre (see ``reliability.command``).",
+    "operationId": "ops_command_people_retrieve",
     "responses": {
      "200": {
       "content": {

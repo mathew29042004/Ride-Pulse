@@ -21,7 +21,9 @@ from apps.core.api import BaseViewSet
 
 from . import jobs, outbox, security
 from .models import (
+    CommandAlert,
     CommandOrder,
+    Delegation,
     DeliveryStatus,
     Incident,
     OrderKind,
@@ -395,6 +397,22 @@ class IssueOrderSerializer(serializers.Serializer):
     vehicle_code = serializers.CharField(required=False, allow_blank=True, default="")
     reason = serializers.CharField(max_length=240)
     hours = serializers.IntegerField(min_value=1, max_value=72, default=2)
+    confirm = serializers.BooleanField(default=False)
+
+
+class ActSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=["driver", "rider", "trip"])
+    id = serializers.IntegerField()
+    action = serializers.ChoiceField(
+        choices=["suspend", "reinstate", "offline", "block", "unblock", "cancel"]
+    )
+    reason = serializers.CharField(max_length=240, required=False, allow_blank=True, default="")
+
+
+class DelegateSerializer(serializers.Serializer):
+    to = serializers.IntegerField()
+    hours = serializers.IntegerField(min_value=1, max_value=72, default=8)
+    reason = serializers.CharField(max_length=240)
 
 
 class BroadcastSerializer(serializers.Serializer):
@@ -432,6 +450,7 @@ class CommandViewSet(BaseViewSet):
             city=city,
             vehicle_code=v["vehicle_code"],
             hours=v["hours"],
+            confirm=v["confirm"],
         )
         return Response(command.row(order), status=status.HTTP_201_CREATED)
 
@@ -452,3 +471,53 @@ class CommandViewSet(BaseViewSet):
         data.is_valid(raise_exception=True)
         sent = command.broadcast(user=request.user, **data.validated_data)
         return Response({"sent": sent})
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"alerts/(?P<alert_id>\d+)/acknowledge")
+    def acknowledge(self, request, alert_id=None):
+        from . import command
+
+        alert = get_object_or_404(CommandAlert, pk=alert_id)
+        return Response(command.alert_row(command.acknowledge(alert, user=request.user)))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def people(self, request):
+        from . import command
+
+        return Response({"results": command.find_people(request.query_params.get("q", ""))})
+
+    @extend_schema(request=ActSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def act(self, request):
+        from . import command
+
+        data = ActSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return Response(command.act(user=request.user, **data.validated_data))
+
+    @extend_schema(request=DelegateSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def delegate(self, request):
+        from apps.accounts.models import User
+
+        from . import command
+
+        data = DelegateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        d = command.delegate(
+            user=request.user,
+            to=get_object_or_404(User, pk=v["to"]),
+            hours=v["hours"],
+            reason=v["reason"],
+        )
+        return Response(command.delegation_row(d), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"delegations/(?P<delegation_id>\d+)/revoke")
+    def revoke(self, request, delegation_id=None):
+        from . import command
+
+        d = get_object_or_404(Delegation, pk=delegation_id)
+        return Response(command.delegation_row(command.revoke(d, user=request.user)))

@@ -315,3 +315,45 @@ class CommandOrder(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_kind_display()} in {self.city or 'all cities'}"
+
+
+class CommandAlert(models.Model):
+    """Something the watchtower noticed (riders stranded, completion falling, an SOS nobody has
+    picked up). One per ``key`` while it's open; the commander acknowledges it."""
+
+    key = models.CharField(max_length=80, db_index=True)
+    level = models.CharField(max_length=8, default="WARNING")  # WARNING | CRITICAL
+    city = models.ForeignKey(
+        "geo.City", null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
+    title = models.CharField(max_length=160)
+    detail = models.CharField(max_length=400, blank=True)
+    link = models.CharField(max_length=120, blank=True)
+    raised_at = models.DateTimeField(db_index=True)
+    acknowledged_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-raised_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class Delegation(models.Model):
+    """The commander hands their powers to a senior colleague for a few hours (e.g. while
+    travelling). Ends by itself or when revoked; everything they do is audited as usual."""
+
+    to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    reason = models.CharField(max_length=240)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-starts_at"]
+
+    def __str__(self) -> str:
+        return f"Acting commander: {self.to}"

@@ -860,6 +860,21 @@ posted to #leadership and #operations, drivers in the affected cities get a noti
 broadcast reaches staff, drivers and riders at once. The commander and administrators are members
 of every team channel.
 
+Real time and more power:
+
+* **Watchtower** (`reliability.watchtower`, every minute; the simulator runs it too) raises live
+  alerts: 5+ riders stranded in a city, completion under 50% once a city has 30 trips, an SOS
+  nobody has picked up in 3 minutes. Alerts are pushed over the ops socket (a pop-up in the
+  command centre within a second), the commander and administrators are notified, and an alert
+  stays quiet for 30 minutes after it's acknowledged.
+* **Act on anyone**: search by phone, email, name or trip number, then take a driver offline,
+  suspend or reinstate them, block or unblock a rider, or cancel a stuck trip, each with a reason
+  and an audit entry.
+* **Acting commander**: the commander hands command to an administrator or regional manager for
+  1–72 hours (they're notified and it's posted to #leadership); it ends by itself or when taken
+  back, and an acting commander can't hand it on.
+* **Safety catch**: pausing bookings in every city must be confirmed (type PAUSE).
+
 ### EV subsidy finder (`drivers.ev_subsidy`)
 
 Drivers thinking of switching to electric (Driver → Vehicle loan → subsidies) choose an electric

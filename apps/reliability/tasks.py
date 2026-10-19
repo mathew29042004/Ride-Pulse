@@ -30,3 +30,10 @@ def weekly_restore_drill() -> dict:
     from .backups import restore_drill
 
     return restore_drill()
+
+
+@shared_task(name="reliability.watchtower")
+def watchtower() -> dict:
+    from .command import watch
+
+    return watch()

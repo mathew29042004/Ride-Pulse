@@ -6,6 +6,14 @@
 * Every order and lift is written to the audit log and posted to #leadership and #operations,
   and drivers in the affected cities are told.
 * A broadcast reaches staff, drivers and riders at once (an important announcement).
+* The watchtower (every minute) raises live alerts: riders stranded with no drivers nearby,
+  completion collapsing in a city, an SOS nobody has picked up. They appear in the command centre
+  at once (over the ops socket) and the commander and administrators are notified.
+* People: find anyone by phone, email, name or trip number and act (suspend or reinstate a
+  driver, block or unblock a rider, take a driver offline, cancel a stuck trip).
+* Delegation: the commander can make an administrator or regional manager acting commander for
+  a few hours; it ends by itself or when revoked.
+* Pausing bookings in every city is the one order that must be confirmed.
 """
 
 from datetime import timedelta
@@ -16,7 +24,7 @@ from django.utils import timezone
 
 from apps.core.exceptions import BusinessRuleViolation
 
-from .models import CommandOrder, OrderKind
+from .models import CommandAlert, CommandOrder, Delegation, OrderKind
 
 VEHICLES = {"BIKE": "Bike taxis", "AUTO": "Autos", "CAR": "Cars"}
 
@@ -71,8 +79,22 @@ def _tell_drivers(order: CommandOrder, text: str) -> None:
         notify(d.user, "Message from Ride Pulse", text, level=Level.WARNING, link="/drive")
 
 
+def _live(event: str, data: dict) -> None:
+    from apps.realtime import broadcast
+
+    broadcast.ops_event(event, data)
+
+
 def issue(
-    *, user, kind: str, reason: str, city=None, vehicle_code: str = "", hours: int = 2, now=None
+    *,
+    user,
+    kind: str,
+    reason: str,
+    city=None,
+    vehicle_code: str = "",
+    hours: int = 2,
+    confirm: bool = False,
+    now=None,
 ) -> CommandOrder:
     from apps.audit.models import AuditAction
     from apps.audit.services import log_event
@@ -85,6 +107,11 @@ def issue(
     if len(reason.strip()) < 10:
         raise BusinessRuleViolation(
             "Give the reason: riders and drivers will see it.", field="reason"
+        )
+    if kind == OrderKind.PAUSE_BOOKINGS and city is None and not confirm:
+        raise BusinessRuleViolation(
+            "Pausing bookings in every city stops the whole platform. Confirm to go ahead.",
+            field="confirm",
         )
     order = CommandOrder.objects.create(
         kind=kind,
@@ -108,6 +135,7 @@ def issue(
     )
     if kind != OrderKind.SURGE_OFF:
         _tell_drivers(order, f"{what.capitalize()} in {where}: {order.reason}")
+    _live("command_order", row(order, now))
     return order
 
 
@@ -122,6 +150,7 @@ def lift(order: CommandOrder, *, user, now=None) -> CommandOrder:
     order.save(update_fields=["ends_at", "lifted_by"])
     log_event(AuditAction.ACTION, order, message=f"Lifted: {order}", actor=user)
     _announce(f"✅ Order lifted: {order} (by {user.get_full_name()})")
+    _live("command_order", row(order, now))
     return order
 
 
@@ -230,6 +259,17 @@ def overview(*, now=None) -> dict:
         ],
         "cities": cities,
         "vehicles": [{"code": k, "label": v} for k, v in VEHICLES.items()],
+        "alerts": [
+            alert_row(a)
+            for a in CommandAlert.objects.filter(acknowledged_at__isnull=True).select_related(
+                "city"
+            )[:30]
+        ],
+        "delegations": [
+            delegation_row(d, now)
+            for d in Delegation.objects.filter(ends_at__gt=now).select_related("to")
+        ],
+        "candidates": candidates(),
     }
 
 
@@ -264,3 +304,300 @@ def seed_commander(*, log=print) -> dict:
     sync_channels()
     log("  commander: commander@ridepulse.dev")
     return {"commander": 1}
+
+
+# --- Delegation ---------------------------------------------------------------------------------
+
+
+def is_acting_commander(user, *, now=None) -> bool:
+    now = now or timezone.now()
+    return Delegation.objects.filter(to=user, starts_at__lte=now, ends_at__gt=now).exists()
+
+
+def delegate(*, user, to, hours: int, reason: str, now=None) -> Delegation:
+    from apps.accounts.models import STAFF_ROLES_FOR_DELEGATION
+    from apps.audit.models import AuditAction
+    from apps.audit.services import log_event
+    from apps.notifications.models import Level
+    from apps.notifications.services import notify
+
+    now = now or timezone.now()
+    if user.role != "COMMANDER":
+        raise BusinessRuleViolation("Only the commander can hand over command.")
+    if to.role not in STAFF_ROLES_FOR_DELEGATION or not to.is_active:
+        raise BusinessRuleViolation(
+            "Hand over only to an administrator or a regional manager.", field="to"
+        )
+    if len(reason.strip()) < 5:
+        raise BusinessRuleViolation("Say why (e.g. travelling).", field="reason")
+    Delegation.objects.filter(to=to, ends_at__gt=now).update(ends_at=now)
+    d = Delegation.objects.create(
+        to=to,
+        by=user,
+        reason=reason.strip()[:240],
+        starts_at=now,
+        ends_at=now + timedelta(hours=max(1, min(int(hours), 72))),
+    )
+    log_event(AuditAction.ACTION, d, message=f"Command handed to {to} ({d.reason})", actor=user)
+    notify(
+        to,
+        "You're acting commander",
+        f"{user.get_full_name()} handed you command for {hours} h: {d.reason}. "
+        "The command centre is in your menu.",
+        level=Level.WARNING,
+        link="/ops/command",
+    )
+    _announce(f"👑 {to.get_full_name()} is acting commander for {hours} h ({d.reason}).")
+    return d
+
+
+def revoke(d: Delegation, *, user, now=None) -> Delegation:
+    from apps.audit.models import AuditAction
+    from apps.audit.services import log_event
+
+    now = now or timezone.now()
+    if user.role != "COMMANDER":
+        raise BusinessRuleViolation("Only the commander can take command back.")
+    d.ends_at = min(d.ends_at, now)
+    d.save(update_fields=["ends_at"])
+    log_event(AuditAction.ACTION, d, message=f"Command taken back from {d.to}", actor=user)
+    _announce(f"👑 Command is back with {user.get_full_name()}.")
+    return d
+
+
+def delegation_row(d: Delegation, now=None) -> dict:
+    now = now or timezone.now()
+    return {
+        "id": d.pk,
+        "to": d.to.get_full_name(),
+        "to_role": d.to.get_role_display(),
+        "reason": d.reason,
+        "ends_at": d.ends_at.isoformat(),
+        "active": d.starts_at <= now < d.ends_at,
+    }
+
+
+def candidates() -> list[dict]:
+    from apps.accounts.models import STAFF_ROLES_FOR_DELEGATION, User
+
+    return [
+        {"id": u.pk, "name": u.get_full_name(), "role": u.get_role_display()}
+        for u in User.objects.filter(role__in=STAFF_ROLES_FOR_DELEGATION, is_active=True).order_by(
+            "role", "first_name"
+        )
+    ]
+
+
+# --- Watchtower ----------------------------------------------------------------------------------
+
+STRANDED = 5  # riders waiting for a driver in one city
+COMPLETION_FLOOR = 50  # % of today's trips, once a city has at least MIN_TRIPS
+MIN_TRIPS = 30
+SOS_UNPICKED = timedelta(minutes=3)
+
+
+def _raise(key: str, *, level: str, title: str, detail: str, city=None, link: str = "", now):
+    """One open alert per key; returns the new alert or None when it's already open."""
+    if CommandAlert.objects.filter(key=key, acknowledged_at__isnull=True).exists():
+        return None
+    if CommandAlert.objects.filter(key=key, raised_at__gte=now - timedelta(minutes=30)).exists():
+        return None  # acknowledged in the last half hour: don't nag
+    alert = CommandAlert.objects.create(
+        key=key, level=level, title=title, detail=detail, city=city, link=link, raised_at=now
+    )
+    from apps.accounts.models import User
+    from apps.notifications.models import Level
+    from apps.notifications.services import notify
+
+    for u in User.objects.filter(role__in=["COMMANDER", "ADMIN"], is_active=True):
+        notify(
+            u,
+            title,
+            detail,
+            level=Level.DANGER if level == "CRITICAL" else Level.WARNING,
+            link="/ops/command",
+        )
+    _live("command_alert", alert_row(alert))
+    return alert
+
+
+def watch(*, now=None) -> dict:
+    """Every minute: look for trouble in each city and raise alerts."""
+    from django.db.models import Count
+
+    from apps.geo.models import City
+    from apps.rides.models import Trip, TripStatus
+    from apps.support.models import IncidentStatus as SosStatus
+    from apps.support.models import SafetyIncident
+
+    now = now or timezone.now()
+    raised = 0
+    today = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
+    waiting = dict(
+        Trip.objects.filter(
+            status=TripStatus.REQUESTED, requested_at__gte=now - timedelta(minutes=15)
+        )
+        .values_list("city_id")
+        .annotate(n=Count("id"))
+    )
+    stats = {
+        r["city_id"]: r
+        for r in Trip.objects.filter(requested_at__gte=today)
+        .values("city_id")
+        .annotate(n=Count("id"), done=Count("id", filter=Q(status=TripStatus.COMPLETED)))
+    }
+    for city in City.objects.filter(is_active=True):
+        n = waiting.get(city.pk, 0)
+        if n >= STRANDED:
+            raised += bool(
+                _raise(
+                    f"stranded:{city.pk}",
+                    level="CRITICAL" if n >= 2 * STRANDED else "WARNING",
+                    title=f"{n} riders waiting for a driver in {city.name}",
+                    detail="Consider a surge, a driver quest or a broadcast to drivers nearby.",
+                    city=city,
+                    link="/ops/live",
+                    now=now,
+                )
+            )
+        s = stats.get(city.pk)
+        if s and s["n"] >= MIN_TRIPS and 100 * s["done"] / s["n"] < COMPLETION_FLOOR:
+            pct = round(100 * s["done"] / s["n"])
+            raised += bool(
+                _raise(
+                    f"completion:{city.pk}:{today:%Y%m%d}",
+                    level="WARNING",
+                    title=f"Only {pct}% of trips completed in {city.name} today",
+                    detail=f"{s['done']} of {s['n']} trips. Check cancellations and driver supply.",
+                    city=city,
+                    link="/ops/analytics",
+                    now=now,
+                )
+            )
+    for sos in SafetyIncident.objects.filter(
+        status=SosStatus.OPEN, created_at__lte=now - SOS_UNPICKED
+    ).select_related("trip__city")[:20]:
+        raised += bool(
+            _raise(
+                f"sos:{sos.pk}",
+                level="CRITICAL",
+                title=f"SOS {sos.incident_number} not picked up",
+                detail=f"Raised {int((now - sos.created_at).total_seconds() // 60)} minutes ago "
+                f"in {sos.trip.city.name}. Nobody has acknowledged it.",
+                city=sos.trip.city,
+                link=f"/ops/safety/{sos.pk}",
+                now=now,
+            )
+        )
+    return {"alerts_raised": raised}
+
+
+def alert_row(a: CommandAlert) -> dict:
+    return {
+        "id": a.pk,
+        "level": a.level,
+        "title": a.title,
+        "detail": a.detail,
+        "city": a.city.name if a.city else None,
+        "link": a.link,
+        "raised_at": a.raised_at.isoformat(),
+        "acknowledged_by": a.acknowledged_by.get_full_name() if a.acknowledged_by else None,
+    }
+
+
+def acknowledge(alert: CommandAlert, *, user, now=None) -> CommandAlert:
+    alert.acknowledged_by, alert.acknowledged_at = user, now or timezone.now()
+    alert.save(update_fields=["acknowledged_by", "acknowledged_at"])
+    _live("command_alert", alert_row(alert))
+    return alert
+
+
+# --- People ---------------------------------------------------------------------------------
+
+
+def find_people(q: str) -> list[dict]:
+    """Drivers, riders and trips matching a phone, email, name or trip number."""
+    from apps.drivers.models import DriverProfile
+    from apps.riders.models import RiderProfile
+    from apps.rides.models import Trip
+
+    q = q.strip()
+    if len(q) < 3:
+        return []
+    people = Q(user__email__icontains=q) | Q(user__phone__icontains=q)
+    parts = q.split()
+    if len(parts) > 1:
+        people |= Q(user__first_name__icontains=parts[0], user__last_name__icontains=parts[-1])
+    else:
+        people |= Q(user__first_name__icontains=q) | Q(user__last_name__icontains=q)
+    out = []
+    for d in DriverProfile.objects.filter(people).select_related("user", "city")[:6]:
+        out.append(
+            {
+                "kind": "driver",
+                "id": d.pk,
+                "name": d.user.get_full_name(),
+                "detail": f"Driver · {d.city.name} · {d.get_availability_display()}",
+                "status": d.onboarding_status,
+                "suspended": d.onboarding_status == "SUSPENDED",
+                "online": d.availability != "OFFLINE",
+                "link": f"/ops/drivers/{d.pk}",
+            }
+        )
+    for r in RiderProfile.objects.filter(people).select_related("user")[:6]:
+        out.append(
+            {
+                "kind": "rider",
+                "id": r.pk,
+                "name": r.user.get_full_name(),
+                "detail": f"Rider · {r.user.email}",
+                "blocked": r.is_blocked,
+                "link": f"/ops/riders/{r.pk}",
+            }
+        )
+    for t in Trip.objects.filter(trip_number__icontains=q).select_related("city")[:4]:
+        out.append(
+            {
+                "kind": "trip",
+                "id": t.pk,
+                "name": t.trip_number,
+                "detail": f"Trip · {t.city.name} · {t.get_status_display()}",
+                "status": t.status,
+                "link": f"/ops/trips/{t.pk}",
+            }
+        )
+    return out
+
+
+def act(*, user, kind: str, id: int, action: str, reason: str = "") -> dict:
+    """One action on a driver, rider or trip, with a reason, audited by the services it calls."""
+    from apps.drivers import services as drivers
+    from apps.drivers.models import DriverProfile
+    from apps.riders import services as riders
+    from apps.riders.models import RiderProfile
+    from apps.rides import services as rides
+    from apps.rides.models import Trip
+
+    if action != "offline" and len(reason.strip()) < 5:
+        raise BusinessRuleViolation("Give a reason.", field="reason")
+    if kind == "driver":
+        driver = DriverProfile.objects.get(pk=id)
+        if action == "suspend":
+            drivers.suspend_driver(driver, reason=reason, actor=user)
+        elif action == "reinstate":
+            drivers.reinstate_driver(driver, actor=user)
+        elif action == "offline":
+            drivers.go_offline(driver)
+        else:
+            raise BusinessRuleViolation("Unknown action.")
+    elif kind == "rider":
+        rider = RiderProfile.objects.get(pk=id)
+        if action not in ("block", "unblock"):
+            raise BusinessRuleViolation("Unknown action.")
+        riders.set_blocked(rider, action == "block", reason=reason, actor=user)
+    elif kind == "trip" and action == "cancel":
+        rides.cancel_trip(Trip.objects.get(pk=id), user=user, reason=reason)
+    else:
+        raise BusinessRuleViolation("Unknown action.")
+    _live("command_action", {"kind": kind, "id": id, "action": action, "by": user.get_full_name()})
+    return {"done": True}

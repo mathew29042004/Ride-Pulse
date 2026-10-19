@@ -22,6 +22,9 @@ class Role(models.TextChoices):
     FLEET_OWNER = "FLEET_OWNER", "Fleet owner (partner)"
 
 
+# Senior staff the commander may hand their powers to for a few hours.
+STAFF_ROLES_FOR_DELEGATION = ("ADMIN", "REGIONAL_MANAGER")
+
 # Partners and customers: they only ever see their own records.
 END_USER_ROLES = (Role.RIDER, Role.DRIVER, Role.FLEET_OWNER)
 
@@ -104,11 +107,22 @@ class User(AbstractUser):
 
     @property
     def capabilities(self) -> frozenset[str]:
-        return capabilities_for(self.role) if self.is_active else frozenset()
+        if not self.is_active:
+            return frozenset()
+        caps = capabilities_for(self.role)
+        if self.role in STAFF_ROLES_FOR_DELEGATION and self.has_capability("command"):
+            caps = caps | {"command"}  # acting commander, for a few hours
+        return caps
 
     def has_capability(self, capability: str) -> bool:
         if capability == "command":  # the commander's own, not even a superuser's
-            return self.is_active and self.role == Role.COMMANDER
+            if not self.is_active:
+                return False
+            if self.role == Role.COMMANDER:
+                return True
+            from apps.reliability.command import is_acting_commander
+
+            return is_acting_commander(self)
         return self.is_active and (self.is_superuser or capability in self.capabilities)
 
     @property

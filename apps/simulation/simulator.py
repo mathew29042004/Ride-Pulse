@@ -662,6 +662,9 @@ class Simulator:
             pricing.recompute_surge()
             price_alerts.check_alerts()
             driver_wellbeing.sweep()
+            from apps.reliability import command
+
+            command.watch()  # the commander's watchtower (Celery beat runs it in production)
             self.workshop()
             self.tours()
             self.last_surge = clock.monotonic()
