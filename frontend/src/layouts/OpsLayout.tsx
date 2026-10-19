@@ -170,7 +170,7 @@ export default function OpsLayout() {
                     className={({ isActive }) =>
                       clsx(
                         "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                        isActive ? "bg-brand-soft text-brand-fg" : "text-muted hover:bg-surface-3 hover:text-fg",
+                        isActive ? "bg-brand-soft text-brand-fg shadow-[inset_3px_0_0_var(--color-brand)]" : "text-muted hover:bg-surface-3 hover:text-fg",
                       )
                     }
                   >
@@ -252,7 +252,7 @@ export default function OpsLayout() {
               <NotificationBell />
             </div>
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto">
+          <main className="rp-glow min-h-0 flex-1 overflow-y-auto">
             <div className={clsx(pathname === "/ops/live" ? "h-full" : "mx-auto max-w-7xl px-4 py-6 lg:px-8")}>
               <OfflineBanner />
               <TwoStepReminder />

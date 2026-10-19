@@ -1,11 +1,13 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
 @import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Semantic design tokens. Utilities like bg-surface / text-muted / border-line follow the theme. */
 @theme {
+  --font-display: "Plus Jakarta Sans Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --color-canvas: #f7f8fa;
@@ -23,6 +25,9 @@
   --color-brand-soft: #e7f8f0;
   --color-brand-fg: #04281c;
   --color-on-brand: #04281c; /* text on a solid brand fill, both themes (6:1) */
+
+  --gradient-brand: linear-gradient(135deg, #34d399 0%, #10b981 45%, #0d9488 100%);
+  --gradient-glow: radial-gradient(1200px 380px at 20% -10%, rgb(16 185 129 / 0.10), transparent 60%), radial-gradient(900px 320px at 95% -10%, rgb(14 165 233 / 0.08), transparent 60%);
 
   --color-surge: #f59e0b;
   --color-danger: #e11d48;
@@ -98,7 +103,18 @@
   h1,
   h2,
   h3 {
-    letter-spacing: -0.015em;
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  .rp-glow {
+    background-image: var(--gradient-glow);
+    background-repeat: no-repeat;
+  }
+  .rp-gradient-text {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   .label {
     @apply mb-1.5 block text-xs font-medium text-muted;

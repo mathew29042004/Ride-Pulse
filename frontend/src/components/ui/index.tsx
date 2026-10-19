@@ -14,8 +14,8 @@ type Variant = "primary" | "brand" | "secondary" | "ghost" | "danger" | "outline
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-ink text-ink-fg hover:opacity-90",
-  brand: "bg-brand text-on-brand shadow-[0_6px_16px_-8px_rgb(16_185_129/0.7)] hover:bg-brand-strong",
+  primary: "bg-ink text-ink-fg shadow-[0_6px_16px_-8px_rgb(15_23_42/0.55)] hover:opacity-90",
+  brand: "bg-[image:var(--gradient-brand)] text-on-brand shadow-[0_8px_20px_-8px_rgb(16_185_129/0.75)] hover:brightness-105 hover:shadow-[0_10px_24px_-8px_rgb(16_185_129/0.85)]",
   secondary: "bg-surface-3 text-fg hover:bg-line",
   ghost: "text-fg hover:bg-surface-3",
   danger: "bg-danger text-white hover:opacity-90",
@@ -335,18 +335,19 @@ export function Stat({
 }) {
   const iconTone = {
     neutral: "bg-surface-3 text-fg",
-    brand: "bg-brand-soft text-brand-strong dark:text-brand-fg",
-    warning: "bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300",
-    danger: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-    info: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+    brand: "bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-[0_6px_14px_-6px_rgb(16_185_129/0.7)]",
+    warning: "bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-[0_6px_14px_-6px_rgb(245_158_11/0.7)]",
+    danger: "bg-gradient-to-br from-rose-400 to-pink-600 text-white shadow-[0_6px_14px_-6px_rgb(225_29_72/0.6)]",
+    info: "bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-[0_6px_14px_-6px_rgb(14_165_233/0.6)]",
   }[tone];
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between">
+    <Card className="group relative overflow-hidden p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-float)]">
+      <div className="pointer-events-none absolute -top-10 -right-10 size-28 rounded-full bg-brand/5 transition group-hover:bg-brand/10" />
+      <div className="relative flex items-center justify-between">
         <span className="text-xs font-medium text-muted">{label}</span>
-        {icon && <span className={clsx("flex size-8 items-center justify-center rounded-xl", iconTone)}>{icon}</span>}
+        {icon && <span className={clsx("flex size-9 items-center justify-center rounded-xl", iconTone)}>{icon}</span>}
       </div>
-      <div className="mt-3 text-[26px] leading-none font-semibold tracking-tight tabular-nums">{value}</div>
+      <div className="relative mt-3 font-[family-name:var(--font-display)] text-[28px] leading-none font-bold tracking-tight tabular-nums">{value}</div>
       {sub && <div className="mt-1 text-xs text-muted">{sub}</div>}
     </Card>
   );

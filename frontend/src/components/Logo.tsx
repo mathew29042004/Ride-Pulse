@@ -20,8 +20,8 @@ export function Logo({ className, light = false }: { className?: string; light?:
   return (
     <span className={clsx("inline-flex items-center gap-2", className)}>
       <LogoMark size={30} />
-      <span className={clsx("text-lg font-bold tracking-tight", light ? "text-white" : "text-fg")}>
-        Ride<span className="text-brand">Pulse</span>
+      <span className={clsx("font-[family-name:var(--font-display)] text-lg font-extrabold tracking-tight", light ? "text-white" : "text-fg")}>
+        Ride<span className="rp-gradient-text">Pulse</span>
       </span>
     </span>
   );
