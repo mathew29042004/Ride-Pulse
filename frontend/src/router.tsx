@@ -84,6 +84,7 @@ const OpsGst = lazy(() => import("./pages/ops/OpsGst"));
 const OpsNps = lazy(() => import("./pages/ops/OpsNps"));
 const OpsWeather = lazy(() => import("./pages/ops/OpsWeather"));
 const OpsCommand = lazy(() => import("./pages/ops/OpsCommand"));
+const OpsBrief = lazy(() => import("./pages/ops/OpsBrief"));
 const OpsBackups = lazy(() => import("./pages/ops/OpsBackups"));
 const OpsAttendance = lazy(() => import("./pages/ops/OpsAttendance"));
 const OpsPayroll = lazy(() => import("./pages/ops/OpsPayroll"));
@@ -125,6 +126,7 @@ function Lazy({ children }: { children: ReactNode }) {
 
 const STAFF: Role[] = [
   "COMMANDER",
+  "CHIEF_OF_STAFF",
   "ADMIN",
   "REGIONAL_MANAGER",
   "OPS_MANAGER",
@@ -275,6 +277,7 @@ export const router = createBrowserRouter([
       { path: "incidents", element: lazyPage(<OpsIncidents />) },
       { path: "weather", element: lazyPage(<OpsWeather />) },
       { path: "command", element: lazyPage(<OpsCommand />) },
+      { path: "brief", element: lazyPage(<OpsBrief />) },
       { path: "backups", element: lazyPage(<OpsBackups />) },
       { path: "loans", element: lazyPage(<OpsLoans />) },
       { path: "pnl", element: lazyPage(<OpsPnl />) },

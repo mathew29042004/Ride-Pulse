@@ -665,6 +665,9 @@ class Simulator:
             from apps.reliability import command
 
             command.watch()  # the commander's watchtower (Celery beat runs it in production)
+            from apps.reliability import briefing
+
+            briefing.auto_briefing()  # the chief of staff's briefing every 3 hours
             self.workshop()
             self.tours()
             self.last_surge = clock.monotonic()

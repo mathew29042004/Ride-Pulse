@@ -37,3 +37,10 @@ def watchtower() -> dict:
     from .command import watch
 
     return watch()
+
+
+@shared_task(name="reliability.auto_briefing")
+def auto_briefing() -> dict:
+    from .briefing import auto_briefing
+
+    return auto_briefing()

@@ -328,6 +328,28 @@
     ],
     "type": "object"
    },
+   "AskRequest": {
+    "properties": {
+     "detail": {
+      "default": "",
+      "maxLength": 4000,
+      "type": "string"
+     },
+     "order": {
+      "additionalProperties": {},
+      "type": "object"
+     },
+     "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "title"
+    ],
+    "type": "object"
+   },
    "AssignRequest": {
     "properties": {
      "agent": {
@@ -748,6 +770,22 @@
     },
     "required": [
      "method"
+    ],
+    "type": "object"
+   },
+   "ChiefDecisionRequest": {
+    "properties": {
+     "approve": {
+      "type": "boolean"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 500,
+      "type": "string"
+     }
+    },
+    "required": [
+     "approve"
     ],
     "type": "object"
    },
@@ -2374,6 +2412,22 @@
      "id",
      "name",
      "url"
+    ],
+    "type": "object"
+   },
+   "EscalateRequest": {
+    "properties": {
+     "alert": {
+      "type": "integer"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 500,
+      "type": "string"
+     }
+    },
+    "required": [
+     "alert"
     ],
     "type": "object"
    },
@@ -8283,9 +8337,10 @@
     "type": "object"
    },
    "RoleEnum": {
-    "description": "* `COMMANDER` - Commander\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+    "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
     "enum": [
      "COMMANDER",
+     "CHIEF_OF_STAFF",
      "ADMIN",
      "REGIONAL_MANAGER",
      "OPS_MANAGER",
@@ -9942,6 +9997,16 @@
     },
     "type": "object"
    },
+   "TextRequest": {
+    "properties": {
+     "text": {
+      "default": "",
+      "maxLength": 500,
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
    "ThreadRequest": {
     "properties": {
      "meeting_id": {
@@ -11085,6 +11150,41 @@
     },
     "required": [
      "unread"
+    ],
+    "type": "object"
+   },
+   "UpdateKindEnum": {
+    "description": "* `UPDATE` - UPDATE\n* `BRIEFING` - BRIEFING\n* `ESCALATION` - ESCALATION",
+    "enum": [
+     "UPDATE",
+     "BRIEFING",
+     "ESCALATION"
+    ],
+    "type": "string"
+   },
+   "UpdateRequest": {
+    "properties": {
+     "body": {
+      "default": "",
+      "maxLength": 4000,
+      "type": "string"
+     },
+     "kind": {
+      "allOf": [
+       {
+        "$ref": "#/components/schemas/UpdateKindEnum"
+       }
+      ],
+      "default": "UPDATE"
+     },
+     "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "type": "string"
+     }
+    },
+    "required": [
+     "title"
     ],
     "type": "object"
    },
@@ -18739,6 +18839,365 @@
    "post": {
     "description": "Ops \u2192 Backups: nightly backups and restore drills; run either now.",
     "operationId": "ops_backups_run_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/brief/": {
+   "get": {
+    "description": "The chief of staff's desk: send the chief updates, briefings and escalations; ask for\ndecisions (see ``reliability.briefing``).",
+    "operationId": "brief_desk",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   },
+   "post": {
+    "description": "The chief of staff's desk: send the chief updates, briefings and escalations; ask for\ndecisions (see ``reliability.briefing``).",
+    "operationId": "ops_brief_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UpdateRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/UpdateRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/UpdateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/brief/ask/": {
+   "post": {
+    "description": "The chief of staff's desk: send the chief updates, briefings and escalations; ask for\ndecisions (see ``reliability.briefing``).",
+    "operationId": "ops_brief_ask_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AskRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/AskRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/AskRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/brief/escalate/": {
+   "post": {
+    "description": "The chief of staff's desk: send the chief updates, briefings and escalations; ask for\ndecisions (see ``reliability.briefing``).",
+    "operationId": "ops_brief_escalate_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EscalateRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/EscalateRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/EscalateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/chief/": {
+   "get": {
+    "description": "The chief's inbox: updates from the chief of staff, and decisions to make.",
+    "operationId": "chief_inbox",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/chief/decisions/{decision_id}/decide/": {
+   "post": {
+    "description": "The chief's inbox: updates from the chief of staff, and decisions to make.",
+    "operationId": "ops_chief_decisions_decide_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "decision_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChiefDecisionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/ChiefDecisionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/ChiefDecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/chief/read/": {
+   "post": {
+    "description": "The chief's inbox: updates from the chief of staff, and decisions to make.",
+    "operationId": "ops_chief_read_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/chief/updates/{update_id}/reply/": {
+   "post": {
+    "description": "The chief's inbox: updates from the chief of staff, and decisions to make.",
+    "operationId": "ops_chief_updates_reply_create",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "update_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TextRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/TextRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/TextRequest"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "content": {
@@ -26939,7 +27398,7 @@
       }
      },
      {
-      "description": "* `COMMANDER` - Commander\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+      "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
       "in": "query",
       "name": "role",
       "schema": {
@@ -26950,6 +27409,7 @@
         "ASSOC_PARCELS",
         "ASSOC_RIDES",
         "ASSOC_SUPPORT",
+        "CHIEF_OF_STAFF",
         "COMMANDER",
         "DRIVER",
         "FLEET_EXECUTIVE",
@@ -27884,7 +28344,7 @@
       }
      },
      {
-      "description": "* `COMMANDER` - Commander\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
+      "description": "* `COMMANDER` - Commander\n* `CHIEF_OF_STAFF` - Chief of staff\n* `ADMIN` - Administrator\n* `REGIONAL_MANAGER` - Regional manager\n* `OPS_MANAGER` - City operations manager\n* `ASSOC_RIDES` - Associate manager \u00b7 Rides\n* `ASSOC_SUPPORT` - Associate manager \u00b7 Support\n* `ASSOC_MAINTENANCE` - Associate manager \u00b7 Fleet & maintenance\n* `ASSOC_INTERCITY` - Associate manager \u00b7 Intercity & rentals\n* `ASSOC_PARCELS` - Associate manager \u00b7 Parcels\n* `SUPPORT_LEAD` - Support team lead\n* `SUPPORT_AGENT` - Support agent\n* `FLEET_EXECUTIVE` - Fleet executive\n* `DRIVER` - Driver\n* `RIDER` - Rider\n* `FLEET_OWNER` - Fleet owner (partner)",
       "in": "query",
       "name": "user__role",
       "schema": {
@@ -27895,6 +28355,7 @@
         "ASSOC_PARCELS",
         "ASSOC_RIDES",
         "ASSOC_SUPPORT",
+        "CHIEF_OF_STAFF",
         "COMMANDER",
         "DRIVER",
         "FLEET_EXECUTIVE",

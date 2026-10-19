@@ -37,6 +37,7 @@ class Cap:
     TOURS_MANAGE = "tours.manage"  # tour packages, their prices and tour bookings
     ANNOUNCE = "announce"  # announcements to drivers, riders or staff
     PAYROLL_MANAGE = "payroll.manage"  # salaries, the monthly payroll run and payslips (HR)
+    BRIEF = "brief"  # send the chief updates and ask for decisions (chief of staff, admins)
     COMMAND = "command"  # the commander: standing orders across every city, the command centre
     COUNTER_OPERATE = "counter.operate"  # book rides for walk-up passengers at a station counter
 
@@ -138,8 +139,12 @@ _SUPPORT_LEAD = {*_SUPPORT_AGENT, Cap.TEAM_VIEW, Cap.PRIVACY_MANAGE}
 _FLEET_EXECUTIVE = {Cap.DRIVERS_VIEW, Cap.DRIVERS_VERIFY, Cap.TRIPS_VIEW, Cap.FLEET_MANAGE}
 
 ROLE_CAPABILITIES: dict[str, frozenset[str]] = {
-    "COMMANDER": Cap.all(),
+    "COMMANDER": Cap.all() - {Cap.BRIEF},  # the chief is briefed; they don't brief
     "ADMIN": Cap.all() - {Cap.COMMAND},
+    # Sees everything (read only), keeps the chief updated and brings decisions to them.
+    "CHIEF_OF_STAFF": frozenset(
+        {c for c in Cap.all() if c.endswith(".view")} | {Cap.BRIEF, Cap.ANNOUNCE}
+    ),
     "REGIONAL_MANAGER": frozenset({*_MANAGERS, Cap.PAYMENTS_REFUND, Cap.AUDIT_VIEW}),
     "OPS_MANAGER": frozenset(_MANAGERS),
     "ASSOC_RIDES": frozenset(_ASSOC_RIDES),

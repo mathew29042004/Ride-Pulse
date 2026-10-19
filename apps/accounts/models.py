@@ -6,6 +6,7 @@ from .roles import capabilities_for
 
 class Role(models.TextChoices):
     COMMANDER = "COMMANDER", "Commander"
+    CHIEF_OF_STAFF = "CHIEF_OF_STAFF", "Chief of staff"
     ADMIN = "ADMIN", "Administrator"
     REGIONAL_MANAGER = "REGIONAL_MANAGER", "Regional manager"
     OPS_MANAGER = "OPS_MANAGER", "City operations manager"

@@ -46,6 +46,9 @@ class Command(BaseCommand):
         from apps.reliability import command
 
         stats.update(command.seed_commander(log=self.stdout.write))
+        from apps.reliability import briefing
+
+        stats.update(briefing.seed_chief_of_staff(log=self.stdout.write))
         from apps.workspace import demo as workspace_demo
 
         stats.update(workspace_demo.seed(seed=options["seed"], log=self.stdout.write))

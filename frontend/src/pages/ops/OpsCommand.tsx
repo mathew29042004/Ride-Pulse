@@ -5,7 +5,7 @@
  * to a deputy for a few hours. Orders and broadcasts are posted to #leadership and #operations. */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, CarTaxiFront, Crown, Megaphone, MessagesSquare, Radio, Search, ShieldAlert, Siren, UserCog, Users } from "lucide-react";
+import { Check, Inbox, X as XIcon, BellRing, CarTaxiFront, Crown, Megaphone, MessagesSquare, Radio, Search, ShieldAlert, Siren, UserCog, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -149,6 +149,8 @@ export default function OpsCommand() {
           <Stat label="Orders in force" value={d.orders.length} sub={`${d.open_incidents.length} open incidents`} icon={<Crown className="size-4" />} tone={d.orders.length ? "warning" : "neutral"} />
         </div>
       )}
+
+      <ChiefInbox />
 
       {d && d.alerts.length > 0 && (
         <Card className="mb-6 overflow-hidden border-rose-500/30">
@@ -438,5 +440,122 @@ function DelegationPanel({ data, onDone }: { data: Data; onDone: () => void }) {
         <p className="text-xs text-muted">You're acting commander. Only the commander can hand command on or take it back.</p>
       )}
     </Card>
+  );
+}
+
+interface Update {
+  id: number;
+  kind: "UPDATE" | "BRIEFING" | "ESCALATION";
+  kind_label: string;
+  title: string;
+  body: string;
+  sent_by: string;
+  sent_at: string;
+  read: boolean;
+  reply: string;
+}
+interface Decision {
+  id: number;
+  title: string;
+  detail: string;
+  order: string;
+  asked_by: string;
+  asked_at: string;
+  status: "PENDING" | "APPROVED" | "DECLINED";
+  status_label: string;
+  decided_by: string | null;
+  note: string;
+}
+
+/** The chief's inbox: decisions waiting (approve issues any proposed order at once) and updates
+ * from the chief of staff, with a one-line reply. Live via ChiefBell's socket. */
+function ChiefInbox() {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["ops", "chief"],
+    queryFn: () => api.get<{ updates: Update[]; unread: number; decisions: Decision[]; pending: number }>("ops/chief/"),
+  });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["ops", "chief"] });
+    qc.invalidateQueries({ queryKey: ["ops", "command"] });
+  };
+  const fail = (e: unknown) => toast.error(e instanceof ApiError ? e.message : "Something went wrong.");
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const decide = useMutation({
+    mutationFn: (v: { id: number; approve: boolean }) => api.post(`ops/chief/decisions/${v.id}/decide/`, { approve: v.approve, note: notes[v.id] ?? "" }),
+    onSuccess: (_, v) => {
+      toast.success(v.approve ? "Approved. They've been told." : "Declined. They've been told.");
+      refresh();
+    },
+    onError: fail,
+  });
+  const reply = useMutation({
+    mutationFn: (id: number) => api.post(`ops/chief/updates/${id}/reply/`, { text: notes[-id] ?? "" }),
+    onSuccess: () => {
+      toast.success("Reply sent.");
+      refresh();
+    },
+    onError: fail,
+  });
+  const read = useMutation({ mutationFn: () => api.post("ops/chief/read/"), onSuccess: refresh });
+  const d = q.data;
+  if (!d) return null;
+  const pending = d.decisions.filter((x) => x.status === "PENDING");
+  return (
+    <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      <Card className={pending.length ? "border-amber-500/40" : ""}>
+        <CardHeader title={<span className="flex items-center gap-2"><Crown className="size-4 text-amber-500" /> Decisions for you {pending.length > 0 && <Badge tone="warning">{pending.length} waiting</Badge>}</span>} subtitle="Approving a proposed order puts it in force at once." />
+        {!d.decisions.length && <EmptyState title="Nothing to decide">Your chief of staff will bring decisions here.</EmptyState>}
+        <div className="max-h-96 divide-y divide-line overflow-y-auto">
+          {d.decisions.slice(0, 8).map((x) => (
+            <div key={x.id} className="px-5 py-3 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div className="font-semibold">{x.title}</div>
+                {x.status !== "PENDING" && <Badge tone={x.status === "APPROVED" ? "brand" : "neutral"}>{x.status_label}</Badge>}
+              </div>
+              {x.detail && <p className="mt-0.5 text-muted">{x.detail}</p>}
+              {x.order && <p className="mt-1 text-xs font-medium">Proposed order: {x.order}</p>}
+              <p className="mt-0.5 text-xs text-muted">{x.asked_by} · {dateTime(x.asked_at)}{x.note ? ` · “${x.note}”` : ""}</p>
+              {x.status === "PENDING" && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Input className="!w-auto flex-1 !py-1.5" placeholder="Note (optional)" value={notes[x.id] ?? ""} onChange={(e) => setNotes({ ...notes, [x.id]: e.target.value })} aria-label="Note" />
+                  <Button size="sm" variant="brand" icon={<Check className="size-3.5" />} loading={decide.isPending} onClick={() => decide.mutate({ id: x.id, approve: true })}>Approve</Button>
+                  <Button size="sm" variant="secondary" icon={<XIcon className="size-3.5" />} loading={decide.isPending} onClick={() => decide.mutate({ id: x.id, approve: false })}>Decline</Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card>
+        <CardHeader
+          title={<span className="flex items-center gap-2"><Inbox className="size-4" /> Updates for you {d.unread > 0 && <Badge tone="info">{d.unread} new</Badge>}</span>}
+          subtitle="Briefings, updates and escalations from your chief of staff."
+          action={d.unread > 0 ? <Button size="sm" variant="ghost" onClick={() => read.mutate()}>Mark all read</Button> : undefined}
+        />
+        {!d.updates.length && <EmptyState title="No updates yet" />}
+        <div className="max-h-96 divide-y divide-line overflow-y-auto">
+          {d.updates.slice(0, 10).map((u) => (
+            <div key={u.id} className={`px-5 py-3 text-sm ${u.kind === "ESCALATION" ? "bg-rose-500/5" : ""}`}>
+              <div className="flex flex-wrap items-center gap-2 font-semibold">
+                <Badge tone={u.kind === "ESCALATION" ? "danger" : u.kind === "BRIEFING" ? "info" : "neutral"}>{u.kind_label}</Badge>
+                {u.title}
+                {!u.read && <span className="size-2 rounded-full bg-sky-500" aria-label="New" />}
+              </div>
+              {u.body && <p className="mt-1 whitespace-pre-line text-muted">{u.body}</p>}
+              <p className="mt-0.5 text-xs text-muted">{u.sent_by} · {dateTime(u.sent_at)}</p>
+              {u.reply ? (
+                <p className="mt-1 text-xs"><span className="font-semibold">You replied:</span> {u.reply}</p>
+              ) : (
+                <div className="mt-2 flex gap-2">
+                  <Input className="!py-1.5" placeholder="Reply in one line" value={notes[-u.id] ?? ""} onChange={(e) => setNotes({ ...notes, [-u.id]: e.target.value })} aria-label="Reply" />
+                  <Button size="sm" variant="secondary" disabled={!(notes[-u.id] ?? "").trim()} loading={reply.isPending} onClick={() => reply.mutate(u.id)}>Reply</Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
   );
 }

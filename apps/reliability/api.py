@@ -21,8 +21,10 @@ from apps.core.api import BaseViewSet
 
 from . import jobs, outbox, security
 from .models import (
+    ChiefUpdate,
     CommandAlert,
     CommandOrder,
+    DecisionRequest,
     Delegation,
     DeliveryStatus,
     Incident,
@@ -521,3 +523,122 @@ class CommandViewSet(BaseViewSet):
 
         d = get_object_or_404(Delegation, pk=delegation_id)
         return Response(command.delegation_row(command.revoke(d, user=request.user)))
+
+
+class UpdateSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=["UPDATE", "BRIEFING", "ESCALATION"], default="UPDATE")
+    title = serializers.CharField(max_length=160)
+    body = serializers.CharField(max_length=4000, required=False, allow_blank=True, default="")
+
+
+class AskSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=160)
+    detail = serializers.CharField(max_length=4000, required=False, allow_blank=True, default="")
+    order = serializers.DictField(required=False, default=dict)
+
+
+class EscalateSerializer(serializers.Serializer):
+    alert = serializers.IntegerField()
+    note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+
+
+class TextSerializer(serializers.Serializer):
+    text = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+
+
+class ChiefDecisionSerializer(serializers.Serializer):
+    approve = serializers.BooleanField()
+    note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+
+
+class BriefViewSet(BaseViewSet):
+    """The chief of staff's desk: send the chief updates, briefings and escalations; ask for
+    decisions (see ``reliability.briefing``)."""
+
+    capabilities = {"*": Cap.BRIEF}
+    queryset = ChiefUpdate.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="brief_desk")
+    def list(self, request):
+        from . import briefing
+
+        return Response(briefing.sender_view(request.user))
+
+    @extend_schema(request=UpdateSerializer, responses={201: OpenApiTypes.OBJECT})
+    def create(self, request):
+        from . import briefing
+
+        data = UpdateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        u = briefing.send_update(user=request.user, **data.validated_data)
+        return Response(briefing.update_row(u), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=AskSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def ask(self, request):
+        from . import briefing
+
+        data = AskSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        d = briefing.ask(user=request.user, **data.validated_data)
+        return Response(briefing.decision_row(d), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=EscalateSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def escalate(self, request):
+        from . import briefing
+
+        data = EscalateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        u = briefing.escalate_alert(
+            data.validated_data["alert"], user=request.user, note=data.validated_data["note"]
+        )
+        return Response(briefing.update_row(u), status=status.HTTP_201_CREATED)
+
+
+class ChiefInboxViewSet(BaseViewSet):
+    """The chief's inbox: updates from the chief of staff, and decisions to make."""
+
+    capabilities = {"*": Cap.COMMAND}
+    queryset = ChiefUpdate.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="chief_inbox")
+    def list(self, request):
+        from . import briefing
+
+        return Response(briefing.chief_inbox())
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def read(self, request):
+        from . import briefing
+
+        return Response({"marked": briefing.mark_read(request.user)})
+
+    @extend_schema(request=TextSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"updates/(?P<update_id>\d+)/reply")
+    def reply(self, request, update_id=None):
+        from . import briefing
+
+        data = TextSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        u = briefing.reply(
+            get_object_or_404(ChiefUpdate, pk=update_id),
+            user=request.user,
+            text=data.validated_data["text"],
+        )
+        return Response(briefing.update_row(u))
+
+    @extend_schema(request=ChiefDecisionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path=r"decisions/(?P<decision_id>\d+)/decide")
+    def decide(self, request, decision_id=None):
+        from . import briefing
+
+        data = ChiefDecisionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        d = briefing.decide(
+            get_object_or_404(DecisionRequest, pk=decision_id),
+            user=request.user,
+            **data.validated_data,
+        )
+        return Response(briefing.decision_row(d))

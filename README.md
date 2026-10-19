@@ -875,6 +875,22 @@ Real time and more power:
   back, and an acting commander can't hand it on.
 * **Safety catch**: pausing bookings in every city must be confirmed (type PAUSE).
 
+**Chief of staff** (`chiefofstaff@ridepulse.dev`, `reliability.briefing`): the person who keeps
+the chief updated. They see every area read-only, sit in every team channel, and work from
+Ops → Brief the chief:
+
+* send the chief an update, a briefing (drafted from live data in one click) or an escalation,
+  or escalate a watchtower alert with one button;
+* ask the chief to decide, optionally proposing an order; when the chief approves, the order
+  goes into force at once (the approval counts as the all-city confirmation);
+* see the chief's replies and decisions arrive live.
+
+An automatic briefing goes out from the chief of staff every 3 hours between 8 am and 10 pm.
+The chief (the commander, or an acting commander) gets everything live wherever they are in the
+console: a pop-up with a link (red for escalations, amber for decisions) and a crown in the header
+counting unread updates and decisions waiting. The command centre opens with their inbox:
+approve or decline with a note, reply to an update in one line.
+
 ### EV subsidy finder (`drivers.ev_subsidy`)
 
 Drivers thinking of switching to electric (Driver → Vehicle loan → subsidies) choose an electric

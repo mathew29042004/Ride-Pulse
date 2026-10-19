@@ -357,3 +357,66 @@ class Delegation(models.Model):
 
     def __str__(self) -> str:
         return f"Acting commander: {self.to}"
+
+
+class UpdateKind(models.TextChoices):
+    UPDATE = "UPDATE", "Update"
+    BRIEFING = "BRIEFING", "Briefing"
+    ESCALATION = "ESCALATION", "Escalation"
+
+
+class ChiefUpdate(models.Model):
+    """A message to the chief from the chief of staff (or an administrator): a quick update, a
+    briefing, or an escalation that needs their eyes now."""
+
+    kind = models.CharField(max_length=10, choices=UpdateKind.choices, default=UpdateKind.UPDATE)
+    title = models.CharField(max_length=160)
+    body = models.TextField(blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+"
+    )
+    sent_at = models.DateTimeField(db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    reply = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        ordering = ["-sent_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class DecisionStatus(models.TextChoices):
+    PENDING = "PENDING", "Waiting for the chief"
+    APPROVED = "APPROVED", "Approved"
+    DECLINED = "DECLINED", "Declined"
+
+
+class DecisionRequest(models.Model):
+    """The chief of staff asks the chief to decide. When it proposes an order (``order`` holds
+    kind, city, vehicle_code, hours, reason), approving it issues the order at once."""
+
+    title = models.CharField(max_length=160)
+    detail = models.TextField(blank=True)
+    order = models.JSONField(default=dict, blank=True)
+    asked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+"
+    )
+    asked_at = models.DateTimeField(db_index=True)
+    status = models.CharField(
+        max_length=8, choices=DecisionStatus.choices, default=DecisionStatus.PENDING
+    )
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    note = models.CharField(max_length=500, blank=True)
+    issued = models.ForeignKey(
+        CommandOrder, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-asked_at"]
+
+    def __str__(self) -> str:
+        return self.title

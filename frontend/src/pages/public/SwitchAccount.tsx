@@ -18,6 +18,7 @@ const ROLE_NAMES: Record<Role, string> = {
   OPS_MANAGER: "a city operations manager",
   SUPPORT_AGENT: "a support agent",
   COMMANDER: "the commander",
+  CHIEF_OF_STAFF: "the chief of staff",
   ADMIN: "an admin",
   REGIONAL_MANAGER: "a regional manager",
   ASSOC_RIDES: "an associate manager (rides)",
@@ -38,7 +39,7 @@ export default function SwitchAccount({ app, roles }: { app: string; roles: Role
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const demo = DEMO_ACCOUNTS.filter((a) =>
-    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", Business: "RIDER", "Fleet owner": "FLEET_OWNER", Admin: "ADMIN", Commander: "COMMANDER" } as const)[a.label]),
+    roles.includes(({ Rider: "RIDER", Driver: "DRIVER", Operations: "OPS_MANAGER", Support: "SUPPORT_AGENT", Business: "RIDER", "Fleet owner": "FLEET_OWNER", Admin: "ADMIN", Commander: "COMMANDER", "Chief of staff": "CHIEF_OF_STAFF" } as const)[a.label]),
   );
 
   async function signIn(email: string) {

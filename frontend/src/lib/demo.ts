@@ -10,4 +10,5 @@ export const DEMO_ACCOUNTS = [
   { label: "Fleet owner", email: "owner@ridepulse.dev", description: "Your drivers and cars: trips, your share of earnings, vehicle upkeep, payouts." },
   { label: "Admin", email: "admin@ridepulse.dev", description: "Everything, including the audit trail and staff accounts." },
   { label: "Commander", email: "commander@ridepulse.dev", description: "Top of the organisation: the command centre, orders across every city, broadcasts, every team channel." },
+  { label: "Chief of staff", email: "chiefofstaff@ridepulse.dev", description: "Keeps the commander updated: briefings, escalations and decisions for the chief, live." },
 ] as const;
