@@ -983,5 +983,21 @@
  "SCHEDULED": "സമയത്ത്",
  "DELAYED": "വൈകി",
  "EARLY": "നേരത്തെ",
- "LANDED": "ഇറങ്ങി"
+ "LANDED": "ഇറങ്ങി",
+ "Child seat": "ചൈൽഡ് സീറ്റ്",
+ "Travelling with a pet": "വളർത്തുമൃഗവുമായി യാത്ര",
+ "Prefers a quiet ride": "നിശ്ശബ്ദ യാത്ര ഇഷ്ടം",
+ "AC on, please": "ദയവായി AC ഓണാക്കൂ",
+ "Has extra luggage": "അധിക ലഗേജുണ്ട്",
+ "Woman driver preferred": "വനിതാ ഡ്രൈവർ ഇഷ്ടം",
+ "Prefers an electric vehicle": "ഇലക്ട്രിക് വാഹനം ഇഷ്ടം",
+ "Needs a child seat": "ചൈൽഡ് സീറ്റ് വേണം",
+ "Has a pet with them": "വളർത്തുമൃഗം ഒപ്പമുണ്ട്",
+ "Wheelchair user": "വീൽചെയർ ഉപയോഗിക്കുന്നയാൾ",
+ "Needs help boarding": "കയറാൻ സഹായം വേണം",
+ "Deaf / hard of hearing: message, don't call": "കേൾവിക്കുറവ്: വിളിക്കരുത്, സന്ദേശം അയയ്ക്കൂ",
+ "Blind / low vision: please find the rider": "കാഴ്ചക്കുറവ്: യാത്രക്കാരനെ കണ്ടെത്തൂ",
+ "I have a child seat": "എന്റെ പക്കൽ ചൈൽഡ് സീറ്റുണ്ട്",
+ "Pets welcome in my vehicle": "എന്റെ വാഹനത്തിൽ വളർത്തുമൃഗങ്ങൾക്ക് സ്വാഗതം",
+ "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "ചൈൽഡ് സീറ്റ് വേണ്ടവർക്കും വളർത്തുമൃഗവുമായി വരുന്നവർക്കും ഇത് ഓണാക്കിയ വാഹനങ്ങൾ മാത്രമേ അയയ്ക്കൂ."
 }

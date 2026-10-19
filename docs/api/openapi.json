@@ -6878,13 +6878,15 @@
     "type": "object"
    },
    "PreferencesEnum": {
-    "description": "* `QUIET` - Quiet ride\n* `AC` - AC on\n* `LUGGAGE` - Extra luggage\n* `WOMAN_DRIVER` - Woman driver preferred\n* `ELECTRIC` - Electric vehicle preferred\n* `WHEELCHAIR` - Wheelchair-accessible vehicle\n* `ASSIST` - Help getting in and out\n* `HEARING` - Deaf or hard of hearing: message, don't call\n* `LOW_VISION` - Blind or low vision: please find me",
+    "description": "* `QUIET` - Quiet ride\n* `AC` - AC on\n* `LUGGAGE` - Extra luggage\n* `WOMAN_DRIVER` - Woman driver preferred\n* `ELECTRIC` - Electric vehicle preferred\n* `CHILD_SEAT` - Child seat\n* `PET` - Travelling with a pet\n* `WHEELCHAIR` - Wheelchair-accessible vehicle\n* `ASSIST` - Help getting in and out\n* `HEARING` - Deaf or hard of hearing: message, don't call\n* `LOW_VISION` - Blind or low vision: please find me",
     "enum": [
      "QUIET",
      "AC",
      "LUGGAGE",
      "WOMAN_DRIVER",
      "ELECTRIC",
+     "CHILD_SEAT",
+     "PET",
      "WHEELCHAIR",
      "ASSIST",
      "HEARING",
@@ -14961,6 +14963,86 @@
    "get": {
     "description": "Zones in the driver's city where prices are surging: worth driving towards.",
     "operationId": "driver_surge_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
+  "/api/v1/driver/vehicle-options/": {
+   "get": {
+    "description": "Child seat in the car? Happy to take pets? Riders who need these only get such cars.",
+    "operationId": "driver_vehicle_options_retrieve",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   },
+   "post": {
+    "description": "Child seat in the car? Happy to take pets? Riders who need these only get such cars.",
+    "operationId": "driver_vehicle_options_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "additionalProperties": {},
+        "type": "object"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "content": {

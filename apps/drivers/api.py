@@ -279,6 +279,30 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
             raise BusinessRuleViolation("Send your answers as a list of option numbers.")
         return Response(academy.submit(self.driver, slug, answers))
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get", "post"], url_path="vehicle-options")
+    def vehicle_options(self, request):
+        """Child seat in the car? Happy to take pets? Riders who need these only get such cars."""
+        vehicle = self.driver.vehicles.filter(is_active=True).first()
+        if vehicle is None:
+            raise BusinessRuleViolation("Register your vehicle first.")
+        if request.method == "POST":
+            for field in ("has_child_seat", "pet_friendly"):
+                if field in request.data:
+                    setattr(vehicle, field, bool(request.data[field]))
+            if vehicle.has_child_seat and vehicle.ride_type.served_by.code in ("BIKE", "AUTO"):
+                raise BusinessRuleViolation("Child seats are for cars.")
+            if vehicle.pet_friendly and vehicle.ride_type.served_by.code == "BIKE":
+                raise BusinessRuleViolation("Pets can't ride on bikes.")
+            vehicle.save(update_fields=["has_child_seat", "pet_friendly"])
+        return Response(
+            {
+                "has_child_seat": vehicle.has_child_seat,
+                "pet_friendly": vehicle.pet_friendly,
+                "ride_type": vehicle.ride_type.code,
+            }
+        )
+
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="driver_loan")
     @action(detail=False, methods=["get"])
     def loan(self, request):

@@ -562,7 +562,7 @@ export default function RiderBook() {
               <div className={clsx("mt-3", service === "PARCEL" && "hidden")}>
                 <div className="mb-1.5 text-xs font-semibold text-muted">{t("Ride preferences")}</div>
                 <div className="flex flex-wrap gap-1.5">
-                  {PREFERENCES.filter((p) => isCar(selected) || !p.carsOnly).map(({ value, label, icon: Icon }) => {
+                  {PREFERENCES.filter((p) => (isCar(selected) || !p.carsOnly) && !(p.notOnBikes && selected === "BIKE")).map(({ value, label, icon: Icon }) => {
                     const on = chosenPrefs.includes(value);
                     return (
                       <button

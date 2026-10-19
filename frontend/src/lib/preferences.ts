@@ -1,15 +1,17 @@
-import { Accessibility, Briefcase, Ear, Eye, HandHelping, Leaf, Snowflake, UserRound, VolumeX } from "lucide-react";
+import { Accessibility, Baby, Briefcase, Ear, Eye, HandHelping, Leaf, PawPrint, Snowflake, UserRound, VolumeX } from "lucide-react";
 
-export type RidePreference = "QUIET" | "AC" | "LUGGAGE" | "WOMAN_DRIVER" | "ELECTRIC";
+export type RidePreference = "QUIET" | "AC" | "LUGGAGE" | "WOMAN_DRIVER" | "ELECTRIC" | "CHILD_SEAT" | "PET";
 export type AccessibilityNeed = "WHEELCHAIR" | "ASSIST" | "HEARING" | "LOW_VISION";
 
 /** Ride preferences, in the order shown. AC and luggage are for cars only. */
-export const PREFERENCES: { value: RidePreference; label: string; driverLabel: string; icon: typeof VolumeX; carsOnly?: boolean }[] = [
+export const PREFERENCES: { value: RidePreference; label: string; driverLabel: string; icon: typeof VolumeX; carsOnly?: boolean; notOnBikes?: boolean }[] = [
   { value: "QUIET", label: "Quiet ride", driverLabel: "Prefers a quiet ride", icon: VolumeX },
   { value: "AC", label: "AC on", driverLabel: "AC on, please", icon: Snowflake, carsOnly: true },
   { value: "LUGGAGE", label: "Extra luggage", driverLabel: "Has extra luggage", icon: Briefcase, carsOnly: true },
   { value: "WOMAN_DRIVER", label: "Woman driver", driverLabel: "Woman driver preferred", icon: UserRound },
   { value: "ELECTRIC", label: "Electric", driverLabel: "Prefers an electric vehicle", icon: Leaf },
+  { value: "CHILD_SEAT", label: "Child seat", driverLabel: "Needs a child seat", icon: Baby, carsOnly: true },
+  { value: "PET", label: "Travelling with a pet", driverLabel: "Has a pet with them", icon: PawPrint, notOnBikes: true },
 ];
 
 export const isCar = (rideType: string) => !["BIKE", "AUTO"].includes(rideType);

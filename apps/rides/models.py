@@ -57,6 +57,9 @@ class RidePreference(models.TextChoices):
     LUGGAGE = "LUGGAGE", "Extra luggage"
     WOMAN_DRIVER = "WOMAN_DRIVER", "Woman driver preferred"
     ELECTRIC = "ELECTRIC", "Electric vehicle preferred"
+    # Hard requirements: only vehicles that have them are sent.
+    CHILD_SEAT = "CHILD_SEAT", "Child seat"
+    PET = "PET", "Travelling with a pet"
     # Accessibility: a wheelchair-accessible vehicle is a hard requirement; the others tell the
     # driver how to help (and earn extra free waiting time).
     WHEELCHAIR = "WHEELCHAIR", "Wheelchair-accessible vehicle"
@@ -66,7 +69,14 @@ class RidePreference(models.TextChoices):
 
 
 # AC and luggage only make sense in a car.
-CAR_ONLY_PREFERENCES = {RidePreference.AC, RidePreference.LUGGAGE, RidePreference.WHEELCHAIR}
+CAR_ONLY_PREFERENCES = {
+    RidePreference.AC,
+    RidePreference.LUGGAGE,
+    RidePreference.WHEELCHAIR,
+    RidePreference.CHILD_SEAT,
+}
+# Pets ride in cars and autos, not on bikes.
+NO_BIKE_PREFERENCES = {RidePreference.PET}
 ACCESSIBILITY_NEEDS = {
     RidePreference.WHEELCHAIR,
     RidePreference.ASSIST,

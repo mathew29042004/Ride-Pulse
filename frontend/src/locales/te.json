@@ -983,5 +983,21 @@
  "SCHEDULED": "షెడ్యూల్ ప్రకారం",
  "DELAYED": "ఆలస్యం",
  "EARLY": "ముందుగా",
- "LANDED": "దిగింది"
+ "LANDED": "దిగింది",
+ "Child seat": "చైల్డ్ సీట్",
+ "Travelling with a pet": "పెంపుడు జంతువుతో ప్రయాణం",
+ "Prefers a quiet ride": "నిశ్శబ్ద రైడ్ ఇష్టం",
+ "AC on, please": "దయచేసి AC ఆన్ చేయండి",
+ "Has extra luggage": "అదనపు లగేజీ ఉంది",
+ "Woman driver preferred": "మహిళా డ్రైవర్ ఇష్టం",
+ "Prefers an electric vehicle": "ఎలక్ట్రిక్ వాహనం ఇష్టం",
+ "Needs a child seat": "చైల్డ్ సీట్ కావాలి",
+ "Has a pet with them": "పెంపుడు జంతువు తోడుంది",
+ "Wheelchair user": "వీల్‌చైర్ వినియోగదారు",
+ "Needs help boarding": "ఎక్కడానికి సహాయం కావాలి",
+ "Deaf / hard of hearing: message, don't call": "వినికిడి లోపం: కాల్ వద్దు, మెసేజ్ చేయండి",
+ "Blind / low vision: please find the rider": "దృష్టి లోపం: ప్రయాణికుడిని వెతకండి",
+ "I have a child seat": "నా దగ్గర చైల్డ్ సీట్ ఉంది",
+ "Pets welcome in my vehicle": "నా వాహనంలో పెంపుడు జంతువులకు స్వాగతం",
+ "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "చైల్డ్ సీట్ కావలసిన లేదా పెంపుడు జంతువుతో వచ్చే ప్రయాణికులకు ఇది ఆన్ చేసిన వాహనాలు మాత్రమే పంపబడతాయి."
 }

@@ -52,6 +52,7 @@ from .models import (
     ACCESSIBLE_EXTRA_WAIT_MINUTES,
     ACTIVE_DRIVER_STATUSES,
     CAR_ONLY_PREFERENCES,
+    NO_BIKE_PREFERENCES,
     TERMINAL_STATUSES,
     CancelledBy,
     OfferStatus,
@@ -1793,6 +1794,8 @@ def clean_preferences(preferences, ride_type: RideType) -> list[str]:
         if value in chosen:
             continue
         if value in CAR_ONLY_PREFERENCES and ride_type.code in TWO_WHEELERS_AND_AUTOS:
+            continue
+        if value in NO_BIKE_PREFERENCES and ride_type.code == "BIKE":
             continue
         chosen.append(value)
     return chosen

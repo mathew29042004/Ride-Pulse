@@ -983,5 +983,21 @@
  "SCHEDULED": "समय पर",
  "DELAYED": "देरी",
  "EARLY": "जल्दी",
- "LANDED": "उतर गई"
+ "LANDED": "उतर गई",
+ "Child seat": "चाइल्ड सीट",
+ "Travelling with a pet": "पालतू जानवर साथ है",
+ "Prefers a quiet ride": "शांत राइड पसंद",
+ "AC on, please": "कृपया AC चालू करें",
+ "Has extra luggage": "ज़्यादा सामान है",
+ "Woman driver preferred": "महिला ड्राइवर पसंद",
+ "Prefers an electric vehicle": "इलेक्ट्रिक वाहन पसंद",
+ "Needs a child seat": "चाइल्ड सीट चाहिए",
+ "Has a pet with them": "साथ में पालतू जानवर",
+ "Wheelchair user": "व्हीलचेयर उपयोगकर्ता",
+ "Needs help boarding": "बैठने में मदद चाहिए",
+ "Deaf / hard of hearing: message, don't call": "बधिर / कम सुनाई देता है: कॉल नहीं, मैसेज करें",
+ "Blind / low vision: please find the rider": "दृष्टिहीन / कम दिखता है: राइडर को ढूँढें",
+ "I have a child seat": "मेरे पास चाइल्ड सीट है",
+ "Pets welcome in my vehicle": "मेरे वाहन में पालतू जानवरों का स्वागत है",
+ "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "जिन राइडर्स को चाइल्ड सीट चाहिए या जिनके साथ पालतू जानवर है, उन्हें सिर्फ़ वही वाहन भेजे जाते हैं जिनमें यह चालू हो।"
 }

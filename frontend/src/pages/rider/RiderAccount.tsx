@@ -338,7 +338,7 @@ function PreferencesAndFavourites({ rider }: { rider: Rider }) {
               aria-pressed={on}
               className={on ? "flex items-center gap-1.5 rounded-full border border-fg bg-ink px-3 py-1.5 text-xs font-semibold text-ink-fg" : "flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-muted"}
             >
-              <Icon className="size-3.5" /> {label}
+              <Icon className="size-3.5" /> {t(label)}
             </button>
           );
         })}

@@ -104,6 +104,8 @@ def candidates_for(
     wants_woman = RidePreference.WOMAN_DRIVER in trip.preferences
     wants_electric = RidePreference.ELECTRIC in trip.preferences
     needs_wheelchair = RidePreference.WHEELCHAIR in trip.preferences
+    needs_child_seat = RidePreference.CHILD_SEAT in trip.preferences
+    has_pet = RidePreference.PET in trip.preferences
     needs_help = bool(
         {RidePreference.WHEELCHAIR, RidePreference.ASSIST, RidePreference.LOW_VISION}
         & set(trip.preferences)
@@ -127,6 +129,12 @@ def candidates_for(
         if needs_wheelchair and not (
             driver.active_vehicle and driver.active_vehicle.wheelchair_accessible
         ):
+            continue
+        # A child seat or a pet: only vehicles whose drivers said they have / accept them.
+        vehicle = driver.active_vehicle
+        if needs_child_seat and not (vehicle and vehicle.has_child_seat):
+            continue
+        if has_pet and not (vehicle and vehicle.pet_friendly):
             continue
         # EVs only take trips their battery can finish, with a reserve to reach a charger.
         if not ev.can_take(driver.active_vehicle, trip, pickup_km=driver.distance_km):

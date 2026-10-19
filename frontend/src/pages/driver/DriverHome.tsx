@@ -169,12 +169,12 @@ function PreferenceChips({ values }: { values: string[] }) {
     <div className="mt-1.5 flex flex-wrap gap-1.5">
       {ACCESSIBILITY.filter((p) => values.includes(p.value)).map(({ value, driverLabel, icon: Icon }) => (
         <span key={value} className="flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-500/15 dark:text-sky-300">
-          <Icon className="size-3" /> {driverLabel}
+          <Icon className="size-3" /> {t(driverLabel)}
         </span>
       ))}
       {PREFERENCES.filter((p) => values.includes(p.value)).map(({ value, driverLabel, icon: Icon }) => (
         <span key={value} className="flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-semibold">
-          <Icon className="size-3" /> {driverLabel}
+          <Icon className="size-3" /> {t(driverLabel)}
         </span>
       ))}
     </div>

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Clock, Home, LifeBuoy } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -8,8 +8,8 @@ import { VehicleCare } from "@/components/DriverBusiness";
 import { useMapProvider } from "@/components/map";
 import { describePoint } from "@/components/PlaceSuggestions";
 import { PushToggle } from "@/components/PushToggle";
-import { Avatar, Button, Stars } from "@/components/ui";
-import { api } from "@/lib/api";
+import { Avatar, Button, Stars, Toggle } from "@/components/ui";
+import { api, ApiError } from "@/lib/api";
 import { date } from "@/lib/format";
 import { useDriverMe } from "@/lib/hooks";
 import type { Driver } from "@/lib/types";
@@ -62,6 +62,7 @@ export default function DriverAccount() {
         {t("Vehicle loan: buy or upgrade your vehicle")} <span aria-hidden>→</span>
       </Link>
       <VehicleCare />
+      <VehicleOptions />
 
       <div className="mt-6 divide-y divide-line">
         <PushToggle audience="driver" />
@@ -111,6 +112,27 @@ function HomeRow({ driver }: { driver: Driver }) {
       <Button size="sm" variant="outline" loading={save.isPending} onClick={() => save.mutate()}>
         {t("Set to here")}
       </Button>
+    </div>
+  );
+}
+
+/** Child seat / pets: riders who need these are only sent vehicles that have them. */
+function VehicleOptions() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["vehicle-options"], queryFn: () => api.get<{ has_child_seat: boolean; pet_friendly: boolean; ride_type: string }>("driver/vehicle-options/") });
+  const save = useMutation({
+    mutationFn: (body: object) => api.post("driver/vehicle-options/", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["vehicle-options"] }),
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t("Something went wrong.")),
+  });
+  if (!q.data || q.data.ride_type === "BIKE") return null;
+  return (
+    <div className="mt-2 space-y-2 rounded-3xl border border-line p-4 text-sm">
+      {q.data.ride_type !== "AUTO" && (
+        <Toggle checked={q.data.has_child_seat} onChange={(v) => save.mutate({ has_child_seat: v })} label={t("I have a child seat")} />
+      )}
+      <Toggle checked={q.data.pet_friendly} onChange={(v) => save.mutate({ pet_friendly: v })} label={t("Pets welcome in my vehicle")} />
+      <p className="text-xs text-muted">{t("Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.")}</p>
     </div>
   );
 }

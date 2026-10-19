@@ -773,6 +773,12 @@ ledger still balances, times the restore, then drops the scratch database. A fai
 alerts the admins. Ops → Backups shows every run and can run either now. In production the file
 would also be copied to storage in another region.
 
+### Child seats and pets
+
+Riders can ask for a child seat (cars) or say they're travelling with a pet (cars and autos).
+These are hard requirements: dispatch only offers the trip to vehicles whose driver switched on
+"I have a child seat" or "Pets welcome" (Driver → Account).
+
 ### Speed warnings and slow zones (`drivers.speed`)
 
 Every location update checks the driver's speed (the phone's, or worked out from the last

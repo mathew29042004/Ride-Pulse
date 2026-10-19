@@ -182,6 +182,8 @@ class Vehicle(AuditedModel, TimeStampedModel):
     battery_updated_at = models.DateTimeField(null=True, blank=True)
     # Wheelchair-accessible vehicle (ramp or lift, secured wheelchair space).
     wheelchair_accessible = models.BooleanField(default=False)
+    has_child_seat = models.BooleanField(default=False)
+    pet_friendly = models.BooleanField(default=False)
     # Road-worthiness (see fleet.maintenance): only an ACTIVE vehicle can take rides.
     condition = models.CharField(
         max_length=11, choices=VehicleCondition.choices, default=VehicleCondition.ACTIVE

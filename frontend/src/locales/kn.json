@@ -983,5 +983,21 @@
  "SCHEDULED": "ನಿಗದಿಯಂತೆ",
  "DELAYED": "ತಡ",
  "EARLY": "ಬೇಗ",
- "LANDED": "ಇಳಿದಿದೆ"
+ "LANDED": "ಇಳಿದಿದೆ",
+ "Child seat": "ಮಕ್ಕಳ ಆಸನ",
+ "Travelling with a pet": "ಸಾಕುಪ್ರಾಣಿಯೊಂದಿಗೆ ಪ್ರಯಾಣ",
+ "Prefers a quiet ride": "ಶಾಂತ ಸವಾರಿ ಇಷ್ಟ",
+ "AC on, please": "ದಯವಿಟ್ಟು AC ಆನ್ ಮಾಡಿ",
+ "Has extra luggage": "ಹೆಚ್ಚುವರಿ ಲಗೇಜ್ ಇದೆ",
+ "Woman driver preferred": "ಮಹಿಳಾ ಚಾಲಕಿ ಇಷ್ಟ",
+ "Prefers an electric vehicle": "ವಿದ್ಯುತ್ ವಾಹನ ಇಷ್ಟ",
+ "Needs a child seat": "ಮಕ್ಕಳ ಆಸನ ಬೇಕು",
+ "Has a pet with them": "ಸಾಕುಪ್ರಾಣಿ ಜೊತೆಗಿದೆ",
+ "Wheelchair user": "ಗಾಲಿಕುರ್ಚಿ ಬಳಕೆದಾರ",
+ "Needs help boarding": "ಹತ್ತಲು ಸಹಾಯ ಬೇಕು",
+ "Deaf / hard of hearing: message, don't call": "ಕಿವುಡು: ಕರೆ ಮಾಡಬೇಡಿ, ಸಂದೇಶ ಕಳುಹಿಸಿ",
+ "Blind / low vision: please find the rider": "ದೃಷ್ಟಿಹೀನ: ಪ್ರಯಾಣಿಕರನ್ನು ಹುಡುಕಿ",
+ "I have a child seat": "ನನ್ನ ಬಳಿ ಮಕ್ಕಳ ಆಸನವಿದೆ",
+ "Pets welcome in my vehicle": "ನನ್ನ ವಾಹನದಲ್ಲಿ ಸಾಕುಪ್ರಾಣಿಗಳಿಗೆ ಸ್ವಾಗತ",
+ "Riders who need a child seat or bring a pet are only sent vehicles that have this switched on.": "ಮಕ್ಕಳ ಆಸನ ಬೇಕಾದ ಅಥವಾ ಸಾಕುಪ್ರಾಣಿ ತರುವ ಪ್ರಯಾಣಿಕರಿಗೆ ಇದನ್ನು ಆನ್ ಮಾಡಿದ ವಾಹನಗಳನ್ನು ಮಾತ್ರ ಕಳುಹಿಸಲಾಗುತ್ತದೆ."
 }
