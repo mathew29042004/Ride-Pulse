@@ -80,6 +80,7 @@ from apps.workspace import company_api  # noqa: E402
 
 router.register("company", company_api.IntranetViewSet, basename="company")
 router.register("approvals", company_api.ApprovalsViewSet, basename="approvals")
+router.register("search", company_api.SearchViewSet, basename="search")
 router.register("ops/brief", reliability.BriefViewSet, basename="ops-brief")
 router.register("ops/chief", reliability.ChiefInboxViewSet, basename="ops-chief")
 router.register("counters", rides.CounterViewSet, basename="counter")

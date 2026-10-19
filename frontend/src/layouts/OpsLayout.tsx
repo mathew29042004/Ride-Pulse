@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, Building, Inbox, Crown, NotebookPen, Zap, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Fuel, Store, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, Building, Inbox, Search, Crown, NotebookPen, Zap, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Fuel, Store, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { ChiefBell } from "@/components/ChiefBell";
+import { CommandPalette } from "@/components/CommandPalette";
 import { useApprovals } from "@/pages/ops/OpsApprovals";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -308,7 +309,14 @@ export default function OpsLayout() {
                 {openSos > 0 && <Badge tone="danger">{openSos} open SOS</Badge>}
               </div>
             )}
-            <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={() => window.dispatchEvent(new Event("rp:search"))}
+              className="ml-auto hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-sm text-muted shadow-[var(--shadow-card)] hover:text-fg md:flex"
+            >
+              <Search className="size-4" /> Search <kbd className="rounded border border-line px-1 text-[10px]">Ctrl K</kbd>
+            </button>
+            <CommandPalette pages={NAV.flatMap((sec) => sec.items).filter((item) => (Array.isArray(item.cap) ? item.cap.some(can) : can(item.cap))).map((item) => ({ to: item.to, label: item.label }))} />
+            <div className="flex items-center gap-1 md:ml-0 ml-auto">
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="flex size-10 items-center justify-center rounded-full hover:bg-surface-3"

@@ -168,3 +168,14 @@ class ApprovalsViewSet(BaseViewSet):
 
         items = pending(request.user)
         return Response({"count": len(items), "items": items})
+
+
+class SearchViewSet(BaseViewSet):
+    capabilities = {"*": Cap.WORK_USE}
+    queryset = company.JobOpening.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="search_everything")
+    def list(self, request):
+        from .search import search
+
+        return Response({"results": search(request.user, request.query_params.get("q", ""))})

@@ -83,3 +83,15 @@ def test_intranet_directory_messages_and_referrals(api):
     assert apps_[0]["referred_by"] == agent.get_full_name()
     api(hr).post(f"/api/v1/company/applications/{apps_[0]['id']}/status/", {"status": "INTERVIEW"})
     assert agent.notifications.filter(title__contains="Your referral").exists()
+
+
+def test_search_respects_the_role(api, make_driver):
+    driver = make_driver(online=False)
+    ops = make_staff(Role.OPS_MANAGER)
+    hr = make_staff(Role.HR_MANAGER)
+    q = driver.user.first_name + " " + driver.user.last_name
+    found = api(ops).get(f"/api/v1/search/?q={q}").json()["results"]
+    assert any(r["kind"] == "Driver" for r in found)
+    assert not any(
+        r["kind"] == "Driver" for r in api(hr).get(f"/api/v1/search/?q={q}").json()["results"]
+    )

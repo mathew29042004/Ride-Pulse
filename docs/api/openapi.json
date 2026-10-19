@@ -29134,6 +29134,36 @@
     ]
    }
   },
+  "/api/v1/search/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "search_everything",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "search"
+    ]
+   }
+  },
   "/api/v1/staff/users/": {
    "get": {
     "description": "Back-office accounts (admins, operations managers, support agents).",
