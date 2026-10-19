@@ -50,6 +50,9 @@ class Command(BaseCommand):
 
         stats.update(incident_demo.seed(log=self.stdout.write))
         stats.update(incident_demo.seed_weather(log=self.stdout.write))
+        from apps.drivers import loans
+
+        stats.update(loans.seed_demo(log=self.stdout.write))
         from apps.announcements import demo as announcements_demo
 
         stats.update(announcements_demo.seed(log=self.stdout.write))

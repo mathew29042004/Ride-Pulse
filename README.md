@@ -696,6 +696,16 @@ NPS (% promoters 9–10 − % detractors 0–6) for the last 90 days by month an
 answers), and what detractors and promoters talk about, using keyword themes (not AI).
 API: `GET nps/prompt/`, `POST nps/answer/`, `POST nps/snooze/`, `GET nps/report/` (reports.view).
 
+### Vehicle loans (`drivers.loans`)
+
+Drivers with 200+ trips, 90+ days and a 4.5+ rating can apply in the app (Account → Vehicle loan)
+for ₹20,000 up to an amount whose 3-year EMI fits in 30% of their usual weekly earnings (max
+₹6 lakh), through a partner NBFC at 14% a year. Ops approve in Ops → Vehicle loans; the partner pays
+the dealer. The weekly EMI (reducing balance) comes out of earnings just before the weekly payout:
+at most half the week's balance, and the driver always keeps ₹1,500. Any shortfall carries over
+as arrears with no penalty. Early pay-off has no fee. EMIs are posted to the ledger as
+`LOAN_EMI` → `external:loan_partner`.
+
 ### Monsoon / flood mode (`reliability.weather`)
 
 Ops → Monsoon mode turns on a weather alert for a city for 1–72 hours. Heavy rain caps surge at

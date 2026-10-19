@@ -3418,6 +3418,45 @@
     ],
     "type": "object"
    },
+   "LoanApplyRequest": {
+    "properties": {
+     "amount": {
+      "format": "decimal",
+      "pattern": "^-?\\d{0,8}(?:\\.\\d{0,2})?$",
+      "type": "string"
+     },
+     "vehicle": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+     },
+     "weeks": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "amount",
+     "vehicle",
+     "weeks"
+    ],
+    "type": "object"
+   },
+   "LoanDecisionRequest": {
+    "properties": {
+     "approve": {
+      "type": "boolean"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 200,
+      "type": "string"
+     }
+    },
+    "required": [
+     "approve"
+    ],
+    "type": "object"
+   },
    "LocationBatchRequest": {
     "properties": {
      "fixes": {
@@ -13552,6 +13591,116 @@
     ]
    }
   },
+  "/api/v1/driver/loan/": {
+   "get": {
+    "description": "Vehicle loans: whether you can apply, how much, and your loans with repayments.",
+    "operationId": "driver_loan",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
+  "/api/v1/driver/loan/apply/": {
+   "post": {
+    "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
+    "operationId": "driver_loan_apply_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoanApplyRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/LoanApplyRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/LoanApplyRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
+  "/api/v1/driver/loan/pay-off/": {
+   "post": {
+    "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
+    "operationId": "driver_loan_pay_off_create",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "driver"
+    ]
+   }
+  },
   "/api/v1/driver/location/": {
    "post": {
     "description": "Endpoints the driver app uses: availability, GPS, offers, earnings, documents.",
@@ -18519,6 +18668,97 @@
     ],
     "tags": [
      "operations"
+    ]
+   }
+  },
+  "/api/v1/ops/loans/": {
+   "get": {
+    "description": "Ops: vehicle loan applications and the loan book.",
+    "operationId": "ops_loans_list",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
+    ]
+   }
+  },
+  "/api/v1/ops/loans/{id}/decide/": {
+   "post": {
+    "description": "Ops: vehicle loan applications and the loan book.",
+    "operationId": "ops_loans_decide_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this driver profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoanDecisionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/LoanDecisionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/LoanDecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "ops"
     ]
    }
   },

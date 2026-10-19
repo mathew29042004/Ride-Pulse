@@ -86,6 +86,7 @@ const NAV = [
       { to: "/ops/audit", label: "Audit trail", icon: ScrollText, cap: "audit.view" },
       { to: "/ops/platform", label: "Platform health", icon: Activity, cap: "audit.view" },
       { to: "/ops/incidents", label: "Incidents", icon: Siren, cap: "trips.view" },
+      { to: "/ops/loans", label: "Vehicle loans", icon: Landmark, cap: "payouts.manage" },
       { to: "/ops/weather", label: "Monsoon mode", icon: CloudRain, cap: "pricing.view" },
       { to: "/ops/work", label: "Work", icon: ClipboardList, cap: "work.use" },
       { to: "/ops/chat", label: "Team chat", icon: MessagesSquare, cap: "work.use" },

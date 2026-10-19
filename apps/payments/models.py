@@ -56,6 +56,7 @@ class TransactionKind(models.TextChoices):
     INCENTIVE = "INCENTIVE", "Driver incentive"
     FLEET_SHARE = "FLEET_SHARE", "Fleet owner share"
     INSURANCE = "INSURANCE", "Insurance claim payout"
+    LOAN_EMI = "LOAN_EMI", "Vehicle loan EMI"
 
 
 class LedgerTransaction(models.Model):

@@ -220,6 +220,17 @@ class CounterSerializer(serializers.Serializer):
     extra = serializers.DecimalField(max_digits=5, decimal_places=2)
 
 
+class LoanApplySerializer(serializers.Serializer):
+    vehicle = serializers.CharField(max_length=80)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    weeks = serializers.IntegerField()
+
+
+class LoanDecisionSerializer(serializers.Serializer):
+    approve = serializers.BooleanField()
+    note = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
 class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
     """Endpoints the driver app uses: availability, GPS, offers, earnings, documents."""
 
@@ -265,6 +276,45 @@ class DriverAppViewSet(ContextBindingMixin, GenericViewSet):
         if not isinstance(answers, list) or not all(isinstance(a, int) for a in answers):
             raise BusinessRuleViolation("Send your answers as a list of option numbers.")
         return Response(academy.submit(self.driver, slug, answers))
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="driver_loan")
+    @action(detail=False, methods=["get"])
+    def loan(self, request):
+        """Vehicle loans: whether you can apply, how much, and your loans with repayments."""
+        from . import loans
+
+        driver = self.driver
+        return Response(
+            {
+                **loans.eligibility(driver),
+                "loans": [
+                    loans.row(x)
+                    for x in driver.loans.select_related(
+                        "driver__user", "driver__city"
+                    ).prefetch_related("repayments")
+                ],
+            }
+        )
+
+    @extend_schema(request=LoanApplySerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="loan/apply")
+    def loan_apply(self, request):
+        from . import loans
+
+        data = LoanApplySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        loan = loans.apply(self.driver, **data.validated_data)
+        return Response(loans.row(loan), status=201)
+
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"], url_path="loan/pay-off")
+    def loan_pay_off(self, request):
+        from . import loans
+
+        loan = self.driver.loans.filter(status=loans.LoanStatus.ACTIVE).first()
+        if loan is None:
+            raise BusinessRuleViolation("You don't have a loan to pay off.")
+        return Response(loans.row(loans.pay_off(loan)))
 
     @extend_schema(responses=DriverStatusSerializer)
     @action(detail=False, methods=["get"])
@@ -630,3 +680,34 @@ class DriverViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, BaseViewSe
     def reinstate(self, request, pk=None):
         driver = services.reinstate_driver(self.get_object(), actor=request.user)
         return Response(DriverStatusSerializer(driver).data)
+
+
+class LoanViewSet(BaseViewSet):
+    """Ops: vehicle loan applications and the loan book."""
+
+    capabilities = {"list": Cap.PAYOUTS_MANAGE, "*": Cap.PAYOUTS_MANAGE}
+    queryset = DriverProfile.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="ops_loans_list")
+    def list(self, request):
+        from django.db.models import Count, Sum
+
+        from . import loans
+
+        rows = loans.VehicleLoan.objects.select_related(
+            "driver__user", "driver__city"
+        ).prefetch_related("repayments")[:200]
+        book = loans.VehicleLoan.objects.filter(status=loans.LoanStatus.ACTIVE).aggregate(
+            n=Count("id"), outstanding=Sum("outstanding"), arrears=Sum("arrears")
+        )
+        return Response({"book": book, "loans": [loans.row(x) for x in rows]})
+
+    @extend_schema(request=LoanDecisionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def decide(self, request, pk=None):
+        from . import loans
+
+        data = LoanDecisionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        loan = get_object_or_404(loans.VehicleLoan, pk=pk)
+        return Response(loans.row(loans.decide(loan, user=request.user, **data.validated_data)))

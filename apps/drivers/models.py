@@ -357,3 +357,4 @@ class DriverDayPass(models.Model):
 
 
 from .academy import CourseResult  # noqa: E402,F401  (registers the model)
+from .loans import LoanRepayment, VehicleLoan  # noqa: E402,F401

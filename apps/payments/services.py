@@ -578,6 +578,9 @@ def create_weekly_payouts(*, now: datetime | None = None) -> list[Payout]:
     from apps.drivers.models import DriverProfile
 
     now = now or timezone.now()
+    from apps.drivers import loans
+
+    loans.collect(now=now)  # vehicle-loan EMIs come out first (drivers keep a minimum)
     period_end = week_start(timezone.localdate(now)) - timedelta(days=1)
     period_start = period_end - timedelta(days=6)
     # Non-null ids only: NOT IN over a list containing NULL matches nothing in SQL.

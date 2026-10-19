@@ -10,6 +10,7 @@ TDS_PAYABLE = "tax:tds_payable"  # income tax withheld from drivers (section 194
 GATEWAY = "external:gateway"
 PAYOUTS_IN_TRANSIT = "external:payouts_in_transit"
 INSURER = "external:insurer"  # partner insurer funding accident claims
+LOAN_PARTNER = "external:loan_partner"  # vehicle-loan EMIs collected for the partner NBFC
 
 PLATFORM_ACCOUNTS = (
     PLATFORM_COMMISSION,
@@ -22,4 +23,5 @@ PLATFORM_ACCOUNTS = (
     GATEWAY,
     PAYOUTS_IN_TRANSIT,
     INSURER,
+    LOAN_PARTNER,
 )

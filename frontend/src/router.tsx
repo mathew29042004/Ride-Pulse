@@ -33,6 +33,8 @@ const DriverEarnings = lazy(() => import("./pages/driver/DriverEarnings"));
 const DriverDocuments = lazy(() => import("./pages/driver/DriverDocuments"));
 const DriverAccount = lazy(() => import("./pages/driver/DriverAccount"));
 const DriverAcademy = lazy(() => import("./pages/driver/DriverAcademy"));
+const DriverLoan = lazy(() => import("./pages/driver/DriverLoan"));
+const OpsLoans = lazy(() => import("./pages/ops/OpsLoans"));
 
 const OpsLayout = lazy(() => import("./layouts/OpsLayout"));
 const OpsDashboard = lazy(() => import("./pages/ops/OpsDashboard"));
@@ -180,6 +182,7 @@ export const router = createBrowserRouter([
       { path: "documents", element: lazyPage(<DriverDocuments />) },
       { path: "account", element: lazyPage(<DriverAccount />) },
       { path: "academy", element: lazyPage(<DriverAcademy />) },
+      { path: "loan", element: lazyPage(<DriverLoan />) },
       { path: "support", element: lazyPage(<SupportList base="/drive" />) },
       { path: "privacy", element: lazyPage(<PrivacyCentre base="/drive" />) },
       { path: "help", element: lazyPage(<HelpCentre base="/drive" />) },
@@ -238,6 +241,7 @@ export const router = createBrowserRouter([
       { path: "announcements", element: lazyPage(<OpsAnnouncements />) },
       { path: "incidents", element: lazyPage(<OpsIncidents />) },
       { path: "weather", element: lazyPage(<OpsWeather />) },
+      { path: "loans", element: lazyPage(<OpsLoans />) },
       { path: "pnl", element: lazyPage(<OpsPnl />) },
       { path: "gst", element: lazyPage(<OpsGst />) },
       { path: "nps", element: lazyPage(<OpsNps />) },

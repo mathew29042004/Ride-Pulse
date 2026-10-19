@@ -57,6 +57,9 @@ export default function DriverAccount() {
       <Link to="/drive/academy" className="mt-4 flex items-center justify-between rounded-3xl border border-line p-4 text-sm font-semibold">
         Driver Academy: courses and certificates <span aria-hidden>→</span>
       </Link>
+      <Link to="/drive/loan" className="mt-2 flex items-center justify-between rounded-3xl border border-line p-4 text-sm font-semibold">
+        Vehicle loan: buy or upgrade your vehicle <span aria-hidden>→</span>
+      </Link>
       <VehicleCare />
 
       <div className="mt-6 divide-y divide-line">
