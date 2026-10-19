@@ -244,9 +244,10 @@ function CommuteSection({ id }: { id: number }) {
   const [days, setDays] = useState([0, 1, 2, 3, 4]);
   const [arrive, setArrive] = useState("09:30");
   const [leave, setLeave] = useState("18:30");
+  const [pool, setPool] = useState(false);
   const create = useMutation({
     mutationFn: () =>
-      api.post(`rider/business/${id}/commute/plan/`, { name, office_name: office!.name, office_lat: office!.lat, office_lng: office!.lng, ride_type: rideType, weekdays: days, arrive_by: arrive, leave_at: leave }),
+      api.post(`rider/business/${id}/commute/plan/`, { name, office_name: office!.name, office_lat: office!.lat, office_lng: office!.lng, ride_type: rideType, weekdays: days, arrive_by: arrive, leave_at: leave, pool }),
     onSuccess: () => { toast.success(t("Plan created. Employees can join it from their app.")); setOpen(false); refresh(); },
     onError: fail,
   });
@@ -288,6 +289,10 @@ function CommuteSection({ id }: { id: number }) {
               </select>
             </label>
           </div>
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={pool} onChange={(e) => setPool(e.target.checked)} />
+            {t("Colleagues who live close share a cab (cheaper)")}
+          </label>
           <Button block disabled={!office || !days.length} loading={create.isPending} onClick={() => create.mutate()}>{t("Create plan")}</Button>
         </div>
       ) : (

@@ -678,6 +678,7 @@ class CommutePlanSerializer(serializers.Serializer):
     weekdays = serializers.ListField(child=serializers.IntegerField(min_value=0, max_value=6))
     arrive_by = serializers.TimeField()
     leave_at = serializers.TimeField()
+    pool = serializers.BooleanField(default=False)
 
 
 class CommuteEnrolSerializer(serializers.Serializer):
@@ -854,6 +855,7 @@ class CorporateViewSet(ContextBindingMixin, GenericViewSet):
             weekdays=v["weekdays"],
             arrive_by=v["arrive_by"],
             leave_at=v["leave_at"],
+            pool=v["pool"],
         )
         return Response(commute.plan_row(plan), status=201)
 

@@ -36,6 +36,8 @@ class CommutePlan(models.Model):
     weekdays = ArrayField(models.PositiveSmallIntegerField(), default=list)  # 0 = Monday
     arrive_by = models.TimeField()
     leave_at = models.TimeField()
+    # Colleagues who live within 1.5 km of each other share a cab (a Share ride), two to a cab.
+    pool = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
@@ -79,7 +81,17 @@ def _manager(profile, rider):
 
 
 def create_plan(
-    profile, *, rider, name, office_name, office, ride_type, weekdays, arrive_by, leave_at
+    profile,
+    *,
+    rider,
+    name,
+    office_name,
+    office,
+    ride_type,
+    weekdays,
+    arrive_by,
+    leave_at,
+    pool=False,
 ) -> CommutePlan:
     from apps.geo.services import require_city
 
@@ -103,6 +115,7 @@ def create_plan(
         arrive_by=arrive_by,
         leave_at=leave_at,
         created_by=rider.user,
+        pool=bool(pool),
     )
 
 
@@ -159,6 +172,16 @@ def _at(day: date, t: time) -> datetime:
     return timezone.make_aware(datetime.combine(day, t), timezone.get_current_timezone())
 
 
+def _ride_type(plan):
+    from apps.pricing.models import RideType
+
+    if plan.pool:
+        share = RideType.objects.filter(code="SHARE", is_active=True).first()
+        if share:
+            return share
+    return plan.ride_type
+
+
 def _book(enrolment, *, pickup, dropoff, when, pickup_address, dropoff_address, now):
     from apps.pricing import services as pricing
     from apps.rides.models import ScheduledRide
@@ -173,12 +196,13 @@ def _book(enrolment, *, pickup, dropoff, when, pickup_address, dropoff_address, 
     from apps.rides.services import _validate_points
 
     _validate_points(city, pickup, dropoff)
+    ride_type = _ride_type(plan)
     estimate = pricing.estimate_fare(
-        city=city, ride_type=plan.ride_type, pickup=pickup, dropoff=dropoff, at=when
+        city=city, ride_type=ride_type, pickup=pickup, dropoff=dropoff, at=when
     )
     return ScheduledRide.objects.create(
         rider=enrolment.rider,
-        ride_type=plan.ride_type,
+        ride_type=ride_type,
         city=city,
         pickup_lat=pickup[0],
         pickup_lng=pickup[1],
@@ -207,10 +231,14 @@ def book_day(day: date, *, now=None) -> dict:
         plan__profile__is_active=True,
         plan__weekdays__contains=[day.weekday()],
     ).select_related("plan__ride_type", "plan__profile", "rider__user")
+    going = []
     for e in enrolments:
         if day in e.skip_dates:
             stats["skipped"] += 1
-            continue
+        else:
+            going.append(e)
+    pairs = pair_neighbours([e for e in going if e.plan.pool])
+    for e in going:
         plan, home, office = (
             e.plan,
             (e.home_lat, e.home_lng),
@@ -230,6 +258,12 @@ def book_day(day: date, *, now=None) -> dict:
                     - timedelta(minutes=float(route.duration_minutes))
                     - BUFFER
                 )
+                if e.pk in pairs:
+                    # Pooled: picked up together; the second a minute later so the first
+                    # already has a driver for them to join.
+                    pair = pairs[e.pk]
+                    when = pair.get("when") or when
+                    pairs[pair["partner"]]["when"] = when + timedelta(minutes=1)
                 stats["booked"] += bool(
                     _book(
                         e,
@@ -247,7 +281,8 @@ def book_day(day: date, *, now=None) -> dict:
                         e,
                         pickup=office,
                         dropoff=home,
-                        when=_at(day, plan.leave_at),
+                        when=_at(day, plan.leave_at)
+                        + timedelta(minutes=1 if pairs.get(e.pk, {}).get("second") else 0),
                         pickup_address=plan.office_name,
                         dropoff_address=e.home_address,
                         now=now,
@@ -256,6 +291,29 @@ def book_day(day: date, *, now=None) -> dict:
         except BusinessRuleViolation:
             stats["failed"] += 1
     return stats
+
+
+def pair_neighbours(enrolments) -> dict:
+    """Pair colleagues on the same pooled plan whose homes are within 1.5 km (closest first)."""
+    from apps.geo.distance import haversine_km
+
+    pairs, by_plan = {}, {}
+    for e in enrolments:
+        by_plan.setdefault(e.plan_id, []).append(e)
+    for members in by_plan.values():
+        candidates = sorted(
+            (
+                (haversine_km(a.home_lat, a.home_lng, b.home_lat, b.home_lng), a.pk, b.pk)
+                for i, a in enumerate(members)
+                for b in members[i + 1 :]
+            ),
+        )
+        for km, a, b in candidates:
+            if km > 1.5 or a in pairs or b in pairs:
+                continue
+            pairs[a] = {"partner": b, "second": False}
+            pairs[b] = {"partner": a, "second": True}
+    return pairs
 
 
 def book_tomorrow(*, now=None) -> dict:
@@ -289,6 +347,7 @@ def plan_row(plan: CommutePlan, *, now=None) -> dict:
         "arrive_by": plan.arrive_by.strftime("%H:%M"),
         "leave_at": plan.leave_at.strftime("%H:%M"),
         "is_active": plan.is_active,
+        "pool": plan.pool,
         "enrolled": plan.enrolments.filter(is_active=True).count(),
         "this_month": {k: v or 0 for k, v in totals.items()},
     }

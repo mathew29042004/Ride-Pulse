@@ -1009,5 +1009,6 @@
  "Download CSV": "CSV ഡൗൺലോഡ് ചെയ്യുക",
  "Online payments are down right now. Pay in cash or from your wallet.": "ഓൺലൈൻ പേയ്‌മെന്റ് ഇപ്പോൾ പ്രവർത്തിക്കുന്നില്ല. പണമായോ വാലറ്റിൽ നിന്നോ അടയ്ക്കുക.",
  "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "സുരക്ഷിത ഡ്രൈവർമാർക്ക് കുറഞ്ഞ പലിശ: സുരക്ഷാ സ്കോർ {s} അല്ലെങ്കിൽ കൂടുതലെങ്കിൽ വർഷം {rate}%.",
- "Your score: {n}": "നിങ്ങളുടെ സ്കോർ: {n}"
+ "Your score: {n}": "നിങ്ങളുടെ സ്കോർ: {n}",
+ "Colleagues who live close share a cab (cheaper)": "അടുത്ത് താമസിക്കുന്ന സഹപ്രവർത്തകർ ഒരു ക്യാബ് പങ്കിടും (വില കുറവ്)"
 }

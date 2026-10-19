@@ -828,7 +828,7 @@ shift start (drive time + 15 minutes), and the evening one leaves at shift end. 
 company profile with the purpose "Office commute", so the policy, limits, statements and GST
 e-invoices apply. Employees skip any day (leave, work from home) and booked rides are cancelled;
 night rides get Night Safe like any other. The portal shows each plan's employees and this
-month's rides and cost.
+month's rides and cost. A plan can pool: colleagues whose homes are within 1.5 km are paired into one Share cab (picked up a minute apart so the second joins the first's driver).
 
 ### Vehicle loans (`drivers.loans`)
 

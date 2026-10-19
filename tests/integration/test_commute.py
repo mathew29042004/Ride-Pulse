@@ -136,3 +136,26 @@ def test_a_home_too_far_from_the_office_is_not_booked(company, now):
     )
     stats = commute.book_tomorrow(now=now)
     assert stats["booked"] == 0 and stats["failed"] == 1
+
+
+def test_pooled_plan_pairs_neighbours(company, now):
+    from apps.pricing.models import RideType
+
+    profile, owner, employee = company
+    neighbour = make_rider(first_name="Bala")
+    invitation = profiles.invite(profile, user=owner.user, phone=neighbour.user.phone)
+    profiles.respond(invitation, user=neighbour.user, accept=True)
+    plan = make_plan(profile, owner)
+    plan.pool = True
+    plan.save()
+    commute.enrol(plan, rider=employee, home=HOME)
+    commute.enrol(plan, rider=neighbour, home=(HOME[0] + 0.004, HOME[1]))  # ~450 m away
+    commute.book_tomorrow(now=now)
+    mornings = sorted(
+        ScheduledRide.objects.filter(
+            commute__plan=plan, dropoff_address="Acme, Marina"
+        ).values_list("scheduled_for", "ride_type__code")
+    )
+    assert [code for _, code in mornings] == ["SHARE", "SHARE"]
+    assert mornings[1][0] - mornings[0][0] == timedelta(minutes=1)
+    assert RideType.objects.filter(code="SHARE").exists()

@@ -1009,5 +1009,6 @@
  "Download CSV": "CSV डाउनलोड करें",
  "Online payments are down right now. Pay in cash or from your wallet.": "ऑनलाइन भुगतान अभी बंद है। नकद या वॉलेट से भुगतान करें।",
  "Safe drivers pay less: a safety score of {s} or more gets {rate}% a year.": "सुरक्षित ड्राइवर कम ब्याज देते हैं: {s} या ज़्यादा सुरक्षा स्कोर पर {rate}% सालाना।",
- "Your score: {n}": "आपका स्कोर: {n}"
+ "Your score: {n}": "आपका स्कोर: {n}",
+ "Colleagues who live close share a cab (cheaper)": "पास रहने वाले सहकर्मी एक कैब शेयर करें (सस्ता)"
 }

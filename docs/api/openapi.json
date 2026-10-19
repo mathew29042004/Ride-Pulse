@@ -1020,6 +1020,10 @@
       "minLength": 1,
       "type": "string"
      },
+     "pool": {
+      "default": false,
+      "type": "boolean"
+     },
      "ride_type": {
       "maxLength": 10,
       "minLength": 1,
