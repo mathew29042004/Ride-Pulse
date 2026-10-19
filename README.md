@@ -861,6 +861,11 @@ Ops → **Incidents**.
 * After resolving, ops write a blameless review: what happened and the root cause. Follow-up
   actions become tasks for people in the reviewer's team.
 
+Fallback modes (`reliability.fallbacks`): while an incident on **payments** is open, bookings
+and top-ups refuse UPI and card with a clear message and the apps pre-select cash (wallet still
+works); while one on **maps** is open, no calls go to the maps provider and fares and ETAs use the
+straight-line estimate. Both switch back when the incident is resolved.
+
 ### Staff handbook
 
 Ops → **Handbook**: step-by-step procedures matching how the app works, covering:

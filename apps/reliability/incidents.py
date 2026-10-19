@@ -15,6 +15,7 @@ from django.utils import timezone
 from apps.core.exceptions import BusinessRuleViolation, InvalidStateTransition
 from apps.core.sequences import next_reference
 
+from . import fallbacks
 from .models import Component, Incident, IncidentSeverity, IncidentStatus, IncidentUpdate
 
 ORDER = [IncidentStatus.INVESTIGATING, IncidentStatus.IDENTIFIED, IncidentStatus.MONITORING]
@@ -71,6 +72,7 @@ def open_incident(
         f"🔴 {incident.number} opened ({incident.get_severity_display()}): {incident.title}. "
         f"Affects: {labels}."
     )
+    fallbacks.forget()  # payments or maps may switch to (or out of) a fallback
     return incident
 
 
@@ -99,6 +101,7 @@ def update(
     _post_to_ops_channel(
         f"{icon} {incident.number} {incident.get_status_display().lower()}: {message.strip()}"
     )
+    fallbacks.forget()  # payments or maps may switch to (or out of) a fallback
     return incident
 
 

@@ -283,8 +283,11 @@ class StatusBannerView(APIView):
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, tags=["status"])
     def get(self, request):
         from . import incidents
+        from .fallbacks import active
 
-        return Response({"banner": incidents.banner_for(request.user)})
+        return Response(
+            {"banner": incidents.banner_for(request.user), "fallbacks": sorted(active())}
+        )
 
 
 class StartWeatherSerializer(serializers.Serializer):

@@ -483,6 +483,9 @@ def request_trip(
     cost_center: str = "",
 ) -> Trip:
     now = now or timezone.now()
+    from apps.reliability.fallbacks import check_payment
+
+    check_payment(payment_method)
     extra_stops = [
         {"lat": s["lat"], "lng": s["lng"], "address": (s.get("address") or "")[:255]}
         for s in extra_stops

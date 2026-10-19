@@ -460,6 +460,10 @@ def top_up(
 
 def start_razorpay_top_up(user, amount: Decimal) -> Payment:
     """Create a Razorpay order for a wallet top-up; the wallet is credited once it's paid."""
+    from apps.reliability.fallbacks import CASH_ONLY, active
+
+    if CASH_ONLY in active():
+        raise BusinessRuleViolation("Online payments are down right now. Please try again later.")
     if not razorpay.enabled():
         raise BusinessRuleViolation("Online checkout isn't configured.")
     amount = money(amount)

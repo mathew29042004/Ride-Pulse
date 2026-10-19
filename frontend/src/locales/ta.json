@@ -1006,5 +1006,6 @@
  "Electric share": "மின்வாகனப் பங்கு",
  "Per km": "கி.மீக்கு",
  "Estimates by vehicle type; electric cars count the grid's share.": "வாகன வகைப்படி மதிப்பீடுகள்; மின் கார்களுக்கு மின்கட்டமைப்புப் பங்கு கணக்கிடப்படும்.",
- "Download CSV": "CSV பதிவிறக்கு"
+ "Download CSV": "CSV பதிவிறக்கு",
+ "Online payments are down right now. Pay in cash or from your wallet.": "ஆன்லைன் கட்டணம் இப்போது இயங்கவில்லை. பணமாக அல்லது வாலெட்டிலிருந்து செலுத்துங்கள்."
 }

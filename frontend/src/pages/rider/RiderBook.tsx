@@ -104,6 +104,12 @@ export default function RiderBook() {
   const [purpose, setPurpose] = useState("");
   const [costCenter, setCostCenter] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("UPI");
+  // During a payments outage (an open incident) only cash and wallet work.
+  const statusQ = useQuery({ queryKey: ["status", "banner"], queryFn: () => api.get<{ fallbacks?: string[] }>("status/banner/"), refetchInterval: 60_000 });
+  const cashOnly = !!statusQ.data?.fallbacks?.includes("cash_only");
+  useEffect(() => {
+    if (cashOnly && (payment === "UPI" || payment === "CARD")) setPayment("CASH");
+  }, [cashOnly, payment]);
   const [promoInput, setPromoInput] = useState("");
   const [tip, setTip] = useState(0); // promised at booking, paid with the fare, 100% to the driver
   // Ride preferences: pre-selected from the rider's saved defaults, changeable per ride.
@@ -599,9 +605,10 @@ export default function RiderBook() {
                 </div>
               </div>
 
+              {cashOnly && <p className="mt-3 rounded-xl bg-amber-500/15 p-2 text-xs">{t("Online payments are down right now. Pay in cash or from your wallet.")}</p>}
               <BillTo value={billTo} purpose={purpose} onChange={setBillTo} onPurpose={setPurpose} costCenter={costCenter} onCostCenter={setCostCenter} />
               <div className={clsx("mt-3 grid grid-cols-4 gap-1.5", billTo !== null && "hidden")}>
-                {PAYMENT.map(({ value, label, icon: Icon }) => (
+                {PAYMENT.filter(({ value }) => !(cashOnly && (value === "UPI" || value === "CARD"))).map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
                     onClick={() => setPayment(value)}

@@ -60,10 +60,16 @@ def travel_minutes(distance_km: float, at: datetime) -> float:
     return max(distance_km / average_speed_kmh(at) * 60, MIN_TRIP_MINUTES)
 
 
+def _maps_down() -> bool:
+    from apps.reliability.fallbacks import SIMPLE_ROUTES, active
+
+    return SIMPLE_ROUTES in active()
+
+
 def estimate_route(
     from_lat: float, from_lng: float, to_lat: float, to_lng: float, at: datetime
 ) -> RouteEstimate:
-    if google.enabled():
+    if google.enabled() and not _maps_down():
         try:
             route = google.compute_route((from_lat, from_lng), (to_lat, to_lng), departure=at)
             return RouteEstimate(
