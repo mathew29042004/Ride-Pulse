@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Activity, Building, Crown, NotebookPen, Zap, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Fuel, Store, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
+import { Activity, Building, Inbox, Crown, NotebookPen, Zap, BadgeIndianRupee, CloudSun, BellRing, BookOpen, CalendarDays, Clock, Fuel, Store, Star, Wallet, Building2, FlaskConical, KeyRound, Landmark, Scale, CarTaxiFront, ChartNoAxesCombined, ClipboardList, Database, FileCheck, FileText, Gauge, Headset, LayoutDashboard, LogOut, Map, Menu, Moon, Megaphone, MessagesSquare, Network, PackageSearch, PieChart, Plane, Receipt, Route, ScrollText, ShieldAlert, ShieldCheck, ShieldX, Smile, Siren, CloudRain, DatabaseBackup, Sun, Sunrise, Tag, Target, TrendingUp, Users, Wrench, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { ChiefBell } from "@/components/ChiefBell";
+import { useApprovals } from "@/pages/ops/OpsApprovals";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar, Badge, Select } from "@/components/ui";
@@ -36,6 +37,7 @@ const NAV = [
     items: [
       { to: "/ops/command", label: "Command centre", icon: Crown, cap: "command" },
       { to: "/ops/brief", label: "Brief the chief", icon: NotebookPen, cap: "brief" },
+      { to: "/ops/approvals", label: "Approvals", icon: Inbox, cap: "work.use", count: "approvals" },
       { to: "/ops/company", label: "Company", icon: Building, cap: "work.use" },
       { to: "/ops/powers", label: "Powers", icon: Zap, cap: ["refund.approve", "safety.ban", "dispatch.assign", "legal.hold", "people.manage"] },
       { to: "/ops", label: "Dashboard", icon: LayoutDashboard, end: true, cap: "trips.view" },
@@ -159,6 +161,7 @@ export default function OpsLayout() {
     localStorage.setItem("rp.ops.city", slug);
   };
   const openSos = live.data?.live.open_sos ?? 0;
+  const approvals = useApprovals();
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -192,6 +195,7 @@ export default function OpsLayout() {
               <Icon className="size-[18px]" />
               <span className="flex-1">{label}</span>
               {"badge" in rest && openSos > 0 && <span className="rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">{openSos}</span>}
+              {"count" in rest && (approvals.data?.count ?? 0) > 0 && <span className="rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-white">{approvals.data!.count}</span>}
             </NavLink>
           );
           const groups = NAV.map((section) => ({ group: section.group, items: section.items.filter((item) => allowed(item) && (!desk || !shown.has(item.to))) })).filter((g) => g.items.length);

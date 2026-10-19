@@ -154,3 +154,17 @@ class IntranetViewSet(BaseViewSet):
             status=str(request.data.get("status", "")),
         )
         return Response({"status": a.status})
+
+
+class ApprovalsViewSet(BaseViewSet):
+    """Everything waiting on me, from every corner of the console."""
+
+    capabilities = {"*": Cap.WORK_USE}
+    queryset = company.JobOpening.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="approvals_inbox")
+    def list(self, request):
+        from .approvals import pending
+
+        items = pending(request.user)
+        return Response({"count": len(items), "items": items})

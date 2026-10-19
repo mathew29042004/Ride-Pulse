@@ -30,4 +30,4 @@ export const ROLE_DESK: Partial<Record<Role, { title: string; pages: string[] }>
 };
 
 /** Every employee's personal pages, at the bottom of their desk. */
-export const PERSONAL = ["/ops/company", "/ops/attendance", "/ops/roster", "/ops/payslips", "/ops/expenses"];
+export const PERSONAL = ["/ops/approvals", "/ops/company", "/ops/attendance", "/ops/roster", "/ops/payslips", "/ops/expenses"];

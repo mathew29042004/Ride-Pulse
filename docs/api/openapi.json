@@ -12334,6 +12334,36 @@
     ]
    }
   },
+  "/api/v1/approvals/": {
+   "get": {
+    "description": "Everything waiting on me, from every corner of the console.",
+    "operationId": "approvals_inbox",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "approvals"
+    ]
+   }
+  },
   "/api/v1/audit-logs/": {
    "get": {
     "description": "Read-only, append-only audit trail of every change in the system.",

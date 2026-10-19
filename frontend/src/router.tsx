@@ -22,6 +22,7 @@ const Careers = lazy(() => import("./pages/public/CompanySite").then((m) => ({ d
 const CareerDetail = lazy(() => import("./pages/public/CompanySite").then((m) => ({ default: m.CareerDetail })));
 const Contact = lazy(() => import("./pages/public/CompanySite").then((m) => ({ default: m.Contact })));
 const OpsCompany = lazy(() => import("./pages/ops/OpsCompany"));
+const OpsApprovals = lazy(() => import("./pages/ops/OpsApprovals"));
 const OpsGrievances = lazy(() => import("./pages/ops/OpsGrievances"));
 const RiderHome = lazy(() => import("./pages/rider/RiderHome"));
 const RiderBook = lazy(() => import("./pages/rider/RiderBook"));
@@ -296,6 +297,7 @@ export const router = createBrowserRouter([
       { path: "brief", element: lazyPage(<OpsBrief />) },
       { path: "powers", element: lazyPage(<OpsPowers />) },
       { path: "company", element: lazyPage(<OpsCompany />) },
+      { path: "approvals", element: lazyPage(<OpsApprovals />) },
       { path: "backups", element: lazyPage(<OpsBackups />) },
       { path: "loans", element: lazyPage(<OpsLoans />) },
       { path: "pnl", element: lazyPage(<OpsPnl />) },
