@@ -52,6 +52,7 @@ router.register("work/attendance", workspace.AttendanceViewSet, basename="work-a
 router.register("work/payroll", workspace.PayrollViewSet, basename="work-payroll")
 router.register("work/payslips", workspace.PayslipViewSet, basename="work-payslip")
 router.register("work/expenses", workspace.ExpenseViewSet, basename="work-expense")
+router.register("work/access", workspace.AccessViewSet, basename="work-access")
 router.register("work", workspace.WorkTeamViewSet, basename="work")
 router.register("intel/alerts", intelligence.AlertViewSet, basename="intel-alert")
 router.register("intel/fraud", intelligence.FraudCaseViewSet, basename="intel-fraud")

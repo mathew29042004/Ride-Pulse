@@ -214,6 +214,7 @@ class LeaveRequest(models.Model):
         return f"{self.user_id} {self.kind} {self.starts_on}–{self.ends_on}"
 
 
+from .access import AccessReview, AccessReviewItem, Offboarding  # noqa: E402,F401  (registers the models)
 from .attendance import Attendance  # noqa: E402,F401  (registers the model)
 from .expenses import ExpenseClaim  # noqa: E402,F401  (registers the model)
 from .payroll import Payslip, SalaryStructure  # noqa: E402,F401  (registers the models)

@@ -18,3 +18,10 @@ def close_attendance() -> dict:
     from .attendance import close_day
 
     return close_day()
+
+
+@shared_task(name="workspace.chase_access_reviews")
+def chase_access_reviews() -> int:
+    from .access import chase
+
+    return chase()

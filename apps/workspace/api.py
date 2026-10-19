@@ -801,3 +801,92 @@ class ExpenseViewSet(BaseViewSet):
         return FileResponse(
             claim.receipt.open("rb"), filename=claim.receipt.name.rsplit("/", 1)[-1]
         )
+
+
+class OffboardSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    reason = serializers.CharField(max_length=200)
+    last_day = serializers.DateField(required=False)
+
+
+class AccessDecisionSerializer(serializers.Serializer):
+    decision = serializers.ChoiceField(choices=["KEEP", "CHANGE", "REMOVE"])
+    new_role = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
+    note = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
+class AccessViewSet(BaseViewSet):
+    """Access reviews (every manager reviews their team), offboarding and joiners (admins)."""
+
+    capabilities = {"list": Cap.WORK_USE, "decide": Cap.WORK_USE, "*": Cap.USERS_MANAGE}
+    queryset = StaffProfile.objects.none()
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="access_overview")
+    def list(self, request):
+        from . import access
+
+        review = access.AccessReview.objects.first()
+        mine = (
+            access.AccessReviewItem.objects.filter(review=review, reviewer=request.user)
+            .select_related("subject__staff_profile", "reviewer", "review")
+            .order_by("decision", "subject__first_name")
+            if review
+            else []
+        )
+        body = {
+            "review": access.review_progress(review) if review else None,
+            "mine": [access.item_row(i) for i in mine],
+            "roles": access.STAFF_ROLES,
+            "admin": request.user.has_capability(Cap.USERS_MANAGE),
+        }
+        if body["admin"]:
+            body["joiners"] = access.joiners()
+            body["leavers"] = [
+                {
+                    "name": o.user.get_full_name(),
+                    "reason": o.reason,
+                    "last_day": o.last_day,
+                    "steps": o.steps,
+                    "by": o.by.get_full_name() if o.by_id else None,
+                }
+                for o in access.Offboarding.objects.select_related("user", "by")[:20]
+            ]
+        return Response(body)
+
+    @extend_schema(request=None, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def start(self, request):
+        from . import access
+
+        review = access.start_review(by=request.user)
+        return Response(access.review_progress(review), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=AccessDecisionSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def decide(self, request, pk=None):
+        from . import access
+
+        data = AccessDecisionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        item = get_object_or_404(
+            access.AccessReviewItem.objects.select_related("review", "subject"), pk=pk
+        )
+        return Response(
+            access.item_row(access.decide(item, reviewer=request.user, **data.validated_data))
+        )
+
+    @extend_schema(request=OffboardSerializer, responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["post"])
+    def offboard(self, request):
+        from apps.accounts.models import User
+
+        from . import access
+
+        data = OffboardSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        user = get_object_or_404(User, pk=v["user_id"])
+        record = access.offboard(
+            user, by=request.user, reason=v["reason"], last_day=v.get("last_day")
+        )
+        return Response({"name": user.get_full_name(), "steps": record.steps})

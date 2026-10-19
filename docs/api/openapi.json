@@ -1,6 +1,27 @@
 {
  "components": {
   "schemas": {
+   "AccessDecisionRequest": {
+    "properties": {
+     "decision": {
+      "$ref": "#/components/schemas/DecisionEnum"
+     },
+     "new_role": {
+      "default": "",
+      "maxLength": 20,
+      "type": "string"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 200,
+      "type": "string"
+     }
+    },
+    "required": [
+     "decision"
+    ],
+    "type": "object"
+   },
    "ActionItemRequest": {
     "properties": {
      "assignee_id": {
@@ -1527,6 +1548,15 @@
      "approve"
     ],
     "type": "object"
+   },
+   "DecisionEnum": {
+    "description": "* `KEEP` - KEEP\n* `CHANGE` - CHANGE\n* `REMOVE` - REMOVE",
+    "enum": [
+     "KEEP",
+     "CHANGE",
+     "REMOVE"
+    ],
+    "type": "string"
    },
    "DecisionRequest": {
     "properties": {
@@ -4244,6 +4274,27 @@
     },
     "required": [
      "score"
+    ],
+    "type": "object"
+   },
+   "OffboardRequest": {
+    "properties": {
+     "last_day": {
+      "format": "date",
+      "type": "string"
+     },
+     "reason": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+     },
+     "user_id": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "reason",
+     "user_id"
     ],
     "type": "object"
    },
@@ -30327,6 +30378,177 @@
     ],
     "tags": [
      "webhooks"
+    ]
+   }
+  },
+  "/api/v1/work/access/": {
+   "get": {
+    "description": "Access reviews (every manager reviews their team), offboarding and joiners (admins).",
+    "operationId": "access_overview",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/access/offboard/": {
+   "post": {
+    "description": "Access reviews (every manager reviews their team), offboarding and joiners (admins).",
+    "operationId": "work_access_offboard_create",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OffboardRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/OffboardRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/OffboardRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/access/start/": {
+   "post": {
+    "description": "Access reviews (every manager reviews their team), offboarding and joiners (admins).",
+    "operationId": "work_access_start_create",
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
+    ]
+   }
+  },
+  "/api/v1/work/access/{id}/decide/": {
+   "post": {
+    "description": "Access reviews (every manager reviews their team), offboarding and joiners (admins).",
+    "operationId": "work_access_decide_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this staff profile.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessDecisionRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessDecisionRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessDecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "work"
     ]
    }
   },
