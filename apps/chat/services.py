@@ -143,8 +143,16 @@ def create_group(user, *, name: str, member_ids: list[int], now=None) -> Convers
     return conversation
 
 
-def thread_for(user, *, task_id: int | None = None, meeting_id: int | None = None, now=None):
-    """The conversation on a task or meeting (made on first use). Opening it joins you."""
+def thread_for(
+    user,
+    *,
+    task_id: int | None = None,
+    meeting_id: int | None = None,
+    ticket_id: int | None = None,
+    now=None,
+):
+    """The conversation on a task, meeting or support ticket (made on first use). Opening it
+    joins you."""
     from apps.workspace.services import visible_meetings, visible_tasks
 
     _require_staff(user)
@@ -175,9 +183,27 @@ def thread_for(user, *, task_id: int | None = None, meeting_id: int | None = Non
             },
         )
         people = [meeting.organizer_id, *meeting.attendees.values_list("user_id", flat=True)]
+    elif ticket_id:
+        from apps.accounts.roles import Cap
+        from apps.support.models import SupportTicket
+
+        if not user.has_capability(Cap.SUPPORT_VIEW):
+            raise ActionNotPermitted("You can't see support tickets.")
+        ticket = SupportTicket.objects.filter(pk=ticket_id).first()
+        if ticket is None:
+            raise ActionNotPermitted("That ticket doesn't exist.")
+        conversation, _ = Conversation.objects.get_or_create(
+            ticket=ticket,
+            defaults={
+                "kind": ConversationKind.TICKET,
+                "name": f"{ticket.ticket_number}: {ticket.subject}"[:80],
+                "created_at": now,
+            },
+        )
+        people = [ticket.assigned_to_id] if ticket.assigned_to_id else []
     else:
-        raise BusinessRuleViolation("Choose a task or a meeting.")
-    _add(conversation, [*people, user.pk], now)
+        raise BusinessRuleViolation("Choose a task, a meeting or a ticket.")
+    _add(conversation, [p for p in [*people, user.pk] if p], now)
     return conversation
 
 
@@ -217,11 +243,13 @@ def _mentioned(body: str, members: set[int]) -> list[int]:
     return found
 
 
-def send(conversation: Conversation, user, body: str, *, now=None) -> Message:
+def send(conversation: Conversation, user, body: str, *, now=None, upload=None) -> Message:
     _require_staff(user)
     now = now or timezone.now()
     body = body.strip()
-    if not body:
+    if upload is not None:
+        _check_upload(upload)
+    if not body and upload is None:
         raise BusinessRuleViolation("Write a message first.", field="body")
     if len(body) > MAX_BODY:
         raise BusinessRuleViolation(f"Keep messages under {MAX_BODY} characters.", field="body")
@@ -234,6 +262,9 @@ def send(conversation: Conversation, user, body: str, *, now=None) -> Message:
         body=body,
         mentions=[u for u in _mentioned(body, members) if u != user.pk],
         created_at=now,
+        attachment=upload or "",
+        attachment_name=(getattr(upload, "name", "") or "")[:120],
+        attachment_size=getattr(upload, "size", 0) or 0,
     )
     Conversation.objects.filter(pk=conversation.pk).update(last_message_at=now)
     Member.objects.filter(conversation=conversation, user=user).update(last_read_at=now)
@@ -259,6 +290,76 @@ def send(conversation: Conversation, user, body: str, *, now=None) -> Message:
             )
     transaction.on_commit(lambda: demo_replies(conversation.pk, message.pk))
     return message
+
+
+MAX_FILE = 10 * 1024 * 1024
+ALLOWED_FILES = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".pdf",
+    ".txt",
+    ".csv",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+}
+IMAGES = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+
+
+def _ext(name: str) -> str:
+    return ("." + name.rsplit(".", 1)[-1].lower()) if "." in name else ""
+
+
+def _check_upload(upload) -> None:
+    if _ext(upload.name) not in ALLOWED_FILES:
+        raise BusinessRuleViolation(
+            "Share images, PDFs, Office documents, CSV or text files.", field="file"
+        )
+    if upload.size > MAX_FILE:
+        raise BusinessRuleViolation("Files can be up to 10 MB.", field="file")
+
+
+def typing(conversation: Conversation, user) -> None:
+    """Tell the other members someone is typing (nothing is stored)."""
+    payload = {"conversation_id": conversation.pk, "user_id": user.pk, "name": user.first_name}
+    for user_id in _member_ids(conversation):
+        if user_id != user.pk:
+            broadcast.user_event(user_id, "chat.typing", payload)
+
+
+def search(user, q: str, *, limit: int = 40) -> list[dict]:
+    """Messages matching the words, in conversations you're in, newest first."""
+    from django.contrib.postgres.search import SearchQuery, SearchVector
+
+    q = q.strip()
+    if len(q) < 2:
+        return []
+    mine = Member.objects.filter(user=user).values("conversation_id")
+    rows = (
+        Message.objects.annotate(search=SearchVector("body", config="simple"))
+        .filter(conversation_id__in=mine)
+        .filter(
+            Q(search=SearchQuery(q, config="simple", search_type="websearch"))
+            | Q(body__icontains=q)
+            | Q(attachment_name__icontains=q)
+        )
+        .select_related("author", "conversation")
+        .order_by("-created_at")[:limit]
+    )
+    return [
+        {
+            **message_row(m),
+            "conversation_id": m.conversation_id,
+            "conversation": title_for(m.conversation, user),
+        }
+        for m in rows
+    ]
 
 
 def mark_read(conversation: Conversation, user, *, now=None) -> None:
@@ -360,6 +461,14 @@ def message_row(m: Message) -> dict:
         "automated": m.automated,
         "system": m.author_id is None,
         "created_at": m.created_at.isoformat(),
+        "file": {
+            "name": m.attachment_name,
+            "size": m.attachment_size,
+            "image": _ext(m.attachment_name) in IMAGES,
+            "url": f"/api/v1/chat/{m.conversation_id}/file/{m.pk}/",
+        }
+        if m.attachment
+        else None,
     }
 
 

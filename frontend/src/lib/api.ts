@@ -178,6 +178,12 @@ export async function openFile(path: string) {
   window.open(URL.createObjectURL(blob), "_blank");
 }
 
+/** An authenticated file as an object URL (for showing a private image inline). */
+export async function fileUrl(path: string): Promise<string> {
+  const res = await request<Response>(path, { raw: true });
+  return URL.createObjectURL(await res.blob());
+}
+
 export function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }

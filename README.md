@@ -811,6 +811,11 @@ Ops console → **Team chat** (`/ops/chat`), like Microsoft Teams for internal c
   you message one nobody is signed in as, they answer with a short pre-set line, labelled "demo
   reply". Natural, written replies would need an AI service, which is on hold.
 
+Extras: a "typing…" notice, file sharing (images show inline, PDFs, Office documents, CSV and text
+up to 10 MB; only members of the conversation can open them), search across every conversation
+you're in (messages and file names), and a staff-only "Discuss with team" thread on each support
+ticket.
+
 ### Tour packages (`apps/tours`)
 
 Rider app → **Tours**, driver app → **Your tours**, Ops → **Tours**.

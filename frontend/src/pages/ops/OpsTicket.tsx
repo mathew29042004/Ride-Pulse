@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { ArrowLeft, CheckCircle2, Lock, Send, UserCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Lock, MessagesSquare, Send, UserCheck } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { Badge, Button, Card, CardHeader, Field, Input, KeyValue, Modal, Spinner, StatusBadge, Textarea, Toggle } from "@/components/ui";
@@ -122,6 +122,7 @@ export default function OpsTicket() {
               <KeyValue label="Assignee">{t.assigned_to ?? "Unassigned"}</KeyValue>
               <KeyValue label="SLA due">{dateTime(t.sla_due_at)}</KeyValue>
               <KeyValue label="Opened">{dateTime(t.created_at)}</KeyValue>
+              <TeamThread ticketId={t.id} />
             </div>
           </Card>
           {t.category === "SAFETY" && <SafetyRecordings ticketId={t.id} />}
@@ -222,5 +223,20 @@ function HandbookFor({ category }: { category: string }) {
         ))}
       </ul>
     </Card>
+  );
+}
+
+/** Opens a staff-only team chat thread about this ticket (the rider or driver never sees it). */
+function TeamThread({ ticketId }: { ticketId: number }) {
+  const navigate = useNavigate();
+  const open = useMutation({
+    mutationFn: () => api.post<{ id: number }>("chat/thread/", { ticket_id: ticketId }),
+    onSuccess: (r) => navigate(`/ops/chat/${r.id}`),
+    onError: () => toast.error("Couldn't open the team thread."),
+  });
+  return (
+    <Button className="mt-2" size="sm" variant="outline" icon={<MessagesSquare className="size-4" />} loading={open.isPending} onClick={() => open.mutate()}>
+      Discuss with team
+    </Button>
   );
 }

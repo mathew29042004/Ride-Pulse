@@ -3,6 +3,8 @@ meeting."""
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector
 from django.db import models
 from django.db.models import Q
 
@@ -13,6 +15,7 @@ class ConversationKind(models.TextChoices):
     GROUP = "GROUP", "Group"
     TASK = "TASK", "Task thread"
     MEETING = "MEETING", "Meeting thread"
+    TICKET = "TICKET", "Ticket thread"
 
 
 class Conversation(models.Model):
@@ -27,6 +30,14 @@ class Conversation(models.Model):
     )
     meeting = models.OneToOneField(
         "workspace.Meeting", null=True, blank=True, on_delete=models.CASCADE, related_name="chat"
+    )
+    # Staff discussing a support ticket (riders and drivers never see this thread).
+    ticket = models.OneToOneField(
+        "support.SupportTicket",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="team_chat",
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
@@ -73,7 +84,11 @@ class Message(models.Model):
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
-    body = models.TextField(max_length=4000)
+    body = models.TextField(max_length=4000, blank=True)
+    # A shared file (images show inline; everything else downloads). Members only.
+    attachment = models.FileField(upload_to="chat/%Y/%m/", blank=True)
+    attachment_name = models.CharField(max_length=120, blank=True)
+    attachment_size = models.PositiveIntegerField(default=0)
     mentions = ArrayField(models.IntegerField(), default=list, blank=True)
     # A pre-set reply from a demo employee nobody is signed in as (never from a real person).
     automated = models.BooleanField(default=False)
@@ -82,7 +97,12 @@ class Message(models.Model):
 
     class Meta:
         ordering = ["created_at", "pk"]
-        indexes = [models.Index(fields=["conversation", "created_at"], name="chat_msg_conv_time")]
+        indexes = [
+            models.Index(fields=["conversation", "created_at"], name="chat_msg_conv_time"),
+            GinIndex(
+                SearchVector("body", config="simple"), name="chat_msg_search"
+            ),  # message search
+        ]
 
     def __str__(self) -> str:
         return f"{self.conversation_id}: {self.body[:30]}"

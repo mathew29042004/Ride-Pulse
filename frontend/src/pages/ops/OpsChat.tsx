@@ -5,19 +5,19 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "clsx";
-import { Bot, Hash, MessagesSquare, Plus, Send, Users } from "lucide-react";
+import { Bot, FileText, Hash, MessagesSquare, Paperclip, Plus, Search, Send, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { Button, Input, Modal } from "@/components/ui";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, fileUrl, openFile } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSocket } from "@/lib/ws";
 
 interface Row {
   id: number;
-  kind: "CHANNEL" | "DIRECT" | "GROUP" | "TASK" | "MEETING";
+  kind: "CHANNEL" | "DIRECT" | "GROUP" | "TASK" | "MEETING" | "TICKET";
   title: string;
   topic: string;
   last_message_at: string | null;
@@ -35,6 +35,8 @@ interface Msg {
   system: boolean;
   created_at: string;
   conversation_id?: number;
+  conversation?: string;
+  file: { name: string; size: number; image: boolean; url: string } | null;
 }
 interface Thread {
   id: number;
@@ -43,6 +45,7 @@ interface Thread {
   topic: string;
   task_id: number | null;
   meeting_id: number | null;
+  ticket_id: number | null;
   members: { id: number; name: string }[];
   messages: Msg[];
 }
@@ -57,7 +60,7 @@ const errorText = (err: unknown) => (err instanceof ApiError ? err.message : "So
 const SECTIONS: [string, Row["kind"][]][] = [
   ["Channels", ["CHANNEL"]],
   ["Direct messages & groups", ["DIRECT", "GROUP"]],
-  ["Task & meeting threads", ["TASK", "MEETING"]],
+  ["Task, meeting & ticket threads", ["TASK", "MEETING", "TICKET"]],
 ];
 const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
@@ -70,10 +73,19 @@ export default function OpsChat() {
   const current = id ? Number(id) : (inbox.data?.conversations[0]?.id ?? null);
   const thread = useQuery({ queryKey: ["chat", current], queryFn: () => api.get<Thread>(`chat/${current}/messages/`), enabled: current != null });
   const [starting, setStarting] = useState<"" | "dm" | "group">("");
+  const [q, setQ] = useState("");
+  const found = useQuery({ queryKey: ["chat", "search", q], queryFn: () => api.get<Msg[]>(`chat/search/?q=${encodeURIComponent(q)}`), enabled: q.trim().length >= 2 });
 
+  const [typing, setTyping] = useState<Record<number, { name: string; until: number }>>({});
   useSocket("/ws/chat/", (msg) => {
+    if (msg.event === "chat.typing") {
+      const d = msg.data as { conversation_id: number; name: string };
+      setTyping((old) => ({ ...old, [d.conversation_id]: { name: d.name, until: Date.now() + 4000 } }));
+      return;
+    }
     if (msg.event !== "chat.message") return;
     const m = msg.data as Msg;
+    setTyping((old) => ({ ...old, [m.conversation_id!]: { name: "", until: 0 } }));
     qc.setQueryData<Thread>(["chat", m.conversation_id], (old) => (old && !old.messages.some((x) => x.id === m.id) ? { ...old, messages: [...old.messages, m] } : old));
     // Mark it read first when it's the open conversation, then refresh the unread counts.
     const read = m.conversation_id === current ? api.post(`chat/${current}/read/`).catch(() => undefined) : Promise.resolve();
@@ -93,6 +105,21 @@ export default function OpsChat() {
             <Button size="sm" variant="ghost" icon={<Users className="size-4" />} onClick={() => setStarting("group")} aria-label="New group" />
           </div>
         </div>
+        <div className="relative px-3 pb-2">
+          <Search className="absolute left-5 top-2.5 size-4 text-muted" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search messages and files" className="pl-8" aria-label="Search messages" />
+        </div>
+        {q.trim().length >= 2 && (
+          <div className="mb-2 border-b border-line pb-2">
+            {found.data?.length === 0 && <div className="px-3 text-xs text-muted">Nothing found.</div>}
+            {found.data?.map((m) => (
+              <button key={m.id} onClick={() => { setQ(""); navigate(`/ops/chat/${m.conversation_id}`); }} className="block w-full px-3 py-1.5 text-left text-xs hover:bg-surface-2">
+                <span className="font-semibold">{m.conversation}</span> · {m.author ?? "system"} · {new Date(m.created_at).toLocaleDateString()}
+                <span className="block truncate text-muted">{m.file ? `📎 ${m.file.name} ` : ""}{m.body}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {SECTIONS.map(([label, kinds]) => {
           const rows = (inbox.data?.conversations ?? []).filter((r) => kinds.includes(r.kind));
           if (!rows.length) return null;
@@ -119,7 +146,7 @@ export default function OpsChat() {
         })}
       </aside>
       {current != null && thread.data ? (
-        <Conversation key={current} thread={thread.data} me={user?.id ?? 0} onBack={() => navigate("/ops/chat")} />
+        <Conversation key={current} thread={thread.data} me={user?.id ?? 0} typing={typing[current]?.until > Date.now() ? typing[current].name : ""} onBack={() => navigate("/ops/chat")} />
       ) : (
         <div className="hidden flex-1 items-center justify-center text-sm text-muted md:flex">Pick a conversation.</div>
       )}
@@ -138,9 +165,40 @@ export default function OpsChat() {
   );
 }
 
-function Conversation({ thread, me, onBack }: { thread: Thread; me: number; onBack: () => void }) {
+function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: number; typing: string; onBack: () => void }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
+  const lastTyping = useRef(0);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    // Re-render after the typing notice expires.
+    if (!typing) return;
+    const timer = setTimeout(() => tick((n) => n + 1), 4100);
+    return () => clearTimeout(timer);
+  }, [typing]);
+  const onType = (value: string) => {
+    setBody(value);
+    if (value && Date.now() - lastTyping.current > 3000) {
+      lastTyping.current = Date.now();
+      api.post(`chat/${thread.id}/typing/`).catch(() => undefined);
+    }
+  };
+  const added = (m: Msg) =>
+    qc.setQueryData<Thread>(["chat", thread.id], (old) => (old && !old.messages.some((x) => x.id === m.id) ? { ...old, messages: [...old.messages, m] } : old));
+  const upload = useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      if (body.trim()) form.append("body", body.trim());
+      return api.post<Msg>(`chat/${thread.id}/upload/`, form);
+    },
+    onSuccess: (m) => {
+      setBody("");
+      added(m);
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // Braces matter: newer browsers return a Promise from scrollIntoView, and an effect must
@@ -172,6 +230,7 @@ function Conversation({ thread, me, onBack }: { thread: Thread; me: number; onBa
             {thread.topic || `${thread.members.length} people`}
             {thread.task_id && " · task thread"}
             {thread.meeting_id && " · meeting thread"}
+            {thread.ticket_id && " · ticket thread (staff only)"}
           </div>
         </div>
       </header>
@@ -195,7 +254,8 @@ function Conversation({ thread, me, onBack }: { thread: Thread; me: number; onBa
                     )}
                   </div>
                 )}
-                <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                {m.file && <Attachment file={m.file} mine={m.author_id === me} />}
+                {m.body && <div className="whitespace-pre-wrap break-words">{m.body}</div>}
                 <div className={clsx("mt-0.5 text-right text-[10px]", m.author_id === me ? "text-white/70" : "text-muted")}>{time(m.created_at)}</div>
               </div>
             </div>
@@ -203,6 +263,7 @@ function Conversation({ thread, me, onBack }: { thread: Thread; me: number; onBa
         )}
         <div ref={end} />
       </div>
+      {typing && <div className="px-4 pb-1 text-xs text-muted">{typing} is typing…</div>}
       <form
         className="relative flex gap-2 border-t border-line p-3"
         onSubmit={(e) => {
@@ -224,7 +285,19 @@ function Conversation({ thread, me, onBack }: { thread: Thread; me: number; onBa
             ))}
           </div>
         )}
-        <Input value={body} onChange={(e) => setBody(e.target.value)} placeholder={`Message ${thread.title}  ·  @name to mention`} className="flex-1" aria-label="Message" />
+        <input
+          ref={fileInput}
+          type="file"
+          className="hidden"
+          accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) upload.mutate(f);
+            e.target.value = "";
+          }}
+        />
+        <Button type="button" variant="ghost" icon={<Paperclip className="size-4" />} loading={upload.isPending} onClick={() => fileInput.current?.click()} aria-label="Share a file" />
+        <Input value={body} onChange={(e) => onType(e.target.value)} placeholder={`Message ${thread.title}  ·  @name to mention`} className="flex-1" aria-label="Message" />
         <Button type="submit" icon={<Send className="size-4" />} loading={send.isPending} disabled={!body.trim()} aria-label="Send" />
       </form>
     </section>
@@ -281,5 +354,23 @@ function StartModal({ mode, onClose, onOpened }: { mode: "dm" | "group"; onClose
         ))}
       </div>
     </Modal>
+  );
+}
+
+/** A shared file: images load inline (fetched with your sign-in); other files download. */
+function Attachment({ file, mine }: { file: NonNullable<Msg["file"]>; mine: boolean }) {
+  const path = file.url.replace(/^\/api\/v1\//, "");
+  const img = useQuery({ queryKey: ["chat", "file", path], queryFn: () => fileUrl(path), enabled: file.image, staleTime: Infinity });
+  if (file.image && img.data) {
+    return <img src={img.data} alt={file.name} className="mb-1 max-h-60 cursor-pointer rounded-lg" onClick={() => openFile(path)} />;
+  }
+  return (
+    <button type="button" onClick={() => openFile(path)} className={clsx("mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-left", mine ? "bg-white/15" : "bg-surface")}>
+      <FileText className="size-4 shrink-0" />
+      <span className="min-w-0">
+        <span className="block truncate text-xs font-semibold">{file.name}</span>
+        <span className="text-[10px] opacity-70">{(file.size / 1024).toFixed(0)} KB</span>
+      </span>
+    </button>
   );
 }

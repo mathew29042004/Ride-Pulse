@@ -1,10 +1,12 @@
 """Team chat API (staff only): ``/api/v1/chat/…``."""
 
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from apps.accounts.roles import Cap
@@ -31,10 +33,17 @@ class GroupSerializer(serializers.Serializer):
 class ThreadSerializer(serializers.Serializer):
     task_id = serializers.IntegerField(required=False)
     meeting_id = serializers.IntegerField(required=False)
+    ticket_id = serializers.IntegerField(required=False)
+
+
+class UploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    body = serializers.CharField(max_length=services.MAX_BODY, required=False, allow_blank=True)
 
 
 class ChatViewSet(BaseViewSet):
     capabilities = {"*": Cap.WORK_USE}
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     queryset = Conversation.objects.none()
 
     def _conversation(self, request, pk) -> Conversation:
@@ -51,6 +60,7 @@ class ChatViewSet(BaseViewSet):
             "topic": conversation.topic,
             "task_id": conversation.task_id,
             "meeting_id": conversation.meeting_id,
+            "ticket_id": conversation.ticket_id,
             "members": [
                 {"id": m.user_id, "name": m.user.get_full_name()}
                 for m in conversation.members.select_related("user").order_by("user__first_name")[
@@ -96,6 +106,49 @@ class ChatViewSet(BaseViewSet):
         data.is_valid(raise_exception=True)
         message = services.send(conversation, request.user, data.validated_data["body"])
         return Response(services.message_row(message), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=UploadSerializer, responses={201: OpenApiTypes.OBJECT})
+    @action(detail=True, methods=["post"])
+    def upload(self, request, pk=None):
+        """Share a file (up to 10 MB), with an optional message."""
+        conversation = self._conversation(request, pk)
+        data = UploadSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        message = services.send(
+            conversation,
+            request.user,
+            data.validated_data.get("body", ""),
+            upload=data.validated_data["file"],
+        )
+        return Response(services.message_row(message), status=status.HTTP_201_CREATED)
+
+    @extend_schema(responses={(200, "application/octet-stream"): OpenApiTypes.BINARY})
+    @action(detail=True, methods=["get"], url_path=r"file/(?P<message_id>\d+)")
+    def file(self, request, pk=None, message_id=None):
+        conversation = self._conversation(request, pk)
+        message = get_object_or_404(Message, pk=message_id, conversation=conversation)
+        if not message.attachment:
+            raise ActionNotPermitted("This message has no file.")
+        return FileResponse(
+            message.attachment.open("rb"),
+            as_attachment=not message_row_is_image(message),
+            filename=message.attachment_name,
+        )
+
+    @extend_schema(request=None, responses={204: None})
+    @action(detail=True, methods=["post"])
+    def typing(self, request, pk=None):
+        services.typing(self._conversation(request, pk), request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        parameters=[OpenApiParameter("q", str)],
+        responses={200: OpenApiTypes.OBJECT},
+        operation_id="chat_search",
+    )
+    @action(detail=False, methods=["get"])
+    def search(self, request):
+        return Response(services.search(request.user, request.query_params.get("q", "")))
 
     @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     @action(detail=True, methods=["post"])
@@ -156,3 +209,7 @@ class ChatViewSet(BaseViewSet):
                 for u in rows.order_by("first_name")[:30]
             ]
         )
+
+
+def message_row_is_image(message) -> bool:
+    return services._ext(message.attachment_name) in services.IMAGES

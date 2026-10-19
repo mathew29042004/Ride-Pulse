@@ -9448,6 +9448,9 @@
      },
      "task_id": {
       "type": "integer"
+     },
+     "ticket_id": {
+      "type": "integer"
      }
     },
     "type": "object"
@@ -10581,6 +10584,22 @@
     },
     "required": [
      "unread"
+    ],
+    "type": "object"
+   },
+   "UploadRequest": {
+    "properties": {
+     "body": {
+      "maxLength": 4000,
+      "type": "string"
+     },
+     "file": {
+      "format": "binary",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
     ],
     "type": "object"
    },
@@ -12395,6 +12414,45 @@
     ]
    }
   },
+  "/api/v1/chat/search/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_search",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
   "/api/v1/chat/thread/": {
    "post": {
     "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
@@ -12425,6 +12483,56 @@
         "schema": {
          "additionalProperties": {},
          "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/{id}/file/{message_id}/": {
+   "get": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_file_retrieve",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this conversation.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "in": "path",
+      "name": "message_id",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d+$",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/octet-stream": {
+        "schema": {
+         "format": "binary",
+         "type": "string"
         }
        }
       },
@@ -12563,6 +12671,100 @@
       "multipart/form-data": {
        "schema": {
         "$ref": "#/components/schemas/SendRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {},
+         "type": "object"
+        }
+       }
+      },
+      "description": ""
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/{id}/typing/": {
+   "post": {
+    "description": "Publishes the DRF-authenticated user (JWT or session) to the audit context.",
+    "operationId": "chat_typing_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this conversation.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "No response body"
+     }
+    },
+    "security": [
+     {
+      "jwtAuth": []
+     },
+     {
+      "cookieAuth": []
+     }
+    ],
+    "tags": [
+     "chat"
+    ]
+   }
+  },
+  "/api/v1/chat/{id}/upload/": {
+   "post": {
+    "description": "Share a file (up to 10 MB), with an optional message.",
+    "operationId": "chat_upload_create",
+    "parameters": [
+     {
+      "description": "A unique integer value identifying this conversation.",
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UploadRequest"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/UploadRequest"
+       }
+      },
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/UploadRequest"
        }
       }
      },
