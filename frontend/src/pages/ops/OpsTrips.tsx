@@ -8,6 +8,7 @@ import { useOps } from "@/layouts/OpsLayout";
 import { api, openFile } from "@/lib/api";
 import { dateTime, inr, km } from "@/lib/format";
 import type { Paginated, Trip } from "@/lib/types";
+import { rowLink } from "@/lib/rowLink";
 
 const STATUSES = ["", "REQUESTED", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_DRIVER_FOUND"];
 
@@ -68,7 +69,7 @@ export default function OpsTrips() {
           </thead>
           <tbody>
             {trips.data?.results.map((t) => (
-              <tr key={t.id} onClick={() => navigate(`/ops/trips/${t.id}`)} className="cursor-pointer hover:bg-surface-2">
+              <tr key={t.id} {...rowLink(() => navigate(`/ops/trips/${t.id}`))} className="cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2">
                 <Td>
                   <Link to={`/ops/trips/${t.id}`} className="font-semibold hover:underline">
                     {t.trip_number}

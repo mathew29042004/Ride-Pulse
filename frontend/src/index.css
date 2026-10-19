@@ -14,7 +14,7 @@
   --color-surface-3: #eceef2;
   --color-line: #e4e7ec;
   --color-fg: #0b0f19;
-  --color-muted: #667085;
+  --color-muted: #596275; /* 5:1 on every light surface (WCAG AA) */
   --color-ink: #0b0f19;
   --color-ink-fg: #ffffff;
 
@@ -22,6 +22,7 @@
   --color-brand-strong: #059669;
   --color-brand-soft: #d1fae5;
   --color-brand-fg: #04281c;
+  --color-on-brand: #04281c; /* text on a solid brand fill, both themes (6:1) */
 
   --color-surge: #f59e0b;
   --color-danger: #e11d48;
@@ -55,6 +56,7 @@
   --color-ink-fg: #0b0f19;
   --color-brand-soft: rgb(16 185 129 / 0.16);
   --color-brand-fg: #a7f3d0;
+  --color-danger: #fb7185; /* readable on dark surfaces */
 }
 
 @layer base {
@@ -169,4 +171,17 @@
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 24px 60px -20px rgb(15 23 42 / 0.45);
+}
+
+/* Readable text colours in light mode (WCAG AA, 4.5:1): the brand green and amber are bright
+   enough for fills and icons but too light for text on white, so text uses a darker shade. */
+@layer utilities {
+  :root:not(.dark) .text-brand,
+  :root:not(.dark) .text-brand-strong {
+    color: #047857;
+  }
+  :root:not(.dark) .text-amber-600,
+  :root:not(.dark) .text-surge {
+    color: #b45309;
+  }
 }

@@ -215,7 +215,7 @@ export default function OpsLayout() {
             <button className="rounded-lg p-2 hover:bg-surface-3 lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
               <Menu className="size-5" />
             </button>
-            <Select value={city} onChange={(e) => setCity(e.target.value)} className="!w-44 !py-2">
+            <Select value={city} onChange={(e) => setCity(e.target.value)} className="!w-44 !py-2" aria-label="City">
               <option value="">All cities</option>
               {(cities.data ?? []).map((c) => (
                 <option key={c.slug} value={c.slug}>

@@ -43,7 +43,7 @@ export default function SafeShare() {
   const loc = s.location;
   return (
     <div className="mx-auto flex h-dvh max-w-lg flex-col bg-surface">
-      <div className={s.active ? "bg-danger px-4 py-3 text-white" : "bg-brand px-4 py-3 text-white"}>
+      <div className={s.active ? "bg-danger px-4 py-3 text-white" : "bg-brand px-4 py-3 text-on-brand"}>
         <div className="flex items-center gap-2 text-sm font-bold">
           {s.active ? <Radio className="size-4 animate-pulse" /> : <CheckCircle2 className="size-4" />}
           {s.active ? `${s.name} may need help` : s.ended_by === "RIDER" ? `${s.name} is safe` : `${s.name}'s alert has ended`}

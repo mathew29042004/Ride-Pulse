@@ -297,7 +297,7 @@ export default function RiderBook() {
                     )}
                   />
                   {isEditing ? (
-                    <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={value || placeholder} className="!py-2" />
+                    <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={value || placeholder} aria-label={placeholder} className="!py-2" />
                   ) : (
                     <button
                       onClick={() => {
@@ -610,7 +610,7 @@ export default function RiderBook() {
               <div className="mt-3 flex gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
-                  <Input value={promoInput} onChange={(e) => setPromoInput(e.target.value.toUpperCase())} placeholder={t("Promo code")} className="!py-2 pl-9" />
+                  <Input value={promoInput} onChange={(e) => setPromoInput(e.target.value.toUpperCase())} placeholder={t("Promo code")} aria-label={t("Promo code")} className="!py-2 pl-9" />
                 </div>
                 <Button variant="secondary" onClick={() => setPromo(promoInput.trim())} disabled={!promoInput.trim()}>
                   {t("Apply")}

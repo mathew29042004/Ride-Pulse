@@ -138,7 +138,7 @@ export default function OpsChat() {
                       </span>
                     )}
                   </span>
-                  {r.unread > 0 && <span className="rounded-full bg-brand px-1.5 text-[11px] font-bold text-white">{r.unread}</span>}
+                  {r.unread > 0 && <span className="rounded-full bg-brand px-1.5 text-[11px] font-bold text-on-brand">{r.unread}</span>}
                 </button>
               ))}
             </div>
@@ -243,7 +243,7 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
             </div>
           ) : (
             <div key={m.id} className={clsx("flex", m.author_id === me && "justify-end")}>
-              <div className={clsx("max-w-[75%] rounded-2xl px-3 py-2 text-sm", m.author_id === me ? "bg-brand text-white" : "bg-surface-2", m.mentions.includes(me) && "ring-2 ring-amber-400")}>
+              <div className={clsx("max-w-[75%] rounded-2xl px-3 py-2 text-sm", m.author_id === me ? "bg-brand text-on-brand" : "bg-surface-2", m.mentions.includes(me) && "ring-2 ring-amber-400")}>
                 {m.author_id !== me && (
                   <div className="mb-0.5 flex items-center gap-1 text-xs font-semibold">
                     {m.author}
@@ -256,7 +256,7 @@ function Conversation({ thread, me, typing, onBack }: { thread: Thread; me: numb
                 )}
                 {m.file && <Attachment file={m.file} mine={m.author_id === me} />}
                 {m.body && <div className="whitespace-pre-wrap break-words">{m.body}</div>}
-                <div className={clsx("mt-0.5 text-right text-[10px]", m.author_id === me ? "text-white/70" : "text-muted")}>{time(m.created_at)}</div>
+                <div className={clsx("mt-0.5 text-right text-[10px]", m.author_id === me ? "text-on-brand/70" : "text-muted")}>{time(m.created_at)}</div>
               </div>
             </div>
           ),
@@ -362,7 +362,11 @@ function Attachment({ file, mine }: { file: NonNullable<Msg["file"]>; mine: bool
   const path = file.url.replace(/^\/api\/v1\//, "");
   const img = useQuery({ queryKey: ["chat", "file", path], queryFn: () => fileUrl(path), enabled: file.image, staleTime: Infinity });
   if (file.image && img.data) {
-    return <img src={img.data} alt={file.name} className="mb-1 max-h-60 cursor-pointer rounded-lg" onClick={() => openFile(path)} />;
+    return (
+      <button type="button" onClick={() => openFile(path)} className="mb-1 block" aria-label={`Open ${file.name}`}>
+        <img src={img.data} alt={file.name} className="max-h-60 rounded-lg" />
+      </button>
+    );
   }
   return (
     <button type="button" onClick={() => openFile(path)} className={clsx("mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-left", mine ? "bg-white/15" : "bg-surface")}>

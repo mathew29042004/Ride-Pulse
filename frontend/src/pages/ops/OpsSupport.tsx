@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { ago } from "@/lib/format";
 import { useNow } from "@/lib/hooks";
 import type { Paginated, Ticket } from "@/lib/types";
+import { rowLink } from "@/lib/rowLink";
 
 function Sla({ due, open }: { due: string; open: boolean }) {
   const now = useNow(30_000);
@@ -71,7 +72,7 @@ export default function OpsSupport() {
           </thead>
           <tbody>
             {rows.map((t) => (
-              <tr key={t.id} onClick={() => navigate(`/ops/support/${t.id}`)} className="cursor-pointer hover:bg-surface-2">
+              <tr key={t.id} {...rowLink(() => navigate(`/ops/support/${t.id}`))} className="cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2">
                 <Td>
                   <div className="font-semibold">{t.subject}</div>
                   <div className="text-xs text-muted">

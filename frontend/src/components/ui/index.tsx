@@ -1,17 +1,7 @@
 import { clsx } from "clsx";
 import { Loader2, Star, X } from "lucide-react";
 import { AnimatePresence, animate, motion, useMotionValue, type PanInfo } from "motion/react";
-import {
-  type ButtonHTMLAttributes,
-  type InputHTMLAttributes,
-  type ReactNode,
-  type SelectHTMLAttributes,
-  type TextareaHTMLAttributes,
-  forwardRef,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes, useEffect, useId, useRef, useState } from "react";
 
 import { initials } from "@/lib/format";
 import { useLayout } from "@/lib/layout";
@@ -25,7 +15,7 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary: "bg-ink text-ink-fg hover:opacity-90",
-  brand: "bg-brand text-white hover:bg-brand-strong",
+  brand: "bg-brand text-on-brand hover:bg-brand-strong",
   secondary: "bg-surface-3 text-fg hover:bg-line",
   ghost: "text-fg hover:bg-surface-3",
   danger: "bg-danger text-white hover:opacity-90",
@@ -388,11 +378,39 @@ export function Modal({
   footer?: ReactNode;
   width?: string;
 }) {
+  const titleId = useId();
+  const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    // Keyboard and screen-reader users land inside the dialog, stay there, and go back to where
+    // they were when it closes.
+    const before = document.activeElement as HTMLElement | null;
+    const focusable = () =>
+      Array.from(
+        panel.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])') ?? [],
+      );
+    requestAnimationFrame(() => {
+      if (panel.current && !panel.current.contains(document.activeElement)) (focusable()[1] ?? panel.current).focus();
+    });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const [first, last] = [items[0], items[items.length - 1]];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      before?.focus?.();
+    };
   }, [open, onClose]);
   return (
     <AnimatePresence>
@@ -400,15 +418,18 @@ export function Modal({
         <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
           <motion.div
+            ref={panel}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
+            aria-labelledby={titleId}
             className={clsx("relative w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl", width)}
             initial={{ y: 20, scale: 0.98 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: 10, scale: 0.98 }}
           >
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <h2 className="font-semibold">{title}</h2>
+              <h2 id={titleId} className="font-semibold">{title}</h2>
               <button onClick={onClose} className="rounded-lg p-1 text-muted hover:bg-surface-3" aria-label="Close">
                 <X className="size-4" />
               </button>
@@ -493,6 +514,13 @@ export function Sheet({
           e.preventDefault(); // no text selection while dragging
         }}
         onTap={() => !panned.current && setLevel((l) => (l === "normal" ? "full" : "normal"))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setLevel((l) => (l === "normal" ? "full" : "normal"));
+          }
+        }}
+        tabIndex={0}
         role="button"
         aria-label={level === "peek" ? "Expand panel" : "Resize panel"}
         className="shrink-0 cursor-grab touch-none px-5 pt-3 pb-3 active:cursor-grabbing"

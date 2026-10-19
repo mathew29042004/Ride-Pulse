@@ -14,6 +14,7 @@ import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Modal, PageH
 import { useOps } from "@/layouts/OpsLayout";
 import { api, ApiError, openFile } from "@/lib/api";
 import { inr } from "@/lib/format";
+import { rowLink } from "@/lib/rowLink";
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
 const localInput = (hours: number) => {
@@ -423,7 +424,7 @@ export function OpsUpkeep() {
           <tbody>
             {rows.map((v) => (
               <Fragment key={v.id}>
-                <tr className="cursor-pointer border-t border-line hover:bg-surface-2" onClick={() => setOpen(open === v.id ? null : v.id)}>
+                <tr className="cursor-pointer border-t border-line hover:bg-surface-2 focus-visible:bg-surface-2" {...rowLink(() => setOpen(open === v.id ? null : v.id))} aria-expanded={open === v.id}>
                   <Td>
                     <div className="font-semibold">{v.registration}</div>
                     <div className="text-xs text-muted">

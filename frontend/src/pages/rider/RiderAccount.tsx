@@ -228,7 +228,7 @@ function InviteCard({ rider }: { rider: Rider }) {
   return (
     <div className="mt-5 rounded-2xl bg-brand-soft p-4">
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-white">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand">
           <Gift className="size-5" />
         </span>
         <div className="min-w-0 flex-1">

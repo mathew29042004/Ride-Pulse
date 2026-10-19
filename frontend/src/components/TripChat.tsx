@@ -259,7 +259,7 @@ function ChatPanel({
               placeholder={t("Message {name}", { name: otherName.split(" ")[0] })}
               className="min-w-0 flex-1 rounded-full bg-surface-2 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand/40"
             />
-            <button type="submit" disabled={!text.trim()} className="flex size-10 items-center justify-center rounded-full bg-brand text-white disabled:opacity-40" aria-label={t("Send")}>
+            <button type="submit" disabled={!text.trim()} className="flex size-10 items-center justify-center rounded-full bg-brand text-on-brand disabled:opacity-40" aria-label={t("Send")}>
               <SendHorizontal className="size-4" />
             </button>
           </form>

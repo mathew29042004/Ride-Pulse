@@ -6,6 +6,7 @@ import { Badge, Card, Input, PageHeader, Pagination, Select, Table, Td, Th } fro
 import { api } from "@/lib/api";
 import { dateTime } from "@/lib/format";
 import type { AuditEntry, Paginated } from "@/lib/types";
+import { rowLink } from "@/lib/rowLink";
 
 const ACTION_TONES: Record<string, "brand" | "info" | "warning" | "danger" | "neutral"> = {
   CREATE: "brand",
@@ -70,7 +71,7 @@ export default function OpsAudit() {
               const fields = Object.keys(e.changes ?? {});
               return (
                 <Fragment key={e.id}>
-                  <tr onClick={() => setOpen(open === e.id ? null : e.id)} className="cursor-pointer hover:bg-surface-2">
+                  <tr {...rowLink(() => setOpen(open === e.id ? null : e.id))} aria-expanded={open === e.id} className="cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2">
                     <Td className="whitespace-nowrap">{dateTime(e.created_at)}</Td>
                     <Td>{e.actor_email ?? <span className="text-muted">system</span>}</Td>
                     <Td>

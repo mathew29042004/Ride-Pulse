@@ -103,7 +103,17 @@ export function CarMarker({ lat, lng, heading, rideType, label, dim = false, onC
     rotateCar(marker.current?.getElement(), angle);
   }, [angle, icon]);
   return (
-    <Marker ref={marker} position={start} icon={icon} eventHandlers={onClick ? { click: onClick } : undefined} zIndexOffset={dim ? 0 : 500}>
+    <Marker
+      ref={marker}
+      position={start}
+      icon={icon}
+      eventHandlers={onClick ? { click: onClick } : undefined}
+      zIndexOffset={dim ? 0 : 500}
+      // Screen readers: name the car; only clickable cars take keyboard focus.
+      title={label ?? rideType ?? "Car"}
+      alt={label ?? rideType ?? "Car"}
+      keyboard={!!onClick}
+    >
       {label && (
         <Tooltip direction="top" offset={[0, -12]}>
           {label}
@@ -116,7 +126,7 @@ export function CarMarker({ lat, lng, heading, rideType, label, dim = false, onC
 export function PinMarker({ lat, lng, kind, label }: PinMarkerProps) {
   const icon = cachedIcon(`pin-${kind}`, PIN_HTML[kind], PIN_SIZE[kind]);
   return (
-    <Marker position={[lat, lng]} icon={icon} zIndexOffset={1000}>
+    <Marker position={[lat, lng]} icon={icon} zIndexOffset={1000} title={label ?? kind} alt={label ?? kind} keyboard={false}>
       {label && (
         <Tooltip direction="top" offset={[0, -10]} permanent className="!rounded-lg !border-0 !px-2 !py-1 !text-xs !font-semibold !shadow-md">
           {label}

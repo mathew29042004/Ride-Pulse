@@ -8,6 +8,7 @@ import { useOps } from "@/layouts/OpsLayout";
 import { api } from "@/lib/api";
 import { ago, inr } from "@/lib/format";
 import type { Driver, Paginated } from "@/lib/types";
+import { rowLink } from "@/lib/rowLink";
 
 export default function OpsDrivers() {
   const { city } = useOps();
@@ -67,7 +68,7 @@ export default function OpsDrivers() {
           </thead>
           <tbody>
             {drivers.data?.results.map((d) => (
-              <tr key={d.id} onClick={() => navigate(`/ops/drivers/${d.id}`)} className="cursor-pointer hover:bg-surface-2">
+              <tr key={d.id} {...rowLink(() => navigate(`/ops/drivers/${d.id}`))} className="cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2">
                 <Td>
                   <div className="flex items-center gap-3">
                     <Avatar name={d.name} size={34} />

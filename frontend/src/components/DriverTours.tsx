@@ -72,7 +72,7 @@ export function DriverTours({ pos, tripId }: { pos: { lat: number; lng: number }
             const current = next?.order === s.order;
             return (
               <li key={s.order} className="flex items-center gap-2 text-xs">
-                <span className={clsx("flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold", p.left ? "bg-brand text-white" : current ? "bg-ink text-ink-fg" : "bg-surface-3")}>{p.left ? <Check className="size-3" /> : s.order}</span>
+                <span className={clsx("flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold", p.left ? "bg-brand text-on-brand" : current ? "bg-ink text-ink-fg" : "bg-surface-3")}>{p.left ? <Check className="size-3" /> : s.order}</span>
                 <span className={clsx("flex-1", current && "font-semibold")}>
                   {s.name} <span className="text-muted">· {t("{m} min", { m: s.minutes })}</span>
                 </span>

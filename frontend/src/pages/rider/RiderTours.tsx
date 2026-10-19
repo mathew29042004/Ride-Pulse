@@ -253,7 +253,7 @@ function TourSheet({ slug, onClose, onBooked }: { slug: string; onClose: () => v
           <ol className="relative space-y-3 border-l-2 border-dashed border-line pl-5">
             {tr.stops.map((s) => (
               <li key={s.order} className="relative">
-                <span className="absolute -left-[27px] top-0 flex size-5 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white">{s.order}</span>
+                <span className="absolute -left-[27px] top-0 flex size-5 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-on-brand">{s.order}</span>
                 <div className="text-sm font-semibold">{s.name}</div>
                 <div className="text-xs text-muted">
                   {t("About {m} min here", { m: s.minutes })}
@@ -370,7 +370,7 @@ function MyTours({ bookings }: { bookings: Booking[] }) {
                   const p = b.progress[String(s.order)] ?? {};
                   return (
                     <li key={s.order} className="flex items-center gap-2 text-xs">
-                      <span className={clsx("flex size-4 items-center justify-center rounded-full", p.left ? "bg-brand text-white" : p.arrived ? "bg-amber-500 text-white" : "bg-surface-3")}>{p.left && <Check className="size-3" />}</span>
+                      <span className={clsx("flex size-4 items-center justify-center rounded-full", p.left ? "bg-brand text-on-brand" : p.arrived ? "bg-amber-500 text-white" : "bg-surface-3")}>{p.left && <Check className="size-3" />}</span>
                       <span className={clsx(p.arrived && !p.left && "font-semibold")}>{s.name}</span>
                       {p.arrived && !p.left && <span className="text-amber-600">{t("here now")}</span>}
                     </li>

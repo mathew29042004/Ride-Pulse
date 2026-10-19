@@ -511,7 +511,7 @@ export default function DriverHome() {
         {trip && !phoneGps && (
           <button
             onClick={() => setAutopilot((a) => !a)}
-            className={clsx("flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-lg", autopilot ? "bg-brand text-white" : "bg-surface")}
+            className={clsx("flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-lg", autopilot ? "bg-brand text-on-brand" : "bg-surface")}
           >
             <Bot className="size-4" /> Demo autopilot {autopilot ? "on" : "off"}
           </button>
