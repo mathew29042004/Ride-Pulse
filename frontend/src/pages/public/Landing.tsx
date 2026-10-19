@@ -98,7 +98,7 @@ export default function Landing() {
                 </Button>
               </Link>
               <Link to={user?.role === "DRIVER" ? "/drive" : "/signup/driver"}>
-                <Button size="lg" className="bg-white text-[#0b0f19] hover:bg-white/90">
+                <Button size="lg" className="!bg-white !text-[#0b0f19] hover:!bg-white/90">
                   Drive with us
                 </Button>
               </Link>

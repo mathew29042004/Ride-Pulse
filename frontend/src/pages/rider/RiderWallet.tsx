@@ -68,7 +68,7 @@ export default function WalletScreen({ title = "Wallet" }: { title?: string }) {
               {t("Add money")}
             </Button>
             {balance < 0 && (
-              <Button size="sm" className="bg-white text-[#0b0f19]" onClick={() => payDues.mutate()} loading={payDues.isPending}>
+              <Button size="sm" className="!bg-white !text-[#0b0f19]" onClick={() => payDues.mutate()} loading={payDues.isPending}>
                 {t("Pay dues")}
               </Button>
             )}
