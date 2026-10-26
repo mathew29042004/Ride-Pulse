@@ -1,12 +1,14 @@
 # Ride Pulse
 
+[![CI](https://github.com/mathew29042004/Ride-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/mathew29042004/Ride-Pulse/actions/workflows/ci.yml)
+
 **A full ride-hailing platform, like Uber, Ola or Rapido, built end to end**: a rider app, a
 driver app, an operations console and a data platform, on Django, PostgreSQL and React.
 
 Riders book rides, bike parcels, hourly rentals and intercity trips with upfront fares (or bid
 their own price), and track the driver live. Drivers go online, accept or counter offers, start
 with a ride PIN and see their real hourly earnings. Operations runs **33 cities across Tamil
-Nadu, Kerala, Karnataka and Andhra Pradesh** with a 171-person organisation, a live map, surge
+Nadu, Kerala, Karnataka and Andhra Pradesh** with a 320-person organisation, a live map, surge
 pricing, driver verification, support and an SOS desk. A bot fleet drives in real time, so every
 screen is alive the moment you open it, and a nightly pipeline turns it all into analytics.
 
@@ -21,7 +23,10 @@ screen is alive the moment you open it, and a nightly pipeline turns it all into
 | **Safety** | Ride PIN / QR start, **Ride Check** (long stops, off-route, late, lost signal), **Night Safe** mode, trusted contacts, **Guardian mode** (auto live-location to family, shake-to-SOS, fake call, 112), SOS desk, masked calls |
 | **Drivers first** | Boosts and tips 100% to drivers, **Fair Share Meter**, real earnings after costs, daily goals, going-home mode, **wellbeing breaks** |
 | **Built for India** | ₹ and GST, UPI/cards/cash/wallet, Razorpay, English/Tamil/Hindi with a **chat translation** bridge, IST everywhere |
-| **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 13 roles, manager workspace (tasks, stand-ups, scorecards), alerts that create tasks, morning briefing, demand forecast, fraud review |
+| **Operations** | Live map, dispatch (sequential and batched, Hungarian assignment), coverage-aware ride catalogue, analytics, audit trail, org chart with 20 staff roles, each with its own desk, manager workspace (tasks, stand-ups, scorecards), alerts that create tasks, morning briefing, demand forecast, fraud review |
+| **Commander** | One chief with a live control room: real-time alerts, standing orders (pause bookings, surge off) with confirmation, delegation, city targets, incident war rooms, an approvals inbox, and a **Chief of Staff** plus every department feeding updates |
+| **Company** | Public site (about, careers, contact) and a staff intranet; hiring an applicant creates their account, manager, salary, first tasks and channels |
+| **Team chat** | @mentions and plain names get a reply from that person, replies, reactions, pins, edits, message → task; quiet hours and digests; **Ctrl+K** search across the app |
 | **Data platform** | PostgreSQL → privacy-filtered Parquet lake → DuckDB + dbt star schema with 68 data-quality tests → Dagster, daily |
 
 ## Screenshots
@@ -78,8 +83,8 @@ flowchart LR
 | **Back end** | Python 3.12 · Django 5.2 LTS · Django REST Framework · Channels (WebSockets) · Celery |
 | **Data** | PostgreSQL 16 (partial unique indexes, BRIN, ArrayField, row locking) · Redis · DuckDB · dbt · Dagster |
 | **Front end** | React 19 · TypeScript · Vite · Tailwind CSS · TanStack Query · Leaflet / Google Maps · Recharts |
-| **API** | 183 REST operations, JWT auth, OpenAPI 3 docs (Swagger UI and ReDoc) |
-| **Quality** | 217 tests (88% coverage) + 9 Playwright browser tests + Locust load test · Ruff · strict TypeScript · dependency audits clean · GitHub Actions · Docker |
+| **API** | 493 REST operations, JWT auth, OpenAPI 3 docs (Swagger UI and ReDoc) |
+| **Quality** | 462 tests + 20 Playwright browser tests + Locust load test · Ruff · strict TypeScript · dependency audits clean · GitHub Actions · Docker |
 | **Ops** | Render blueprint · Sentry · Prometheus `/metrics` · JSON logs · installable PWA |
 
 ---
