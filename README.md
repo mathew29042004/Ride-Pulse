@@ -37,6 +37,7 @@ screen is alive the moment you open it, and a nightly pipeline turns it all into
 | ![Send a parcel](docs/screenshots/rider-parcel.jpg) | ![Real earnings](docs/screenshots/driver-earnings.jpg) | ![Dashboard](docs/screenshots/ops-dashboard.jpg) |
 | ![Intercity](docs/screenshots/rider-intercity.jpg) | ![Phone: home](docs/screenshots/rider-home-phone.jpg) | ![Data insights](docs/screenshots/ops-data-insights.jpg) |
 | ![Phone: booking](docs/screenshots/rider-book-phone.jpg) | | ![Team](docs/screenshots/ops-team.jpg) |
+| ![Careers](docs/screenshots/company-careers.jpg) | | ![Command centre](docs/screenshots/ops-command.jpg) |
 
 Regenerate them with `.venv/bin/python scripts/screenshots.py` while `make dev` is running.
 

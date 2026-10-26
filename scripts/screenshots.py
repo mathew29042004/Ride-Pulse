@@ -68,6 +68,7 @@ def main() -> None:
     rider = tokens(base, "rider@ridepulse.dev", password)
     driver = tokens(base, "driver@ridepulse.dev", password)
     admin = tokens(base, "admin@ridepulse.dev", password)
+    commander = tokens(base, "commander@ridepulse.dev", password)
     OUT.mkdir(parents=True, exist_ok=True)
     drop = "to=13.0500,80.2824&name=Marina%20Beach"
     with sync_playwright() as p:
@@ -86,6 +87,8 @@ def main() -> None:
         shoot(browser, base, admin, "/ops/live", "ops-live-map")
         shoot(browser, base, admin, "/ops/insights", "ops-data-insights", settle=3500)
         shoot(browser, base, admin, "/ops/team", "ops-team")
+        shoot(browser, base, commander, "/ops/command", "ops-command")
+        shoot(browser, base, admin, "/careers", "company-careers")
         browser.close()
 
 
