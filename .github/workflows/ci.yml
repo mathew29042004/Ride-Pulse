@@ -113,7 +113,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python packages with known vulnerabilities
-        run: uvx pip-audit -r requirements/base.txt
+        # Twisted (pulled in by Daphne) has no stable release with these fixes yet,
+        # only 26.10.0rc1. Drop these ignores once a stable Twisted ships them.
+        run: uvx pip-audit -r requirements/base.txt --ignore-vuln CVE-2026-106454 --ignore-vuln CVE-2026-115778 --ignore-vuln CVE-2026-115774 --ignore-vuln CVE-2026-115775 --ignore-vuln CVE-2026-115776 --ignore-vuln CVE-2026-115877
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -32,7 +32,7 @@ cbor2==6.1.5
     # via autobahn
 celery==5.6.3
     # via -r requirements/base.in
-certifi==2026.7.22
+certifi==2026.10.23
     # via
     #   requests
     #   sentry-sdk
@@ -144,7 +144,7 @@ packaging==26.3
     # via
     #   incremental
     #   kombu
-pillow==12.3.0
+pillow==13.0.0
     # via reportlab
 prompt-toolkit==3.0.53
     # via click-repl
