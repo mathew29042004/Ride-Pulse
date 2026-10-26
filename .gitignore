@@ -39,3 +39,6 @@ data/dbt/dbt_packages/
 data/.dagster/
 data/dbt/.user.yml
 backups/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
