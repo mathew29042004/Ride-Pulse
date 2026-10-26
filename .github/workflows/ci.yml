@@ -33,7 +33,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          uv venv .venv
+          uv venv --clear .venv
           uv pip install --python .venv/bin/python -r requirements/base.txt pytest pytest-django pytest-asyncio pytest-cov factory-boy ruff
       - name: Lint and format
         run: |
@@ -98,7 +98,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies and Chromium
         run: |
-          uv venv .venv
+          uv venv --clear .venv
           uv pip install --python .venv/bin/python -r requirements/base.txt pytest pytest-django pytest-asyncio pytest-playwright
           .venv/bin/python -m playwright install --with-deps chromium
       - name: End-to-end tests
