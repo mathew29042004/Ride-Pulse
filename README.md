@@ -1281,3 +1281,7 @@ make data-ui     # Dagster pipeline UI on :3000
 
 Fares, drivers, riders and trips are simulated; payments go through a mock gateway (any UPI ID
 containing `fail` is declined, to exercise the failure path).
+
+## License
+
+The code is released under the [MIT License](LICENSE), © 2026 Kevin Mathew T.
